@@ -37,11 +37,13 @@ def main(root1, root2, visit, ccd, filter=None):
     imgDiff = (imgAfter - imgBefore)
 
     # stretch it with arcsinh and make a png with pyplot
-    fig, axes = pyplot.subplots(1, 3, sharex=True, sharey=True, figsize=(15,6))
+    fig, axes = pyplot.subplots(1, 3, sharex=True, sharey=True, figsize=(15,10))
+    pyplot.subplots_adjust(left=0.04, bottom=0.03, right=0.99, top=0.97,
+                           wspace=0.01, hspace = 0.01)
     imgs   = imgBefore, imgAfter, imgDiff
     titles = "Before", "After", "Diff"
     for i in range(3):
-        axes[i].imshow(numpy.arcsinh(imgs[i]))
+        axes[i].imshow(numpy.arcsinh(imgs[i]), cmap='gray')
         axes[i].set_title(titles[i])
     pyplot.gcf().savefig("fakeCompare-%d-%s.png"%(visit,str(ccd)))
 
