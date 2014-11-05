@@ -46,22 +46,28 @@ def getFakeSources(rootdir, dataId, tol=0.1):
         s1 = sources.subset(matched)
         srcIndex[fid] = np.where(matched)[0]
 
-    srcList    = None
+    #srcList    = None
     srcPsfMag  = []
     srcPsfMerr = []
     matchX     = []
     matchY     = []
     for s in srcIndex.values():
-        for ss in s:
-            if srcList is None:
-                srcList = SourceCatalog(sources.getSchema())
-            srcList.append(sources[ss])
-            #
+        #for ss in s:
+        #if srcList is None:
+        #   srcList = SourceCatalog(sources.getSchema())
+        #   srcList.append(sources[ss])
+        #
+        if len(s) > 0:
+            ss = s[0]
             srcPsfMag.append(mag[ss])
             srcPsfMerr.append(merr[ss])
-            # Something is wrong here
             matchX.append(srcX[ss])
             matchY.append(srcY[ss])
+        else:
+            srcPsfMag.append(0)
+            srcPsfMerr.append(0)
+            matchX.append(0)
+            matchY.append(0)
 
     return srcIndex, fakeXY, matchX, matchY, srcPsfMag, srcPsfMerr
 
@@ -78,20 +84,27 @@ def main():
     #(starIndex,starList) = getFakeSources(args.rootDir, {'visit':args.visit, 'ccd':args.ccd})
     (starIndex, fakeXY, matchX, matchY, starPsfMag, starPsfMerr) = getFakeSources(args.rootDir,
                                                                                   {'visit':args.visit, 'ccd':args.ccd})
-    nMatch = len(fakeXY)
-    print "# Number of Matched Stars : %d" % nMatch
+
+    nInject = len(fakeXY)
+    nMatch  = len(np.argwhere(starPsfMag))
+    print "# Number of Injected Stars : %d" % nInject
+    print "# Number of Matched  Stars : %d" % nMatch
     print "# Visit = %d   CCD = %d" % (args.visit, args.ccd)
     print "# FakeX  FakeY  PSFMag  PSFMagErr  Deblend "
-    for i in range(nMatch):
+
+    for i in range(nInject):
        #print starIndex[i][0], starList[i]['flux.psf']
        if len(starIndex[i]) > 1:
            deblend = "blended"
-       else:
+       elif starPsfMag[i] > 0:
            deblend = "isolate"
+       else:
+           deblend = "nomatch"
+
        injectXY = fakeXY[i]
 
        print "%6.1d   %6.1d   %7.3f  %6.3f  %s" % (injectXY[0], injectXY[1],
-                                             starPsfMag[i], starPsfMerr[i], deblend)
+                                            starPsfMag[i], starPsfMerr[i], deblend)
 
 
 if __name__=='__main__':
