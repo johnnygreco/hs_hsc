@@ -90,7 +90,7 @@ def main():
            deblend = "isolate"
        injectXY = fakeXY[i]
 
-       print "%d    %d    %f    %f    %s" % (injectXY[0], injectXY[1],
+       print "%6.1d   %6.1d   %7.3f  %6.3f  %s" % (injectXY[0], injectXY[1],
                                              starPsfMag[i], starPsfMerr[i], deblend)
 
 
