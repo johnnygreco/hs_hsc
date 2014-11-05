@@ -79,9 +79,9 @@ def main():
     (starIndex, fakeXY, matchX, matchY, starPsfMag, starPsfMerr) = getFakeSources(args.rootDir,
                                                                                   {'visit':args.visit, 'ccd':args.ccd})
     nMatch = len(fakeXY)
-    print "#  Number of Matched Stars : %d" % nMatch
-    print "#  Visit = %d   CCD = %d" % (args.visit, args.ccd)
-    print "#  FakeX    FakeY   PSFMag    PSFMagErr    Deblend "
+    print "# Number of Matched Stars : %d" % nMatch
+    print "# Visit = %d   CCD = %d" % (args.visit, args.ccd)
+    print "# FakeX  FakeY  PSFMag  PSFMagErr  Deblend "
     for i in range(nMatch):
        #print starIndex[i][0], starList[i]['flux.psf']
        if len(starIndex[i]) > 1:
