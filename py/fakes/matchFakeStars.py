@@ -11,10 +11,12 @@ import argparse
 import re
 import collections
 
-def getFakeSources(rootdir, dataId, tol=0.1):
+def getFakeSources(rootdir, visit, ccd, tol=0.1):
     """Get list of sources which agree in position with fake ones with tol
     """
     butler = dafPersist.Butler(rootdir)
+
+    dataId = {'visit':visit, 'ccd':ccd}
 
     sources = butler.get('src', dataId)
     cal_md  = butler.get('calexp_md', dataId)
@@ -83,7 +85,7 @@ def main():
 
     #(starIndex,starList) = getFakeSources(args.rootDir, {'visit':args.visit, 'ccd':args.ccd})
     (starIndex, fakeXY, matchX, matchY, starPsfMag, starPsfMerr) = getFakeSources(args.rootDir,
-                                                                                  {'visit':args.visit, 'ccd':args.ccd})
+                                                                   args.visit, args.ccd)
 
     nInject = len(fakeXY)
     nMatch  = len(np.argwhere(starPsfMag))
@@ -105,7 +107,6 @@ def main():
 
        print "%6.1d   %6.1d   %7.3f  %6.3f  %s" % (injectXY[0], injectXY[1],
                                             starPsfMag[i], starPsfMerr[i], deblend)
-
 
 if __name__=='__main__':
     main()

@@ -27,13 +27,11 @@ def getExpArray(root, visit, ccd, filter=None):
     # convert to a numpy ndarray
     return img.getArray()
 
-def getNoMatchXY(rootDir, visit, ccd, tol=0.1):
+def getNoMatchXY(rootDir, visit, ccd):
 
     # TODO: Need to be organized
     (ind, fakeXY, matchX, matchY, psfMag, psfMerr) = getFakeSources(rootDir,
-                                                                    {visit,
-                                                                     ccd},
-                                                                    tol=tol)
+                                                        visit, ccd)
     nFakes   = len(fakeXY)
     nNoMatch = (nFakes - len(numpy.argwhere(psfMag)))
     noMatchX = []
@@ -51,7 +49,7 @@ def getNoMatchXY(rootDir, visit, ccd, tol=0.1):
 
     return noMatchX, noMatchY
 
-def main(root1, root2, visit, ccd, tol=0.1, filter=None):
+def main(root1, root2, visit, ccd, filter=None):
 
     # get the image array before the fake objects are added
     imgBefore = getExpArray(root1, visit, ccd, filter=None)
@@ -61,7 +59,7 @@ def main(root1, root2, visit, ccd, tol=0.1, filter=None):
     imgDiff = (imgAfter - imgBefore)
 
     # get the X, Y lists of noMatch stars
-    (noMatchX, noMatchY) = getNoMatchXY(root2, visit, ccd, tol=tol)
+    noMatchX, noMatchY = getNoMatchXY(root2, int(visit), int(ccd))
 
     # stretch it with arcsinh and make a png with pyplot
     fig, axes = pyplot.subplots(1, 3, sharex=True, sharey=True, figsize=(15,10))
@@ -89,11 +87,10 @@ if __name__ == '__main__':
     parser.add_argument("root2", help="Root directory of data after adding fake objects")
     parser.add_argument("visit", type=int, help="Visit to show")
     parser.add_argument("ccd", type=str, help="CCD to show")
-    parser.add_argument("-t", "--tol", help="Tolerence for X,Y matching")
     parser.add_argument("-f", "--filter", help="Filter (will cause visit/ccd to be read as tract/patch)")
     args = parser.parse_args()
 
     root1 = root + args.root1
     root2 = root + args.root2
 
-    main(root1, root2, args.visit, args.ccd, filter=args.filter, tol=args.tol)
+    main(root1, root2, args.visit, args.ccd, filter=args.filter)
