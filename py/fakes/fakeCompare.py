@@ -4,7 +4,8 @@ import argparse
 import numpy
 import matplotlib.pyplot as pyplot
 import lsst.daf.persistence as dafPersist
-from matchFakeGalaxy import getFakeSources
+from matchFakeGalaxy import getFakeSources as getFakeGalaxy
+from matchFakeStars  import getFakeSources as getFakeStars
 
 def getExpArray(root, visit, ccd, filter=None):
 
@@ -21,19 +22,16 @@ def getExpArray(root, visit, ccd, filter=None):
     exposure = butler.get(prefix+'calexp', dataId)
 
     # get the maskedImage from the exposure, and the image from the mimg
-    #mimg = exposure.getMaskedImage()
-    #img = mimg.getImage()
-    img = exposure.getImage()
+    mimg = exposure.getMaskedImage()
+    img = mimg.getImage()
 
     # convert to a numpy ndarray
     return img.getArray()
 
 def getNoMatchXY(rootDir, visit, ccd):
 
-    print visit, ccd
-
     # TODO: Need to be organized
-    (ind, fakeXY, matchX, matchY, psfMag, psfMerr) = getFakeSources(rootDir,
+    (ind, fakeXY, matchX, matchY, psfMag, psfMerr) = getFakeStars(rootDir,
                                                         visit, ccd)
     nFakes   = len(fakeXY)
     nNoMatch = (nFakes - len(numpy.argwhere(psfMag)))
@@ -47,7 +45,6 @@ def getNoMatchXY(rootDir, visit, ccd):
             noMatchX.append(injectXY[0])
             noMatchY.append(injectXY[1])
 
-    print nNoMatch, len(noMatchX)
     if len(noMatchX) is not nNoMatch:
         raise Exception("Something is wrong about the number of noMatch stars!")
 
