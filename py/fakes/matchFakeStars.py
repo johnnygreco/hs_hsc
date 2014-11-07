@@ -59,8 +59,8 @@ def getStars(rootdir, visit, ccd, tol):
 
     # Match the fake object to the source list
     srcIndex = collections.defaultdict(list)
+    srcSepar = collections.defaultdict(list)
     for fid, fcoord  in fakeList.items():
-        # Get the separation in pixel
         separation = np.sqrt(np.abs(srcX-fcoord[1])**2 +
                              np.abs(srcY-fcoord[2])**2)
         matched = (separation <= tol)
@@ -69,6 +69,7 @@ def getStars(rootdir, visit, ccd, tol):
         # print fid, fcoord, matchId
         # Select the index of all matched object
         srcIndex[fid] = matchId
+        srcSepar[fid] = separation[matchId]
 
     # Return the source list
     mapper = SchemaMapper(sources.schema)
@@ -90,30 +91,31 @@ def getStars(rootdir, visit, ccd, tol):
             # TODO: actually get the one with minimum separation
             ss = matchIndex[0]
             fakeObj = fakeList[nFake]
+            diffX = srcX[ss] - fakeObj[1]
+            diffY = srcY[ss] - fakeObj[2]
             paramList = (fakeObj[0], fakeObj[1], fakeObj[2],
-                         mag[ss], merr[ss], srcX[ss], srcY[ss],
+                         mag[ss], merr[ss], diffX, diffY,
                          parentID[ss], extendClass[ss])
             srcParam.append(paramList)
         else:
             paramList = (fakeObj[0], fakeObj[1], fakeObj[2],
-                         0, 0, 0, 0, 0, 0)
+                         0, 0, -1, -1, -1, -1)
             srcParam.append(paramList)
         # Go to another fake object
         nFake += 1
 
-    print help(srcParam)
     # Make a numpy record array
     srcParam = np.array(srcParam, dtype=[('fakeID', int),
                                          ('fakeX', float),
                                          ('fakeY', float),
                                          ('psfMag', float),
                                          ('psfMagErr', float),
-                                         ('matchX', float),
-                                         ('matchY', float),
+                                         ('diffX', float),
+                                         ('diffY', float),
                                          ('parentID', int),
                                          ('extendClass', float)])
 
-    return srcIndex, srcParam, srcList, zeropoint
+    return srcIndex, srcSepar, srcParam, srcList, zeropoint
 
 
 def main():
@@ -127,8 +129,10 @@ def main():
     args = parser.parse_args()
 
     # Get the information of the fake objects from the output source catalog
-    (fakeIndex, fakeParam, fakeList, zp) = getStars(args.rootDir, args.visit,
-                                                    args.ccd, args.tol)
+    (fakeIndex, fakeSepar, fakeParam, fakeList, zp) = getStars(args.rootDir,
+                                                               args.visit,
+                                                               args.ccd,
+                                                               args.tol)
 
     fakeID = fakeParam['fakeID']
     psfMag = fakeParam['psfMag']
@@ -136,6 +140,8 @@ def main():
     parent = fakeParam['parentID']
     fakeX  = fakeParam['fakeX']
     fakeY  = fakeParam['fakeY']
+    diffX  = fakeParam['diffX']
+    diffY  = fakeParam['diffY']
 
     # Number of injected fake objects, and the number of the objects recovered
     # by the pipeline (using the selected tol during matching)
@@ -149,7 +155,7 @@ def main():
     print "# The zeropoint of this CCD is %6.3f" % zp
     print "# Visit = %d   CCD = %d" % (args.visit, args.ccd)
     print '###################################################################'
-    print "# FakeX  FakeY  PSFMag  PSFMagErr  Deblend "
+    print "# FakeX  FakeY  DiffX  DiffY  PSFMag  PSFMagErr  Deblend "
 
     for i in range(nInject):
        if len(fakeIndex[i]) > 1:
@@ -164,9 +170,9 @@ def main():
        else:
            deblend = "isolate"
 
-       print "%6.1d   %6.1d   %7.3f  %6.3f  %s  %s" % (fakeX[i], fakeY[i],
-                                            psfMag[i], psfErr[i], matched,
-                                            deblend)
+       print "%6.1d   %6.1d   %6.1f   %6.1f  %7.3f  %6.3f  %s  %s" % (
+             fakeX[i], fakeY[i], diffX[i], diffY[i], psfMag[i], psfErr[i],
+             matched, deblend)
 
 if __name__=='__main__':
     main()
