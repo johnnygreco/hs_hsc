@@ -11,7 +11,7 @@ import argparse
 import re
 import collections
 
-def getFakeStars(rootdir, visit, ccd, tol):
+def getStars(rootdir, visit, ccd, tol):
     """Get list of sources which agree in position with fake ones with tol
     """
     # Call the butler
@@ -54,7 +54,7 @@ def getFakeStars(rootdir, visit, ccd, tol):
             x,y    = map(float, (cal_md.get(card)).split(','))
             # Get the ID or index of the fake object
             fakeID = int(m.group(1))
-            fakeList[counts] = (fakeID,x,y)
+            fakeList[counts] = [fakeID, x, y]
             counts += 1
 
     # Match the fake object to the source list
@@ -64,8 +64,11 @@ def getFakeStars(rootdir, visit, ccd, tol):
         separation = np.sqrt(np.abs(srcX-fcoord[1])**2 +
                              np.abs(srcY-fcoord[2])**2)
         matched = (separation <= tol)
+        matchId = np.where(matched)[0]
+        # DEBUG:
+        # print fid, fcoord, matchId
         # Select the index of all matched object
-        srcIndex[fid] = np.where(matched)[0]
+        srcIndex[fid] = matchId
 
     # Return the source list
     mapper = SchemaMapper(sources.schema)
@@ -79,20 +82,27 @@ def getFakeStars(rootdir, visit, ccd, tol):
     # Return a list of interesting parameters
     #srcParam = collections.defaultdict(list)
     srcParam = []
-    for s in srcIndex.values():
+    nFake = 0
+    for matchIndex in srcIndex.values():
         # Check if there is a match
-        if len(s) > 0:
+        if len(matchIndex) > 0:
             # Only select the one with the smallest separation
             # TODO: actually get the one with minimum separation
-            ss = s[0]
-            paramList = [fakeList[ss][0], fakeList[ss][1], fakeList[ss][2],
+            ss = matchIndex[0]
+            fakeObj = fakeList[nFake]
+            paramList = (fakeObj[0], fakeObj[1], fakeObj[2],
                          mag[ss], merr[ss], srcX[ss], srcY[ss],
-                         parentID[ss], extendClass[ss], zeropoint]
+                         parentID[ss], extendClass[ss])
             srcParam.append(paramList)
         else:
-            paramList = [fakeList[ss], 0, 0, 0, 0, 0, 0, zeropoint]
+            paramList = (fakeObj[0], fakeObj[1], fakeObj[2],
+                         0, 0, 0, 0, 0, 0)
             srcParam.append(paramList)
+        # Go to another fake object
+        nFake += 1
 
+    print help(srcParam)
+    # Make a numpy record array
     srcParam = np.array(srcParam, dtype=[('fakeID', int),
                                          ('fakeX', float),
                                          ('fakeY', float),
@@ -100,11 +110,10 @@ def getFakeStars(rootdir, visit, ccd, tol):
                                          ('psfMagErr', float),
                                          ('matchX', float),
                                          ('matchY', float),
-                                         ('parentID', float),
-                                         ('extendClass', float),
-                                         ('zeropoint', float)])
+                                         ('parentID', int),
+                                         ('extendClass', float)])
 
-    return srcIndex, srcParam, srcList
+    return srcIndex, srcParam, srcList, zeropoint
 
 
 def main():
@@ -114,11 +123,11 @@ def main():
     parser.add_argument('rootDir', help='root dir of data repo')
     parser.add_argument('visit',   help='id of visit', type=int)
     parser.add_argument('ccd',     help='id of ccd',   type=int)
-    parser.add_argument('tol',     help='tolerence in matching', type=int)
+    parser.add_argument('tol',     help='tolerence in matching', type=float)
     args = parser.parse_args()
 
     # Get the information of the fake objects from the output source catalog
-    (fakeIndex, fakeParam, fakeList) = getFakeStars(args.rootDir, args.visit,
+    (fakeIndex, fakeParam, fakeList, zp) = getStars(args.rootDir, args.visit,
                                                     args.ccd, args.tol)
 
     fakeID = fakeParam['fakeID']
@@ -137,7 +146,7 @@ def main():
     print '###################################################################'
     print "# Number of Injected Objects : %d" % nInject
     print "# Number of Matched  Objects : %d" % nMatch
-    print "# The zeropoint of this CCD is %6.3f" % fakeParam['zeropoint'][0]
+    print "# The zeropoint of this CCD is %6.3f" % zp
     print "# Visit = %d   CCD = %d" % (args.visit, args.ccd)
     print '###################################################################'
     print "# FakeX  FakeY  PSFMag  PSFMagErr  Deblend "
