@@ -5,26 +5,34 @@ matches fakes based on position stored in the calibrated exposure image header
 """
 
 import lsst.daf.persistence as dafPersist
-from lsst.afw.table.tableLib import SourceCatalog
+from lsst.afw.table import SourceCatalog, SchemaMapper
 import numpy as np
 import argparse
 import re
 import collections
 
-def getFakeSources(rootdir, visit, ccd, tol=1 ):
+def getFakeStars(rootdir, visit, ccd, tol):
     """Get list of sources which agree in position with fake ones with tol
     """
+    # Call the butler
     butler = dafPersist.Butler(rootdir)
     dataId = {'visit':visit, 'ccd':ccd}
     tol = float(tol)
 
+    # Get the source catalog and metadata
     sources = butler.get('src', dataId)
     cal_md  = butler.get('calexp_md', dataId)
 
     # Get the X, Y locations of objects on the CCD
     srcX, srcY = sources.getX(), sources.getY()
     # Get the zeropoint
-    zeropoint = 2.5*np.log10(cal_md.get("FLUXMAG0"))
+    zeropoint = (2.5 * np.log10(cal_md.get("FLUXMAG0")))
+    # Get the parent ID
+    parentID = sources.get('parent')
+    # Check the star/galaxy separation
+    extendClass = sources.get('classification.extendedness')
+
+    # For Stars: Get these parameters
     # Get the PSF flux and its error
     flux, ferr = sources.getPsfFlux(), sources.getPsfFluxErr()
     # Convert them into magnitude and its error
@@ -32,46 +40,71 @@ def getFakeSources(rootdir, visit, ccd, tol=1 ):
     mag = zeropoint - mag
 
     # X, Y locations of the fake stars
-    fakeXY   = collections.defaultdict(tuple)
+    fakeList = collections.defaultdict(tuple)
     # Regular Expression
+    # Search for keywords like FAKE12
     fakename = re.compile('FAKE([0-9]+)')
+    # Go through all the keywords
+    counts = 0
     for card in cal_md.names():
+        # To see if the card matches the pattern
         m = fakename.match(card)
         if m is not None:
-            x,y = map(float, (cal_md.get(card)).split(','))
-            fakeXY[int(m.group(1))] = (x,y)
+            # Get the X,Y location for fake object
+            x,y    = map(float, (cal_md.get(card)).split(','))
+            # Get the ID or index of the fake object
+            fakeID = int(m.group(1))
+            fakeList[counts] = (fakeID,x,y)
+            counts += 1
 
+    # Match the fake object to the source list
     srcIndex = collections.defaultdict(list)
-    for fid, fcoord  in fakeXY.items():
-        matched = ((np.abs(srcX-fcoord[0]) < tol) &
-                   (np.abs(srcY-fcoord[1]) < tol))
-        s1 = sources.subset(matched)
+    for fid, fcoord  in fakeList.items():
+        # Get the separation in pixel
+        separation = np.sqrt(np.abs(srcX-fcoord[1])**2 +
+                             np.abs(srcY-fcoord[2])**2)
+        matched = (separation <= tol)
+        # Select the index of all matched object
         srcIndex[fid] = np.where(matched)[0]
 
-    #srcList    = None
-    srcPsfMag  = []
-    srcPsfMerr = []
-    matchX     = []
-    matchY     = []
-    for s in srcIndex.values():
-        #for ss in s:
-        #if srcList is None:
-        #   srcList = SourceCatalog(sources.getSchema())
-        #   srcList.append(sources[ss])
-        #
-        if len(s) > 0:
-            ss = s[0]
-            srcPsfMag.append(mag[ss])
-            srcPsfMerr.append(merr[ss])
-            matchX.append(srcX[ss])
-            matchY.append(srcY[ss])
-        else:
-            srcPsfMag.append(0)
-            srcPsfMerr.append(0)
-            matchX.append(0)
-            matchY.append(0)
+    # Return the source list
+    mapper = SchemaMapper(sources.schema)
+    mapper.addMinimalSchema(sources.schema)
+    newSchema = mapper.getOutputSchema()
+    newSchema.addField('fakeId', type=int,
+                       doc='id of fake source matched to position')
+    srcList = SourceCatalog(newSchema)
+    srcList.reserve(sum([len(s) for s in srcIndex.values()]))
 
-    return srcIndex, fakeXY, matchX, matchY, srcPsfMag, srcPsfMerr
+    # Return a list of interesting parameters
+    #srcParam = collections.defaultdict(list)
+    srcParam = []
+    for s in srcIndex.values():
+        # Check if there is a match
+        if len(s) > 0:
+            # Only select the one with the smallest separation
+            # TODO: actually get the one with minimum separation
+            ss = s[0]
+            paramList = [fakeList[ss][0], fakeList[ss][1], fakeList[ss][2],
+                         mag[ss], merr[ss], srcX[ss], srcY[ss],
+                         parentID[ss], extendClass[ss], zeropoint]
+            srcParam.append(paramList)
+        else:
+            paramList = [fakeList[ss], 0, 0, 0, 0, 0, 0, zeropoint]
+            srcParam.append(paramList)
+
+    srcParam = np.array(srcParam, dtype=[('fakeID', int),
+                                         ('fakeX', float),
+                                         ('fakeY', float),
+                                         ('psfMag', float),
+                                         ('psfMagErr', float),
+                                         ('matchX', float),
+                                         ('matchY', float),
+                                         ('parentID', float),
+                                         ('extendClass', float),
+                                         ('zeropoint', float)])
+
+    return srcIndex, srcParam, srcList
 
 
 def main():
@@ -79,38 +112,52 @@ def main():
     #TODO: this should use the LSST/HSC conventions
     parser = argparse.ArgumentParser()
     parser.add_argument('rootDir', help='root dir of data repo')
-    parser.add_argument('visit', help='id of visit', type=int)
-    parser.add_argument('ccd', help='id of ccd', type=int)
+    parser.add_argument('visit',   help='id of visit', type=int)
+    parser.add_argument('ccd',     help='id of ccd',   type=int)
+    parser.add_argument('tol',     help='tolerence in matching', type=int)
     args = parser.parse_args()
 
-    visit = int(args.visit)
-    ccd   = int(args.ccd)
+    # Get the information of the fake objects from the output source catalog
+    (fakeIndex, fakeParam, fakeList) = getFakeStars(args.rootDir, args.visit,
+                                                    args.ccd, args.tol)
 
-    #(starIndex,starList) = getFakeSources(args.rootDir, {'visit':args.visit, 'ccd':args.ccd})
-    (starIndex, fakeXY, matchX, matchY, starPsfMag, starPsfMerr) = getFakeSources(args.rootDir,
-                                                                    visit, ccd)
+    fakeID = fakeParam['fakeID']
+    psfMag = fakeParam['psfMag']
+    psfErr = fakeParam['psfMagErr']
+    parent = fakeParam['parentID']
+    fakeX  = fakeParam['fakeX']
+    fakeY  = fakeParam['fakeY']
 
-    nInject = len(fakeXY)
-    nMatch  = len(np.argwhere(starPsfMag))
-    print "# Number of Injected Stars : %d" % nInject
-    print "# Number of Matched  Stars : %d" % nMatch
+    # Number of injected fake objects, and the number of the objects recovered
+    # by the pipeline (using the selected tol during matching)
+    nInject = len(fakeID)
+    nMatch  = len(np.argwhere(psfMag))
+
+    # Print out some information
+    print '###################################################################'
+    print "# Number of Injected Objects : %d" % nInject
+    print "# Number of Matched  Objects : %d" % nMatch
+    print "# The zeropoint of this CCD is %6.3f" % fakeParam['zeropoint'][0]
     print "# Visit = %d   CCD = %d" % (args.visit, args.ccd)
+    print '###################################################################'
     print "# FakeX  FakeY  PSFMag  PSFMagErr  Deblend "
 
     for i in range(nInject):
-       #print starIndex[i][0], starList[i]['flux.psf']
-       if len(starIndex[i]) > 1:
-           deblend = "blended"
-       elif starPsfMag[i] > 0:
-           deblend = "isolate"
+       if len(fakeIndex[i]) > 1:
+           matched = "multiple"
+       elif psfMag[i] > 0:
+           matched = "  single"
        else:
-           deblend = "nomatch"
+           matched = " nomatch"
 
-       injectXY = fakeXY[i]
+       if (parent[i] > 0):
+           deblend = "deblend"
+       else:
+           deblend = "isolate"
 
-       print "%6.1d   %6.1d   %7.3f  %6.3f  %s" % (injectXY[0], injectXY[1],
-                                            starPsfMag[i], starPsfMerr[i], deblend)
-
+       print "%6.1d   %6.1d   %7.3f  %6.3f  %s  %s" % (fakeX[i], fakeY[i],
+                                            psfMag[i], psfErr[i], matched,
+                                            deblend)
 
 if __name__=='__main__':
     main()
