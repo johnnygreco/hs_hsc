@@ -166,8 +166,8 @@ def getGalaxy(rootdir, visit, ccd, tol):
             srcParam.append(paramList)
         else:
             paramList = (fakeObj[0], fakeObj[1], fakeObj[2],
-                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1,
-                         0, -1, -1)
+                         0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                         -1, -1, 0, -1, -1)
             srcParam.append(paramList)
         # Go to another fake object
         nFake += 1
