@@ -130,9 +130,19 @@ def main():
 
     # Get the information of the fake objects from the output source catalog
     (fakeIndex, fakeParam, fakeList, zp) = getStars(args.rootDir,
-                                                               args.visit,
-                                                               args.ccd,
-                                                               args.tol)
+                                                    args.visit,
+                                                    args.ccd,
+                                                    args.tol)
+
+    root = args.rootDir
+    temp = root.split("/")
+    if root[-1] is '/':
+        rerun = temp[-2]
+    else:
+        rerun = temp[-1]
+
+    outTxt = rerun + '_' + str(args.visit).strip() + '_' + \
+             str(args.ccd).strip() + '_match.fits'
 
     fakeID = fakeParam['fakeID']
     psfMag = fakeParam['psfMag']
@@ -142,11 +152,14 @@ def main():
     fakeY  = fakeParam['fakeY']
     diffX  = fakeParam['diffX']
     diffY  = fakeParam['diffY']
+    extend = fakeParam['extendClass']
 
     # Number of injected fake objects, and the number of the objects recovered
     # by the pipeline (using the selected tol during matching)
     nInject = len(fakeID)
     nMatch  = len(np.argwhere(psfMag))
+
+    output = open(outTxt, 'w')
 
     # Print out some information
     print '###################################################################'
@@ -155,7 +168,12 @@ def main():
     print "# The zeropoint of this CCD is %6.3f" % zp
     print "# Visit = %d   CCD = %d" % (args.visit, args.ccd)
     print '###################################################################'
-    print "# FakeX  FakeY  DiffX  DiffY  PSFMag  PSFMagErr  Deblend "
+    print "# FakeX    FakeY   DiffX   DiffY   PSFMag   PSFMagErr  " + \
+          "Matched   Deblend "
+
+    header = "# FakeX    FakeY   DiffX   DiffY   PSFMag   PSFMagErr  " + \
+             "Matched   Deblend   Extended "
+    output.write(header)
 
     for i in range(nInject):
        if len(fakeIndex[i]) > 1:
@@ -173,6 +191,13 @@ def main():
        print "%6.1d   %6.1d   %6.1f   %6.1f  %7.3f  %6.3f  %s  %s" % (
              fakeX[i], fakeY[i], diffX[i], diffY[i], psfMag[i], psfErr[i],
              matched, deblend)
+
+       line = "%6.1d   %6.1d   %6.1f   %6.1f  %7.3f  %6.3f  %s  %s  %d" % (
+              fakeX[i], fakeY[i], diffX[i], diffY[i], psfMag[i], psfErr[i],
+              matched, deblend, extend[i])
+       output.write(line)
+
+    output.close()
 
 if __name__=='__main__':
     main()

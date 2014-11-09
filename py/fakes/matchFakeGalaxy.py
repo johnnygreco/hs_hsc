@@ -181,8 +181,8 @@ def getGalaxy(rootdir, visit, ccd, tol):
 
 def save_to_fits(params, root, visit, ccd):
 
-    temp = params.split("/")
-    if params[-1] is '/':
+    temp = root.split("/")
+    if root[-1] is '/':
         rerun = temp[-2]
     else:
         rerun = temp[-1]
@@ -213,7 +213,7 @@ def save_to_fits(params, root, visit, ccd):
         fits.Column(name='devR',  format='E', array=params['devR']),
         fits.Column(name='devBa',  format='E', array=params['devBa']),
         fits.Column(name='devPa',  format='E', array=params['devPa']),
-        fits.Column(name='parentID',  format='E', array=params['parentID']),
+        fits.Column(name='parentID',  format='I', array=params['parentID']),
         fits.Column(name='extendClass', format='E', array=params['extendClass'])
     ])
 
