@@ -142,7 +142,7 @@ def main():
         rerun = temp[-1]
 
     outTxt = rerun + '_' + str(args.visit).strip() + '_' + \
-             str(args.ccd).strip() + '_match.fits'
+             str(args.ccd).strip() + '_match.txt'
 
     fakeID = fakeParam['fakeID']
     psfMag = fakeParam['psfMag']
@@ -172,7 +172,7 @@ def main():
           "Matched   Deblend "
 
     header = "# FakeX    FakeY   DiffX   DiffY   PSFMag   PSFMagErr  " + \
-             "Matched   Deblend   Extended "
+             "Matched   Deblend   Extended \n"
     output.write(header)
 
     for i in range(nInject):
@@ -192,7 +192,7 @@ def main():
              fakeX[i], fakeY[i], diffX[i], diffY[i], psfMag[i], psfErr[i],
              matched, deblend)
 
-       line = "%7.2f   %7.2f   %6.2f   %6.2f  %7.3f  %6.3f  %s  %s  %d" % (
+       line = "%7.2f   %7.2f   %6.2f   %6.2f  %7.3f  %6.3f  %s  %s  %d \n" % (
               fakeX[i], fakeY[i], diffX[i], diffY[i], psfMag[i], psfErr[i],
               matched, deblend, extend[i])
        output.write(line)
