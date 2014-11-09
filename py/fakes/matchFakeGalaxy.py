@@ -260,7 +260,7 @@ def main():
                                                      args.ccd,
                                                      args.tol)
 
-    outFits = save_to_fits(fakeParam, args.rootDir, args.visit, args.ccd)
+    #outFits = save_to_fits(fakeParam, args.rootDir, args.visit, args.ccd)
 
     fakeID = fakeParam['fakeID']
     magKron = fakeParam['magKron']
