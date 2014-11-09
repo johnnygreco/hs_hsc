@@ -59,17 +59,18 @@ def getStars(rootdir, visit, ccd, tol):
 
     # Match the fake object to the source list
     srcIndex = collections.defaultdict(list)
-    srcSepar = collections.defaultdict(list)
     for fid, fcoord  in fakeList.items():
         separation = np.sqrt(np.abs(srcX-fcoord[1])**2 +
                              np.abs(srcY-fcoord[2])**2)
         matched = (separation <= tol)
         matchId = np.where(matched)[0]
+        matchSp = separation[matchId]
+        sortId = [matchId for (matchSp, matchId) in sorted(zip(matchSp, matchId))]
         # DEBUG:
         # print fid, fcoord, matchId
+        # print sortId, sorted(matchSp), matchId
         # Select the index of all matched object
-        srcIndex[fid] = matchId
-        srcSepar[fid] = separation[matchId]
+        srcIndex[fid] = sortId
 
     # Return the source list
     mapper = SchemaMapper(sources.schema)
@@ -88,7 +89,6 @@ def getStars(rootdir, visit, ccd, tol):
         # Check if there is a match
         if len(matchIndex) > 0:
             # Only select the one with the smallest separation
-            # TODO: actually get the one with minimum separation
             ss = matchIndex[0]
             fakeObj = fakeList[nFake]
             diffX = srcX[ss] - fakeObj[1]
@@ -115,7 +115,7 @@ def getStars(rootdir, visit, ccd, tol):
                                          ('parentID', int),
                                          ('extendClass', float)])
 
-    return srcIndex, srcSepar, srcParam, srcList, zeropoint
+    return srcIndex, srcParam, srcList, zeropoint
 
 
 def main():
@@ -129,7 +129,7 @@ def main():
     args = parser.parse_args()
 
     # Get the information of the fake objects from the output source catalog
-    (fakeIndex, fakeSepar, fakeParam, fakeList, zp) = getStars(args.rootDir,
+    (fakeIndex, fakeParam, fakeList, zp) = getStars(args.rootDir,
                                                                args.visit,
                                                                args.ccd,
                                                                args.tol)

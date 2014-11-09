@@ -11,7 +11,6 @@ import numpy as np
 import argparse
 import re
 import collections
-import pyfits as fits
 
 def getSizeAndShape(m):
     """
@@ -105,11 +104,10 @@ def getGalaxy(rootdir, visit, ccd, tol):
         matched = (separation <= tol)
         matchId = np.where(matched)[0]
         matchSp = separation[matchId]
-        sortId = [matchId for (matchSp, matchId) in sorted(zip(matchSp,
-                                                               matchId))]
+        sortId = [matchId for (matchSp, matchId) in sorted(zip(matchSp, matchId))]
         # DEBUG:
         # print fid, fcoord, matchId
-        print sortId, sorted(matchSp), matchId
+        # print sortId, sorted(matchSp), matchId
         # Select the index of all matched object
         srcIndex[fid] = sortId
 
@@ -175,7 +173,6 @@ def getGalaxy(rootdir, visit, ccd, tol):
                                          ('devPa', float),
                                          ('diffX', float),
                                          ('diffY', float),
-                                         ('fracDev', float),
                                          ('parentID', int),
                                          ('extendClass', float)])
 
@@ -198,16 +195,9 @@ def main():
                                                                args.ccd,
                                                                args.tol)
 
-    fakeID   = fakeParam['fakeID']
-    magCmod  = fakeParam['magCmod']
-    merrCmod = fakeParam['magCmod']
-    magKron  = fakeParam['magKron']
-    merrKron = fakeParam['magKron']
-    magExp  = fakeParam['magExp']
-    merrExp = fakeParam['magExp']
-    magDev  = fakeParam['magDev']
-    merrDev = fakeParam['magDev']
-    fracDev  = fakeParam['fracDev']
+    fakeID = fakeParam['fakeID']
+    psfMag = fakeParam['psfMag']
+    psfErr = fakeParam['psfMagErr']
     parent = fakeParam['parentID']
     fakeX  = fakeParam['fakeX']
     fakeY  = fakeParam['fakeY']
@@ -217,7 +207,7 @@ def main():
     # Number of injected fake objects, and the number of the objects recovered
     # by the pipeline (using the selected tol during matching)
     nInject = len(fakeID)
-    nMatch  = len(np.argwhere(magCmod))
+    nMatch  = len(np.argwhere(psfMag))
 
     # Print out some information
     print '###################################################################'
@@ -226,14 +216,12 @@ def main():
     print "# The zeropoint of this CCD is %6.3f" % zp
     print "# Visit = %d   CCD = %d" % (args.visit, args.ccd)
     print '###################################################################'
-    print "# FakeX  FakeY  DiffX  DiffY  CModel  CmodelErr  Kron  FracDev  Match  Deblend "
+    print "# FakeX  FakeY  DiffX  DiffY  PSFMag  PSFMagErr  Deblend "
 
-    matchedArr = []
-    deblendArr = []
     for i in range(nInject):
        if len(fakeIndex[i]) > 1:
            matched = "multiple"
-       elif magCmod[i] > 0:
+       elif psfMag[i] > 0:
            matched = "  single"
        else:
            matched = " nomatch"
@@ -243,50 +231,9 @@ def main():
        else:
            deblend = "isolate"
 
-       matchedArr.append(matched)
-       deblendArr.append(deblend)
-
-       print "%6.1d  %6.1d  %6.1f  %6.1f  %7.3f  %6.3f  %7.3f  %4.1f  %s  %s" % (
-             fakeX[i], fakeY[i], diffX[i], diffY[i], magCmod[i], merrCmod[i],
-             magKron[i], fracDev[i], matched, deblend)
-
-    # Save the results to a fits file
-    rootDir = args.rootDir
-    if rootDir[-1] is '/':
-        rerunName = rootDir.split('/')[-2]
-    else:
-        rerunName = rootDir.split('/')[-1]
-    outFits = rerunName + "_" + str(args.visit) + "_" + str(args.ccd) + "_fakeMatch.fits"
-    tabHdu = fits.BinTableHDU.from_columns(
-        [fits.Column(name='fakeID', format='I', array=fakeID),
-         fits.Column(name='fakeX', format='E', array=fakeX),
-         fits.Column(name='fakeY', format='E', array=fakeY),
-         fits.Column(name='diffX', format='E', array=diffX),
-         fits.Column(name='diffY', format='E', array=diffY),
-         fits.Column(name='magCmod',  format='E', array=magCmod),
-         fits.Column(name='merrCmod', format='E', array=merrCmod),
-         fits.Column(name='magKron',  format='E', array=magKron),
-         fits.Column(name='merrKron', format='E', array=merrKron),
-         fits.Column(name='magExp',  format='E', array=magExp),
-         fits.Column(name='merrExp', format='E', array=merrExp),
-         fits.Column(name='magDev',  format='E', array=magDev),
-         fits.Column(name='merrDev', format='E', array=merrDev),
-         fits.Column(name='sdssR',  format='E', array=fakeParam['sdssR']),
-         fits.Column(name='sdssBa', format='E', array=fakeParam['sdssBa']),
-         fits.Column(name='sdssPa', format='E', array=fakeParam['sdssPa']),
-         fits.Column(name='expR',  format='E', array=fakeParam['expR']),
-         fits.Column(name='expBa', format='E', array=fakeParam['expBa']),
-         fits.Column(name='expPa', format='E', array=fakeParam['expPa']),
-         fits.Column(name='devR',  format='E', array=fakeParam['devR']),
-         fits.Column(name='devBa', format='E', array=fakeParam['devBa']),
-         fits.Column(name='devPa', format='E', array=fakeParam['devPa']),
-         fits.Column(name='fracDev', format='E', array=fracDev),
-         fits.Column(name='matched', format='A', array=matchedArr),
-         fits.Column(name='deblend', format='A', array=deblendArr)])
-    priHdr = fits.Header()
-    priHdu = fits.PrimaryHDU(header=priHdr)
-    thuList = fits.HDUList([priHdu, tabHdu])
-    thuList.writeto(outFits)
+       print "%6.1d   %6.1d   %6.1f   %6.1f  %7.3f  %6.3f  %s  %s" % (
+             fakeX[i], fakeY[i], diffX[i], diffY[i], psfMag[i], psfErr[i],
+             matched, deblend)
 
 if __name__=='__main__':
     main()
