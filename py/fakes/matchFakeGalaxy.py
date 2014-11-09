@@ -195,6 +195,7 @@ def getGalaxy(rootdir, visit, ccd, tol):
                                          ('devPa', float),
                                          ('diffX', float),
                                          ('diffY', float),
+                                         ('fracDev', float),
                                          ('parentID', int),
                                          ('extendClass', float)])
 
@@ -234,6 +235,7 @@ def save_to_fits(params, root, visit, ccd):
         fits.Column(name='devR',  format='E', array=params['devR']),
         fits.Column(name='devBa',  format='E', array=params['devBa']),
         fits.Column(name='devPa',  format='E', array=params['devPa']),
+        fits.Column(name='fracDev',  format='E', array=params['fracDev']),
         fits.Column(name='parentID',  format='I', array=params['parentID']),
         fits.Column(name='extendClass', format='E', array=params['extendClass'])
     ])
