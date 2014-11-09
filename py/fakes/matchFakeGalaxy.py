@@ -210,16 +210,15 @@ def save_to_ascii(params, root, visit, ccd):
         rerun = temp[-1]
     nObjs = len(params['fakeID'])
 
-    outTxt = rerun + '_' + str(visit).strip() + '_' + str(ccd).strip() + '_' +\
-              '_match.txt'
-    f = open(outFits, 'w')
+    outTxt = rerun + '_' + str(visit).strip() + '_' + str(ccd).strip() + '_match.txt'
+    f = open(outTxt, 'w')
     header =  "# FakeX    FakeY    DiffX   DiffY   CmodMag   CmodErr  " + \
               "ExpMag  DevMag  KronMag  SdssR  SdssBa  SdssPa  " + \
               "ExpR  ExpBa  ExpPa  DevR  DevBa  DevPa  fracDev  Match  Deblend\n"
     f.write(header)
 
     for i in range(nObjs):
-       line = "%7.2f %7.2f %6.2f %6.2f %7.3f %6.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %d %d\n" % (
+       line = "%6d %7.2f %7.2f %6.2f %6.2f %7.3f %6.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %d %d\n" % (
               params['fakeID'][i], params['fakeY'][i], params['diffX'][i],
               params['diffY'][i], params['magCmod'][i], params['errCmod'][i],
               params['magExp'][i], params['magDev'][i], params['magKron'][i],
