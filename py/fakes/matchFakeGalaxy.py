@@ -279,7 +279,7 @@ def main():
        else:
            deblend = "isolate"
 
-       print "%6.1d   %6.1d   %6.1f   %6.1f  %7.3f  %6.3f  %7.3f  %7.3f  %7.3f  %s  %s" % (
+       print "%7.2f   %7.2f   %6.2f   %6.2f  %7.3f  %6.3f  %7.3f  %7.3f  %7.3f  %s  %s" % (
              fakeX[i], fakeY[i], diffX[i], diffY[i], magCmod[i], errCmod[i],
              magExp[i], magDev[i], magKron[0], matched, deblend)
 

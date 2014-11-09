@@ -188,11 +188,11 @@ def main():
        else:
            deblend = "isolate"
 
-       print "%6.1d   %6.1d   %6.1f   %6.1f  %7.3f  %6.3f  %s  %s" % (
+       print "%7.2f   %7.2f   %6.2f   %6.2f  %7.3f  %6.3f  %s  %s" % (
              fakeX[i], fakeY[i], diffX[i], diffY[i], psfMag[i], psfErr[i],
              matched, deblend)
 
-       line = "%6.1d   %6.1d   %6.1f   %6.1f  %7.3f  %6.3f  %s  %s  %d" % (
+       line = "%7.2f   %7.2f   %6.2f   %6.2f  %7.3f  %6.3f  %s  %s  %d" % (
               fakeX[i], fakeY[i], diffX[i], diffY[i], psfMag[i], psfErr[i],
               matched, deblend, extend[i])
        output.write(line)
