@@ -43,6 +43,7 @@ def getGalaxy(rootdir, visit, ccd, tol):
 
     # Get the X, Y locations of objects on the CCD
     srcX, srcY = sources.getX(), sources.getY()
+    nSources = srcX.shape[0]
     # Get the zeropoint
     zeropoint = (2.5 * np.log10(cal_md.get("FLUXMAG0")))
     # Get the parent ID
@@ -68,14 +69,34 @@ def getGalaxy(rootdir, visit, ccd, tol):
     magDev, merrDev = (zeropoint - 2.5*np.log10(fluxDev)), (2.5/np.log(10)*
                                                             (ferrDev/fluxDev))
     # 5. Get the SDSS shapes (Re, b/a, PA)
-    sdssMoment = sources.get('shape.sdss')
-    sdssR, sdssBa, sdssPa = getSizeAndShape(sdssMoment)
-    # 6. Get the Exponential shapes (Re, b/a, PA)
-    expMoment = sources.get('cmodel.exp.ellipse')
-    expR, expBa, expPa = getSizeAndShape(expMoment)
-    # 7. Get the de Vaucouleurs shapes (Re, b/a, PA)
-    devMoment = sources.get('cmodel.dev.ellipse')
-    devR, devBa, devPa = getSizeAndShape(devMoment)
+    sdssR  = []
+    sdssBa = []
+    sdssPa = []
+    expR  = []
+    expBa = []
+    expPa = []
+    devR  = []
+    devBa = []
+    devPa = []
+    for ss in sources:
+        # 5. Get the SDSS shapes (Re, b/a, PA)
+        sdssMoment = ss.get('shape.sdss')
+        r, ba, pa = getSizeAndShape(sdssMoment)
+        sdssR.append(r)
+        sdssBa.append(ba)
+        sdssPa.append(pa)
+        # 6. Get the Exponential shapes (Re, b/a, PA)
+        expMoment = sources.get('cmodel.exp.ellipse')
+        r, ba, pa = getSizeAndShape(expMoment)
+        expR.append(r)
+        expBa.append(ba)
+        expPa.append(pa)
+        # 7. Get the de Vaucouleurs shapes (Re, b/a, PA)
+        devMoment = sources.get('cmodel.dev.ellipse')
+        r, ba, pa = getSizeAndShape(devMoment)
+        devR.append(r)
+        devBa.append(ba)
+        devPa.append(pa)
     # 8. Get the fracDev
     fracDev = sources.get('cmodel.fracDev')
 
