@@ -201,6 +201,38 @@ def getGalaxy(rootdir, visit, ccd, tol):
 
     return srcIndex, srcParam, srcList, zeropoint
 
+def save_to_ascii(params, root, visit, ccd):
+
+    temp = root.split("/")
+    if root[-1] is '/':
+        rerun = temp[-2]
+    else:
+        rerun = temp[-1]
+    nObjs = len(params['fakeID'])
+
+    outTxt = rerun + '_' + str(visit).strip() + '_' + str(ccd).strip() + '_' +\
+              '_match.txt'
+    f = open(outFits, 'w')
+    header =  "# FakeX    FakeY    DiffX   DiffY   CmodMag   CmodErr  " + \
+              "ExpMag  DevMag  KronMag  SdssR  SdssBa  SdssPa  " + \
+              "ExpR  ExpBa  ExpPa  DevR  DevBa  DevPa  fracDev  Match  Deblend\n"
+    f.write(header)
+
+    for i in range(nObjs):
+       line = "%7.2f %7.2f %6.2f %6.2f %7.3f %6.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %d %d\n" % (
+              params['fakeID'][i], params['fakeY'][i], params['diffX'][i],
+              params['diffY'][i], params['magCmod'][i], params['errCmod'][i],
+              params['magExp'][i], params['magDev'][i], params['magKron'][i],
+              params['sdssR'][i], params['sdssBa'][i], params['sdssPa'][i],
+              params['expR'][i], params['expBa'][i], params['expPa'][i],
+              params['devR'][i], params['devBa'][i], params['devPa'][i],
+              params['fracDev'][i], params['parentID'][i],
+              params['extendClass'][i] )
+       f.write(line)
+
+    return outTxt
+
+
 def save_to_fits(params, root, visit, ccd):
 
     temp = root.split("/")
@@ -261,6 +293,7 @@ def main():
                                                      args.tol)
 
     #outFits = save_to_fits(fakeParam, args.rootDir, args.visit, args.ccd)
+    outTxt = save_to_ascii(fakeParam, args.rootDir, args.visit, args.ccd)
 
     fakeID = fakeParam['fakeID']
     magKron = fakeParam['magKron']
