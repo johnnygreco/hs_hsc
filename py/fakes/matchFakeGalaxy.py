@@ -11,6 +11,7 @@ import numpy as np
 import argparse
 import re
 import collections
+import pyfits as fits
 
 def getSizeAndShape(m):
     """
@@ -178,6 +179,47 @@ def getGalaxy(rootdir, visit, ccd, tol):
 
     return srcIndex, srcParam, srcList, zeropoint
 
+def save_to_fits(params, root, visit, ccd):
+
+    temp = params.split("/")
+    if params[-1] is '/':
+        rerun = temp[-2]
+    else:
+        rerun = temp[-1]
+
+    outFits = rerun + '_' + str(visit).strip() + '_' + str(ccd).strip() + '_' +\
+              '_match.fits'
+
+    tabHdu = fits.BinTableHDU.from_columns([
+        fits.Column(name='fakeID', format='A', array=params['fakeID']),
+        fits.Column(name='fakeX',  format='E', array=params['fakeX']),
+        fits.Column(name='fakeY',  format='E', array=params['fakeY']),
+        fits.Column(name='diffX',  format='E', array=params['diffX']),
+        fits.Column(name='diffY',  format='E', array=params['diffY']),
+        fits.Column(name='magKron',  format='E', array=params['magKron']),
+        fits.Column(name='errKron',  format='E', array=params['errKron']),
+        fits.Column(name='magCmod',  format='E', array=params['magCmod']),
+        fits.Column(name='errCmod',  format='E', array=params['errCmod']),
+        fits.Column(name='magExp',  format='E', array=params['magExp']),
+        fits.Column(name='errExp',  format='E', array=params['errExp']),
+        fits.Column(name='magDev',  format='E', array=params['magDev']),
+        fits.Column(name='errDev',  format='E', array=params['errDev']),
+        fits.Column(name='sdssR',  format='E', array=params['sdssR']),
+        fits.Column(name='sdssBa',  format='E', array=params['sdssBa']),
+        fits.Column(name='sdssPa',  format='E', array=params['sdssPa']),
+        fits.Column(name='expR',  format='E', array=params['expR']),
+        fits.Column(name='expBa',  format='E', array=params['expBa']),
+        fits.Column(name='expPa',  format='E', array=params['expPa']),
+        fits.Column(name='devR',  format='E', array=params['devR']),
+        fits.Column(name='devBa',  format='E', array=params['devBa']),
+        fits.Column(name='devPa',  format='E', array=params['devPa']),
+        fits.Column(name='parentID',  format='E', array=params['parentID']),
+        fits.Column(name='extendClass', format='E', array=params['extendClass'])
+    ])
+
+    tabHdu.writeto(outFits)
+
+    return outFits
 
 def main():
 
@@ -191,13 +233,18 @@ def main():
 
     # Get the information of the fake objects from the output source catalog
     (fakeIndex, fakeParam, fakeList, zp) = getGalaxy(args.rootDir,
-                                                               args.visit,
-                                                               args.ccd,
-                                                               args.tol)
+                                                     args.visit,
+                                                     args.ccd,
+                                                     args.tol)
+
+    outFits = save_to_fits(fakeParam, args.rootDir, args.visit, args.ccd)
 
     fakeID = fakeParam['fakeID']
-    psfMag = fakeParam['psfMag']
-    psfErr = fakeParam['psfMagErr']
+    magKron = fakeParam['magKron']
+    magCmod = fakeParam['magCmod']
+    errCmod = fakeParam['errCmod']
+    magExp = fakeParam['magExp']
+    magDev = fakeParam['magDev']
     parent = fakeParam['parentID']
     fakeX  = fakeParam['fakeX']
     fakeY  = fakeParam['fakeY']
@@ -207,7 +254,7 @@ def main():
     # Number of injected fake objects, and the number of the objects recovered
     # by the pipeline (using the selected tol during matching)
     nInject = len(fakeID)
-    nMatch  = len(np.argwhere(psfMag))
+    nMatch  = len(np.argwhere(magCmod))
 
     # Print out some information
     print '###################################################################'
@@ -216,12 +263,13 @@ def main():
     print "# The zeropoint of this CCD is %6.3f" % zp
     print "# Visit = %d   CCD = %d" % (args.visit, args.ccd)
     print '###################################################################'
-    print "# FakeX  FakeY  DiffX  DiffY  PSFMag  PSFMagErr  Deblend "
+    print "# FakeX    FakeY    DiffX  DiffY  CmodMag  CmodErr  " + \
+          "ExpMag  DevMag  KronMag  Matched  Deblend "
 
     for i in range(nInject):
        if len(fakeIndex[i]) > 1:
            matched = "multiple"
-       elif psfMag[i] > 0:
+       elif magCmod[i] > 0:
            matched = "  single"
        else:
            matched = " nomatch"
@@ -231,9 +279,9 @@ def main():
        else:
            deblend = "isolate"
 
-       print "%6.1d   %6.1d   %6.1f   %6.1f  %7.3f  %6.3f  %s  %s" % (
-             fakeX[i], fakeY[i], diffX[i], diffY[i], psfMag[i], psfErr[i],
-             matched, deblend)
+       print "%6.1d   %6.1d   %6.1f   %6.1f  %7.3f  %6.3f  %7.3f  %7.3f  %7.3f  %s  %s" % (
+             fakeX[i], fakeY[i], diffX[i], diffY[i], magCmod[i], errCmod[i],
+             magExp[i], magDev[i], magKron[0], matched, deblend)
 
 if __name__=='__main__':
     main()
