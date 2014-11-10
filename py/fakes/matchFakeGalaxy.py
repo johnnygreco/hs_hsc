@@ -167,6 +167,7 @@ def getGalaxy(rootdir, visit, ccd, tol):
                          parentID[ss], nChild[ss], extendClass[ss])
             srcParam.append(paramList)
         else:
+            fakeObj = fakeList[nFake]
             paramList = (fakeObj[0], fakeObj[1], fakeObj[2],
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                          -1, -1, 0, -1, -1, -1)
