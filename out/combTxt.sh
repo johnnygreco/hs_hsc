@@ -1,7 +1,9 @@
 #!/bin/bash 
 
+prefix=$1
 touch $2
-for i in `cat $1`; do 
+
+for i in `ls $prefix*.txt`; do 
 
     cat $i >> $2; 
 
