@@ -4,8 +4,8 @@ import argparse
 import numpy
 import matplotlib.pyplot as pyplot
 import lsst.daf.persistence as dafPersist
-from matchFakeGalaxy import getFakeSources as getFakeGalaxy
-from matchFakeStars  import getFakeSources as getFakeStars
+from matchFakeGalaxy import getGalaxy
+from matchFakeStars  import getStars
 
 def getExpArray(root, visit, ccd, filter=None):
 
@@ -31,20 +31,24 @@ def getExpArray(root, visit, ccd, filter=None):
 def getNoMatchXY(rootDir, visit, ccd):
 
     # TODO: Need to be organized
-    (ind, fakeXY, matchX, matchY, psfMag, psfMerr) = getFakeStars(rootDir,
-                                                        visit, ccd)
-    nFakes   = len(fakeXY)
-    nNoMatch = (nFakes - len(numpy.argwhere(psfMag)))
+    (fakeIndex, fakeParam, fakeList, zp) = getGalaxy(rootDir,
+                                                     visit, ccd, 2.0)
+    fakeX = fakeParam['fakeX']
+    fakeY = fakeParam['fakeY']
+    fakeMag = fakeParam['magCmod']
+    nFakes   = len(fakeX)
+    nNoMatch = (nFakes - len(numpy.argwhere(fakeMag)))
     noMatchX = []
     noMatchY = []
     for i in range(nFakes):
-        injectXY = fakeXY[i]
-        if matchX[i] > 0:
+        if (numpy.isnan(fakeMag[i])) or (fakeMag[i] > 0):
             pass
         else:
-            noMatchX.append(injectXY[0])
-            noMatchY.append(injectXY[1])
+            noMatchX.append(fakeX[i])
+            noMatchY.append(fakeY[i])
 
+    print nFakes
+    print nNoMatch, len(noMatchX)
     if len(noMatchX) is not nNoMatch:
         raise Exception("Something is wrong about the number of noMatch stars!")
 
@@ -72,10 +76,8 @@ def main(root1, root2, visit, ccd):
     for i in range(3):
         axes[i].imshow(numpy.arcsinh(imgs[i]), cmap='gray')
         axes[i].set_title(titles[i])
-        # highlight the noMatch stars with a circle
-        if i < 2:
-            area = numpy.pi * 4 ** 2
-            axes[i].scatter(noMatchX, noMatchY, s=area, c='r', alpha=0.5)
+        area = numpy.pi * 4 ** 2
+        axes[i].scatter(noMatchX, noMatchY, s=area, c='r', alpha=0.5)
 
     pyplot.gcf().savefig("fakeCompare-%d-%s.png"%(visit,str(ccd)))
 
