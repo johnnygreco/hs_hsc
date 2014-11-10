@@ -217,7 +217,7 @@ def save_to_ascii(params, root, visit, ccd):
     f = open(outTxt, 'w')
     header =  "# FakeX    FakeY    DiffX   DiffY   CmodMag   CmodErr  " + \
               "ExpMag  DevMag  KronMag  SdssR  SdssBa  SdssPa  " + \
-              "ExpR  ExpBa  ExpPa  DevR  DevBa  DevPa  fracDev  Match  Deblend  nChild \n"
+              "ExpR  ExpBa  ExpPa  DevR  DevBa  DevPa  fracDev  parentID  nChild  extended\n"
     f.write(header)
 
     for i in range(nObjs):
