@@ -33,6 +33,8 @@ def getStars(rootdir, visit, ccd, tol):
     extendClass = sources.get('classification.extendedness')
     # Get the nChild
     nChild = sources.get('deblend.nchild')
+    # Get the aperture corrections
+    apcorr = sources.get('correctfluxes.apcorr')
 
     # For Stars: Get these parameters
     # Get the PSF flux and its error
@@ -96,12 +98,12 @@ def getStars(rootdir, visit, ccd, tol):
             diffX = srcX[ss] - fakeObj[1]
             diffY = srcY[ss] - fakeObj[2]
             paramList = (fakeObj[0], fakeObj[1], fakeObj[2],
-                         mag[ss], merr[ss], diffX, diffY,
+                         mag[ss], merr[ss], apcorr[ss], diffX, diffY,
                          parentID[ss], nChild[ss], extendClass[ss])
             srcParam.append(paramList)
         else:
             paramList = (fakeObj[0], fakeObj[1], fakeObj[2],
-                         0, 0, -1, -1, -1, -1, -1)
+                         0, 0, -1, -1, -1, -1, -1, -1)
             srcParam.append(paramList)
         # Go to another fake object
         nFake += 1
@@ -112,6 +114,7 @@ def getStars(rootdir, visit, ccd, tol):
                                          ('fakeY', float),
                                          ('psfMag', float),
                                          ('psfMagErr', float),
+                                         ('apCorr', float),
                                          ('diffX', float),
                                          ('diffY', float),
                                          ('parentID', int),
@@ -150,6 +153,7 @@ def main():
     fakeID = fakeParam['fakeID']
     psfMag = fakeParam['psfMag']
     psfErr = fakeParam['psfMagErr']
+    apCorr = fakeParam['apCorr']
     parent = fakeParam['parentID']
     nchild = fakeParam['nChild']
     fakeX  = fakeParam['fakeX']
@@ -172,10 +176,10 @@ def main():
     print "# The zeropoint of this CCD is %6.3f" % zp
     print "# Visit = %d   CCD = %d" % (args.visit, args.ccd)
     print '###################################################################'
-    print "# FakeX    FakeY   DiffX   DiffY   PSFMag   PSFMagErr  " + \
+    print "# FakeX    FakeY   DiffX   DiffY   PSFMag   PSFMagErr  ApCorr  " + \
           "Matched   Deblend "
 
-    header = "# FakeX    FakeY   DiffX   DiffY   PSFMag   PSFMagErr  " + \
+    header = "# FakeX    FakeY   DiffX   DiffY   PSFMag   PSFMagErr  ApCorr  " + \
              "Matched   Deblend   Extended   nChild\n"
     output.write(header)
 
@@ -192,13 +196,14 @@ def main():
        else:
            deblend = "isolate"
 
-       print "%7.2f   %7.2f   %6.2f   %6.2f  %7.3f  %6.3f  %s  %s" % (
+       print "%7.2f   %7.2f   %6.2f   %6.2f  %7.3f  %6.3f  %7.3f  %s  %s" % (
              fakeX[i], fakeY[i], diffX[i], diffY[i], psfMag[i], psfErr[i],
-             matched, deblend)
+             apCorr[i], matched, deblend)
 
-       line = "%7.2f   %7.2f   %6.2f   %6.2f  %7.3f  %6.3f  %s  %s  %d  %d  %d  %d \n" % (
+       line = "%7.2f   %7.2f   %6.2f   %6.2f  %7.3f  %6.3f  %7.3f  %s  %s  %d  %d  %d  %d \n" % (
               fakeX[i], fakeY[i], diffX[i], diffY[i], psfMag[i], psfErr[i],
-              matched, deblend, extend[i], nchild[i], args.visit, args.ccd)
+              apCorr[i], matched, deblend, extend[i], nchild[i],
+              args.visit, args.ccd)
        output.write(line)
 
     output.close()
