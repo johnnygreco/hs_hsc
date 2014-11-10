@@ -50,6 +50,8 @@ def getGalaxy(rootdir, visit, ccd, tol):
     parentID = sources.get('parent')
     # Check the star/galaxy separation
     extendClass = sources.get('classification.extendedness')
+    # Get the nChild
+    nChild = sources.get('deblend.nchild')
 
     # For Galaxies: Get these parameters
     # 1. Get the Kron flux and its error
@@ -162,12 +164,12 @@ def getGalaxy(rootdir, visit, ccd, tol):
                          expR[ss], expBa[ss], expPa[ss],
                          devR[ss], devBa[ss], devPa[ss],
                          diffX, diffY, fracDev[ss],
-                         parentID[ss], extendClass[ss])
+                         parentID[ss], nChild[ss], extendClass[ss])
             srcParam.append(paramList)
         else:
             paramList = (fakeObj[0], fakeObj[1], fakeObj[2],
                          0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                         -1, -1, 0, -1, -1)
+                         -1, -1, 0, -1, -1, -1)
             srcParam.append(paramList)
         # Go to another fake object
         nFake += 1
@@ -197,6 +199,7 @@ def getGalaxy(rootdir, visit, ccd, tol):
                                          ('diffY', float),
                                          ('fracDev', float),
                                          ('parentID', int),
+                                         ('nChild', int),
                                          ('extendClass', float)])
 
     return srcIndex, srcParam, srcList, zeropoint
@@ -214,18 +217,19 @@ def save_to_ascii(params, root, visit, ccd):
     f = open(outTxt, 'w')
     header =  "# FakeX    FakeY    DiffX   DiffY   CmodMag   CmodErr  " + \
               "ExpMag  DevMag  KronMag  SdssR  SdssBa  SdssPa  " + \
-              "ExpR  ExpBa  ExpPa  DevR  DevBa  DevPa  fracDev  Match  Deblend\n"
+              "ExpR  ExpBa  ExpPa  DevR  DevBa  DevPa  fracDev  Match  Deblend  nChild \n"
     f.write(header)
 
     for i in range(nObjs):
-       line = "%6d %7.2f %7.2f %6.2f %6.2f %7.3f %6.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %d %d\n" % (
+       line = "%d %d %6d %7.2f %7.2f %6.2f %6.2f %7.3f %6.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %d %d %d\n" % (
+              visit, ccd,
               params['fakeID'][i], params['fakeY'][i], params['diffX'][i],
               params['diffY'][i], params['magCmod'][i], params['errCmod'][i],
               params['magExp'][i], params['magDev'][i], params['magKron'][i],
               params['sdssR'][i], params['sdssBa'][i], params['sdssPa'][i],
               params['expR'][i], params['expBa'][i], params['expPa'][i],
               params['devR'][i], params['devBa'][i], params['devPa'][i],
-              params['fracDev'][i], params['parentID'][i],
+              params['fracDev'][i], params['parentID'][i], params['nChild'][i],
               params['extendClass'][i] )
        f.write(line)
 
@@ -243,7 +247,15 @@ def save_to_fits(params, root, visit, ccd):
     outFits = rerun + '_' + str(visit).strip() + '_' + str(ccd).strip() + \
             '_match.fits'
 
+    nObjs = len(params['fakeID'])
+    visit_arr = np.empty(nObjs)
+    visit_arr.fill(visit)
+    ccd_arr = np.empty(nObjs)
+    ccd_arr.fill(ccd)
+
     columns = fits.ColDefs([
+        fits.Column(name='visit', format='I', array=visit_arr),
+        fits.Column(name='ccd',   format='I', array=ccd_arr),
         fits.Column(name='fakeID', format='I', array=params['fakeID']),
         fits.Column(name='fakeX',  format='E', array=params['fakeX']),
         fits.Column(name='fakeY',  format='E', array=params['fakeY']),
@@ -268,6 +280,7 @@ def save_to_fits(params, root, visit, ccd):
         fits.Column(name='devPa',  format='E', array=params['devPa']),
         fits.Column(name='fracDev',  format='E', array=params['fracDev']),
         fits.Column(name='parentID',  format='I', array=params['parentID']),
+        fits.Column(name='nChild',  format='I', array=params['nChild']),
         fits.Column(name='extendClass', format='E', array=params['extendClass'])
     ])
 
@@ -296,8 +309,8 @@ def main():
                                                      args.ccd,
                                                      args.tol)
 
-    outFits = save_to_fits(fakeParam, args.rootDir, args.visit, args.ccd)
-    #outTxt = save_to_ascii(fakeParam, args.rootDir, args.visit, args.ccd)
+    save_to_fits(fakeParam, args.rootDir, args.visit, args.ccd)
+    save_to_ascii(fakeParam, args.rootDir, args.visit, args.ccd)
 
     fakeID = fakeParam['fakeID']
     magKron = fakeParam['magKron']
