@@ -34,7 +34,8 @@ def getStars(rootdir, visit, ccd, tol):
     # Get the nChild
     nChild = sources.get('deblend.nchild')
     # Get the aperture corrections
-    apcorr = sources.get('correctfluxes.apcorr')
+    # apcorr = sources.get('correctfluxes.apcorr')
+    apcorr = sources.get('flux.sinc')
 
     # For Stars: Get these parameters
     # Get the PSF flux and its error
@@ -42,6 +43,8 @@ def getStars(rootdir, visit, ccd, tol):
     # Convert them into magnitude and its error
     mag,  merr = 2.5*np.log10(flux), 2.5/np.log(10)*(ferr/flux)
     mag = zeropoint - mag
+
+    apcorr = zeropoint - 2.5*np.log10(apcorr)
 
     # X, Y locations of the fake stars
     fakeList = collections.defaultdict(tuple)
@@ -176,11 +179,11 @@ def main():
     print "# The zeropoint of this CCD is %6.3f" % zp
     print "# Visit = %d   CCD = %d" % (args.visit, args.ccd)
     print '###################################################################'
-    print "# FakeX    FakeY   DiffX   DiffY   PSFMag   PSFMagErr  ApCorr  " + \
+    print "# FakeX    FakeY   DiffX   DiffY   PSFMag   PSFMagErr  SincMag  " + \
           "Matched   Deblend "
 
-    header = "# FakeX    FakeY   DiffX   DiffY   PSFMag   PSFMagErr  ApCorr  " + \
-             "Matched   Deblend   Extended   nChild\n"
+    header = "# FakeX    FakeY   DiffX   DiffY   PSFMag   PSFMagErr  SincMag  " + \
+             "Matched   Deblend   Extended   nChild  Visit  CCD\n"
     output.write(header)
 
     for i in range(nInject):
