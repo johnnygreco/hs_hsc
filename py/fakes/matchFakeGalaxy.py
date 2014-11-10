@@ -240,11 +240,11 @@ def save_to_fits(params, root, visit, ccd):
     else:
         rerun = temp[-1]
 
-    outFits = rerun + '_' + str(visit).strip() + '_' + str(ccd).strip() + '_' +\
-              '_match.fits'
+    outFits = rerun + '_' + str(visit).strip() + '_' + str(ccd).strip() + \
+            '_match.fits'
 
-    tabHdu = fits.BinTableHDU.from_columns([
-        fits.Column(name='fakeID', format='A', array=params['fakeID']),
+    columns = fits.ColDefs([
+        fits.Column(name='fakeID', format='I', array=params['fakeID']),
         fits.Column(name='fakeX',  format='E', array=params['fakeX']),
         fits.Column(name='fakeY',  format='E', array=params['fakeY']),
         fits.Column(name='diffX',  format='E', array=params['diffX']),
@@ -271,7 +271,12 @@ def save_to_fits(params, root, visit, ccd):
         fits.Column(name='extendClass', format='E', array=params['extendClass'])
     ])
 
-    tabHdu.writeto(outFits)
+    tabHdu = fits.new_table(columns)
+
+    n = [0]
+    priHdu = fits.PrimaryHDU(n)
+    hduList = fits.HDUList([priHdu, tabHdu])
+    hduList.writeto(outFits)
 
     return outFits
 
@@ -291,8 +296,8 @@ def main():
                                                      args.ccd,
                                                      args.tol)
 
-    #outFits = save_to_fits(fakeParam, args.rootDir, args.visit, args.ccd)
-    outTxt = save_to_ascii(fakeParam, args.rootDir, args.visit, args.ccd)
+    outFits = save_to_fits(fakeParam, args.rootDir, args.visit, args.ccd)
+    #outTxt = save_to_ascii(fakeParam, args.rootDir, args.visit, args.ccd)
 
     fakeID = fakeParam['fakeID']
     magKron = fakeParam['magKron']
