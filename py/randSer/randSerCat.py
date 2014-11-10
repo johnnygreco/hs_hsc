@@ -2,9 +2,9 @@ import numpy as np
 from numpy.random import uniform
 from astropy.io import fits
 
-def serGen(nModels, minRe=2.0, maxRe=10.0, minMag=20.0, maxMag=23.5,
+def serGen(nModels, minRe=3.0, maxRe=12.0, minMag=20.0, maxMag=23.5,
            minSer=0.5, maxSer=3.5, minBa=0.4, maxBa=0.9,
-           minPa=0.0, maxPa=45.0, nSer=None, outFits=None):
+           minPa=0.0, maxPa=45.0, nSer=None, ba=None, pa=None, outFits=None):
     """
     Generate nModels sing Serisc galaxy models
     The parameters are drawn from a flat distribution
@@ -13,13 +13,24 @@ def serGen(nModels, minRe=2.0, maxRe=10.0, minMag=20.0, maxMag=23.5,
     indArr = (np.arange(nModels) + 1)
     magArr = uniform(low=minMag, high=maxMag, size=nModels)
     reArr  = uniform(low=minRe,  high=maxRe,  size=nModels)
-    baArr  = uniform(low=minBa,  high=maxBa,  size=nModels)
-    paArr  = uniform(low=minPa,  high=maxPa,  size=nModels)
+
     if nSer is None:
         serArr = uniform(low=minSer, high=maxSer, size=nModels)
     else:
         serArr = np.empty(nModels)
         serArr.fill(nSer)
+
+    if ba is None:
+        baArr = uniform(low=minBa,  high=maxBa,  size=nModels)
+    else:
+        baArr = np.empty(nModels)
+        baArr.fill(ba)
+
+    if pa is None:
+        paArr  = uniform(low=minPa,  high=maxPa,  size=nModels)
+    else:
+        paArr = np.empty(nModels)
+        paArr.fill(pa)
 
     modelArr = []
     for i in range(nModels):
