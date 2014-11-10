@@ -31,6 +31,8 @@ def getStars(rootdir, visit, ccd, tol):
     parentID = sources.get('parent')
     # Check the star/galaxy separation
     extendClass = sources.get('classification.extendedness')
+    # Get the nChild
+    nChild = sources.get('deblend.nchild')
 
     # For Stars: Get these parameters
     # Get the PSF flux and its error
@@ -95,11 +97,11 @@ def getStars(rootdir, visit, ccd, tol):
             diffY = srcY[ss] - fakeObj[2]
             paramList = (fakeObj[0], fakeObj[1], fakeObj[2],
                          mag[ss], merr[ss], diffX, diffY,
-                         parentID[ss], extendClass[ss])
+                         parentID[ss], nChild[ss], extendClass[ss])
             srcParam.append(paramList)
         else:
             paramList = (fakeObj[0], fakeObj[1], fakeObj[2],
-                         0, 0, -1, -1, -1, -1)
+                         0, 0, -1, -1, -1, -1, -1)
             srcParam.append(paramList)
         # Go to another fake object
         nFake += 1
@@ -113,6 +115,7 @@ def getStars(rootdir, visit, ccd, tol):
                                          ('diffX', float),
                                          ('diffY', float),
                                          ('parentID', int),
+                                         ('nChild', int),
                                          ('extendClass', float)])
 
     return srcIndex, srcParam, srcList, zeropoint
@@ -148,6 +151,7 @@ def main():
     psfMag = fakeParam['psfMag']
     psfErr = fakeParam['psfMagErr']
     parent = fakeParam['parentID']
+    nchild = fakeParam['nChild']
     fakeX  = fakeParam['fakeX']
     fakeY  = fakeParam['fakeY']
     diffX  = fakeParam['diffX']
@@ -172,7 +176,7 @@ def main():
           "Matched   Deblend "
 
     header = "# FakeX    FakeY   DiffX   DiffY   PSFMag   PSFMagErr  " + \
-             "Matched   Deblend   Extended \n"
+             "Matched   Deblend   Extended   nChild\n"
     output.write(header)
 
     for i in range(nInject):
@@ -192,9 +196,9 @@ def main():
              fakeX[i], fakeY[i], diffX[i], diffY[i], psfMag[i], psfErr[i],
              matched, deblend)
 
-       line = "%7.2f   %7.2f   %6.2f   %6.2f  %7.3f  %6.3f  %s  %s  %d \n" % (
+       line = "%7.2f   %7.2f   %6.2f   %6.2f  %7.3f  %6.3f  %s  %s  %d  %d  %d  %d \n" % (
               fakeX[i], fakeY[i], diffX[i], diffY[i], psfMag[i], psfErr[i],
-              matched, deblend, extend[i])
+              matched, deblend, extend[i], nchild[i], args.visit, args.ccd)
        output.write(line)
 
     output.close()
