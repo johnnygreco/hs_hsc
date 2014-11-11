@@ -222,9 +222,9 @@ def save_to_ascii(params, root, visit, ccd):
     f.write(header)
 
     for i in range(nObjs):
-       line = "%d %d %6d %7.2f %7.2f %6.2f %6.2f %7.3f %6.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %d %d %d\n" % (
-              visit, ccd,
-              params['fakeID'][i], params['fakeY'][i], params['diffX'][i],
+       line = "%d %d %6d %7.2f %7.2f %6.2f %6.2f %7.3f %6.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f %d %d %d \n" % (
+              visit, ccd, params['fakeID'][i],
+              params['fakeX'][i], params['fakeY'][i], params['diffX'][i],
               params['diffY'][i], params['magCmod'][i], params['errCmod'][i],
               params['magExp'][i], params['magDev'][i], params['magKron'][i],
               params['sdssR'][i], params['sdssBa'][i], params['sdssPa'][i],
@@ -355,7 +355,7 @@ def main():
 
        print "%7.2f   %7.2f   %6.2f   %6.2f  %7.3f  %6.3f  %7.3f  %7.3f  %7.3f  %s  %s" % (
              fakeX[i], fakeY[i], diffX[i], diffY[i], magCmod[i], errCmod[i],
-             magExp[i], magDev[i], magKron[0], matched, deblend)
+             magExp[i], magDev[i], magKron[i], matched, deblend)
 
 if __name__=='__main__':
     main()
