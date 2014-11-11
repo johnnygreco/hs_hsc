@@ -56,17 +56,17 @@ def getNoMatchXY(rootDir, visit, ccd):
 
     return noMatchX, noMatchY, fakeX, fakeY, badCmodX, badCmodY
 
-def main(root1, root2, visit, ccd):
+def main(root1, root2, visit, ccd, root=""):
 
     # get the image array before the fake objects are added
-    imgBefore = getExpArray(root1, visit, ccd)
-    imgAfter  = getExpArray(root2, visit, ccd)
+    imgBefore = getExpArray(root + root1, visit, ccd)
+    imgAfter  = getExpArray(root + root2, visit, ccd)
 
     # get the difference between the two image
     imgDiff = (imgAfter - imgBefore)
 
     # get the X, Y lists of noMatch stars
-    noMatchX, noMatchY, fakeX, fakeY, badCmodX, badCmodY = getNoMatchXY(root2, visit, ccd)
+    noMatchX, noMatchY, fakeX, fakeY, badCmodX, badCmodY = getNoMatchXY(root + root2, visit, ccd)
 
     # stretch it with arcsinh and make a png with pyplot
     fig, axes = pyplot.subplots(1, 3, sharex=True, sharey=True, figsize=(15,10))
@@ -76,14 +76,19 @@ def main(root1, root2, visit, ccd):
     imgs   = imgBefore, imgAfter, imgDiff
     titles = "Before", "After", "Diff"
     for i in range(3):
+        print '### Plot : ', i
         axes[i].imshow(numpy.arcsinh(imgs[i]), cmap='gray')
         axes[i].set_title(titles[i])
-        area = numpy.pi * 4 ** 2
-        axes[i].scatter(fakeX, fakeY, s=area, c='g', alpha=0.9)
-        axes[i].scatter(badCmodX, badCmodY, s=area, c='b', alpha=0.7)
-        axes[i].scatter(noMatchX, noMatchY, s=area, c='r', alpha=0.5)
+        area1 = numpy.pi * 6 ** 2
+        area2 = numpy.pi * 4 ** 2
+        axes[i].scatter(fakeX, fakeY, s=area1, facecolors='none',
+                        edgecolors='g', alpha=0.9)
+        if len(noMatchX) > 0:
+            axes[i].scatter(noMatchX, noMatchY, s=area2, c='r', alpha=0.3)
+        if len(badCmodX) > 0:
+            axes[i].scatter(badCmodX, badCmodY, s=area2, c='b', alpha=0.4)
 
-    pyplot.gcf().savefig("fakeCompare-%d-%s.png"%(visit,str(ccd)))
+    pyplot.gcf().savefig("%s-%d-%s.png"%(root2, visit,str(ccd)))
 
 
 if __name__ == '__main__':
@@ -97,7 +102,4 @@ if __name__ == '__main__':
     parser.add_argument("ccd", type=int, help="CCD to show")
     args = parser.parse_args()
 
-    root1 = root + args.root1
-    root2 = root + args.root2
-
-    main(root1, root2, args.visit, args.ccd)
+    main(args.root1, args.root2, args.visit, args.ccd, root=root)
