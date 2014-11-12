@@ -11,8 +11,8 @@ def getFitsFile(flux, nser, reff, ba, pa, zp=26.0, scale=1.0, method='auto',
 
     if psfConv:
         psfObj = galsim.Gaussian(fwhm=fwhm)
-        psfImg = psfObj.drawImage(scale=scale)
-        galsim.fits.write(psfImg, file_name='psf.fits')
+    #    psfImg = psfObj.drawImage(scale=scale)
+    #    galsim.fits.write(psfImg, file_name='psf.fits')
 
     trunc = int(10.0 * reff)
 
@@ -25,7 +25,6 @@ def getFitsFile(flux, nser, reff, ba, pa, zp=26.0, scale=1.0, method='auto',
     serImg  = serTrun.drawImage(method=method, scale=scale)
     if addNoise:
         serImg.addNoise(galsim.PoissonNoise())
-        serImg.addNoise(galsim.CCDNoise())
     galsim.fits.write(serImg, file_name="temp.fits")
 
     xs, ys = serImg.array.shape
@@ -80,7 +79,7 @@ def writeInput(xs, ys, xc, yc, zp=26.0, scale=1.0):
 
     return None
 
-def runGalfit(galfit='/home/hs/code/galfit/galfit'):
+def runGalfit(galfit='/Users/songhuang/code/galfit/galfit'):
 
     p = subprocess.Popen([galfit + ' temp.in'], shell=True, stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT)
@@ -98,10 +97,10 @@ def getResults():
 
     head = fits.open('out.fits')[2].header
 
-    mag  = float(head['1_MAG'].split()[0])
-    re   = float(head['1_RE'].split()[0])
-    nser = float(head['1_N'].split()[0])
-    ba   = float(head['1_AR'].split()[0])
+    mag  = float(head['1_MAG'].split()[0].replace('*', ''))
+    re   = float(head['1_RE'].split()[0].replace('*', ''))
+    nser = float(head['1_N'].split()[0].replace('*', ''))
+    ba   = float(head['1_AR'].split()[0].replace('*', ''))
 
     return mag, re, nser, ba
 
@@ -110,7 +109,8 @@ if __name__ == '__main__':
 
     zp = 26.0
 
-    models = serGen(20, minMag=17.0, maxMag=24.0, nSer=1.0, ba=1.0, pa=0.0)
+    models = serGen(200, minRe=3.0,  maxRe=30.0, minMag=17.0, maxMag=24.0,
+                    nSer=4.0, ba=1.0, pa=0.0)
 
     nModel = models.shape[0]
 
@@ -125,7 +125,7 @@ if __name__ == '__main__':
         ba   = models['b_a'][i]
         pa   = models['theta'][i]
 
-        (xs, ys, xc, yc) = getFitsFile(flux, nser, reff, ba, pa)
+        (xs, ys, xc, yc) = getFitsFile(flux, nser, reff, ba, pa, psfConv=True)
 
         writeInput(xs, ys, xc, yc)
 

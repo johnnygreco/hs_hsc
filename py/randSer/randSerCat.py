@@ -34,7 +34,7 @@ def serGen(nModels, minRe=3.0, maxRe=12.0, minMag=20.0, maxMag=23.5,
 
     modelArr = []
     for i in range(nModels):
-        modelRec = (i, magArr[i], reArr[i], serArr[i], baArr[i], paArr[i])
+        modelRec = (i, magArr[i], serArr[i], reArr[i], baArr[i], paArr[i])
         modelArr.append(modelRec)
 
     serModels = np.array(modelArr, dtype=[('ID','int'), ('mag','float'),
