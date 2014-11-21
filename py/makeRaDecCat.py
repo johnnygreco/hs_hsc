@@ -41,7 +41,7 @@ def getRandomRaDec(nRand, minRa, maxRa, minDec, maxDec, rad=None):
     """
     Randomly select Ra,Dec pairs from the input Ra,Dec range
     """
-    if minRa <= maxRa or minDec <= maxDec:
+    if minRa > maxRa or minDec > maxDec:
         raise Exception('Please provide appropriate Ra,Dec range !')
 
     if rad is None:
@@ -49,11 +49,10 @@ def getRandomRaDec(nRand, minRa, maxRa, minDec, maxDec, rad=None):
         decArr = uniform(low=minDec, high=maxDec, size=nRand)
         return zip(raArr, decArr)
     else:
-        # TODO: minimum separation between random positions
         import lsst.afw.coord as afwCoord
         import lsst.afw.geom  as afwGeom
 
-        minSep = rad*afwGeom.arcseconds
+        minSep = float(rad)
         raArr  = []
         decArr = []
         numTry = 0
@@ -61,6 +60,7 @@ def getRandomRaDec(nRand, minRa, maxRa, minDec, maxDec, rad=None):
             if numTry == 0:
                 raArr.append(uniform(low=minRa,   high=maxRa))
                 decArr.append(uniform(low=minDec, high=maxDec))
+                numTry += 1
             else:
                 raTry  = uniform(low=minRa,  high=maxRa)
                 decTry = uniform(low=minDec, high=maxDec)
@@ -72,6 +72,8 @@ def getRandomRaDec(nRand, minRa, maxRa, minDec, maxDec, rad=None):
                                                                decArr[ii]))
                     sep = coordTry.angularSeparation(coordTest).asArcseconds()
                     if sep <= minSep:
+                        print "## BAD ONE %8d : %8d -- %f10 <= %f10 !!" % (len(raArr),
+                                                                     ii, sep, minSep)
                         sepGood = False
                         break
                 if sepGood:
@@ -98,16 +100,16 @@ def plotRandomRaDec(randomRaDec, rangeRaDec=None):
             raMin,  raMax  = rangeRaDec[0], rangeRaDec[1]
             decMin, decMax = rangeRaDec[0], rangeRaDec[1]
         raDec0   = (raMin, decMin)
-        raRange  = (raMax  - raMIn)
+        raRange  = (raMax  - raMin)
         decRange = (decMax - decMin)
 
     plt.gcf().savefig('randomRaDec.png')
 
     return None
 
-def main(nRand, dataId=None, rangeRaDec=None, rad=None,
-         rootDir='/lustre/Subaru/SSP/rerun/song/cosmos-i2',
-         inputCat=None, plot=False):
+def makeRaDecCat(nRand, dataId=None, rangeRaDec=None, rad=None,
+                 rootDir='/lustre/Subaru/SSP/rerun/song/cosmos-i2',
+                 inputCat=None, plot=False):
     """
     Generate nRand random RA,Dec pairs in a desired region of sky
     The region can be defined by:
@@ -189,5 +191,5 @@ def main(nRand, dataId=None, rangeRaDec=None, rad=None,
         else:
             raise Exception('Can not find input catalog %s!' % inputCat)
 
-    return randomRaDec
+    return None #randomRaDec
 
