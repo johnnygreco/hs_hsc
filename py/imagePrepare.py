@@ -87,8 +87,8 @@ def imagePrepare(rootDir, tract, patch, filt, prefix):
     varHeader = hduList[3].header
 
     # Update the header with more information
-    imgHeader.set('PIXELSCALE', pixelScale)
-    imgHeader.set('ZEROPOINT',  zeropoint)
+    imgHeader.set('PIXSCALE', pixelScale)
+    imgHeader.set('ZP_PHOT',  zeropoint)
 
     # Write the Image array
     imgFile = prefix + '_img.fits'
