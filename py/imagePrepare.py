@@ -80,7 +80,8 @@ def imagePrepare(rootDir, tract, patch, filt, prefix):
 
     # Get the header of the images
     fitsName = butler.get('deepCoadd_filename', dataId)
-    hduList = fits.open(fitsName)
+    print fitsName
+    hduList = fits.open(fitsName[0])
     imgHeader = hduList[1].header
     mskHeader = hduList[2].header
     varHeader = hduList[3].header
