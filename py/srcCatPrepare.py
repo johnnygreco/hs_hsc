@@ -147,18 +147,7 @@ def getSrcParams(srcCat, calExp, calMd):
                           (modMag), (modMerr), (modS2n),
                           (sdssR), (sdssBa), (sdssPa),
                           (expR), (expBa), (expPa),
-                          (devR), (devBa), (devPa),
-                          (srcCat.get('cmodel.fracDev')),
-                          (srcCat.get('detect.is-patch-inner')),
-                          (srcCat.get('detect.is-tract-inner')),
-                          (srcCat.get('detect.is-primary')),
-                          (srcCat.get('flags.badcentroid')),
-                          (srcCat.get('flags.pixel.edge')),
-                          (srcCat.get('flags.pixel.interpolated.center')),
-                          (srcCat.get('flags.pixel.saturated.center')),
-                          (srcCat.get('flags.pixel.cr.center')),
-                          (srcCat.get('flags.pixel.suspect.center')),
-                          (srcCat.get('flags.pixel.bad'))
+                          (devR), (devBa), (devPa)
                           ],
                          dtype=[('id', int), ('parent', int),
                                 ('nchild', int),
@@ -180,17 +169,7 @@ def getSrcParams(srcCat, calExp, calMd):
                                 ('sdssPa', float),
                                 ('expR',  float), ('expBa', float),
                                 ('expPa', float),
-                                ('devR',  float), ('devBa', float),
-                                ('devPa', float), ('fracDev', float),
-                                ('patch_inner', bool), ('tract_inner', bool),
-                                ('is_primary',  bool),
-                                ('flags_badcentroid', bool),
-                                ('flags_pixel_edge',  bool),
-                                ('flags_pixel_inter', bool),
-                                ('flags_pixel_satu',  bool),
-                                ('flags_pixel_cr',    bool),
-                                ('flags_pixel_suspect', bool),
-                                ('flags_pixel_bad',   bool)
+                                ('devR',  float), ('devBa', float)
                                ])
 
     return srcParams
