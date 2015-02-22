@@ -34,7 +34,7 @@ def getBadArr(mImg):
     # Remove the "EDGE" Mask from the mask image XXX TODO: Check if this is good
     mskImg.clearMaskPlane(4)
 
-    return mskImg.getArr()
+    return mskImg.getArray()
 
 def getDetArr(mImg):
 
@@ -53,7 +53,7 @@ def getDetArr(mImg):
     mskImg.clearMaskPlane(9)   # CROSS_TALK
     mskImg.clearMaskPlane(10)  # UNMASKEDNAN
 
-    return mskImg.getArr()
+    return mskImg.getArray()
 
 def getBkgArr(bImg):
 
