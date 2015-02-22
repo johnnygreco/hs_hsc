@@ -148,11 +148,16 @@ def getSrcParams(srcCat, calExp, calMd, outFits):
 
     outTab = astropy.table.Table()
 
-    outTab.add_column(name='id',       data=srcCat.get('id'))
-    outTab.add_column(name='extend',   data=srcCat.get('classification.extendedness'))
-    outTab.add_column(name='psfMag',   data=psfMag)
-    outTab.add_column(name='sdssBa',   data=sdssBa)
-    outTab.add_column(name='is_primary',   data=srcCat.get('detect.is-primary'))
+    outTab.add_column(astropy.table.Column(
+        name='id', data=srcCat.get('id')))
+    outTab.add_column(astropy.table.Column(
+        name='extend', data=srcCat.get('classification.extendedness')))
+    outTab.add_column(astropy.table.Column(
+        name='psfMag', data=psfMag))
+    outTab.add_column(astropy.table.Column(
+        name='sdssBa', data=sdssBa))
+    outTab.add_column(astropy.table.Column(
+        name='is_primary',   data=srcCat.get('detect.is-primary')))
 
     outTab.write(outFits, format='fits', overwrite=overwrite)
 
