@@ -151,14 +151,7 @@ def getSrcParams(srcCat, calExp, calMd):
                           (srcCat.get('cmodel.fracDev')),
                           (srcCat.get('detect.is-patch-inner')),
                           (srcCat.get('detect.is-tract-inner')),
-                          (srcCat.get('detect.is-primary')),
-                          (srcCat.get('flags.badcentroid')),
-                          (srcCat.get('flags.pixel.edge')),
-                          (srcCat.get('flags.pixel.interpolated.center')),
-                          (srcCat.get('flags.pixel.saturated.center')),
-                          (srcCat.get('flags.pixel.cr.center')),
-                          (srcCat.get('flags.pixel.suspect.center')),
-                          (srcCat.get('flags.pixel.bad'))
+                          (srcCat.get('detect.is-primary'))
                           ],
                          dtype=[('id', int), ('parent', int),
                                 ('nchild', int),
@@ -184,14 +177,7 @@ def getSrcParams(srcCat, calExp, calMd):
                                 ('devPa', float),
                                 ('fracDev', float),
                                 ('patch_inner', bool), ('tract_inner', bool),
-                                ('is_primary',  bool),
-                                ('flags_badcentroid', bool),
-                                ('flags_pixel_edge',  bool),
-                                ('flags_pixel_inter', bool),
-                                ('flags_pixel_satu',  bool),
-                                ('flags_pixel_cr',    bool),
-                                ('flags_pixel_suspect', bool),
-                                ('flags_pixel_bad',   bool)
+                                ('is_primary',  bool)
                                ])
 
     return srcParams
