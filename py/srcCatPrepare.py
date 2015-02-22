@@ -60,7 +60,7 @@ def getSrcData(butler, dataId):
     calMd  = butler.get('deepCoadd_md', dataId)
     return srcCat, calExp, calMd
 
-def getSrcParams(srcCat, calExp, calMd):
+def getSrcParams(srcCat, calExp, calMd, outFits):
 
     # Get the WCS and pixel scale
     wcs   = calExp.getWcs()
@@ -146,73 +146,17 @@ def getSrcParams(srcCat, calExp, calMd):
     devBa   = np.array(devBa)
     devPa   = np.array(devPa)
 
-    srcParams = np.array([(srcCat.get('id')), (srcCat.get('parent')),
-                          (srcCat.get('deblend.nchild')),
-                          (srcCat.get('classification.extendedness')),
-                          (srcRa), (srcDec),
-                          (psfMag), (psfMerr), (psfS2n),
-                          (kroMag), (kroMerr), (kroS2n),
-                          (gauMag), (gauMerr), (gauS2n),
-                          (expMag), (expMerr), (expS2n),
-                          (devMag), (devMerr), (devS2n),
-                          (modMag), (modMerr), (modS2n),
-                          (sdssR), (sdssBa), (sdssPa),
-                          (expR), (expBa), (expPa),
-                          (devR), (devBa), (devPa),
-                          (srcCat.get('cmodel.fracDev')),
-                          (srcCat.get('detect.is-patch-inner')),
-                          (srcCat.get('detect.is-tract-inner')),
-                          (srcCat.get('detect.is-primary'))
-                          ],
-                         dtype=[('id', int), ('parent', int),
-                                ('nchild', int),
-                                ('extended', int),
-                                ('ra', float), ('dec', float),
-                                ('psfMag', float), ('psfMerr', float),
-                                ('psfS2n', float),
-                                ('kroMag', float), ('kroMerr', float),
-                                ('kroS2n', float),
-                                ('gauMag', float), ('gauMerr', float),
-                                ('gauS2n', float),
-                                ('expMag', float), ('expMerr', float),
-                                ('expS2n', float),
-                                ('devMag', float), ('devMerr', float),
-                                ('devS2n', float),
-                                ('modMag', float), ('modMerr', float),
-                                ('modS2n', float),
-                                ('sdssR',  float), ('sdssBa', float),
-                                ('sdssPa', float),
-                                ('expR',  float), ('expBa', float),
-                                ('expPa', float),
-                                ('devR',  float), ('devBa', float),
-                                ('devPa', float),
-                                ('fracDev', float),
-                                ('patch_inner', bool), ('tract_inner', bool),
-                                ('is_primary',  bool)
-                               ])
+    outTab = astropy.table.Table()
+
+    outTab.add_column(name='id',       data=srcCat.get('id'))
+    outTab.add_column(name='extend',   data=srcCat.get('classification.extendedness'))
+    outTab.add_column(name='psfMag',   data=psfMag)
+    outTab.add_column(name='sdssBa',   data=sdssBa)
+    outTab.add_column(name='is_primary',   data=srcCat.get('detect.is-primary'))
+
+    outTab.write(outFits, format='fits', overwrite=overwrite)
 
     return srcParams
-
-
-def saveFitsTable(srcParams, outFits):
-
-    columns = fits.ColDefs([
-        fits.Column(name='id',       format='I', array=srcParams['id']),
-        fits.Column(name='parent',   format='I', array=srcParams['parent']),
-        fits.Column(name='psfMag',   format='E', array=srcParams['psfMag']),
-        fits.Column(name='is_primary', format='B', array=srcParams['is_primary'])
-    ])
-
-    tabHdu = fits.new_table(columns)
-
-    n = [0]
-    priHdu = fits.PrimaryHDU(n)
-    hduList = fits.HDUList([priHdu, tabHdu])
-    hduList.writeto(outFits)
-
-    return outFits
-
-
 
 def srcCatPrepare(rootDir, tract, patch, filt, prefix):
 
@@ -228,11 +172,7 @@ def srcCatPrepare(rootDir, tract, patch, filt, prefix):
     srcCat, calExp, calMd = getSrcData(butler, dataId)
 
     # Return a numpy array of useful information
-    srcParams = getSrcParams(srcCat, calExp, calMd)
-
-    # Save the data to a fits table
-    saveFitsTable(srcParams, outFits)
-
+    srcParams = getSrcParams(srcCat, calExp, calMd, outFits)
 
 
 if __name__ == '__main__':
@@ -242,8 +182,8 @@ if __name__ == '__main__':
     parser.add_argument('patch', help="patch to show")
     parser.add_argument('-f', '--filter', dest='filt', help="Filter",
                        default='HSC-I')
-    parser.add_argument('-p', '--prefix', dest='outfile',
+    parser.add_argument('-p', '--prefix', dest='prefix',
                         help='Prefix of the output file', default='hsc_coadd_src')
     args = parser.parse_args()
 
-    srcCatPrepare(args.root, args.tract, args.patch, args.filt, args.outfile)
+    srcCatPrepare(args.root, args.tract, args.patch, args.filt, args.prefix)
