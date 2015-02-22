@@ -148,10 +148,7 @@ def getSrcParams(srcCat, calExp, calMd):
                           (sdssR), (sdssBa), (sdssPa),
                           (expR), (expBa), (expPa),
                           (devR), (devBa), (devPa),
-                          (srcCat.get('cmodel.fracDev')),
-                          (srcCat.get('detect.is-patch-inner')),
-                          (srcCat.get('detect.is-tract-inner')),
-                          (srcCat.get('detect.is-primary'))
+                          (srcCat.get('cmodel.fracDev'))
                           ],
                          dtype=[('id', int), ('parent', int),
                                 ('nchild', int),
@@ -175,9 +172,7 @@ def getSrcParams(srcCat, calExp, calMd):
                                 ('expPa', float),
                                 ('devR',  float), ('devBa', float),
                                 ('devPa', float),
-                                ('fracDev', float),
-                                ('patch_inner', bool), ('tract_inner', bool),
-                                ('is_primary',  bool)
+                                ('fracDev', float)
                                ])
 
     return srcParams
