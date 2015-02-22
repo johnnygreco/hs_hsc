@@ -13,7 +13,6 @@ import argparse
 import re
 import collections
 import astropy.table
-import matplotlib.mlab as mlab
 
 def getMag(flux, fluxerr, zeropoint):
     """
@@ -134,6 +133,17 @@ def getSrcParams(srcCat, calExp, calMd):
         devBa.append(ba3)
         devPa.append(pa3)
 
+    srcRa   = np.array(srcRa)
+    srcDec  = np.array(srcDec)
+    sdssR   = np.array(sdssR)
+    sdssBa  = np.array(sdssBa)
+    sdssPa  = np.array(sdssPa)
+    expR    = np.array(expR)
+    expBa   = np.array(expBa)
+    expPa   = np.array(expPa)
+    devR    = np.array(devR)
+    devBa   = np.array(devBa)
+    devPa   = np.array(devPa)
 
     srcParams = np.array([(srcCat.get('id')), (srcCat.get('parent')),
                           (srcCat.get('deblend.nchild')),
@@ -148,7 +158,10 @@ def getSrcParams(srcCat, calExp, calMd):
                           (sdssR), (sdssBa), (sdssPa),
                           (expR), (expBa), (expPa),
                           (devR), (devBa), (devPa),
-                          (srcCat.get('cmodel.fracDev'))
+                          (srcCat.get('cmodel.fracDev')),
+                          (srcCat.get('detect.is-patch-inner')),
+                          (srcCat.get('detect.is-tract-inner')),
+                          (srcCat.get('detect.is-primary'))
                           ],
                          dtype=[('id', int), ('parent', int),
                                 ('nchild', int),
@@ -172,7 +185,9 @@ def getSrcParams(srcCat, calExp, calMd):
                                 ('expPa', float),
                                 ('devR',  float), ('devBa', float),
                                 ('devPa', float),
-                                ('fracDev', float)
+                                ('fracDev', float),
+                                ('patch_inner', bool), ('tract_inner', bool),
+                                ('is_primary',  bool)
                                ])
 
     return srcParams
@@ -193,7 +208,7 @@ def srcCatPrepare(rootDir, tract, patch, filt, prefix):
     # Return a numpy array of useful information
     srcParams = getSrcParams(srcCat, calExp, calMd)
 
-    mlab.rec2csv(srcParams, prefix + '.csv')
+    print srcParams[0]
 
 
 if __name__ == '__main__':
