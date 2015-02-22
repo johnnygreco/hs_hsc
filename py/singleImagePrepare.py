@@ -72,7 +72,7 @@ def getZeroPoint(butler, dataId):
     zeropoint = (2.5 * np.log10(calMeta.get("FLUXMAG0")))
     return zeropoint
 
-def coaddImagePrepare(rootDir, visit, ccd, prefix):
+def singleImagePrepare(rootDir, visit, ccd, prefix):
 
     # Make a butler and specify the dataId
     butler = dafPersist.Butler(rootDir)
@@ -149,4 +149,4 @@ if __name__ == '__main__':
                         help='Prefix of the output file', default='hsc_single')
     args = parser.parse_args()
 
-    coaddImagePrepare(args.root, args.tract, args.patch, args.outfile)
+    singleImagePrepare(args.root, args.visit, args.ccd, args.outfile)
