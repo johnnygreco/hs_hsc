@@ -25,10 +25,11 @@ def getImgArr(mImg):
 
     return imgArr, mskArr, sigArr
 
-def getBadArr(calExp):
+def getBadArr(butler, dataId):
 
+    calExp2 = butler.get('deepCoadd', dataId, immediate=True)
     # Get the mask image
-    mskImgBad = calExp.getMaskedImage().getMask()
+    mskImgBad = calExp2.getMaskedImage().getMask()
     # Remove the "DETECTED" Mask from the mask image
     mskImgBad.clearMaskPlane(5)
     # Remove the "EDGE" Mask from the mask image XXX TODO: Check if this is good
@@ -36,10 +37,11 @@ def getBadArr(calExp):
 
     return mskImgBad.getArray()
 
-def getDetArr(calExp):
+def getDetArr(butler, dataId):
 
+    calExp3 = butler.get('deepCoadd', dataId, immediate=True)
     # Get the mask image
-    mskImgDet = calExp.getMaskedImage().getMask()
+    mskImgDet = calExp3.getMaskedImage().getMask()
     # Remove all the mask planes except for the "DETECTED" one
     # TODO: This is very stupid way of doing this !
     mskImgDet.clearMaskPlane(0)   # BAD
@@ -91,29 +93,8 @@ def coaddImagePrepare(rootDir, tract, patch, filt, prefix):
     # Get the flux zeropoint
     zeropoint = getZeroPoint(butler, dataId)
 
-    # Get the maskedImageObject
-    mImg = calExp.getMaskedImage()
-    imgArr, mskArr, sigArr = getImgArr(mImg)
-
-    # Get the "Bad" mask array
-    badArr = getBadArr(calExp)
-    # Get the "Detected" mask array
-    detArr = getDetArr(calExp)
-
-    # Get the numpy ndarray for the background
-    bImg = butler.get('deepCoadd_calexpBackground', dataId, immediate=True)
-    bkgArr = getBkgArr(bImg)
-
-    # Add the background back on to the image
-    #oriArr = (imgArr + bkgArr)
-
-    # Get the PSF array
-    psfFile = prefix + '_psf.fits'
-    psfArr = savePsfArr(calExp, psfFile)
-
     # Get the header of the images
     fitsName = butler.get('deepCoadd_filename', dataId)
-    print fitsName
     hduList = fits.open(fitsName[0])
     imgHeader = hduList[1].header
     mskHeader = hduList[2].header
@@ -123,22 +104,43 @@ def coaddImagePrepare(rootDir, tract, patch, filt, prefix):
     imgHeader.set('PIXSCALE', pixelScale)
     imgHeader.set('ZP_PHOT',  zeropoint)
 
-    # Write the Image array
-    imgFile = prefix + '_img.fits'
-    fits.writeto(imgFile, imgArr, imgHeader)
-    # Write the Mask array
-    mskFile = prefix + '_msk.fits'
-    fits.writeto(mskFile, mskArr, mskHeader)
-    badFile = prefix + '_bad.fits'
-    fits.writeto(badFile, badArr, mskHeader)
-    detFile = prefix + '_det.fits'
-    fits.writeto(detFile, detArr, mskHeader)
-    # Write the Sigma array
-    sigFile = prefix + '_sig.fits'
-    fits.writeto(sigFile, sigArr, varHeader)
+    # Get the numpy ndarray for the background
+    bImg = butler.get('deepCoadd_calexpBackground', dataId, immediate=True)
+    bkgArr = getBkgArr(bImg)
+
     # Write the Image + Background array
     bkgFile = prefix + '_bkg.fits'
     fits.writeto(bkgFile, bkgArr, imgHeader)
+
+    # Get the maskedImageObject
+    mImg = calExp.getMaskedImage()
+    imgArr, mskArr, sigArr = getImgArr(mImg)
+    # Write the Mask array
+    mskFile = prefix + '_msk.fits'
+    fits.writeto(mskFile, mskArr, mskHeader)
+    # Write the Image array
+    imgFile = prefix + '_img.fits'
+    fits.writeto(imgFile, imgArr, imgHeader)
+    # Write the Sigma array
+    sigFile = prefix + '_sig.fits'
+    fits.writeto(sigFile, sigArr, varHeader)
+
+    # Get the "Bad" mask array
+    badArr = getBadArr(butler, dataId)
+    badFile = prefix + '_bad.fits'
+    fits.writeto(badFile, badArr, mskHeader)
+    # Get the "Detected" mask array
+    detArr = getDetArr(butler, dataId)
+    detFile = prefix + '_det.fits'
+    fits.writeto(detFile, detArr, mskHeader)
+
+    # Add the background back on to the image
+    #oriArr = (imgArr + bkgArr)
+
+    # Get the average PSF array
+    psfFile = prefix + '_psf.fits'
+    psfArr = savePsfArr(calExp, psfFile)
+
 
 
 if __name__ == '__main__':

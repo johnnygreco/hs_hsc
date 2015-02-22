@@ -112,7 +112,6 @@ def singleImagePrepare(rootDir, visit, ccd, prefix):
 
     # Get the header of the images
     fitsName = butler.get('calexp_filename', dataId)
-    print fitsName
     hduList = fits.open(fitsName[0])
     imgHeader = hduList[1].header
     mskHeader = hduList[2].header
