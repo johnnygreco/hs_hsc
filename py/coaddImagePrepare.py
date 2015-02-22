@@ -25,35 +25,35 @@ def getImgArr(mImg):
 
     return imgArr, mskArr, sigArr
 
-def getBadArr(mImg):
+def getBadArr(calExp):
 
     # Get the mask image
-    mskImg = mImg.getMask()
+    mskImgBad = calExp.getMaskedImage().getMask()
     # Remove the "DETECTED" Mask from the mask image
-    mskImg.clearMaskPlane(5)
+    mskImgBad.clearMaskPlane(5)
     # Remove the "EDGE" Mask from the mask image XXX TODO: Check if this is good
-    mskImg.clearMaskPlane(4)
+    mskImgBad.clearMaskPlane(4)
 
-    return mskImg.getArray()
+    return mskImgBad.getArray()
 
-def getDetArr(mImg):
+def getDetArr(calExp):
 
     # Get the mask image
-    mskImg = mImg.getMask()
+    mskImgDet = calExp.getMaskedImage().getMask()
     # Remove all the mask planes except for the "DETECTED" one
     # TODO: This is very stupid way of doing this !
-    mskImg.clearMaskPlane(0)   # BAD
-    mskImg.clearMaskPlane(1)   # SAT
-    mskImg.clearMaskPlane(2)   # INTRP
-    mskImg.clearMaskPlane(3)   # CR
-    mskImg.clearMaskPlane(4)   # EDGE
-    mskImg.clearMaskPlane(6)   # DETECTED_NEGATIVE
-    mskImg.clearMaskPlane(7)   # SUSPECT
-    mskImg.clearMaskPlane(8)   # NO_DATA
-    mskImg.clearMaskPlane(9)   # CROSS_TALK
-    mskImg.clearMaskPlane(10)  # UNMASKEDNAN
+    mskImgDet.clearMaskPlane(0)   # BAD
+    mskImgDet.clearMaskPlane(1)   # SAT
+    mskImgDet.clearMaskPlane(2)   # INTRP
+    mskImgDet.clearMaskPlane(3)   # CR
+    mskImgDet.clearMaskPlane(4)   # EDGE
+    mskImgDet.clearMaskPlane(6)   # DETECTED_NEGATIVE
+    mskImgDet.clearMaskPlane(7)   # SUSPECT
+    mskImgDet.clearMaskPlane(8)   # NO_DATA
+    mskImgDet.clearMaskPlane(9)   # CROSS_TALK
+    mskImgDet.clearMaskPlane(10)  # UNMASKEDNAN
 
-    return mskImg.getArray()
+    return mskImgDet.getArray()
 
 def getBkgArr(bImg):
 
@@ -94,10 +94,11 @@ def coaddImagePrepare(rootDir, tract, patch, filt, prefix):
     # Get the maskedImageObject
     mImg = calExp.getMaskedImage()
     imgArr, mskArr, sigArr = getImgArr(mImg)
+
     # Get the "Bad" mask array
-    badArr = getBadArr(mImg)
+    badArr = getBadArr(calExp)
     # Get the "Detected" mask array
-    detArr = getDetArr(mImg)
+    detArr = getDetArr(calExp)
 
     # Get the numpy ndarray for the background
     bImg = butler.get('deepCoadd_calexpBackground', dataId, immediate=True)
