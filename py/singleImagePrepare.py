@@ -25,35 +25,37 @@ def getImgArr(mImg):
 
     return imgArr, mskArr, sigArr
 
-def getBadArr(mImg):
+def getBadArr(butler, dataId):
 
+    calExp2 = butler.get('calexp', dataId, immediate=True)
     # Get the mask image
-    mskImg = mImg.getMask()
+    mskImgBad = calExp2.getMaskedImage().getMask()
     # Remove the "DETECTED" Mask from the mask image
-    mskImg.clearMaskPlane(5)
+    mskImgBad.clearMaskPlane(5)
     # Remove the "EDGE" Mask from the mask image XXX TODO: Check if this is good
-    mskImg.clearMaskPlane(4)
+    mskImgBad.clearMaskPlane(4)
 
-    return mskImg.getArray()
+    return mskImgBad.getArray()
 
-def getDetArr(mImg):
+def getDetArr(butler, dataId):
 
+    calExp3 = butler.get('calexp', dataId, immediate=True)
     # Get the mask image
-    mskImg = mImg.getMask()
+    mskImgDet = calExp3.getMaskedImage().getMask()
     # Remove all the mask planes except for the "DETECTED" one
     # TODO: This is very stupid way of doing this !
-    mskImg.clearMaskPlane(0)   # BAD
-    mskImg.clearMaskPlane(1)   # SAT
-    mskImg.clearMaskPlane(2)   # INTRP
-    mskImg.clearMaskPlane(3)   # CR
-    mskImg.clearMaskPlane(4)   # EDGE
-    mskImg.clearMaskPlane(6)   # DETECTED_NEGATIVE
-    mskImg.clearMaskPlane(7)   # SUSPECT
-    mskImg.clearMaskPlane(8)   # NO_DATA
-    mskImg.clearMaskPlane(9)   # CROSS_TALK
-    mskImg.clearMaskPlane(10)  # UNMASKEDNAN
+    mskImgDet.clearMaskPlane(0)   # BAD
+    mskImgDet.clearMaskPlane(1)   # SAT
+    mskImgDet.clearMaskPlane(2)   # INTRP
+    mskImgDet.clearMaskPlane(3)   # CR
+    mskImgDet.clearMaskPlane(4)   # EDGE
+    mskImgDet.clearMaskPlane(6)   # DETECTED_NEGATIVE
+    mskImgDet.clearMaskPlane(7)   # SUSPECT
+    mskImgDet.clearMaskPlane(8)   # NO_DATA
+    mskImgDet.clearMaskPlane(9)   # CROSS_TALK
+    mskImgDet.clearMaskPlane(10)  # UNMASKEDNAN
 
-    return mskImg.getArray()
+    return mskImgDet.getArray()
 
 def getBkgArr(bImg):
 
@@ -91,25 +93,6 @@ def singleImagePrepare(rootDir, visit, ccd, prefix):
     # Get the flux zeropoint
     zeropoint = getZeroPoint(butler, dataId)
 
-    # Get the maskedImageObject
-    mImg = calExp.getMaskedImage()
-    imgArr, mskArr, sigArr = getImgArr(mImg)
-    # Get the "Bad" mask array
-    badArr = getBadArr(mImg)
-    # Get the "Detected" mask array
-    detArr = getDetArr(mImg)
-
-    # Get the numpy ndarray for the background
-    bImg = butler.get('calexpBackground', dataId, immediate=True)
-    bkgArr = getBkgArr(bImg)
-
-    # Add the background back on to the image
-    oriArr = (imgArr + bkgArr)
-
-    # Get the PSF array
-    psfFile = prefix + '_psf.fits'
-    psfArr = savePsfArr(calExp, psfFile)
-
     # Get the header of the images
     fitsName = butler.get('calexp_filename', dataId)
     hduList = fits.open(fitsName[0])
@@ -121,22 +104,41 @@ def singleImagePrepare(rootDir, visit, ccd, prefix):
     imgHeader.set('PIXSCALE', pixelScale)
     imgHeader.set('ZP_PHOT',  zeropoint)
 
+    # Get the numpy ndarray for the background
+    bImg = butler.get('calexpBackground', dataId, immediate=True)
+    bkgArr = getBkgArr(bImg)
+
+    # Get the maskedImageObject
+    mImg = calExp.getMaskedImage()
+    imgArr, mskArr, sigArr = getImgArr(mImg)
     # Write the Image array
     imgFile = prefix + '_img.fits'
     fits.writeto(imgFile, imgArr, imgHeader)
     # Write the Mask array
     mskFile = prefix + '_msk.fits'
     fits.writeto(mskFile, mskArr, mskHeader)
-    badFile = prefix + '_bad.fits'
-    fits.writeto(badFile, badArr, mskHeader)
-    detFile = prefix + '_det.fits'
-    fits.writeto(detFile, detArr, mskHeader)
     # Write the Sigma array
     sigFile = prefix + '_sig.fits'
     fits.writeto(sigFile, sigArr, varHeader)
+    # Add the background back on to the image
+    oriArr = (imgArr + bkgArr)
     # Write the Image + Background arrayi
     oriFile = prefix + '_ori.fits'
     fits.writeto(oriFile, oriArr, imgHeader)
+
+    # Get the "Bad" mask array
+    badArr = getBadArr(mImg)
+    badFile = prefix + '_bad.fits'
+    fits.writeto(badFile, badArr, mskHeader)
+    # Get the "Detected" mask array
+    detArr = getDetArr(mImg)
+    detFile = prefix + '_det.fits'
+    fits.writeto(detFile, detArr, mskHeader)
+
+    # Get the PSF array
+    psfFile = prefix + '_psf.fits'
+    psfArr = savePsfArr(calExp, psfFile)
+
 
 
 if __name__ == '__main__':
