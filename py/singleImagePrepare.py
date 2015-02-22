@@ -127,11 +127,11 @@ def singleImagePrepare(rootDir, visit, ccd, prefix):
     fits.writeto(oriFile, oriArr, imgHeader)
 
     # Get the "Bad" mask array
-    badArr = getBadArr(mImg)
+    badArr = getBadArr(butler, dataId)
     badFile = prefix + '_bad.fits'
     fits.writeto(badFile, badArr, mskHeader)
     # Get the "Detected" mask array
-    detArr = getDetArr(mImg)
+    detArr = getDetArr(butler, dataId)
     detFile = prefix + '_det.fits'
     fits.writeto(detFile, detArr, mskHeader)
 
