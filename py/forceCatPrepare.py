@@ -78,11 +78,6 @@ def getSrcParams(srcCat, calExp, calMd, outFits):
     kroMag, kroMerr = calib.getMagnitude(srcCat.get('flux.kron'),
                                          srcCat.get('flux.kron.err'))
     kroS2n = getS2n(srcCat.get('flux.kron'), srcCat.get('flux.kron.err'))
-    # Get the Gaussian magnitude and its error
-    gauMag, gauMerr = calib.getMagnitude(srcCat.get('flux.gaussian'),
-                                         srcCat.get('flux.gaussian.err'))
-    gauS2n = getS2n(srcCat.get('flux.gaussian'),
-                    srcCat.get('flux.gaussian.err'))
     # Get the ExpModel magnitude and its error
     expMag, expMerr = calib.getMagnitude(srcCat.get('cmodel.exp.flux'),
                                          srcCat.get('cmodel.exp.flux.err'))
@@ -173,12 +168,6 @@ def getSrcParams(srcCat, calExp, calMd, outFits):
     outTab.add_column(astropy.table.Column(
         name='kroS2n', data=kroS2n))
     outTab.add_column(astropy.table.Column(
-        name='gauMag', data=gauMag))
-    outTab.add_column(astropy.table.Column(
-        name='gauMer', data=gauMerr))
-    outTab.add_column(astropy.table.Column(
-        name='gauS2n', data=gauS2n))
-    outTab.add_column(astropy.table.Column(
         name='expMag', data=expMag))
     outTab.add_column(astropy.table.Column(
         name='expMer', data=expMerr))
@@ -240,8 +229,6 @@ def getSrcParams(srcCat, calExp, calMd, outFits):
     outTab.add_column(astropy.table.Column(
         name='shape_sdss_unweightedbad', data=srcCat.get('shape.sdss.flags.unweightedbad')))
 
-    outTab.add_column(astropy.table.Column(
-        name='flux_gau_flags', data=srcCat.get('flux.gaussian.flags')))
     outTab.add_column(astropy.table.Column(
         name='flux_psf_flags', data=srcCat.get('flux.psf.flags')))
 
