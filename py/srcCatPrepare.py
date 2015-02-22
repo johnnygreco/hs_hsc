@@ -138,39 +138,12 @@ def getSrcParams(srcCat, calExp, calMd):
     srcParams = np.array([(srcCat.get('id'), srcCat.get('parent')),
                           (srcCat.get('deblend.nchild')),
                           (srcCat.get('classification.extendedness')),
-                          (srcRa), (srcDec),
-                          (psfMag), (psfMerr), (psfS2n),
-                          (kroMag), (kroMerr), (kroS2n),
-                          (gauMag), (gauMerr), (gauS2n),
-                          (expMag), (expMerr), (expS2n),
-                          (devMag), (devMerr), (devS2n),
-                          (modMag), (modMerr), (modS2n),
-                          (sdssR), (sdssBa), (sdssPa),
-                          (expR), (expBa), (expPa),
-                          (devR), (devBa), (devPa)
+                          (srcRa), (srcDec)
                           ],
                          dtype=[('id', int), ('parent', int),
                                 ('nchild', int),
                                 ('extended', int),
-                                ('ra', float), ('dec', float),
-                                ('psfMag', float), ('psfMerr', float),
-                                ('psfS2n', float),
-                                ('kroMag', float), ('kroMerr', float),
-                                ('kroS2n', float),
-                                ('gauMag', float), ('gauMerr', float),
-                                ('gauS2n', float),
-                                ('expMag', float), ('expMerr', float),
-                                ('expS2n', float),
-                                ('devMag', float), ('devMerr', float),
-                                ('devS2n', float),
-                                ('modMag', float), ('modMerr', float),
-                                ('modS2n', float),
-                                ('sdssR',  float), ('sdssBa', float),
-                                ('sdssPa', float),
-                                ('expR',  float), ('expBa', float),
-                                ('expPa', float),
-                                ('devR',  float), ('devBa', float)
-                               ])
+                                ('ra', float), ('dec', float)                               ])
 
     return srcParams
 
