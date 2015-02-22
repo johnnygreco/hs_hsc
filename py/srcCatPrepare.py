@@ -13,6 +13,7 @@ import argparse
 import re
 import collections
 import astropy.table
+import astropy.io.fits as fits
 
 def getMag(flux, fluxerr, zeropoint):
     """
@@ -193,6 +194,26 @@ def getSrcParams(srcCat, calExp, calMd):
     return srcParams
 
 
+def saveFitsTable(srcParams, outFits):
+
+    columns = fits.ColDefs([
+        fits.Column(name='id',       format='I', array=srcParams['id']),
+        fits.Column(name='parent',   format='I', array=srcParams['parent']),
+        fits.Column(name='psfMag',   format='E', array=srcParams['psfMag']),
+        fits.Column(name='is_primary', format='B', array=srcParams['is_primary'])
+    ])
+
+    tabHdu = fits.new_table(columns)
+
+    n = [0]
+    priHdu = fits.PrimaryHDU(n)
+    hduList = fits.HDUList([priHdu, tabHdu])
+    hduList.writeto(outFits)
+
+    return outFits
+
+
+
 def srcCatPrepare(rootDir, tract, patch, filt, prefix):
 
     # Make a butler and specify the dataId
@@ -201,6 +222,7 @@ def srcCatPrepare(rootDir, tract, patch, filt, prefix):
 
     # Get the prefix of the output files
     prefix = prefix + '-' + str(tract) + '-' + patch + '-' + filt
+    outFits = prefix + '.fits'
 
     # Return the src catalog, exposure, and the metadata
     srcCat, calExp, calMd = getSrcData(butler, dataId)
@@ -208,7 +230,9 @@ def srcCatPrepare(rootDir, tract, patch, filt, prefix):
     # Return a numpy array of useful information
     srcParams = getSrcParams(srcCat, calExp, calMd)
 
-    print srcParams[0]
+    # Save the data to a fits table
+    saveFitsTable(srcParams, outFits)
+
 
 
 if __name__ == '__main__':
