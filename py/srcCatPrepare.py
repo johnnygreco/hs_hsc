@@ -278,11 +278,11 @@ def getSrcParams(srcCat, calExp, calMd, outFits):
     outTab.add_column(astropy.table.Column(
         name='cmodel_exp_fluxflag', data=srcCat.get('cmodel.exp.flux.flags')))
     outTab.add_column(astropy.table.Column(
-        name='cmodel_exp_niter', data=srcCat.get('cmodel.exp.nIters')))
+        name='cmodel_exp_niter', data=srcCat.get('cmodel.exp.nIter')))
     outTab.add_column(astropy.table.Column(
         name='cmodel_dev_fluxflag', data=srcCat.get('cmodel.dev.flux.flags')))
     outTab.add_column(astropy.table.Column(
-        name='cmodel_dev_niter', data=srcCat.get('cmodel.dev.nIters')))
+        name='cmodel_dev_niter', data=srcCat.get('cmodel.dev.nIter')))
     outTab.add_column(astropy.table.Column(
         name='cmodel_flux_flag', data=srcCat.get('cmodel.flux.flags')))
     outTab.add_column(astropy.table.Column(
