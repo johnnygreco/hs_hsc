@@ -154,16 +154,144 @@ def getSrcParams(srcCat, calExp, calMd, outFits):
         name='nchild', data=srcCat.get('deblend.nchild')))
     outTab.add_column(astropy.table.Column(
         name='extend', data=srcCat.get('classification.extendedness')))
+
+    outTab.add_column(astropy.table.Column(
+        name='Ra', data=srcRa))
+    outTab.add_column(astropy.table.Column(
+        name='Dec', data=srcDec))
+
     outTab.add_column(astropy.table.Column(
         name='psfMag', data=psfMag))
     outTab.add_column(astropy.table.Column(
+        name='psfMer', data=psfMerr))
+    outTab.add_column(astropy.table.Column(
+        name='psfS2n', data=psfS2n))
+    outTab.add_column(astropy.table.Column(
+        name='kroMag', data=kroMag))
+    outTab.add_column(astropy.table.Column(
+        name='kroMer', data=kroMerr))
+    outTab.add_column(astropy.table.Column(
+        name='kroS2n', data=kroS2n))
+    outTab.add_column(astropy.table.Column(
+        name='gauMag', data=gauMag))
+    outTab.add_column(astropy.table.Column(
+        name='gauMer', data=gauMerr))
+    outTab.add_column(astropy.table.Column(
+        name='gauS2n', data=gauS2n))
+    outTab.add_column(astropy.table.Column(
+        name='expMag', data=expMag))
+    outTab.add_column(astropy.table.Column(
+        name='expMer', data=expMerr))
+    outTab.add_column(astropy.table.Column(
+        name='expS2n', data=expS2n))
+    outTab.add_column(astropy.table.Column(
+        name='devMag', data=devMag))
+    outTab.add_column(astropy.table.Column(
+        name='devMer', data=devMerr))
+    outTab.add_column(astropy.table.Column(
+        name='devS2n', data=devS2n))
+    outTab.add_column(astropy.table.Column(
+        name='modMag', data=modMag))
+    outTab.add_column(astropy.table.Column(
+        name='modMer', data=modMerr))
+    outTab.add_column(astropy.table.Column(
+        name='modS2n', data=modS2n))
+
+    outTab.add_column(astropy.table.Column(
+        name='sdssR', data=sdssR))
+    outTab.add_column(astropy.table.Column(
         name='sdssBa', data=sdssBa))
     outTab.add_column(astropy.table.Column(
-        name='is_primary',   data=srcCat.get('detect.is-primary')))
+        name='sdssPa', data=sdssPa))
+    outTab.add_column(astropy.table.Column(
+        name='expR', data=expR))
+    outTab.add_column(astropy.table.Column(
+        name='expBa', data=expBa))
+    outTab.add_column(astropy.table.Column(
+        name='expPa', data=expPa))
+    outTab.add_column(astropy.table.Column(
+        name='devR', data=devR))
+    outTab.add_column(astropy.table.Column(
+        name='devBa', data=devBa))
+    outTab.add_column(astropy.table.Column(
+        name='devPa', data=devPa))
+    outTab.add_column(astropy.table.Column(
+        name='fracDev', data=srcCat.get('cmodel.fracDev')))
+
+    outTab.add_column(astropy.table.Column(
+        name='is_primary', data=srcCat.get('detect.is-primary')))
+    outTab.add_column(astropy.table.Column(
+        name='patch_inner', data=srcCat.get('detect.is-patch-inner')))
+    outTab.add_column(astropy.table.Column(
+        name='tract_inner', data=srcCat.get('detect.is-tract-inner')))
+
+    outTab.add_column(astropy.table.Column(
+        name='deblend_many_peaks', data=srcCat.get('deblend.too-many-peaks')))
+    outTab.add_column(astropy.table.Column(
+        name='deblend_parent_too_big', data=srcCat.get('deblend.parent-too-big')))
+    outTab.add_column(astropy.table.Column(
+        name='flag_badcentroid', data=srcCat.get('flags.badcentroid')))
+    outTab.add_column(astropy.table.Column(
+        name='flag_pix_edge', data=srcCat.get('flags.pixel.edge')))
+    outTab.add_column(astropy.table.Column(
+        name='flag_pix_intr', data=srcCat.get('flags.pixel.interpolated.center')))
+    outTab.add_column(astropy.table.Column(
+        name='flag_pix_satu', data=srcCat.get('flags.pixel.saturated.center')))
+    outTab.add_column(astropy.table.Column(
+        name='flag_pix_cr', data=srcCat.get('flags.pixel.cr.center')))
+    outTab.add_column(astropy.table.Column(
+        name='flag_pix_susp', data=srcCat.get('flags.pixel.suspect.center')))
+    outTab.add_column(astropy.table.Column(
+        name='flag_pix_bad', data=srcCat.get('flags.pixel.bad')))
+
+    outTab.add_column(astropy.table.Column(
+        name='shape_sdss_flags', data=srcCat.get('shape.sdss.flags')))
+    outTab.add_column(astropy.table.Column(
+        name='shape_sdss_unweighted', data=srcCat.get('shape.sdss.flags.unweighted')))
+    outTab.add_column(astropy.table.Column(
+        name='shape_sdss_unweightedbad', data=srcCat.get('shape.sdss.flags.unweightedbad')))
+
+    outTab.add_column(astropy.table.Column(
+        name='flux_gau_flags', data=srcCat.get('flux.gaussian.flags')))
+    outTab.add_column(astropy.table.Column(
+        name='flux_psf_flags', data=srcCat.get('flux.psf.flags')))
+
+    outTab.add_column(astropy.table.Column(
+        name='flux_kro_flags', data=srcCat.get('flux.kron.flags')))
+    outTab.add_column(astropy.table.Column(
+        name='flux_kro_rad', data=srcCat.get('flux.kron.radius')))
+    outTab.add_column(astropy.table.Column(
+        name='flux_kro_flags_radius', data=srcCat.get('flux.kron.flags.radius')))
+    outTab.add_column(astropy.table.Column(
+        name='flux_kro_flags_edge', data=srcCat.get('flux.kron.flags.edge')))
+    outTab.add_column(astropy.table.Column(
+        name='flux_kro_flags_smallRadius', data=srcCat.get('flux.kron.flags.smallRadius')))
+    outTab.add_column(astropy.table.Column(
+        name='flux_kro_flags_usedMinimumRadius',
+        data=srcCat.get('flux.kron.flags.usedMinimumRadius')))
+    outTab.add_column(astropy.table.Column(
+        name='flux_kro_flags_usedPsfRadius',
+        data=srcCat.get('flux.kron.flags.usedPsfRadius')))
+
+    outTab.add_column(astropy.table.Column(
+        name='cmodel_iniflux_flag', data=srcCat.get('cmodel.initial.flux.flags')))
+    outTab.add_column(astropy.table.Column(
+        name='cmodel_exp_flag', data=srcCat.get('cmodel.exp.flags')))
+    outTab.add_column(astropy.table.Column(
+        name='cmodel_exp_niter', data=srcCat.get('cmodel.exp.nIters')))
+    outTab.add_column(astropy.table.Column(
+        name='cmodel_dev_flag', data=srcCat.get('cmodel.dev.flags')))
+    outTab.add_column(astropy.table.Column(
+        name='cmodel_dev_niter', data=srcCat.get('cmodel.dev.nIters')))
+    outTab.add_column(astropy.table.Column(
+        name='cmodel_flux_flag', data=srcCat.get('cmodel.flux.flags')))
+    outTab.add_column(astropy.table.Column(
+        name='cmodel_noshape_flag', data=srcCat.get('cmodel.flags.noShape')))
+    outTab.add_column(astropy.table.Column(
+        name='cmodel_maxbadpixfrac_flag',
+        data=srcCat.get('cmodel.flags.maxBadPixelFraction')))
 
     outTab.write(outFits, format='fits', overwrite=True)
-
-    return srcParams
 
 def srcCatPrepare(rootDir, tract, patch, filt, prefix):
 
@@ -179,7 +307,7 @@ def srcCatPrepare(rootDir, tract, patch, filt, prefix):
     srcCat, calExp, calMd = getSrcData(butler, dataId)
 
     # Return a numpy array of useful information
-    srcParams = getSrcParams(srcCat, calExp, calMd, outFits)
+    getSrcParams(srcCat, calExp, calMd, outFits)
 
 
 if __name__ == '__main__':
