@@ -12,7 +12,6 @@ def getPixelScale(wcs):
     pixelScale = wcs.pixelScale().asArcseconds()
     return pixelScale
 
-
 def getImgArr(mImg):
 
     # Get the numpy ndarray for the image
@@ -21,8 +20,40 @@ def getImgArr(mImg):
     mskArr = mImg.getMask().getArray()
     # Get the numpy ndarray for the variance
     varArr = mImg.getVariance().getArray()
+    # Turns the variance array into sigma array
+    sigArr = np.sqrt(varArr)
 
-    return imgArr, mskArr, varArr
+    return imgArr, mskArr, sigArr
+
+def getBadArr(mImg):
+
+    # Get the mask image
+    mskImg = mImg.getMask()
+    # Remove the "DETECTED" Mask from the mask image
+    mskImg.clearMaskPlane(5)
+    # Remove the "EDGE" Mask from the mask image XXX TODO: Check if this is good
+    mskImg.clearMaskPlane(4)
+
+    return mskImg.getArr()
+
+def getDetArr(mImg):
+
+    # Get the mask image
+    mskImg = mImg.getMask()
+    # Remove all the mask planes except for the "DETECTED" one
+    # TODO: This is very stupid way of doing this !
+    mskImg.clearMaskPlane(0)   # BAD
+    mskImg.clearMaskPlane(1)   # SAT
+    mskImg.clearMaskPlane(2)   # INTRP
+    mskImg.clearMaskPlane(3)   # CR
+    mskImg.clearMaskPlane(4)   # EDGE
+    mskImg.clearMaskPlane(6)   # DETECTED_NEGATIVE
+    mskImg.clearMaskPlane(7)   # SUSPECT
+    mskImg.clearMaskPlane(8)   # NO_DATA
+    mskImg.clearMaskPlane(9)   # CROSS_TALK
+    mskImg.clearMaskPlane(10)  # UNMASKEDNAN
+
+    return mskImg.getArr()
 
 def getBkgArr(bImg):
 
@@ -41,8 +72,7 @@ def getZeroPoint(butler, dataId):
     zeropoint = (2.5 * np.log10(calMeta.get("FLUXMAG0")))
     return zeropoint
 
-
-def imagePrepare(rootDir, tract, patch, filt, prefix):
+def coaddImagePrepare(rootDir, tract, patch, filt, prefix):
 
     # Make a butler and specify the dataId
     butler = dafPersist.Butler(rootDir)
@@ -63,16 +93,18 @@ def imagePrepare(rootDir, tract, patch, filt, prefix):
 
     # Get the maskedImageObject
     mImg = calExp.getMaskedImage()
-    imgArr, mskArr, varArr = getImgArr(mImg)
-    # Turns the variance array into sigma array
-    sigArr = np.sqrt(varArr)
+    imgArr, mskArr, sigArr = getImgArr(mImg)
+    # Get the "Bad" mask array
+    badArr = getBadArr(mImg)
+    # Get the "Detected" mask array
+    detArr = getDetArr(mImg)
 
     # Get the numpy ndarray for the background
     bImg = butler.get('deepCoadd_calexpBackground', dataId, immediate=True)
     bkgArr = getBkgArr(bImg)
 
     # Add the background back on to the image
-    oriArr = (imgArr + bkgArr)
+    #oriArr = (imgArr + bkgArr)
 
     # Get the PSF array
     psfFile = prefix + '_psf.fits'
@@ -96,13 +128,16 @@ def imagePrepare(rootDir, tract, patch, filt, prefix):
     # Write the Mask array
     mskFile = prefix + '_msk.fits'
     fits.writeto(mskFile, mskArr, mskHeader)
+    badFile = prefix + '_bad.fits'
+    fits.writeto(badFile, badArr, mskHeader)
+    detFile = prefix + '_det.fits'
+    fits.writeto(detFile, detArr, mskHeader)
     # Write the Sigma array
     sigFile = prefix + '_sig.fits'
     fits.writeto(sigFile, sigArr, varHeader)
     # Write the Image + Background array
-    oriFile = prefix + '_ori.fits'
-    fits.writeto(oriFile, oriArr, imgHeader)
-
+    bkgFile = prefix + '_bkg.fits'
+    fits.writeto(bkgFile, bkgArr, imgHeader)
 
 
 if __name__ == '__main__':
@@ -113,7 +148,7 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--filter', dest='filt', help="Filter",
                        default='HSC-I')
     parser.add_argument('-p', '--prefix', dest='outfile',
-                        help='Prefix of the output file', default='hsc')
+                        help='Prefix of the output file', default='hsc_coadd')
     args = parser.parse_args()
 
-    imagePrepare(args.root, args.tract, args.patch, args.filt, args.outfile)
+    coaddImagePrepare(args.root, args.tract, args.patch, args.filt, args.outfile)
