@@ -174,8 +174,6 @@ def getSrcParams(srcCat, calExp, calMd, outFits):
         name='fracDev', data=srcCat.get('cmodel.fracDev')))
 
     outTab.add_column(astropy.table.Column(
-        name='flag_badcentroid', data=srcCat.get('flags.badcentroid')))
-    outTab.add_column(astropy.table.Column(
         name='flag_pix_edge', data=srcCat.get('flags.pixel.edge')))
     outTab.add_column(astropy.table.Column(
         name='flag_pix_intr', data=srcCat.get('flags.pixel.interpolated.center')))
