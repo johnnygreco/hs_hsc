@@ -100,12 +100,6 @@ def getSrcParams(srcCat, calExp, calMd, outFits):
     sdssR    = []
     sdssBa   = []
     sdssPa   = []
-    expR     = []
-    expBa    = []
-    expPa    = []
-    devR     = []
-    devBa    = []
-    devPa    = []
 
     for record in srcCat:
 
@@ -118,28 +112,12 @@ def getSrcParams(srcCat, calExp, calMd, outFits):
         sdssR.append(rr1)
         sdssBa.append(ba1)
         sdssPa.append(pa1)
-        # Get the exp Shape
-        rr2, ba2, pa2 = getEllipse(record.get('cmodel.exp.ellipse'))
-        expR.append(rr2)
-        expBa.append(ba2)
-        expPa.append(pa2)
-        # Get the dev Shape
-        rr3, ba3, pa3 = getEllipse(record.get('cmodel.dev.ellipse'))
-        devR.append(rr3)
-        devBa.append(ba3)
-        devPa.append(pa3)
 
     srcRa   = np.array(srcRa)
     srcDec  = np.array(srcDec)
     sdssR   = np.array(sdssR)
     sdssBa  = np.array(sdssBa)
     sdssPa  = np.array(sdssPa)
-    expR    = np.array(expR)
-    expBa   = np.array(expBa)
-    expPa   = np.array(expPa)
-    devR    = np.array(devR)
-    devBa   = np.array(devBa)
-    devPa   = np.array(devPa)
 
     outTab = astropy.table.Table()
 
@@ -193,18 +171,6 @@ def getSrcParams(srcCat, calExp, calMd, outFits):
     outTab.add_column(astropy.table.Column(
         name='sdssPa', data=sdssPa))
     outTab.add_column(astropy.table.Column(
-        name='expR', data=expR))
-    outTab.add_column(astropy.table.Column(
-        name='expBa', data=expBa))
-    outTab.add_column(astropy.table.Column(
-        name='expPa', data=expPa))
-    outTab.add_column(astropy.table.Column(
-        name='devR', data=devR))
-    outTab.add_column(astropy.table.Column(
-        name='devBa', data=devBa))
-    outTab.add_column(astropy.table.Column(
-        name='devPa', data=devPa))
-    outTab.add_column(astropy.table.Column(
         name='fracDev', data=srcCat.get('cmodel.fracDev')))
 
     outTab.add_column(astropy.table.Column(
@@ -242,23 +208,13 @@ def getSrcParams(srcCat, calExp, calMd, outFits):
         name='flux_kro_flags_edge', data=srcCat.get('flux.kron.flags.edge')))
     outTab.add_column(astropy.table.Column(
         name='flux_kro_flags_smallRadius', data=srcCat.get('flux.kron.flags.smallRadius')))
-    outTab.add_column(astropy.table.Column(
-        name='flux_kro_flags_usedMinimumRadius',
-        data=srcCat.get('flux.kron.flags.usedMinimumRadius')))
-    outTab.add_column(astropy.table.Column(
-        name='flux_kro_flags_usedPsfRadius',
-        data=srcCat.get('flux.kron.flags.usedPsfRadius')))
 
     outTab.add_column(astropy.table.Column(
         name='cmodel_iniflux_flag', data=srcCat.get('cmodel.initial.flux.flags')))
     outTab.add_column(astropy.table.Column(
         name='cmodel_exp_fluxflag', data=srcCat.get('cmodel.exp.flux.flags')))
     outTab.add_column(astropy.table.Column(
-        name='cmodel_exp_niter', data=srcCat.get('cmodel.exp.nIter')))
-    outTab.add_column(astropy.table.Column(
         name='cmodel_dev_fluxflag', data=srcCat.get('cmodel.dev.flux.flags')))
-    outTab.add_column(astropy.table.Column(
-        name='cmodel_dev_niter', data=srcCat.get('cmodel.dev.nIter')))
     outTab.add_column(astropy.table.Column(
         name='cmodel_flux_flag', data=srcCat.get('cmodel.flux.flags')))
     outTab.add_column(astropy.table.Column(
