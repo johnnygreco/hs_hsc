@@ -13,7 +13,8 @@ def coaddImageCutout(root, ra, dec, filt, prefix):
     butler = dafPersist.Butler(root)
     skyMap = butler.get("deepCoadd_skyMap", immediate=True)
 
-    coord = afwCoord.IcrsCoord(ra, dec)
+    point = afwGeom.Point2D(ra, dec)
+    coord = afwCoord.IcrsCoord(point)
 
     for tract, patch in skyMap.findClosestTractPatchList([coord]):
         tractId = tract.getId()
@@ -44,4 +45,4 @@ if __name__ == '__main__':
                         default='hsc_coadd_cutout')
     args = parser.parse_args()
 
-    coaddImageCutout(args.root, args.tract, args.patch, args.filt, args.outfile)
+    coaddImageCutout(args.root, args.ra, args.dec, args.filt, args.outfile)
