@@ -18,19 +18,22 @@ def coaddImageCutout(root, ra, dec, filt, prefix):
 
     for tract, patch in skyMap.findClosestTractPatchList([coord]):
         tractId = tract.getId()
-        patchId = "%d,%d" % patch.getIndex()
+        print tractId
+        print patch[0].getIndex()
+        patchId = "%d,%d" % patch[0].getIndex()
         coadd = butler.get("deepCoadd", tract=tractId,
                            patch=patchId, filter=filt, immediate=True)
 
         pixel = coadd.getWcs().skyToPixel(coord)
+        pixel = afwGeom.Point2I(pixel)
         bbox = afwGeom.Box2I(pixel, pixel)
-        bbox.grow(300)
+        bbox.grow(400)
         bbox.clip(coadd.getBBox(afwImage.PARENT))
         if bbox.isEmpty():
             continue
         subImage = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
 
-        outFits = prefix + str(tractId) + '_' + patchId + '_' + filt + '.fits'
+        outFits = prefix + '_' + str(tractId) + '_' + patchId + '_' + filt + '.fits'
         subImage.writeFits(outFits)
 
 if __name__ == '__main__':
