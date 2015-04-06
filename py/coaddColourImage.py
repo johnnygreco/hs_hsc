@@ -2,7 +2,6 @@
 
 import argparse
 import lsst.daf.persistence as dafPersist
-import lsst.afw.display.ds9 as ds9
 import lsst.afw.display.rgb as afwRgb
 import lsst.afw.geom as afwGeom
 import lsst.afw.coord as afwCoord
@@ -57,7 +56,6 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
                         tract=tract, patch=patch, filter=filter3)
 
         filtArr = [filter1, filter2, filter3]
-        mdArr   = [md1, md2, md3]
 
     except Exception, errMsg:
 
@@ -75,19 +73,23 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
 
         for i in range(3):
 
-            # Get the WCS information
-            wcs = afwImage.makeWcs(mdArr[i])
-            # Convert the Ra, Dec coordinate into Pixel unit
-            xy = afwGeom.PointI(wcs.skyToPixel(raDec))
-
-            # Define the bounding box for the cutout
-            llc  = afwGeom.PointI(xy - afwGeom.ExtentI(cutoutSize, cutoutSize))
-            bbox = afwGeom.BoxI(llc, afwGeom.ExtentI(cutoutSize//2,
-                                                     cutoutSize//2))
-
             # Find the file of the coadd image
             coadd = butler.get("deepCoadd", immediate=True,
                                   tract=tract, patch=patch, filter=filtArr[i])
+
+            # Get the WCS information
+            wcs = coadd.getWcs()
+
+            # Convert the central coordinate from Ra,Dec to pixel unit
+            pixel = wcs.skyToPixel(raDec)
+            pixel = afwGeom.Point2I(pixel)
+
+            # Define the bounding box for the central pixel
+            bbox = afwGeom.Box2I(pixel, pixel)
+
+            # Grow the bounding box to the desired size
+            bbox.grow(int(cutoutSize))
+            bbox.clip(coadd.getBBox(afwImage.PARENT))
 
             # Get the masked image
             subImage  = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
