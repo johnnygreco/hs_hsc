@@ -86,14 +86,12 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
                                                      cutoutSize//2))
 
             # Find the file of the coadd image
-            fileName = butler.get("deepCoadd_filename", immediate=True,
-                                  tract=tract, patch=patch, filter=filtArr[i])[0]
-            # Clear the metadata
-            md = None
+            coadd = butler.get("deepCoadd", immediate=True,
+                                  tract=tract, patch=patch, filter=filtArr[i])
 
             # Get the masked image
-            images[i] = afwImage.MaskedImageF(fileName, md, bbox)
-
+            subImage  = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
+            images[i] = subImage.getMaskedImage()
 
         # Define the Blue, Green, and Red channels
         B, G, R = images[0].getImage(), images[1].getImage(), images[2].getImage()
