@@ -92,7 +92,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
             bbox = afwGeom.Box2I(pixel, pixel)
 
             # Grow the bounding box to the desired size
-            bbox.grow(size)
+            bbox.grow(int(size))
             bbox.clip(coadd.getBBox(afwImage.PARENT))
             if bbox.isEmpty():
                 continue
