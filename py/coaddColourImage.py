@@ -108,8 +108,7 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
 
         colorFound = True
 
-    finally:
-        return colorFound
+    return colorFound
 
 
 if __name__ == '__main__':

@@ -146,8 +146,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                 outSrc = outPre + '_src.fits'
                 srcMatch.writeFits(outSrc)
 
-        finally:
-            return coaddFound
+    return coaddFound
 
 
 if __name__ == '__main__':
