@@ -47,7 +47,7 @@ def getCoaddBadMsk(calExp):
 
     return badMsk
 
-def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
+def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=False,
                      filt='HSC-I', prefix='hsc_coadd_cutout'):
 
     # Get the SkyMap of the database
@@ -96,6 +96,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
             # Grow the bounding box to the desired size
             bbox.grow(int(size))
             bbox.clip(coadd.getBBox(afwImage.PARENT))
+
             if bbox.isEmpty():
                 continue
 
