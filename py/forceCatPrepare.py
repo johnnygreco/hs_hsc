@@ -124,6 +124,8 @@ def getSrcParams(srcCat, calExp, calMd, outFits):
     outTab.add_column(astropy.table.Column(
         name='id', data=srcCat.get('id')))
     outTab.add_column(astropy.table.Column(
+        name='parent', data=srcCat.get('parent')))
+    outTab.add_column(astropy.table.Column(
         name='nchild', data=srcCat.get('deblend.nchild')))
     outTab.add_column(astropy.table.Column(
         name='extend', data=srcCat.get('classification.extendedness')))

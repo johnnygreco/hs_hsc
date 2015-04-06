@@ -142,7 +142,6 @@ def coaddImagePrepare(rootDir, tract, patch, filt, prefix):
     psfArr = savePsfArr(calExp, psfFile)
 
 
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("root", help="Root directory of data repository")
