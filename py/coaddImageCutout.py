@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
+import copy
 import argparse
-import numpy                  as np
 import lsst.daf.persistence   as dafPersist
 import lsst.afw.coord         as afwCoord
 import lsst.afw.image         as afwImage
@@ -24,15 +24,17 @@ def getCoaddMskPlane(calExp, bitmask):
 
     # Get the mask image
     mskImg = calExp.getMaskedImage().getMask()
+    newMsk = copy.deepcopy(mskImg)
     # Extract specific plane from it
-    mskImg &= mskImg.getPlaneBitMask(bitmask)
+    newMsk &= newMsk.getPlaneBitMask(bitmask)
 
-    return mskImg
+    return newMsk
 
 def getCoaddBadMsk(calExp):
 
     # Get the mask image
-    badMsk = calExp.getMaskedImage().getMask()
+    mskImg = calExp.getMaskedImage().getMask()
+    badMsk = copy.deepcopy(mskImg)
     # Clear the "EDGE" plane XXX TODO
     # badMsk.clearMaskPlane(4)
     # Clear the "DETECTED" plane
@@ -130,7 +132,8 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
             if saveSrc is True:
 
                 # Get the source catalog
-                srcCat = butler.get('deepCoadd_src', tract=tractId,
+                # XXX TODO: Right now, only forced photometry catalog is available
+                srcCat = butler.get('deepCoadd_forced_src', tract=tractId,
                                     patch=patchId, filter=filt, immediate=True,
                                     flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
                 # Get the pixel coordinates for all objects
