@@ -59,12 +59,13 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
         filtArr = [filter1, filter2, filter3]
         mdArr   = [md1, md2, md3]
 
-    except Exception:
+    except Exception, errMsg:
 
         colorFound = False
         print "#############################################"
         print " The desired coordinate is not available !!! "
         print "#############################################"
+        print errMsg
 
     else:
 

@@ -71,12 +71,13 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                                patch=patchId, filter=filt, immediate=True)
 
         # XXX TODO: Better handle of exception: LsstCppExceptions
-        except Exception:
+        except Exception, errMsg:
 
             coaddFound = False
             print "#############################################"
             print " The desired coordinate is not available !!! "
             print "#############################################"
+            print errMsg
 
         else:
 
