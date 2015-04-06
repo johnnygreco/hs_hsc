@@ -106,24 +106,24 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
             outPsf = outPre + '_psf.fits'
 
             # Save the cutout image to a new FITS file
-            subImage.writeFits(outImg, mode='w')
+            subImage.writeFits(outImg)
 
             # Get the Coadded PSF image
             psfImg = getCoaddPsfImage(coadd, coord)
-            psfImg.writeFits(outPsf, mode='w')
+            psfImg.writeFits(outPsf)
 
             if saveMsk is True:
                 # Get different mask planes
                 mskDetec = getCoaddMskPlane(coadd, 'DETECTED')
                 mskIntrp = getCoaddMskPlane(coadd, 'INTRP')
                 mskSatur = getCoaddMskPlane(coadd, 'SAT')
-                mskDetec.writeFits(outPre + '_detec.fits', mode='w')
-                mskIntrp.writeFits(outPre + '_intrp.fits', mode='w')
-                mskSatur.writeFits(outPre + '_satur.fits', mode='w')
+                mskDetec.writeFits(outPre + '_detec.fits')
+                mskIntrp.writeFits(outPre + '_intrp.fits')
+                mskSatur.writeFits(outPre + '_satur.fits')
 
                 # Get the "Bad" mask plane
                 mskBad = getCoaddBadMsk(coadd)
-                mskBad.writeFits(outPre + '_bad.fits', mode='w')
+                mskBad.writeFits(outPre + '_bad.fits')
 
             coaddFound = True
 
@@ -144,7 +144,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                 srcMatch = srcCat.subset(indMatch)
                 # Save the src catalog to a FITS file
                 outSrc = outPre + '_src.fits'
-                srcMatch.writeFits(outSrc, mode='w')
+                srcMatch.writeFits(outSrc)
 
     return coaddFound
 
