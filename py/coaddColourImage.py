@@ -71,7 +71,7 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
 
         #Then we can read the desired pixels
         images = {}
-        cutoutSize = size
+        cutoutSize = int(size)
 
         for i in range(3):
 
@@ -82,7 +82,8 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
 
             # Define the bounding box for the cutout
             llc  = afwGeom.PointI(xy - afwGeom.ExtentI(cutoutSize, cutoutSize))
-            bbox = afwGeom.BoxI(llc, afwGeom.ExtentI(cutoutSize, cutoutSize))
+            bbox = afwGeom.BoxI(llc, afwGeom.ExtentI(cutoutSize//2,
+                                                     cutoutSize//2))
 
             # Find the file of the coadd image
             fileName = butler.get("deepCoadd_filename", immediate=True,
@@ -132,4 +133,3 @@ if __name__ == '__main__':
     coaddColourImage(args.root, args.ra, args.dec, args.size,
                      filt=args.filt, prefix=args.outfile,
                      info=args.info)
-
