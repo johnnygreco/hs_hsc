@@ -26,7 +26,7 @@ def coaddImgCornersRaDec(fileName, hdu=0):
     pixLL = [0, 0]          # Lower left
     pixUL = [0, ySize]      # Upper left
     pixLR = [xSize, 0]      # Lower right
-    pixUR = [xSzie, ySize]  # Upper right
+    pixUR = [xSize, ySize]  # Upper right
 
     # Numpy array
     pixCorners = numpy.array([pixLL, pixUL, pixLR, pixUR], numpy.float_)
@@ -52,7 +52,7 @@ if __name__ == '__main__':
         raise Exception('Can not find the list file: %s' % args.name)
     else:
         imgList = open(args.name, 'r')
-        for img in imgList.readline():
+        for img in imgList.readlines():
             imgFile = args.root + '/' + img.strip()
             imgRaDec = coaddImgCornersRaDec(imgFile, hdu=1)
 
