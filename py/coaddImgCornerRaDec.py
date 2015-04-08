@@ -52,7 +52,7 @@ def coaddImgCornersRaDec(root, listName):
         imgList = open(listName, 'r')
 
         # Define the output FITS name
-        outFits = os.path.splitext(imgList)[0] + '_corners.fits'
+        outFits = os.path.splitext(listName)[0] + '_corners.fits'
 
         # Define all the columns
         files, rerun, filter, tract, patch = [], [], [], [], []
