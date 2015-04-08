@@ -64,12 +64,14 @@ def coaddImgCornersRaDec(root, listName):
             imgFile = root + '/' + img.strip()
             files.append(imgFile)
 
-            segFile = imgFile.strip('/')
+            segFile = imgFile.split('/')
             if len(segFile) >= 5:
                 rerun.append(segFile[-5])
                 filter.append(segFile[-3])
                 tract.append(int(segFile[-2]))
                 patch.append(segFile[-1].split('.')[0])
+            else:
+                raise Exception("Image location is not correct!")
 
             # Get the corner coordinates
             imgRaDec = imgCornersRaDec(imgFile, hdu=1)
@@ -87,32 +89,32 @@ def coaddImgCornersRaDec(root, listName):
             decUR.append(imgRaDec[3][1])
 
         columns = fits.ColDefs([
-            fits.Column(name='file',   format='S', array=numpy.array(files)),
-            fits.Column(name='rerun',  format='S', array=numpy.array(rerun)),
-            fits.Column(name='filter', format='S', array=numpy.array(filter)),
-            fits.Column(name='tract',  format='I', array=numpy.array(tract)),
-            fits.Column(name='patch',  format='S', array=numpy.array(patch)),
-            fits.Column(name='raLL',  format='F', array=numpy.array(raLL),
+            fits.Column(name='file',  format='90A', array=numpy.array(files)),
+            fits.Column(name='rerun', format='20A', array=numpy.array(rerun)),
+            fits.Column(name='filter',format='5A', array=numpy.array(filter)),
+            fits.Column(name='tract', format='I', array=numpy.array(tract)),
+            fits.Column(name='patch', format='3A', array=numpy.array(patch)),
+            fits.Column(name='raLL',  format='E', array=numpy.array(raLL),
                         unit='degree'),
-            fits.Column(name='decLL', format='F', array=numpy.array(decLL),
+            fits.Column(name='decLL', format='E', array=numpy.array(decLL),
                         unit='degree'),
-            fits.Column(name='raUL',  format='F', array=numpy.array(raUL),
+            fits.Column(name='raUL',  format='E', array=numpy.array(raUL),
                         unit='degree'),
-            fits.Column(name='decUL', format='F', array=numpy.array(decUL),
+            fits.Column(name='decUL', format='E', array=numpy.array(decUL),
                         unit='degree'),
-            fits.Column(name='raLR',  format='F', array=numpy.array(raLR),
+            fits.Column(name='raLR',  format='E', array=numpy.array(raLR),
                         unit='degree'),
-            fits.Column(name='decLR', format='F', array=numpy.array(decLR),
+            fits.Column(name='decLR', format='E', array=numpy.array(decLR),
                         unit='degree'),
-            fits.Column(name='raUR',  format='F', array=numpy.array(raUR),
+            fits.Column(name='raUR',  format='E', array=numpy.array(raUR),
                         unit='degree'),
-            fits.Column(name='decUR', format='F', array=numpy.array(decUR),
+            fits.Column(name='decUR', format='E', array=numpy.array(decUR),
                         unit='degree')])
 
-        tabHdu = fits.new_table(columns)
+        tabHdu = fits.TableHDU.from_columns(columns)
         priHdu = fits.PrimaryHDU([0])
         hduList = fits.HDUList([priHdu, tabHdu])
-        hduList.writeto(outFits)
+        hduList.writeto(outFits, clobber=True)
 
         return columns
 
