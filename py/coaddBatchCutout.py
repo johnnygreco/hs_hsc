@@ -61,7 +61,6 @@ def coaddBatchCutout(root, list, size=100, filter='HSC-I', prefix='coadd_cutout'
     for i in range(nObjs):
         # New prefix
         newPrefix = prefix + '_' + str(id[i]).strip()
-        print newPrefix, ra[i], dec[i], size[i]
         # Cutout Image
         coaddImageCutout(root, ra[i], dec[i], size[i], saveMsk=True,
                          filt=filter, prefix=newPrefix)
