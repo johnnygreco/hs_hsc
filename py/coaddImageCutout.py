@@ -94,6 +94,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=False,
             bbox = afwGeom.Box2I(pixel, pixel)
 
             # Grow the bounding box to the desired size
+            # XXX TODO: What if the growth of pixels meets the edge of image ?
             bbox.grow(int(size))
             bbox.clip(coadd.getBBox(afwImage.PARENT))
 
@@ -117,15 +118,15 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=False,
 
             if saveMsk is True:
                 # Get different mask planes
-                mskDetec = getCoaddMskPlane(coadd, 'DETECTED')
-                mskIntrp = getCoaddMskPlane(coadd, 'INTRP')
-                mskSatur = getCoaddMskPlane(coadd, 'SAT')
+                mskDetec = getCoaddMskPlane(subImage, 'DETECTED')
+                mskIntrp = getCoaddMskPlane(subImage, 'INTRP')
+                mskSatur = getCoaddMskPlane(subImage, 'SAT')
                 mskDetec.writeFits(outPre + '_detec.fits')
                 mskIntrp.writeFits(outPre + '_intrp.fits')
                 mskSatur.writeFits(outPre + '_satur.fits')
 
                 # Get the "Bad" mask plane
-                mskBad = getCoaddBadMsk(coadd)
+                mskBad = getCoaddBadMsk(subImage)
                 mskBad.writeFits(outPre + '_bad.fits')
 
             coaddFound = True
@@ -138,6 +139,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=False,
                                     patch=patchId, filter=filt, immediate=True,
                                     flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
                 # Get the pixel coordinates for all objects
+                # XXX TODO: Right now, there is something wrong with this step!
                 srcX, srcY = srcCat.getX(), srcCat.getY()
                 # Get the pixel coordinate of the cutout center
                 cenX, cenY = pixel.getX(),  pixel.getY()
