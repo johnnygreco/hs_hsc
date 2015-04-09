@@ -71,9 +71,9 @@ def coaddImgCornersRaDec(root, filt, prefix=None):
     raLL, decLL, raUL, decUL = [], [], [], []
     raLR, decLR, raUR, decUR = [], [], [], []
 
-    for img in imgList.readlines():
+    for img in imgList:
         # Get rid of the '\n' at the end of the line
-        imgFile = root + '/' + img.strip()
+        imgFile = img.strip()
         files.append(imgFile)
 
         segFile = imgFile.split('/')
