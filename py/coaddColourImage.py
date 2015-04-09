@@ -9,7 +9,7 @@ import lsst.afw.image as afwImage
 
 def coaddColourImage(root, ra, dec, size, filt='gri',
                      prefix='hsc_coadd_cutout', info=None,
-                     min=-0.0, max=0.3, Q=8):
+                     min=-0.0, max=0.6, Q=4):
 
     # Get the SkyMap of the database
     butler = dafPersist.Butler(root)
