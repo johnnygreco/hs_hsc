@@ -136,7 +136,7 @@ def coaddAllBandsCorners(root, prefix=None):
 
     multiTable = []
     for filt in hscFilters:
-        cornerTable = coaddImgCornersRaDec(root, filt, prefix=None)
+        cornerTable = coaddImgCornersRaDec(root, filt, prefix=prefix)
         multiTable.append(cornerTable)
 
     return multiTable
