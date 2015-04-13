@@ -75,9 +75,15 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
     skyMap = butler.get("deepCoadd_skyMap", immediate=True)
 
     # Get the expected cutout size
-    sizeExpect = (2 * size + 1) ** 2
+    dimExpect  = (2 * size + 1)
+    sizeExpect = dimExpect ** 2
     # Cutout size in unit of degree
     sizeDeg = size * 0.168 / 3600.0
+
+    # Verbose
+    print '####################################################################'
+    print " Input Ra, Dec: %f, %f" % ra, dec
+    print " Cutout size is expected to be %d x %d" % dimExpect, dimExpect
 
     ############################################################################
     # First, search for the central (Ra, Dec)
@@ -100,7 +106,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
         # Get the (tract, patch) ID
         tractId = tract.getId()
         patchId = "%d,%d" % patch[0].getIndex()
-        print "Find (Tract, Patch) for center: %d, %s !" % (tractId, patchId)
+        print "### Find (Tract, Patch) for center: %d, %s !" % (tractId, patchId)
         matchCen.append((tractId, patchId))
 
         # Get the coadd images
@@ -214,23 +220,24 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
         coords = map(lambda x: afwCoord.IcrsCoord(x), points)
 
         # Search for overlapped tract, patch pairs
-        matches = skyMap.findClosestTractPatchList(coords)
+        matches = skyMap.findTractPatchList(coords)
         # Number of matched tracts
         nTract = len(matches)
         # Number of matched (patches)
         nPatch = 0
         for tt in range(nTract):
             nPatch += len(matches[tt][1])
+        print "### Find %d possible overlap patches" % nPatch
 
         for tract, patch in matches:
 
             # Get the (tract, patch) ID
             tractId = tract.getId()
             patchId = "%d,%d" % patch[0].getIndex()
-            print "Find (Tract, Patch) for center: %d, %s !" % (tractId, patchId)
 
             # Skip the image that has been used
-            if (tract, patch) in matchCen:
+            if (tractId, patchId) in matchCen:
+                print "### %d - %s is the patch used for CENT cutout" % tractId, patchId
                 continue
 
             # Get the coadd images
@@ -267,9 +274,10 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                     continue
                 elif bbox.getArea() < int(sizeExpect * 0.1):
                     # Ignore small overlapped image
+                    print "### %d - %s has very small overlapped region" % tractId, patchId
                     continue
                 else:
-                    print "### Find one useful overlap: %d, $s" % tractId, patchId
+                    print "### Find one useful overlap: %d, %s" % tractId, patchId
 
                 # Make a new ExposureF object for the cutout region
                 subImage = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
