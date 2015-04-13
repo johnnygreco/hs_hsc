@@ -265,6 +265,11 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
                 if bbox.isEmpty():
                     continue
+                elif bbox.getArea() < int(sizeExpect * 0.1):
+                    # Ignore small overlapped image
+                    continue
+                else:
+                    print "### Find one useful overlap: %d, $s" % tractId, patchId
 
                 # Make a new ExposureF object for the cutout region
                 subImage = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
