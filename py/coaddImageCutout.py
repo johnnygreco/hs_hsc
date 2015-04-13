@@ -99,6 +99,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
     nPatch = 0
     for tt in range(nTract):
         nPatch += len(matches[tt][1])
+    print "### Find %d possible matches !" % nPatch
 
     matchCen = []
     for tract, patch in matches:
@@ -106,7 +107,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
         # Get the (tract, patch) ID
         tractId = tract.getId()
         patchId = "%d,%d" % patch[0].getIndex()
-        print "### Find (Tract, Patch) for center: %d, %s !" % (tractId, patchId)
+        print "### Choose (Tract, Patch) for center: %d, %s !" % (tractId, patchId)
         matchCen.append((tractId, patchId))
 
         # Get the coadd images
@@ -153,7 +154,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
             # To see if data are available for all the cut-out region
             if partialCut:
-                print " ### Only part of the desired cutout-region is returned !"
+                print "### Only part of the desired cutout-region is returned !"
                 outPre = prefix + '_' + str(tractId) + '_' + patchId + '_' + \
                         filt + '_cent'
             else:
@@ -231,78 +232,79 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
         for tract, patch in matches:
 
-            # Get the (tract, patch) ID
+            # Example all possible matches
             tractId = tract.getId()
-            patchId = "%d,%d" % patch[0].getIndex()
+            for ii in range(len(patch)):
+                patchId = "%d,%d" % patch[ii].getIndex()
 
-            # Skip the image that has been used
-            if (tractId, patchId) in matchCen:
-                print "### %d - %s is the patch used for CENT cutout" % (tractId, patchId)
-                continue
-
-            # Get the coadd images
-            # Try to load the coadd Exposure; the skymap covers larger area than the
-            # available data, which will cause Butler to fail sometime
-            try:
-                coadd = butler.get("deepCoadd", tract=tractId,
-                                   patch=patchId, filter=filt, immediate=True)
-
-            except Exception, errMsg:
-
-                print "#############################################"
-                print " The desired coordinate is not available !!! "
-                print "#############################################"
-                print errMsg
-
-            else:
-
-                # Get the WCS information
-                wcs = coadd.getWcs()
-
-                # Convert the central coordinate from Ra,Dec to pixel unit
-                pixel = wcs.skyToPixel(coord)
-                pixel = afwGeom.Point2I(pixel)
-
-                # Define the bounding box for the central pixel
-                bbox = afwGeom.Box2I(pixel, pixel)
-
-                # Grow the bounding box to the desired size
-                bbox.grow(int(size * 1.1))
-                bbox.clip(coadd.getBBox(afwImage.PARENT))
-
-                if bbox.isEmpty():
+                # Skip the image that has been used
+                if (tractId, patchId) in matchCen:
+                    print "### %d - %s is the patch used for CENT cutout" % (tractId, patchId)
                     continue
-                elif bbox.getArea() < int(sizeExpect * 0.1):
-                    # Ignore small overlapped image
-                    print "### %d - %s has very small overlapped region" % (tractId, patchId)
-                    continue
+
+                # Get the coadd images
+                # Try to load the coadd Exposure; the skymap covers larger area than the
+                # available data, which will cause Butler to fail sometime
+                try:
+                    coadd = butler.get("deepCoadd", tract=tractId,
+                                       patch=patchId, filter=filt, immediate=True)
+
+                except Exception, errMsg:
+
+                    print "#############################################"
+                    print " The desired coordinate is not available !!! "
+                    print "#############################################"
+                    print errMsg
+
                 else:
-                    print "### Find one useful overlap: %d, %s" % (tractId,
-                                                                   patchId)
 
-                # Make a new ExposureF object for the cutout region
-                subImage = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
+                    # Get the WCS information
+                    wcs = coadd.getWcs()
 
-                # To see if data are available for all the cut-out region
-                outPre = prefix + '_' + str(tractId) + '_' + patchId + '_' + \
-                         filt + '_part'
-                # Define the output file name
-                outImg = outPre + '.fits'
-                # Save the cutout image to a new FITS file
-                subImage.writeFits(outImg)
+                    # Convert the central coordinate from Ra,Dec to pixel unit
+                    pixel = wcs.skyToPixel(coord)
+                    pixel = afwGeom.Point2I(pixel)
 
-                if saveMsk is True:
-                    # Get different mask planes
-                    mskDetec = getCoaddMskPlane(subImage, 'DETECTED')
-                    mskIntrp = getCoaddMskPlane(subImage, 'INTRP')
-                    mskSatur = getCoaddMskPlane(subImage, 'SAT')
-                    mskDetec.writeFits(outPre + '_detec.fits')
-                    mskIntrp.writeFits(outPre + '_intrp.fits')
-                    mskSatur.writeFits(outPre + '_satur.fits')
+                    # Define the bounding box for the central pixel
+                    bbox = afwGeom.Box2I(pixel, pixel)
 
-                    # Get the "Bad" mask plane
-                    mskBad = getCoaddBadMsk(subImage)
-                    mskBad.writeFits(outPre + '_bad.fits')
+                    # Grow the bounding box to the desired size
+                    bbox.grow(int(size * 1.1))
+                    bbox.clip(coadd.getBBox(afwImage.PARENT))
+
+                    if bbox.isEmpty():
+                        continue
+                    elif bbox.getArea() < int(sizeExpect * 0.1):
+                        # Ignore small overlapped image
+                        print "### %d - %s has very small overlapped region" % (tractId, patchId)
+                        continue
+                    else:
+                        print "### Find one useful overlap: %d, %s" % (tractId,
+                                                                       patchId)
+
+                    # Make a new ExposureF object for the cutout region
+                    subImage = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
+
+                    # To see if data are available for all the cut-out region
+                    outPre = prefix + '_' + str(tractId) + '_' + patchId + '_' + \
+                             filt + '_part'
+                    # Define the output file name
+                    outImg = outPre + '.fits'
+                    # Save the cutout image to a new FITS file
+                    subImage.writeFits(outImg)
+
+                    if saveMsk is True:
+                        # Get different mask planes
+                        mskDetec = getCoaddMskPlane(subImage, 'DETECTED')
+                        mskIntrp = getCoaddMskPlane(subImage, 'INTRP')
+                        mskSatur = getCoaddMskPlane(subImage, 'SAT')
+                        mskDetec.writeFits(outPre + '_detec.fits')
+                        mskIntrp.writeFits(outPre + '_intrp.fits')
+                        mskSatur.writeFits(outPre + '_satur.fits')
+
+                        # Get the "Bad" mask plane
+                        mskBad = getCoaddBadMsk(subImage)
+                        mskBad.writeFits(outPre + '_bad.fits')
 
     return coaddFound
 
