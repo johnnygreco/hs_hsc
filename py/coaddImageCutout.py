@@ -82,8 +82,8 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
     # Verbose
     print '####################################################################'
-    print " Input Ra, Dec: %f, %f" % ra, dec
-    print " Cutout size is expected to be %d x %d" % dimExpect, dimExpect
+    print " Input Ra, Dec: %10.5f, %10.5f" % (ra, dec)
+    print " Cutout size is expected to be %d x %d" % (dimExpect, dimExpect)
 
     ############################################################################
     # First, search for the central (Ra, Dec)
@@ -237,7 +237,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
             # Skip the image that has been used
             if (tractId, patchId) in matchCen:
-                print "### %d - %s is the patch used for CENT cutout" % tractId, patchId
+                print "### %d - %s is the patch used for CENT cutout" % (tractId, patchId)
                 continue
 
             # Get the coadd images
@@ -274,10 +274,11 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                     continue
                 elif bbox.getArea() < int(sizeExpect * 0.1):
                     # Ignore small overlapped image
-                    print "### %d - %s has very small overlapped region" % tractId, patchId
+                    print "### %d - %s has very small overlapped region" % (tractId, patchId)
                     continue
                 else:
-                    print "### Find one useful overlap: %d, %s" % tractId, patchId
+                    print "### Find one useful overlap: %d, %s" % (tractId,
+                                                                   patchId)
 
                 # Make a new ExposureF object for the cutout region
                 subImage = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
