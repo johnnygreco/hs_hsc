@@ -11,10 +11,6 @@ from astropy.io import fits
 from astropy    import wcs
 
 import lsst.daf.persistence   as dafPersist
-import lsst.afw.coord         as afwCoord
-import lsst.afw.image         as afwImage
-import lsst.afw.geom          as afwGeom
-import lsst.afw.table         as afwTable
 
 # Matplotlib default settings
 import matplotlib as mpl
@@ -186,6 +182,7 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
     if nMasks == 0:
         if verbose:
             print "No Masked Region has been Found!"
+        noDataConvex = None
     else:
         if verbose:
             print "%d regions have been detected" % nMasks
