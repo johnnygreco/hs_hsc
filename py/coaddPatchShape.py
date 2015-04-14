@@ -378,3 +378,13 @@ def batchPatchShape(location, pattern, clobber=False):
                                            prefix=commonPrefix)
 
     return wkbList
+
+if __name__ == '__main__':
+
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("root",    help="Root directory of data repository")
+    parser.add_argument("pattern", help="Pattern for file search")
+    args = parser.parse_args()
+
+    batchPatchShape(args.root, args.pattern)
