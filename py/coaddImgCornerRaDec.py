@@ -6,16 +6,22 @@ import argparse
 import numpy
 import os
 
+def getCoaddDir(rootDir, filter):
+
+    if rootDir[-1] is '/':
+        searchDir = rootDir + 'deepCoadd/' + filter.upper()
+    else:
+        searchDir = rootDir + '/deepCoadd/' + filter.upper()
+
+    return searchDir
+
+
 def listAllImages(rootDir, filter):
 
     import glob
 
-    if rootDir[-1] is '/':
-        searchDir = rootDir + 'deepCoadd/' + filter.upper() + '/*/*.fits'
-    else:
-        searchDir = rootDir + '/deepCoadd/' + filter.upper() + '/*/*.fits'
-
-    return map(lambda x: x, glob.glob(searchDir))
+    searchPattern = getCoaddDir(rootDir, filter) + '/*/*.fits'
+    return map(lambda x: x, glob.glob(searchPattern))
 
 
 def imgCornersRaDec(fileName, hdu=0, output=False):
@@ -136,8 +142,13 @@ def coaddAllBandsCorners(root, prefix=None):
 
     multiTable = []
     for filt in hscFilters:
-        cornerTable = coaddImgCornersRaDec(root, filt, prefix=prefix)
-        multiTable.append(cornerTable)
+        filtDir = getCoaddDir(root, filt)
+        print "### Deal with %s band data at %s" % (filt, filtDir)
+        if os.path.exists(filtDir):
+            cornerTable = coaddImgCornersRaDec(root, filt, prefix=prefix)
+            multiTable.append(cornerTable)
+        else:
+            print "### Folder for %s band data is not available" % filt
 
     return multiTable
 
@@ -145,10 +156,11 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("root", help="Root directory of data repository")
-    parser.add_argument("filt", help="HSC filter")
+    #parser.add_argument("filt", help="HSC filter")
     parser.add_argument('-p', '--prefix', dest='prefix',
                         help='Prefix of the output file',
                         default=None)
     args = parser.parse_args()
 
-    coaddImgCornersRaDec(args.root, args.filt, prefix=args.prefix)
+    #coaddImgCornersRaDec(args.root, args.filt, prefix=args.prefix)
+    coaddAllBandsCorners(args.root, prefix=args.prefix)

@@ -6,7 +6,6 @@ import numpy as np
 import os
 
 # Shapely related imports
-from shapely.geometry import Polygon
 from shapely.geometry import MultiPoint
 from shapely.geometry import Point
 from shapely.ops      import cascaded_union
@@ -16,11 +15,14 @@ from descartes        import PolygonPatch
 
 # Astropy related imports
 from astropy.io    import fits
-from astropy.table import Table
 
 # Matplotlib default settings
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+# Turn off the interactive mode
+mpl.use('Agg')
+plt.ioff()
+# Set a few parameters
 mpl.rcParams['figure.figsize'] = 12, 10
 mpl.rcParams['xtick.major.size'] = 8.0
 mpl.rcParams['xtick.major.width'] = 1.5
@@ -87,7 +89,6 @@ def getMinMaxRaDec(catData):
 def unionBreakDown(unionPoly):
 
     # Break the multi-part polygon down to separated regions
-
     nUnionPart = len(unionPoly.geoms)
     if nUnionPart is 1:
         return unionPoly, nUnionPart
@@ -123,7 +124,7 @@ def plotSinglePoly(poly, outPNG='poly.png'):
 
     # Only plot a single Polygon region
 
-    fig = plt.figure(1, figsize=(14, 10), dpi=100)
+    fig = plt.figure(dpi=120)
     ax = fig.add_subplot(111)
 
     partShow = PolygonPatch(poly, fc=BLUE, ec=GRAY,
@@ -137,8 +138,8 @@ def plotSinglePoly(poly, outPNG='poly.png'):
     ax.set_xlim(*raRange)
     ax.set_ylim(*decRange)
 
-    ax.set_xlabel(r'RA\ (deg)',  fontsize=22, fontweight='bold')
-    ax.set_ylabel(r'DEC\ (deg)', fontsize=22, fontweight='bold')
+    ax.set_xlabel(r'RA (deg)',  fontsize=22)
+    ax.set_ylabel(r'DEC (deg)', fontsize=22)
 
     fontsize = 16
     for tick in ax.xaxis.get_major_ticks():
@@ -259,16 +260,16 @@ def coaddPatchShape(catFile, savePng=True):
     # Get the list of polygons
     polyList = getPolyList(catData)
     # Save a DS9 .reg file for each individual images
-    polySaveReg(polyList, catPrefix + '_list.wkb', listPoly=True)
+    polySaveReg(polyList, catPrefix + '_list.reg', listPoly=True)
 
     # Get the Union of all polygons and its total area
     polyUnion, areaUnion = getPolyUnion(polyList)
     # Save a region file
-    wkbUnion = polySaveWkb(polyUnion, catPrefix + '.wkb')
+    polySaveWkb(polyUnion, catPrefix + '.wkb')
 
     # Break the Union into separated regions if necessary
-    polyParts, nParts = unionBreakDown(polyUnion)
-    if nParts > 1:
+    if polyUnion.geom_type is 'MultiPolygon':
+        polyParts, nParts = unionBreakDown(polyUnion)
         for ii in range(nParts):
             # Save a separate .wkb file
             partWkb = catPrefix + '_' + str(ii+1).strip() + '.wkb'
@@ -306,13 +307,13 @@ def coaddCommonArea(wkbList, clobber=True, prefix='poly_common',
     # Get a list of Polygons from these wkb files
     polyMulti = map(lambda x: polyReadWkb(x), wkbList)
     # Get the overlapped region and the outer boundary of all the Polygons
-    interMulti, outerMulti = polyMultiCommon(polyMulti)
+    interMulti, outerBounds = polyMultiCommon(polyMulti)
     # Save them to .wkb files
     polySaveWkb(interMulti, prefix + '_inter.wkb')
-    polySaveWkb(outerMulti, prefix + '_outer.wkb')
+
     # If the interMulti has separated regions, break it down too:
-    commonParts, nCommon = unionBreakDown(interMulti)
-    if nCommon > 1:
+    if interMulti.geom_type is 'MultiPolygon':
+        commonParts, nCommon = unionBreakDown(interMulti)
         for ii in range(nCommon):
             # Save a separate .wkb file
             commonWkb = prefix + '_' + str(ii+1).strip() + '_inter.wkb'
@@ -326,6 +327,8 @@ def coaddCommonArea(wkbList, clobber=True, prefix='poly_common',
                 plotSinglePoly(commonParts[ii], outPNG=commonPng)
     else:
         # Save a separated .reg file
+        commonParts = interMulti
+        nCommon = 1
         commonReg = prefix + '_inter.reg'
         polySaveReg(interMulti, commonReg)
         # Save a PNG file if necessary
@@ -339,8 +342,6 @@ def coaddCommonArea(wkbList, clobber=True, prefix='poly_common',
 # every one of them
 def batchPatchShape(location, pattern, clobber=False):
 
-    #location = '.'
-    #pattern  = 'ssp*_corners.fits'
     # Check and update the location and pattern
     if location[-1] is not '/':
         location += '/'
@@ -371,7 +372,7 @@ def batchPatchShape(location, pattern, clobber=False):
 
     # Get the regions that are covered by all five bands
     import re
-    commonPrefix = wkbList[0].replace('.fits', '')
+    commonPrefix = wkbList[0].replace('.wkb', '')
     commonPrefix = re.sub(r"HSC-._", "", commonPrefix)
     print "### Prefix for the common region is %s" % commonPrefix
     commonParts, nCommon = coaddCommonArea(wkbList, clobber=True,
