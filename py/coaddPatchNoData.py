@@ -126,14 +126,26 @@ def polySaveReg(poly, regName, listPoly=False, color='blue'):
 
     if listPoly:
         for pp in poly:
+            if pp.geom_type is "Polygon":
             # Get the coordinates for every point in the polygon
-            polyCoords = pp.boundary.coords[:]
+                polyCoords = pp.boundary.coords[:]
+                polyLine = getPolyLine(polyCoords)
+                regFile.write(polyLine)
+            elif pp.geom_type is "MultiPolygon":
+                for mm in pp.geoms:
+                    polyCoords = mm.boundary.coords[:]
+                    polyLine = getPolyLine(polyCoords)
+                    regFile.write(polyLine)
+    else:
+        if poly.geom_type is "Polygon":
+            polyCoords = poly.boundary.coords[:]
             polyLine = getPolyLine(polyCoords)
             regFile.write(polyLine)
-    else:
-        polyCoords = poly.boundary.coords[:]
-        polyLine = getPolyLine(polyCoords)
-        regFile.write(polyLine)
+        elif poly.geom_type is "MultiPolygon":
+            for mm in pply.geoms:
+                polyCoords = mm.boundary.coords[:]
+                polyLine = getPolyLine(polyCoords)
+                regFile.write(polyLine)
 
     regFile.close()
 
