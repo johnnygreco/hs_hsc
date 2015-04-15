@@ -277,7 +277,6 @@ def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd'):
 
     # Get the list of coadded images in the direction
     imgList = listAllImages(rootDir, filter)
-    imgList = imgList[0:3] ### Test
 
     # Get the list of tract and patch for these images
     tract = map(lambda x: int(x.split('/')[-2]), imgList)
