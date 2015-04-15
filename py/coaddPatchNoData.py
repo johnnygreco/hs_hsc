@@ -264,6 +264,7 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
     maskBigList = np.array(maskShapes)[np.where(np.array(maskAreas) > minArea)]
     maskBigList = map(lambda x: x, maskBigList)
     coordBigList = np.array(maskCoords)[np.where(np.array(maskAreas) > minArea)]
+    
     nBig = len(maskBigList)
     if nBig > 0:
         if verbose:
@@ -282,7 +283,7 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
         showHscMask(maskCoords, large=coordBigList, title=titlePng,
                     pngName=noDataPng)
 
-    return maskAll, maskBig
+    return maskShapes, maskBigList
 
 
 def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd'):
@@ -295,17 +296,21 @@ def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd'):
     patch = map(lambda x: x.split('/')[-1].split('.')[0], imgList)
 
     results = map(lambda x, y: coaddPatchNoData(rootDir, x, y, filter,
-                                prefix=prefix, savePNG=True, verbose=True, tolerence=4,
-                                minArea=10000), tract, patch)
+                                prefix=prefix, savePNG=True, verbose=True,
+                                tolerence=4, minArea=10000), tract, patch)
     allList = map(lambda x: x[0], results)
     bigList = map(lambda x: x[1], results)
+    
+    # Flatten these lists 
+    allFlat = [item for sublist in allList for item in sublist]
+    bigFlat = [item for sublist in bigList for item in sublist]
 
     allUse = []
-    for ss in allList:
+    for ss in allFlat:
         if ss is not None:
             allUse.append(ss)
     bigUse = []
-    for tt in bigList:
+    for tt in bigFlat:
         if tt is not None:
             bigUse.append(tt)
 
@@ -313,27 +318,20 @@ def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd'):
     allComb = cascaded_union(allUse)
     bigComb = cascaded_union(bigUse)
 
-    # Break them down into list
-    ## ALL
-    if allComb.geom_type is "MultiPolygon":
-        allPolys = map(lambda x: x, allComb.geoms)
-        polySaveReg(allPolys, prefix + '_' + filter + '_nodata_all_combined.reg',
-                    listPoly=True, color='red')
-    elif allComb.geom_type is "Polygon":
-        polySaveReg(allPolys, prefix + '_' + filter + '_nodata_all_combined.reg',
-                    color='red')
-    ## BIG
-    if bigComb.geom_type is "MultiPolygon":
-        bigPolys = map(lambda x: x, bigComb.geoms)
-        polySaveReg(bigPolys, prefix + '_' + filter + '_nodata_big_combined.reg',
-                    listPoly=True, color='blue')
-    elif bigComb.geom_type is "Polygon":
-        polySaveReg(bigPolys, prefix + '_' + filter + '_nodata_big_combined.reg',
-                    color='blue')
-
     # Save these polygons as a .wkb file
     polySaveWkb(allComb, prefix + '_' + filter + '_nodata_all_combined.wkb')
     polySaveWkb(bigComb, prefix + '_' + filter + '_nodata_big_combined.wkb')
+    
+    # Break them down into list
+    ## ALL 
+    if len(allUse) > 0: 
+        polySaveReg(allUse, prefix + '_' + filter + '_nodata_all_combined.reg', 
+                    listPoly=True, color='red')
+    ## BIG
+    if len(bigUse) > 0:
+        polySaveReg(bigUse, prefix + '_' + filter + '_nodata_big_combined.reg', 
+                    listPoly=True, color='blue')
+
 
     return allComb, bigComb
 
