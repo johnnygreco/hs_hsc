@@ -399,9 +399,10 @@ def combineRegFiles(listFile, output=None):
 
     """ Get the name of the combined .reg files """
     if output is None:
-        fileComb = regDir + os.path.splitext(listFile)[0] + '.reg'
+        fileComb = regDir + os.path.split(listFile)[1] + '.reg'
     else:
         fileComb = regDir + output
+    """ Open a new file to write"""
     regComb = open(fileComb, 'w')
 
     """ Go through every .reg file """
@@ -441,7 +442,7 @@ def combineWkbFiles(listFile, output=None):
 
     """ Get the name of the combined .reg files """
     if output is None:
-        fileComb = wkbDir + os.path.splitext(listFile)[0] + '.wkb'
+        fileComb = wkbDir + os.path.split(listFile)[1] + '.wkb'
     else:
         fileComb = wkbDir + output
 
