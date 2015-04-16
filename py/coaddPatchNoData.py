@@ -71,6 +71,59 @@ def showHscMask(coords, large=None, title='No Data Mask Plane',
     return fig
 
 
+def showTractMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
+                  pngName='tract_mask.png', xsize=16, ysize=16, dpi=150):
+
+    maskShow = polyReadWkb(wkbFile, load=True).geoms[:]
+
+    fig = plt.figure(figsize=(xsize, ysize), dpi=dpi)
+
+    ax = fig.add_subplot(111)
+    fontsize = 20
+    ax.minorticks_on()
+
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label1.set_fontsize(fontsize)
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label1.set_fontsize(fontsize)
+
+    # Set title
+    ax.set_title(title, fontsize=25, fontweight='bold')
+    ax.title.set_position((0.5,1.01))
+
+    # Outline all the mask regions
+    for ii, mask in enumerate(maskShow):
+        try:
+            coords = mask.boundary.coords[:]
+            for raDec in coords:
+                ax.plot(raDec[:, 1], raDec[:, 0], '-r', linewidth=1.5)
+        except NotImplementedError:
+            for mm in mask.geoms[:]:
+                try:
+                    coords = mm.boundary.coords[:]
+                    for raDec in coords:
+                        ax.plot(raDec[:, 1], raDec[:, 0], '-r', linewidth=1.5)
+                except:
+                    print "Can not plot mask number %d !" % (ii+1)
+                    pass
+
+    # Using polygon to highlight all the large ones
+    """
+    if large is not None:
+        for raDec in large:
+            ax.plot(raDec[:, 1], raDec[:, 0], '-b', linewidth=2.0)
+    """
+
+    fig.subplots_adjust(hspace=0.1, wspace=0.1,
+                        top=0.95, right=0.95)
+
+    if pngName is not None:
+        fig.savefig(pngName)
+        plt.close(fig)
+
+    return fig
+
+
 def imgAddNoise(im, gaussian, factor):
 
     im = ndimage.gaussian_filter(im, gaussian)
@@ -205,6 +258,7 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
         hduList = fits.open(fitsName)
         header = hduList[1].header
         imgWcs = wcs.WCS(header)
+        hduList.close()
 
         # Get the name of the png file
         titlePng = prefix + strTractPatch + '_NODATA'
@@ -331,6 +385,71 @@ def saveTractFileList(tr, patch, filter, prefix):
     allRegLis.close()
     bigWkbLis.close()
     bigRegLis.close()
+
+
+def combineRegFiles(listFile, output=None):
+
+    """ Get the list of .reg files """
+    regList = open(listFile, 'r').readlines()
+    nReg = len(regList)
+    print "### Will combine %d .reg files" % nReg
+
+    """ Get the name of the combined .reg files """
+    if output is None:
+        fileComb = os.path.splitext(listFile)[0] + '.reg'
+    else:
+        fileComb = output
+    regComb = open(fileComb, 'w')
+
+    """ Go through every .reg file """
+    for ii, reg in enumerate(regList):
+
+        if not os.path.isfile(reg):
+            raise Exception("Can not find the .reg file: %s !" % reg)
+
+        if ii == 0:
+            regComb.write(open(reg, 'r').readlines())
+        else:
+            regComb.write(open(reg, 'r').readlines()[3:])
+
+    regComb.close()
+
+# Read a .wkb file into a Polygon shape
+def polyReadWkb(wkbName, load=True):
+
+    wkbFile = open(wkbName, 'r')
+    polyWkb = wkbFile.read().decode('hex')
+    wkbFile.close()
+
+    if load is True:
+        return wkb.loads(polyWkb)
+    else:
+        return polyWkb
+
+def combineWkbFiles(listFile, output=None):
+
+    """ Get the list of .wkb files """
+    wkbList = open(listFile, 'r').readlines()
+    nWkb = len(wkbList)
+    print "### Will combine %d .reg files" % nWkb
+
+    """ Get the name of the combined .reg files """
+    if output is None:
+        fileComb = os.path.splitext(listFile)[0] + '.wkb'
+    else:
+        fileComb = output
+
+    """ Go through every .wkb file """
+    combWkb = []
+    for wkb in wkbList:
+        geoms = polyReadWkb(wkb).geoms[:]
+        for geom in geoms:
+            combWkb.append(geom)
+    """ Take the cascaded_union of all the mask regions for a tract """
+    combWkb = cascaded_union(combWkb)
+
+    """ Save the .wkb file """
+    polySaveWkb(combWkb, fileComb)
 
 
 def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
