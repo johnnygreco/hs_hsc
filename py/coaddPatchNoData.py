@@ -316,11 +316,11 @@ def saveTractFileList(tr, patch, filter, prefix):
         # Get the name of the wkb and deg file
         strTractPatch = (str(tr).strip() + '_' + pp + '_' + filter)
         ## For all the accepted regions
-        allWkbLis.write(prefix + '_' + strTractPatch + '_nodata_all.wkb')
-        allRegLis.write(prefix + '_' + strTractPatch + '_nodata_all.reg')
+        allWkbLis.write(prefix + '_' + strTractPatch + '_nodata_all.wkb\n')
+        allRegLis.write(prefix + '_' + strTractPatch + '_nodata_all.reg\n')
         ## For all the big mask regions
-        bigWkbLis.write(prefix + '_' + strTractPatch + '_nodata_big.wkb')
-        bigRegLis.write(prefix + '_' + strTractPatch + '_nodata_big.reg')
+        bigWkbLis.write(prefix + '_' + strTractPatch + '_nodata_big.wkb\n')
+        bigRegLis.write(prefix + '_' + strTractPatch + '_nodata_big.reg\n')
 
     allWkbLis.close()
     allRegLis.close()
