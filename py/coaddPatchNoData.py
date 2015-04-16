@@ -142,7 +142,7 @@ def polySaveReg(poly, regName, listPoly=False, color='blue'):
             polyLine = getPolyLine(polyCoords)
             regFile.write(polyLine)
         elif poly.geom_type is "MultiPolygon":
-            for mm in pply.geoms:
+            for mm in poly.geoms:
                 polyCoords = mm.boundary.coords[:]
                 polyLine = getPolyLine(polyCoords)
                 regFile.write(polyLine)
@@ -164,7 +164,7 @@ def listAllImages(rootDir, filter):
 
 def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
                      savePNG=True, verbose=True, tolerence=4,
-                     minArea=10000):
+                     minArea=10000, clobber=False):
 
     # Make a butler and specify the dataID
     butler = dafPersist.Butler(rootDir)
@@ -189,151 +189,215 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
     strTractPatch = (str(tract).strip() + '_' + patch + '_' + filter)
     ## For all the accepted regions
     noDataAllWkb = prefix + '_' + strTractPatch + '_nodata_all.wkb'
+    fileExist1 = os.path.isfile(noDataAllWkb)
     noDataAllReg = prefix + '_' + strTractPatch + '_nodata_all.reg'
+    fileExist2 = os.path.isfile(noDataAllReg)
     ## For all the big mask regions
     noDataBigWkb = prefix + '_' + strTractPatch + '_nodata_big.wkb'
+    fileExist3 = os.path.isfile(noDataBigWkb)
     noDataBigReg = prefix + '_' + strTractPatch + '_nodata_big.reg'
+    fileExist4 = os.path.isfile(noDataBigReg)
 
-    # Get the name of the png file
-    titlePng = prefix + strTractPatch + '_NODATA'
-    noDataPng = prefix + '_' + strTractPatch + '_nodata.png'
+    # See if all the files have been generated
+    fileAllExist = (fileExist1 and fileExist2 and fileExist3 and fileExist4)
 
-    if verbose:
-        print "## Reading Fits Image: %s" % fitsName
+    # Only generate new one when
+    #  1) Not all files are available
+    #  2) All available, but clobber = True
+    if (not fileAllExist) or clobber:
+        # Get the name of the png file
+        titlePng = prefix + strTractPatch + '_NODATA'
+        noDataPng = prefix + '_' + strTractPatch + '_nodata.png'
 
-    # Get the exposure from the butler
-    calExp = butler.get('deepCoadd', dataId, immediate=True)
-
-    # Get the object for mask plane
-    mskImg = calExp.getMaskedImage().getMask()
-
-    # Extract the NO_DATA plane
-    # TODO: NO_DATA is not a system mask, maybe should use INTRP later
-    noData = copy.deepcopy(mskImg)
-    noData &= noData.getPlaneBitMask('NO_DATA')
-    # Return the mask image array
-    noDataArr = noData.getArray()
-
-    # Set all masked pixels to be 1
-    noDataArr /= 256
-    # Pad the 2-D array by a little
-    noDataArr = np.lib.pad(noDataArr, ((1, 1), (1, 1)), 'constant',
-                           constant_values=0)
-
-    # Try a very different approach: Using the find_contours and
-    # approximate_polygon methods from scikit-images package
-    maskShapes = []  # For all the accepted mask regions
-    maskCoords = []  # For the "corner" coordinates of these regions
-    maskAreas  = []  # The sizes of all regions
-
-    # Only find the 0-level contour
-    contoursAll = find_contours(noDataArr, 0)
-    if verbose:
-        print "### %d contours have been detected" % len(contoursAll)
-    for maskContour in contoursAll:
-        # Approximate one extracted contour into a polygon
-        # tolerance decides the accuracy of the polygon, hence
-        # the number of coords for each polygon.
-        # Using large tolerance also means smaller number of final
-        # polygons
-        contourCoords = approximate_polygon(maskContour, tolerance=tolerence)
-        # Convert these coordinates into (RA, DEC) using the WCS information
-        contourSkyCoords = map(lambda x: [x[1], x[0]], contourCoords)
-        contourRaDec     = imgWcs.wcs_pix2world(contourSkyCoords, 1)
-        # Require that any useful region must be at least an triangular
-        if len(contourCoords) >= 3:
-            # Form a lineString using these coordinates
-            maskLine = LineString(contourRaDec)
-            # Check if the lineString is valid and simple, so can be used
-            # to form a closed and simple polygon
-            if maskLine.is_valid and maskLine.is_simple:
-                contourPoly = Polygon(contourRaDec)
-                maskShapes.append(contourPoly)
-                maskCoords.append(contourRaDec)
-                maskAreas.append(Polygon(contourCoords).area)
-
-    if verbose:
-        print "### %d regions are useful" % len(maskAreas)
-    # Save all the masked regions to a .reg file
-    polySaveReg(maskShapes, noDataAllReg, listPoly=True, color='red')
-    # Also create a MultiPolygon object, and save a .wkb file
-    maskAll = cascaded_union(maskShapes)
-    polySaveWkb(maskAll, noDataAllWkb)
-
-    # Isolate the large ones
-    maskBigList = np.array(maskShapes)[np.where(np.array(maskAreas) > minArea)]
-    maskBigList = map(lambda x: x, maskBigList)
-    coordBigList = np.array(maskCoords)[np.where(np.array(maskAreas) > minArea)]
-    
-    nBig = len(maskBigList)
-    if nBig > 0:
         if verbose:
-            print "### %d regions are larger than the minimum mask sizes" % nBig
+            print "## Reading Fits Image: %s" % fitsName
+
+        # Get the exposure from the butler
+        calExp = butler.get('deepCoadd', dataId, immediate=True)
+
+        # Get the object for mask plane
+        mskImg = calExp.getMaskedImage().getMask()
+
+        # Extract the NO_DATA plane
+        # TODO: NO_DATA is not a system mask, maybe should use INTRP later
+        noData = copy.deepcopy(mskImg)
+        noData &= noData.getPlaneBitMask('NO_DATA')
+        # Return the mask image array
+        noDataArr = noData.getArray()
+
+        # Set all masked pixels to be 1
+        noDataArr /= 256
+        # Pad the 2-D array by a little
+        noDataArr = np.lib.pad(noDataArr, ((1, 1), (1, 1)), 'constant',
+                               constant_values=0)
+
+        # Try a very different approach: Using the find_contours and
+        # approximate_polygon methods from scikit-images package
+        maskShapes = []  # For all the accepted mask regions
+        maskCoords = []  # For the "corner" coordinates of these regions
+        maskAreas  = []  # The sizes of all regions
+
+        # Only find the 0-level contour
+        contoursAll = find_contours(noDataArr, 0)
+        if verbose:
+            print "### %d contours have been detected" % len(contoursAll)
+        for maskContour in contoursAll:
+            # Approximate one extracted contour into a polygon
+            # tolerance decides the accuracy of the polygon, hence
+            # the number of coords for each polygon.
+            # Using large tolerance also means smaller number of final
+            # polygons
+            contourCoords = approximate_polygon(maskContour,
+                                                tolerance=tolerence)
+            # Convert these coordinates into (RA, DEC) using the WCS information
+            contourSkyCoords = map(lambda x: [x[1], x[0]], contourCoords)
+            contourRaDec     = imgWcs.wcs_pix2world(contourSkyCoords, 1)
+            # Require that any useful region must be at least an triangular
+            if len(contourCoords) >= 3:
+                # Form a lineString using these coordinates
+                maskLine = LineString(contourRaDec)
+                # Check if the lineString is valid and simple, so can be used
+                # to form a closed and simple polygon
+                if maskLine.is_valid and maskLine.is_simple:
+                    contourPoly = Polygon(contourRaDec)
+                    maskShapes.append(contourPoly)
+                    maskCoords.append(contourRaDec)
+                    maskAreas.append(Polygon(contourCoords).area)
+
+        if verbose:
+            print "### %d regions are useful" % len(maskAreas)
         # Save all the masked regions to a .reg file
-        polySaveReg(maskBigList, noDataBigReg, listPoly=True, color='blue')
+        polySaveReg(maskShapes, noDataAllReg, listPoly=True, color='red')
         # Also create a MultiPolygon object, and save a .wkb file
-        maskBig = cascaded_union(maskBigList)
-        polySaveWkb(maskBig, noDataBigWkb)
-    else:
-        maskBig = None
-        if verbose:
-            print "### No region is larger than the minimum mask sizes"
+        maskAll = cascaded_union(maskShapes)
+        polySaveWkb(maskAll, noDataAllWkb)
 
-    if savePNG:
-        showHscMask(maskCoords, large=coordBigList, title=titlePng,
-                    pngName=noDataPng)
+        # Isolate the large ones
+        maskBigList = np.array(maskShapes)[np.where(np.array(maskAreas) >
+                                                    minArea)]
+        maskBigList = map(lambda x: x, maskBigList)
+        coordBigList = np.array(maskCoords)[np.where(np.array(maskAreas) >
+                                                     minArea)]
 
-    return maskShapes, maskBigList
+        nBig = len(maskBigList)
+        if nBig > 0:
+            if verbose:
+                print "### %d regions are larger than the minimum mask \
+                        sizes" % nBig
+            # Save all the masked regions to a .reg file
+            polySaveReg(maskBigList, noDataBigReg, listPoly=True, color='blue')
+            # Also create a MultiPolygon object, and save a .wkb file
+            maskBig = cascaded_union(maskBigList)
+            polySaveWkb(maskBig, noDataBigWkb)
+        else:
+            maskBig = None
+            if verbose:
+                print "### No region is larger than the minimum mask sizes"
+
+        if savePNG:
+            showHscMask(maskCoords, large=coordBigList, title=titlePng,
+                        pngName=noDataPng)
+
+        #return maskShapes, maskBigList
 
 
-def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd'):
+def saveTractFileList(tr, patch, filter, prefix):
+
+    allWkbLis = open(prefix + '_' + str(tr) + '_' + filter +
+                     '_nodata_all_wkb.lis', 'w')
+    allRegLis = open(prefix + '_' + str(tr) + '_' + filter +
+                     '_nodata_all_reg.lis', 'w')
+    bigWkbLis = open(prefix + '_' + str(tr) + '_' + filter +
+                     '_nodata_big_wkb.lis', 'w')
+    bigRegLis = open(prefix + '_' + str(tr) + '_' + filter +
+                     '_nodata_big_reg.lis', 'w')
+
+    for pp in patch:
+        # Get the name of the wkb and deg file
+        strTractPatch = (str(tr).strip() + '_' + pp + '_' + filter)
+        ## For all the accepted regions
+        allWkbLis.write(prefix + '_' + strTractPatch + '_nodata_all.wkb')
+        allRegLis.write(prefix + '_' + strTractPatch + '_nodata_all.reg')
+        ## For all the big mask regions
+        bigWkbLis.write(prefix + '_' + strTractPatch + '_nodata_big.wkb')
+        bigRegLis.write(prefix + '_' + strTractPatch + '_nodata_big.reg')
+
+    allWkbLis.close()
+    allRegLis.close()
+    bigWkbLis.close()
+    bigRegLis.close()
+
+
+def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
+                     saveList=True):
 
     # Get the list of coadded images in the direction
     imgList = listAllImages(rootDir, filter)
+    nImg = len(imgList)
+    print '### Will go through %d images !' % nImg
 
     # Get the list of tract and patch for these images
     tract = map(lambda x: int(x.split('/')[-2]), imgList)
     patch = map(lambda x: x.split('/')[-1].split('.')[0], imgList)
 
-    results = map(lambda x, y: coaddPatchNoData(rootDir, x, y, filter,
-                                prefix=prefix, savePNG=True, verbose=True,
-                                tolerence=4, minArea=10000), tract, patch)
-    allList = map(lambda x: x[0], results)
-    bigList = map(lambda x: x[1], results)
-    
-    # Flatten these lists 
-    allFlat = [item for sublist in allList for item in sublist]
-    bigFlat = [item for sublist in bigList for item in sublist]
+    # Get the uniqe tract
+    trUniq = np.unique(tract)
+    print "### There are %d unique tracts!" % len(trUniq)
+    if saveList:
+        for tr in trUniq:
+            saveTractFileList(tr, patch, filter, prefix)
 
-    allUse = []
-    for ss in allFlat:
-        if ss is not None:
-            allUse.append(ss)
-    bigUse = []
-    for tt in bigFlat:
-        if tt is not None:
-            bigUse.append(tt)
+    # If there are too many images, do not generate the combined region file at
+    # first
+    for tt, pp in zip(tract, patch):
+        coaddPatchNoData(rootDir, tt, pp, filter, prefix=prefix,
+                         savePNG=False, verbose=False, tolerence=4,
+                         minArea=10000)
 
-    # Make a cascaded union of them
-    allComb = cascaded_union(allUse)
-    bigComb = cascaded_union(bigUse)
+    """
+    else:
+        results = map(lambda x, y: coaddPatchNoData(rootDir, x, y, filter,
+                                                    prefix=prefix, savePNG=True,
+                                                    verbose=True, tolerence=4,
+                                                    minArea=10000),
+                      tract, patch)
+        allList = map(lambda x: x[0], results)
+        bigList = map(lambda x: x[1], results)
 
-    # Save these polygons as a .wkb file
-    polySaveWkb(allComb, prefix + '_' + filter + '_nodata_all_combined.wkb')
-    polySaveWkb(bigComb, prefix + '_' + filter + '_nodata_big_combined.wkb')
-    
-    # Break them down into list
-    ## ALL 
-    if len(allUse) > 0: 
-        polySaveReg(allUse, prefix + '_' + filter + '_nodata_all_combined.reg', 
-                    listPoly=True, color='red')
-    ## BIG
-    if len(bigUse) > 0:
-        polySaveReg(bigUse, prefix + '_' + filter + '_nodata_big_combined.reg', 
-                    listPoly=True, color='blue')
+        # Flatten these lists
+        allFlat = [item for sublist in allList for item in sublist]
+        bigFlat = [item for sublist in bigList for item in sublist]
 
+        allUse = []
+        for ss in allFlat:
+            if ss is not None:
+                allUse.append(ss)
+                bigUse = []
+                for tt in bigFlat:
+                    if tt is not None:
+                        bigUse.append(tt)
 
-    return allComb, bigComb
+        # Make a cascaded union of them
+        allComb = cascaded_union(allUse)
+        bigComb = cascaded_union(bigUse)
+
+        # Save these polygons as a .wkb file
+        polySaveWkb(allComb, prefix + '_' + filter + '_nodata_all_combined.wkb')
+        polySaveWkb(bigComb, prefix + '_' + filter + '_nodata_big_combined.wkb')
+
+        # Break them down into list
+        ## ALL
+        if len(allUse) > 0:
+            polySaveReg(allUse, prefix + '_' + filter + \
+                        '_nodata_all_combined.reg',
+                        listPoly=True, color='red')
+            ## BIG
+            if len(bigUse) > 0:
+                polySaveReg(bigUse, prefix + '_' + filter + \
+                            '_nodata_big_combined.reg',
+                            listPoly=True, color='blue')
+    """
+
 
 if __name__ == '__main__':
 
