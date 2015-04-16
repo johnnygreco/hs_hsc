@@ -340,6 +340,9 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
                 # if maskLine.is_valid and maskLine.is_simple:
                 if maskLine.is_valid:
                     contourPoly = Polygon(contourRaDec)
+                    # Fix the self-intersected polygon !! VERY USEFUL
+                    if not contourPoly.is_valid:
+                        contourPoly = contourPoly.buffer(0)
                     maskShapes.append(contourPoly)
                     maskCoords.append(contourRaDec)
                     maskAreas.append(Polygon(contourCoords).area)
