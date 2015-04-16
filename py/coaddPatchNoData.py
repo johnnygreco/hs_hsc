@@ -394,23 +394,26 @@ def combineRegFiles(listFile, output=None):
     nReg = len(regList)
     print "### Will combine %d .reg files" % nReg
 
+    """ Get the directory for these files """
+    regDir = os.path.dirname(os.path.abspath(listFile)) + '/'
+
     """ Get the name of the combined .reg files """
     if output is None:
-        fileComb = os.path.splitext(listFile)[0] + '.reg'
+        fileComb = regDir + os.path.splitext(listFile)[0] + '.reg'
     else:
-        fileComb = output
+        fileComb = regDir + output
     regComb = open(fileComb, 'w')
 
     """ Go through every .reg file """
     for ii, reg in enumerate(regList):
 
-        if not os.path.isfile(reg):
+        if not os.path.isfile(regDir + reg):
             raise Exception("Can not find the .reg file: %s !" % reg)
 
         if ii == 0:
-            regComb.write(open(reg, 'r').readlines())
+            regComb.write(open(regDir + reg, 'r').readlines())
         else:
-            regComb.write(open(reg, 'r').readlines()[3:])
+            regComb.write(open(regDir + reg, 'r').readlines()[3:])
 
     regComb.close()
 
@@ -433,16 +436,19 @@ def combineWkbFiles(listFile, output=None):
     nWkb = len(wkbList)
     print "### Will combine %d .reg files" % nWkb
 
+    """ Get the directory for these files """
+    wkbDir = os.path.dirname(os.path.abspath(listFile)) + '/'
+
     """ Get the name of the combined .reg files """
     if output is None:
-        fileComb = os.path.splitext(listFile)[0] + '.wkb'
+        fileComb = wkbDir + os.path.splitext(listFile)[0] + '.wkb'
     else:
-        fileComb = output
+        fileComb = wkbDir + output
 
     """ Go through every .wkb file """
     combWkb = []
     for wkb in wkbList:
-        geoms = polyReadWkb(wkb).geoms[:]
+        geoms = polyReadWkb(wkbDir + wkb).geoms[:]
         for geom in geoms:
             combWkb.append(geom)
     """ Take the cascaded_union of all the mask regions for a tract """
