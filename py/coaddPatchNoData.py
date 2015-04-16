@@ -72,7 +72,7 @@ def showHscMask(coords, large=None, title='No Data Mask Plane',
 
 
 def showTractMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
-                  pngName='tract_mask.png', xsize=16, ysize=16, dpi=150):
+                  pngName='tract_mask.png', xsize=20, ysize=18, dpi=150):
 
     maskShow = polyReadWkb(wkbFile, load=True).geoms[:]
 
@@ -93,35 +93,71 @@ def showTractMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
 
     # Outline all the mask regions
     for ii, mask in enumerate(maskShow):
-        try:
-            coords = mask.boundary.coords[:]
-            for raDec in coords:
-                ax.plot(raDec[:, 1], raDec[:, 0], '-r', linewidth=1.5)
-        except NotImplementedError:
-            for mm in mask.geoms[:]:
-                try:
-                    coords = mm.boundary.coords[:]
-                    for raDec in coords:
-                        ax.plot(raDec[:, 1], raDec[:, 0], '-r', linewidth=1.5)
-                except:
-                    print "Can not plot mask number %d !" % (ii+1)
-                    pass
+        bounds = mask.boundary
+        if bounds.type is "LineString":
+            x, y = bounds.xy
+            ax.plot(x, y, c='r', lw=1.5)
+        elif bounds.type is "MultiLineString":
+            for bb in bounds:
+                x, y = bb.xy
+                ax.plot(x, y, lw=1.5, color='r')
+        else:
+            print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
 
-    # Using polygon to highlight all the large ones
-    """
+    # highlight all the large ones
     if large is not None:
-        for raDec in large:
-            ax.plot(raDec[:, 1], raDec[:, 0], '-b', linewidth=2.0)
-    """
+        bigShow = polyReadWkb(large, load=True).geoms[:]
+        for ii, mask in enumerate(bigShow):
+            bounds = mask.boundary
+            if bounds.type is "LineString":
+                x, y = bounds.xy
+                ax.plot(x, y, c='b', lw=2.0)
+            elif bounds.type is "MultiLineString":
+                for bb in bounds:
+                    x, y = bb.xy
+                    ax.plot(x, y, lw=2.0, color='b')
+            else:
+                print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
+
+    # highlight all the tract corner
+    if corner is not None:
+        cornerShow = polyReadWkb(corner, load=True)
+        if cornerShow.type is "Polygon":
+            bounds = cornerShow.boundary
+            if bounds.type is "LineString":
+                x, y = bounds.xy
+                ax.plot(x, y, c='g', lw=2.5)
+            elif bounds.type is "MultiLineString":
+                for bb in bounds:
+                    x, y = bb.xy
+                    ax.plot(x, y, lw=2.5, color='g')
+            else:
+                print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
+        elif cornerShow.type is "MultiPolygon":
+            for ii, mask in enumerate(cornerShow.geoms[:]):
+                bounds = mask.boundary
+                if bounds.type is "LineString":
+                    x, y = bounds.xy
+                    ax.plot(x, y, c='g', lw=2.5)
+                elif bounds.type is "MultiLineString":
+                    for bb in bounds:
+                        x, y = bb.xy
+                        ax.plot(x, y, lw=2.5, color='g')
+                else:
+                    print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
+        else:
+            print " !!! Not valid tract_corner Polygon"
+
+    ax.margins(0.02, 0.02, tight=True)
+
+    ax.set_xlabel(r'RA (deg)',  fontsize=22)
+    ax.set_ylabel(r'DEC (deg)', fontsize=22)
 
     fig.subplots_adjust(hspace=0.1, wspace=0.1,
                         top=0.95, right=0.95)
 
-    if pngName is not None:
-        fig.savefig(pngName)
-        plt.close(fig)
-
-    return fig
+    fig.savefig(pngName)
+    plt.close(fig)
 
 
 def imgAddNoise(im, gaussian, factor):
@@ -397,9 +433,11 @@ def combineRegFiles(listFile, output=None):
     """ Get the directory for these files """
     regDir = os.path.dirname(os.path.abspath(listFile)) + '/'
 
+    print regDir
+
     """ Get the name of the combined .reg files """
     if output is None:
-        fileComb = regDir + os.path.split(listFile)[1] + '.reg'
+        fileComb = regDir + os.path.splitext(os.path.split(listFile)[1])[0] + '.reg'
     else:
         fileComb = regDir + output
     """ Open a new file to write"""
@@ -408,15 +446,21 @@ def combineRegFiles(listFile, output=None):
     """ Go through every .reg file """
     for ii, reg in enumerate(regList):
 
-        if not os.path.isfile(regDir + reg):
-            raise Exception("Can not find the .reg file: %s !" % reg)
+        fileRead = regDir + reg.strip()
+        if os.path.exists(fileRead) is False:
+            raise Exception("Can not find the .reg file: %s !" % fileRead)
 
         if ii == 0:
-            regComb.write(open(regDir + reg, 'r').readlines())
+            regLines = open(fileRead, 'r').readlines()
+            for line in regLines:
+                regComb.write(line)
         else:
-            regComb.write(open(regDir + reg, 'r').readlines()[3:])
+            regLines = open(fileRead, 'r').readlines()[3:]
+            for line in regLines:
+                regComb.write(line)
 
     regComb.close()
+
 
 # Read a .wkb file into a Polygon shape
 def polyReadWkb(wkbName, load=True):
@@ -442,16 +486,26 @@ def combineWkbFiles(listFile, output=None):
 
     """ Get the name of the combined .reg files """
     if output is None:
-        fileComb = wkbDir + os.path.split(listFile)[1] + '.wkb'
+        fileComb = wkbDir + os.path.splitext(os.path.split(listFile)[1])[0] + '.wkb'
     else:
         fileComb = wkbDir + output
 
     """ Go through every .wkb file """
     combWkb = []
     for wkb in wkbList:
-        geoms = polyReadWkb(wkbDir + wkb).geoms[:]
-        for geom in geoms:
-            combWkb.append(geom)
+        fileRead = wkbDir + wkb.strip()
+
+        if os.path.exists(fileRead) is False:
+            raise Exception("Can not find the .wkb file: %s !" % fileRead)
+
+        wkbRead = polyReadWkb(fileRead)
+        if wkbRead.geom_type is 'Polygon':
+            combWkb.append(wkbRead)
+        elif wkbRead.geom_type is 'MultiPolygon':
+            geoms = wkbRead.geoms[:]
+            for geom in geoms:
+                combWkb.append(geom)
+
     """ Take the cascaded_union of all the mask regions for a tract """
     combWkb = cascaded_union(combWkb)
 
