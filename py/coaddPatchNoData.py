@@ -253,7 +253,7 @@ def listAllImages(rootDir, filter):
 
 def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
                      savePNG=True, verbose=True, tolerence=4,
-                     minArea=10000, clobber=False):
+                     minArea=10000, clobber=False, butler=None, dataId=None):
 
     # Get the name of the wkb and deg file
     strTractPatch = (str(tract).strip() + '_' + patch + '_' + filter)
@@ -277,8 +277,10 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
     if (not fileAllExist) or clobber:
 
         # Make a butler and specify the dataID
-        butler = dafPersist.Butler(rootDir)
-        dataId = {'tract':tract, 'patch':patch, 'filter':filter}
+        if butler is None:
+            butler = dafPersist.Butler(rootDir)
+        if dataId is None:
+            dataId = {'tract':tract, 'patch':patch, 'filter':filter}
 
         # Get the name of the input fits image
         if rootDir[-1] is '/':
@@ -532,12 +534,16 @@ def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
         for tr in trUniq:
             saveTractFileList(tr, patch, filter, prefix)
 
+    butler = dafPersist.Butler(rootDir)
+
     # If there are too many images, do not generate the combined region file at
     # first
     for tt, pp in zip(tract, patch):
+        dataId = {'tract':tt, 'patch':pp, 'filter':filter}
         coaddPatchNoData(rootDir, tt, pp, filter, prefix=prefix,
                          savePNG=False, verbose=True, tolerence=4,
-                         minArea=10000, clobber=False)
+                         minArea=10000, clobber=False, butler=butler,
+                         dataId=dataId)
 
     """
     else:
