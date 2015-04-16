@@ -247,12 +247,10 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
     fileExist2 = os.path.isfile(noDataAllReg)
     ## For all the big mask regions
     noDataBigWkb = prefix + '_' + strTractPatch + '_nodata_big.wkb'
-    fileExist3 = os.path.isfile(noDataBigWkb)
     noDataBigReg = prefix + '_' + strTractPatch + '_nodata_big.reg'
-    fileExist4 = os.path.isfile(noDataBigReg)
 
     # See if all the files have been generated
-    fileAllExist = (fileExist1 and fileExist2 and fileExist3 and fileExist4)
+    fileAllExist = (fileExist1 and fileExist2)
 
     # Only generate new one when
     #  1) Not all files are available
@@ -349,11 +347,6 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
 
         if verbose:
             print "### %d regions are useful" % len(maskAreas)
-        # Save all the masked regions to a .reg file
-        polySaveReg(maskShapes, noDataAllReg, listPoly=True, color='red')
-        # Also create a MultiPolygon object, and save a .wkb file
-        maskAll = cascaded_union(maskShapes)
-        polySaveWkb(maskAll, noDataAllWkb)
 
         # Isolate the large ones
         maskBigList = np.array(maskShapes)[np.where(np.array(maskAreas) >
@@ -382,7 +375,11 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
                 showNoDataMask(noDataAllWkb, large=noDataBigWkb, title=titlePng,
                                pngName=noDataPng)
 
-        #return maskShapes, maskBigList
+        # Save all the masked regions to a .reg file
+        polySaveReg(maskShapes, noDataAllReg, listPoly=True, color='red')
+        # Also create a MultiPolygon object, and save a .wkb file
+        maskAll = cascaded_union(maskShapes)
+        polySaveWkb(maskAll, noDataAllWkb)
 
     else:
         if verbose:
