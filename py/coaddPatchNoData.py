@@ -166,25 +166,6 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
                      savePNG=True, verbose=True, tolerence=4,
                      minArea=10000, clobber=False):
 
-    # Make a butler and specify the dataID
-    butler = dafPersist.Butler(rootDir)
-    dataId = {'tract':tract, 'patch':patch, 'filter':filter}
-
-    # Get the name of the input fits image
-    if rootDir[-1] is '/':
-        fitsName = rootDir + 'deepCoadd/' + filter + '/' + str(tract).strip() \
-                   + '/' + patch + '.fits'
-    else:
-        fitsName = rootDir + '/deepCoadd/' + filter + '/' + str(tract).strip() \
-                   + '/' + patch + '.fits'
-    if not os.path.isfile(fitsName):
-        raise Exception('Can not find the input fits image: %s' % fitsName)
-    # Read in the original image and get the wcs
-    # TODO: This is not perfect
-    hduList = fits.open(fitsName)
-    header = hduList[1].header
-    imgWcs = wcs.WCS(header)
-
     # Get the name of the wkb and deg file
     strTractPatch = (str(tract).strip() + '_' + patch + '_' + filter)
     ## For all the accepted regions
@@ -205,6 +186,26 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
     #  1) Not all files are available
     #  2) All available, but clobber = True
     if (not fileAllExist) or clobber:
+
+        # Make a butler and specify the dataID
+        butler = dafPersist.Butler(rootDir)
+        dataId = {'tract':tract, 'patch':patch, 'filter':filter}
+
+        # Get the name of the input fits image
+        if rootDir[-1] is '/':
+            fitsName = rootDir + 'deepCoadd/' + filter + '/' + str(tract).strip() \
+                    + '/' + patch + '.fits'
+        else:
+            fitsName = rootDir + '/deepCoadd/' + filter + '/' + str(tract).strip() \
+                    + '/' + patch + '.fits'
+            if not os.path.isfile(fitsName):
+                raise Exception('Can not find the input fits image: %s' % fitsName)
+        # Read in the original image and get the wcs
+        # TODO: This is not perfect
+        hduList = fits.open(fitsName)
+        header = hduList[1].header
+        imgWcs = wcs.WCS(header)
+
         # Get the name of the png file
         titlePng = prefix + strTractPatch + '_NODATA'
         noDataPng = prefix + '_' + strTractPatch + '_nodata.png'
@@ -300,6 +301,10 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
 
         #return maskShapes, maskBigList
 
+    else:
+        if verbose:
+            print "### %d, %s has been reduced before! Skip!" % (tract, patch)
+
 
 def saveTractFileList(tr, patch, filter, prefix):
 
@@ -351,8 +356,8 @@ def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
     # first
     for tt, pp in zip(tract, patch):
         coaddPatchNoData(rootDir, tt, pp, filter, prefix=prefix,
-                         savePNG=False, verbose=False, tolerence=4,
-                         minArea=10000)
+                         savePNG=False, verbose=True, tolerence=4,
+                         minArea=10000, clobber=False)
 
     """
     else:
