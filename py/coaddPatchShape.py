@@ -20,7 +20,7 @@ from astropy.io    import fits
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 # Turn off the interactive mode
-mpl.use('Agg')
+#mpl.use('Agg')
 plt.ioff()
 # Set a few parameters
 mpl.rcParams['figure.figsize'] = 12, 10
@@ -36,6 +36,9 @@ mpl.rc('axes', linewidth=2)
 
 BLUE = '#6699cc'
 GRAY = '#999999'
+
+# TODO: Need to more organized
+import coaddPatchNoData as coaddND
 
 # Read a fits catalog and return its data
 # TODO: Moved to coaddUtils.py
@@ -181,48 +184,6 @@ def polyReadWkb(wkbName, load=True):
     else:
         return polyWkb
 
-# Save the Polygon region into a DS9 .reg file
-def getPolyLine(polyCoords):
-
-    coordShow = map(lambda x: str(x[0]) + ' ' + str(x[1]) + ' ', polyCoords)
-
-    # The format for Polygon in DS9 is:
-    # Usage: polygon x1 y1 x2 y2 x3 y3 ...
-    polyLine = 'polygon '
-    for p in coordShow:
-        polyLine += p
-
-    polyLine += '\n'
-
-    return polyLine
-
-# !!! Make sure that the Polygon is simple
-def polySaveReg(poly, regName, listPoly=False):
-
-    # DS9 region file header
-    head1 = '# Region file format: DS9 version 4.1\n'
-    head2 = 'global color=blue width=2\n'
-    head3 = 'icrs\n'
-    # Open the output file and write the header
-    regFile = open(regName, 'w')
-    regFile.write(head1)
-    regFile.write(head2)
-    regFile.write(head3)
-
-    if listPoly:
-        for pp in poly:
-            # Get the coordinates for every point in the polygon
-            polyCoords = pp.boundary.coords[:]
-            polyLine = getPolyLine(polyCoords)
-            regFile.write(polyLine)
-    else:
-        polyCoords = poly.boundary.coords[:]
-        polyLine = getPolyLine(polyCoords)
-        regFile.write(polyLine)
-
-    regFile.close()
-
-
 # Given a list of Polygon shapes, find the common region among them
 def polyMultiCommon(polyMulti):
 
@@ -260,7 +221,7 @@ def coaddPatchShape(catFile, savePng=True):
     # Get the list of polygons
     polyList = getPolyList(catData)
     # Save a DS9 .reg file for each individual images
-    polySaveReg(polyList, catPrefix + '_list.reg', listPoly=True)
+    coaddND.polySaveReg(polyList, catPrefix + '_list.reg', listPoly=True)
 
     # Get the Union of all polygons and its total area
     polyUnion, areaUnion = getPolyUnion(polyList)
@@ -276,7 +237,7 @@ def coaddPatchShape(catFile, savePng=True):
             polySaveWkb(polyParts[ii], partWkb)
             # Save a separated .reg file
             partReg = catPrefix + '_' + str(ii+1).strip() + '.reg'
-            polySaveReg(polyParts[ii], partReg)
+            coaddND.polySaveReg(polyParts[ii], partReg)
             # Save a PNG figure if necessary
             if savePng:
                 partPng = catPrefix + '_' + str(ii+1).strip() + '.png'
@@ -284,7 +245,7 @@ def coaddPatchShape(catFile, savePng=True):
     else:
         # Save a separated .reg file
         polyReg = catPrefix + '.reg'
-        polySaveReg(polyUnion, polyReg)
+        coaddND.polySaveReg(polyUnion, polyReg)
         # Save a PNG file if necessary
         if savePng:
             polyPng = catPrefix + '.png'
@@ -320,7 +281,7 @@ def coaddCommonArea(wkbList, clobber=True, prefix='poly_common',
             polySaveWkb(commonParts[ii], commonWkb)
             # Save a separated .reg file
             commonReg = prefix + '_' + str(ii+1).strip() + '_inter.reg'
-            polySaveReg(commonParts[ii], commonReg)
+            coaddND.polySaveReg(commonParts[ii], commonReg)
             # Save a PNG figure if necessary
             if savePng:
                 commonPng = prefix + '_' + str(ii+1).strip() + '_inter.png'
@@ -330,7 +291,7 @@ def coaddCommonArea(wkbList, clobber=True, prefix='poly_common',
         commonParts = interMulti
         nCommon = 1
         commonReg = prefix + '_inter.reg'
-        polySaveReg(interMulti, commonReg)
+        coaddND.polySaveReg(interMulti, commonReg)
         # Save a PNG file if necessary
         if savePng:
             commonPng = prefix + '_inter.png'

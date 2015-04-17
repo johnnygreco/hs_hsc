@@ -32,6 +32,11 @@ def getCircleRaDec(ra, dec, size):
 
 def saveRgbPng(outRgb, imgRgb):
 
+    """
+    Save the RGB image as a PNG figure
+    TODO: Need more works!
+    """
+
     import matplotlib.pyplot as plt
 
     fig = plt.figure(dpi=120)
