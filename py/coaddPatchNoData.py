@@ -184,7 +184,8 @@ def getPolyLine(polyCoords):
     return polyLine
 
 # !!! Make sure that the Polygon is simple
-def polySaveReg(poly, regName, listPoly=False, color='blue'):
+def polySaveReg(poly, regName, listPoly=False, color='blue',
+                verbose=True):
 
     # DS9 region file header
     head1 = '# Region file format: DS9 version 4.1\n'
@@ -197,27 +198,63 @@ def polySaveReg(poly, regName, listPoly=False, color='blue'):
     regFile.write(head3)
 
     if listPoly:
-        for pp in poly:
+        for ii, pp in enumerate(poly):
             if pp.geom_type is "Polygon":
-            # Get the coordinates for every point in the polygon
-                polyCoords = pp.boundary.coords[:]
-                polyLine = getPolyLine(polyCoords)
-                regFile.write(polyLine)
+                # Get the coordinates for every point in the polygon
+                # Still generate "Multi-part geometries do not provide a
+                # coordinate sequence" Error
+                try:
+                    polyCoords = pp.boundary.coords[:]
+                    polyLine = getPolyLine(polyCoords)
+                    regFile.write(polyLine)
+                except NotImplementedError:
+                    # Right now the work-around is to "puff-up" the Polygon a
+                    # little bit; This should be fine for small polygon shape
+                    if verbose:
+                        print "### Multi-Part Polygon: %d" % ii
+                    pp = pp.buffer(1)
+                    polyCoords = pp.exterior.coords[:]
+                    polyLine = getPolyLine(polyCoords)
+                    regFile.write(polyLine)
             elif pp.geom_type is "MultiPolygon":
                 for mm in pp.geoms:
+                    try:
+                        polyCoords = mm.boundary.coords[:]
+                        polyLine = getPolyLine(polyCoords)
+                        regFile.write(polyLine)
+                    except NotImplementedError:
+                        if verbose:
+                            print "### Multi-Part Polygon: %d" % ii
+                        mm = mm.buffer(1)
+                        polyCoords = mm.exterior.coords[:]
+                        polyLine = getPolyLine(polyCoords)
+                        regFile.write(polyLine)
+    else:
+        if poly.geom_type is "Polygon":
+            try:
+                polyCoords = poly.boundary.coords[:]
+                polyLine = getPolyLine(polyCoords)
+                regFile.write(polyLine)
+            except NotImplementedError:
+                if verbose:
+                    print "### Multi-Part Polygon: %d" % ii
+                poly = poly.buffer(1)
+                polyCoords = poly.exterior.coords[:]
+                polyLine = getPolyLine(polyCoords)
+                regFile.write(polyLine)
+        elif poly.geom_type is "MultiPolygon":
+            for mm in poly.geoms:
+                try:
                     polyCoords = mm.boundary.coords[:]
                     polyLine = getPolyLine(polyCoords)
                     regFile.write(polyLine)
-    else:
-        if poly.geom_type is "Polygon":
-            polyCoords = poly.boundary.coords[:]
-            polyLine = getPolyLine(polyCoords)
-            regFile.write(polyLine)
-        elif poly.geom_type is "MultiPolygon":
-            for mm in poly.geoms:
-                polyCoords = mm.boundary.coords[:]
-                polyLine = getPolyLine(polyCoords)
-                regFile.write(polyLine)
+                except NotImplementedError:
+                    if verbose:
+                        print "### Multi-Part Polygon: %d" % ii
+                    mm = mm.buffer(1)
+                    polyCoords = mm.exterior.coords[:]
+                    polyLine = getPolyLine(polyCoords)
+                    regFile.write(polyLine)
 
     regFile.close()
 
@@ -367,6 +404,12 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
             if verbose:
                 print "### No region is larger than the minimum mask sizes"
 
+        # Save all the masked regions to a .reg file
+        polySaveReg(maskShapes, noDataAllReg, listPoly=True, color='red')
+        # Also create a MultiPolygon object, and save a .wkb file
+        maskAll = cascaded_union(maskShapes)
+        polySaveWkb(maskAll, noDataAllWkb)
+
         if savePNG:
             if maskBig is None:
                 showNoDataMask(noDataAllWkb, title=titlePng,
@@ -375,11 +418,6 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
                 showNoDataMask(noDataAllWkb, large=noDataBigWkb, title=titlePng,
                                pngName=noDataPng)
 
-        # Save all the masked regions to a .reg file
-        polySaveReg(maskShapes, noDataAllReg, listPoly=True, color='red')
-        # Also create a MultiPolygon object, and save a .wkb file
-        maskAll = cascaded_union(maskShapes)
-        polySaveWkb(maskAll, noDataAllWkb)
 
     else:
         if verbose:
