@@ -35,6 +35,7 @@ def showMaskMatch(objMatch, acpMask, rejMask=rejMask,
     Show the matched objects on top of the masks
     """
 
+
 def coaddMaskMatch(inCat, acpMask, raField=None, decField=None,
                    showMatch=True, infoField1=None, infoText1=None,
                    infoField2=None, infoText2=None, outCat=None,
