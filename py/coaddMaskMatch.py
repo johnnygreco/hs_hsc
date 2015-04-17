@@ -7,6 +7,9 @@ import os
 import argparse
 import numpy as np
 
+# Astropy related
+from astropy.io import fits
+
 # Matplotlib default settings
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -54,6 +57,8 @@ def coaddMaskMatch(inCat, acpMask, raField=None, decField=None,
             raise Exception("Can not find the rejection mask: %s !" % rejMask)
 
     """ Try to find the Ra and Dec columns """
+    catHdu = fits.open(inCat)
+    catData = catHdu[1].data
 
     """ Form an array of (RA, DEC) """
 
