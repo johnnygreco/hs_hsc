@@ -29,6 +29,7 @@ mpl.rc('axes', linewidth=2)
 from shapely.geometry import Polygon, LineString
 from shapely          import wkb
 
+# Personal codes
 from coaddPatchNoData import polyReadWkb
 
 def showMaskMatch(objMatch, acpMask, rejMask=rejMask,
@@ -75,15 +76,6 @@ def coaddMaskMatch(inCat, acpMask, raField=None, decField=None,
                       infoField2=infoField2, infoText2=infoText2)
     pass
     return objMatch
-
-def function(arg1):
-    """TODO: Docstring for function.
-
-    :arg1: TODO
-    :returns: TODO
-
-    """
-    pass
 
 if __name__ == '__main__':
 
