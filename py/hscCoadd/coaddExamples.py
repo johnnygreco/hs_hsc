@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# encoding: utf-8
+
 # Examples:
 
 ################################################################################
@@ -65,3 +68,17 @@
 #
 #noDataUse, noDataComb = cpnd.batchPatchNoData(rootDir, filter=filter,
 #                                              prefix=prefix)
+
+#################################################################################
+# Match external catalogs
+
+inCat = "/home/hs/Dropbox/work/project/hs_hsc/py/data/test_extra_cat.fits"
+acpMask = "/home/hs/Dropbox/work/project/hs_hsc/py/ipynb/ssp341_cosmos_HSC-I_corners.wkb"
+rejMask = "/home/hs/Dropbox/work/project/hs_hsc/py/ipynb/ssp341_cosmos_0_HSC-I_nodata_all.wkb"
+
+import coaddMaskMatch as cmm
+cmm.coaddMaskMatch(inCat, acpMask, raField='RA', decField='DEC',
+                   showMatch=True, infoField1=None, infoText1=None,
+                   infoField2=None, infoText2=None, outCat=None,
+                   rejMask=rejMask)
+

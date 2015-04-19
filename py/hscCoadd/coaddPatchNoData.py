@@ -36,7 +36,8 @@ from skimage.measure import find_contours, approximate_polygon
 import coaddPatchShape as coaddPS
 
 def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
-                  pngName='tract_mask.png', xsize=20, ysize=18, dpi=150):
+                  pngName='tract_mask.png', xsize=20, ysize=18, dpi=150,
+                  saveFile=True):
 
 
     fig = plt.figure(figsize=(xsize, ysize), dpi=dpi)
@@ -141,8 +142,11 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
     fig.subplots_adjust(hspace=0.1, wspace=0.1,
                         top=0.95, right=0.95)
 
-    fig.savefig(pngName)
-    plt.close(fig)
+    if saveFile:
+        fig.savefig(pngName)
+        plt.close(fig)
+    else:
+        return fig
 
 
 def imgAddNoise(im, gaussian, factor):
