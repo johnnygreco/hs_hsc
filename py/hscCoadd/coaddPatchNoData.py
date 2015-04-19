@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# encoding: utf-8
 
 from __future__ import division
 
@@ -21,7 +22,7 @@ mpl.rcParams['xtick.minor.width'] = 1.5
 mpl.rcParams['ytick.major.size'] = 8.0
 mpl.rcParams['ytick.major.width'] = 1.5
 mpl.rcParams['ytick.minor.size'] = 4.0
-mpl.rcParams['ytick.minor.width'] = 1.5
+#mpl.rcParams['ytick.minor.width'] = 1.5
 mpl.rc('axes', linewidth=2)
 
 # Shapely related imports
@@ -200,12 +201,16 @@ def polySaveReg(poly, regName, listPoly=False, color='blue',
                     polyCoords = pp.boundary.coords[:]
                     polyLine = getPolyLine(polyCoords)
                     regFile.write(polyLine)
-                except NotImplementedError:
+                except NotImplementedError as notImplent:
                     # Right now the work-around is to "puff-up" the Polygon a
                     # little bit; This should be fine for small polygon shape
+                    # For very rare case, this could fail !!
+                    # Lower the tolerance can fix this problem
                     if verbose:
                         print "### Multi-Part Polygon: %d" % ii
                     pp = pp.buffer(1)
+                    if verbose:
+                        print "### Puff it up a little bit !"
                     polyCoords = pp.exterior.coords[:]
                     polyLine = getPolyLine(polyCoords)
                     regFile.write(polyLine)
@@ -327,8 +332,6 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
         # Return the mask image array
         noDataArr = noData.getArray()
 
-        # Set all masked pixels to be 1
-        #noDataArr /= 256
         # Pad the 2-D array by a little
         noDataArr = np.lib.pad(noDataArr, ((1, 1), (1, 1)), 'constant',
                                constant_values=0)
@@ -560,7 +563,7 @@ def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
         for tt, pp in zip(tract, patch):
             dataId = {'tract':tt, 'patch':pp, 'filter':filter}
             coaddPatchNoData(rootDir, tt, pp, filter, prefix=prefix,
-                             savePNG=False, verbose=True, tolerence=4,
+                             savePNG=False, verbose=True, tolerence=3,
                              minArea=10000, clobber=False, butler=butler,
                              dataId=dataId)
 
