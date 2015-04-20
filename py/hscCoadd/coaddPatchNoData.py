@@ -91,19 +91,18 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
                 for bb in bounds:
                     x, y = bb.xy
                     ax.plot(x, y, lw=2.5, color='b')
-            elif bigShow.type is "MultiPolygon":
-                for ii, mask in enumerate(bigShow):
-                    bounds = mask.boundary
-                    if bounds.type is "LineString":
-                        x, y = bounds.xy
-                        ax.plot(x, y, c='b', lw=2.0)
-                    elif bounds.type is "MultiLineString":
-                        for bb in bounds:
-                            x, y = bb.xy
-                            ax.plot(x, y, lw=2.0, color='b')
-                    else:
-                        print " !!! Can not plot shape %d - %s !" % (ii,
-                                                                     bounds.type)
+        elif bigShow.type is "MultiPolygon":
+            for ii, mask in enumerate(bigShow):
+                bounds = mask.boundary
+                if bounds.type is "LineString":
+                    x, y = bounds.xy
+                    ax.plot(x, y, c='b', lw=2.0)
+                elif bounds.type is "MultiLineString":
+                    for bb in bounds:
+                        x, y = bb.xy
+                        ax.plot(x, y, lw=2.0, color='b')
+                else:
+                    print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
 
     # highlight all the tract corner
     if corner is not None:
