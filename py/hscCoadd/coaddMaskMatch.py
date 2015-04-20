@@ -42,8 +42,10 @@ def polyReadWkb(wkbName, load=True):
         return polyWkb
 
 """ TODO: Need to be organized"""
-def showMatchShape(wkbFile, large=None, corner=None, title='No Data Mask Plane',
-                  pngName='tract_mask.png', xsize=20, ysize=18, dpi=150,
+def showMaskMatch(objMatch, acpRegs, rejRegs=None, title='Matched Objects',
+                  raField='ra', decField='dec', infoField1=None, infoField2=None,
+                  infoText1=None, infoText2=None,
+                  pngName='object_matched.png', xsize=20, ysize=18, dpi=150,
                   saveFile=True):
 
     fig = plt.figure(figsize=(xsize, ysize), dpi=dpi)
@@ -61,84 +63,56 @@ def showMatchShape(wkbFile, large=None, corner=None, title='No Data Mask Plane',
     ax.set_title(title, fontsize=25, fontweight='bold')
     ax.title.set_position((0.5,1.01))
 
-    maskShow = polyReadWkb(wkbFile, load=True)
-    # Outline all the mask regions
-    if maskShow.type is "Polygon":
-        bounds = maskShow.boundary
-        if bounds.type is "LineString":
-            x, y = bounds.xy
-            ax.plot(x, y, c='r', lw=2.5)
-        elif bounds.type is "MultiLineString":
-            for bb in bounds:
-                x, y = bb.xy
-                ax.plot(x, y, lw=2.5, color='r')
-    elif maskShow.type is "MultiPolygon":
-        for ii, mask in enumerate(maskShow):
-            bounds = mask.boundary
+    # Highlight all the rejection masks
+    if rejRegs is not None:
+        if rejRegs.type is "Polygon":
+            bounds = rejRegs.boundary
             if bounds.type is "LineString":
                 x, y = bounds.xy
-                ax.plot(x, y, c='r', lw=1.5)
+                ax.plot(x, y, c='b', lw=1.5)
             elif bounds.type is "MultiLineString":
                 for bb in bounds:
                     x, y = bb.xy
-                    ax.plot(x, y, lw=1.5, color='r')
-            else:
-                print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
-
-    # highlight all the large ones
-    if large is not None:
-        bigShow = polyReadWkb(large, load=True)
-        if bigShow.type is "Polygon":
-            bounds = bigShow.boundary
-            if bounds.type is "LineString":
-                x, y = bounds.xy
-                ax.plot(x, y, c='b', lw=2.5)
-            elif bounds.type is "MultiLineString":
-                for bb in bounds:
-                    x, y = bb.xy
-                    ax.plot(x, y, lw=2.5, color='b')
-            elif bigShow.type is "MultiPolygon":
-                for ii, mask in enumerate(bigShow):
-                    bounds = mask.boundary
-                    if bounds.type is "LineString":
-                        x, y = bounds.xy
-                        ax.plot(x, y, c='b', lw=2.0)
-                    elif bounds.type is "MultiLineString":
-                        for bb in bounds:
-                            x, y = bb.xy
-                            ax.plot(x, y, lw=2.0, color='b')
-                    else:
-                        print " !!! Can not plot shape %d - %s !" % (ii,
-                                                                     bounds.type)
-
-    # highlight all the tract corner
-    if corner is not None:
-        cornerShow = polyReadWkb(corner, load=True)
-        if cornerShow.type is "Polygon":
-            bounds = cornerShow.boundary
-            if bounds.type is "LineString":
-                x, y = bounds.xy
-                ax.plot(x, y, c='g', lw=2.5)
-            elif bounds.type is "MultiLineString":
-                for bb in bounds:
-                    x, y = bb.xy
-                    ax.plot(x, y, lw=2.5, color='g')
-            else:
-                print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
-        elif cornerShow.type is "MultiPolygon":
-            for ii, mask in enumerate(cornerShow.geoms[:]):
+                    ax.plot(x, y, lw=1.5, color='b')
+        elif rejRegs.type is "MultiPolygon":
+            for ii, mask in enumerate(rejRegs):
                 bounds = mask.boundary
                 if bounds.type is "LineString":
                     x, y = bounds.xy
-                    ax.plot(x, y, c='g', lw=2.5)
+                    ax.plot(x, y, c='b', lw=1.0)
                 elif bounds.type is "MultiLineString":
                     for bb in bounds:
                         x, y = bb.xy
-                        ax.plot(x, y, lw=2.5, color='g')
+                        ax.plot(x, y, lw=1.0, color='b')
                 else:
                     print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
-        else:
-            print " !!! Not valid tract_corner Polygon"
+
+    # Outline the accepted mask regions
+    if acpRegs.type is "Polygon":
+        bounds = acpRegs.boundary
+        if bounds.type is "LineString":
+            x, y = bounds.xy
+            ax.plot(x, y, c='g', lw=2.5)
+        elif bounds.type is "MultiLineString":
+            for bb in bounds:
+                x, y = bb.xy
+                ax.plot(x, y, lw=2.5, color='g')
+    elif acpRegs.type is "MultiPolygon":
+        for ii, mask in enumerate(acpRegs):
+            bounds = mask.boundary
+            if bounds.type is "LineString":
+                x, y = bounds.xy
+                ax.plot(x, y, c='g', lw=1.5)
+            elif bounds.type is "MultiLineString":
+                for bb in bounds:
+                    x, y = bb.xy
+                    ax.plot(x, y, lw=1.5, color='g')
+            else:
+                print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
+
+    raPlot  = objMatch.field(raField)
+    decPlot = objMatch.field(decField)
+    ax.scatter(raPlot, decPlot, s=100, c='r')
 
     ax.margins(0.02, 0.02, tight=True)
 
@@ -155,19 +129,6 @@ def showMatchShape(wkbFile, large=None, corner=None, title='No Data Mask Plane',
         return fig
 
 
-def showMaskMatch(objMatch, acpMask, rejMask=None,
-                  raField='ra', decField='dec', pngFile=None,
-                  infoField1=None, infoText1=None,
-                  infoField2=None, infoText2=None):
-    """
-    Show the matched objects on top of the masks
-    """
-    if pngFile is None:
-        pngFile = 'object_matched.png'
-    fig = showMatchShape(acpMask, large=rejMask,
-                        pngName=pngFile, xsize=20, ysize=18, dpi=150,
-                        saveFile=True)
-
 def coaddMaskMatch(inCat, acpMask, raField=None, decField=None,
                    showMatch=True, infoField1=None, infoText1=None,
                    infoField2=None, infoText2=None, outCat=None,
@@ -182,6 +143,18 @@ def coaddMaskMatch(inCat, acpMask, raField=None, decField=None,
         raise Exception("Can not find the accept mask: %s !" % acpMask)
     else:
         acpRegs = polyReadWkb(acpMask)
+        """ Get the basic boundary of the survey area"""
+        acpRange = []
+        if acpRegs.type is 'Polygon':
+            acpRange.append(acpRegs.bounds)
+        elif acpRegs.type is 'MultiPolygon':
+            for poly in acpRegs.geoms:
+                acpRange.append(poly.bounds)
+    """ Number of regions in the accepted mask """
+    nAcpReg = len(acpRange)
+    if verbose:
+        print "### %d accepted regions are available" % nAcpReg
+
     """ Load the rejection mask """
     if rejMask is not None:
         if not os.path.isfile(rejMask):
@@ -237,11 +210,11 @@ def coaddMaskMatch(inCat, acpMask, raField=None, decField=None,
     """ Visualize the results """
     pngFile = os.path.splitext(outCat)[0] + '.png'
     if showMatch:
-        showMaskMatch(objMatch, acpMask, rejMask=rejMask,
+        showMaskMatch(objMatch, acpRegs, rejRegs=rejRegs,
                       raField=raField, decField=decField,
                       infoField1=infoField1, infoText1=infoText1,
                       infoField2=infoField2, infoText2=infoText2,
-                      pngFile=pngFile)
+                      pngName=pngFile)
     return objMatch
 
 if __name__ == '__main__':

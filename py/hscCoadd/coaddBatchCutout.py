@@ -11,7 +11,7 @@ import coaddImageCutout as cdCutout
 import coaddColourImage as cdColor
 
 
-def decideCutoutSize(redshift):
+def decideCutoutSize(z):
 
     """
     Decide the typical cutout size for certain redshift
@@ -106,7 +106,8 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
     for i in range(nObjs):
 
         if verbose:
-            print "### %d: RA: %10.5f DEC %10.5f - Size: %d" % (i+1, ra[i], dec[i], size[i])
+            print "### %d: ID: %d ; RA: %10.5f DEC %10.5f ;" + \
+                " Size: %d" % (i+1, id[i], ra[i], dec[i], size[i])
 
         # New prefix
         newPrefix = prefix + '_' + str(id[i]).strip()
@@ -126,7 +127,7 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
                 matchStatus = 'NoData'
         else:
             matchStatus = 'Outside'
-        logMatch.write(str(id) + '  ' + matchStatus)
+        logMatch.write(str(id[i]) + '   ' + matchStatus + '\n')
 
         # Color Image
         if (matchStatus is 'Full') or (matchStatus is 'Part'):

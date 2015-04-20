@@ -43,9 +43,9 @@ def saveRgbPng(outRgb, imgRgb):
     fig.imshow(imgRgb, interpolation='none')
     fig.savefig(outRgb)
 
-def isHscFilter(filter, full=True):
+def isHscFilter(filter, short=True):
 
-    if full:
+    if not short:
         hscFilters = ['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y']
     else:
         hscFilters = ['g', 'r', 'i', 'z', 'y']
@@ -135,16 +135,10 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
             subWcs = subImage.getWcs()
 
             images[i] = subImage.getMaskedImage()
-            wcs[i] = subWcs
 
         # Define the Blue, Green, and Red channels
         # TODO: Need to be tested
         B, G, R = images[0].getImage(), images[1].getImage(), images[2].getImage()
-        cenB, cenG, cenR = wcs[0].skyToPixel(raDec), wcs[1].skyToPixel(raDec), \
-                wcs[2].skyToPixel(raDec)
-
-        # Get the image coordinate for the input (RA, DEC)
-        # TODO
 
         # To see if data are available for all the cut-out region
         dimExpect = (2 * size +1)
@@ -161,8 +155,8 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
 
         # Better way to show the image
         # TODO
-        saveRgbPng(outRgb, imgRgb)
-        # afwRgb.writeRGB(outRgb, imgRgb)
+        #saveRgbPng(outRgb, imgRgb)
+        afwRgb.writeRGB(outRgb, imgRgb)
 
     #return imgRgb
 

@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
+import os
 import copy
 import argparse
+import warnings
 import numpy as np
+
+# HSC Pipeline
 import lsst.daf.persistence   as dafPersist
 import lsst.afw.coord         as afwCoord
 import lsst.afw.image         as afwImage
@@ -18,9 +22,13 @@ def getCoaddPsfImage(calExp, coord):
     coordXY = wcs.skyToPixel(coord)
     # Get the PSF object for the exposure
     psf = calExp.getPsf()
-    psfImg = psf.computeImage(coordXY)
+    try:
+        psfImg = psf.computeImage(coordXY)
+        return psfImg
+    except Exception:
+        warnings.warn("### Can not compute PSF Image !!!")
+        return None
 
-    return psfImg
 
 def getCoaddMskPlane(calExp, bitmask):
 
@@ -120,13 +128,33 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
         except Exception, errMsg:
 
-            coaddFound = False
             print "#############################################"
             print " The desired coordinate is not available !!! "
             print "#############################################"
             print errMsg
 
+            """ TODO """
+            coaddFound = False
+            noData = True
+            partialCut = True
+            continue
+
         else:
+
+            """
+            It's still possible that the matched location actually has no useful data
+            (e.g. have been interpolated, or in the NO_DATA part of the patch)
+            For this situation, no psf image can be generated !!
+            """
+            coaddFound = True
+            # Get the Coadded PSF image
+            psfImg = getCoaddPsfImage(coadd, coord)
+            if psfImg is None:
+                noData = True
+                partialCut = True
+                continue
+            else:
+                noData = False
 
             # Get the WCS information
             wcs = coadd.getWcs()
@@ -140,9 +168,16 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
             # Grow the bounding box to the desired size
             bbox.grow(int(size))
+            """
+            Here the bbox is still the desired one
+            """
+            xCBefore = map(lambda x: x.getX(), bbox.getCorners())
+            yCBefore = map(lambda x: x.getY(), bbox.getCorners())
             bbox.clip(coadd.getBBox(afwImage.PARENT))
 
             if bbox.isEmpty():
+                noData = True
+                partialCut = True
                 continue
             else:
                 if bbox.getArea() < sizeExpect:
@@ -155,7 +190,8 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
             # To see if data are available for all the cut-out region
             if partialCut:
-                print "### Only part of the desired cutout-region is returned !"
+                warnings.warn("### Only part of the cutout region is available" + \
+                        " : %d, %s" % (tractId, patchId))
                 outPre = prefix + '_' + str(tractId) + '_' + patchId + '_' + \
                         filt + '_cent'
             else:
@@ -169,8 +205,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
             # Save the cutout image to a new FITS file
             subImage.writeFits(outImg)
 
-            # Get the Coadded PSF image
-            psfImg = getCoaddPsfImage(coadd, coord)
+            # Save the PSF image
             psfImg.writeFits(outPsf)
 
             if saveMsk is True:
@@ -186,27 +221,41 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                 mskBad = getCoaddBadMsk(subImage)
                 mskBad.writeFits(outPre + '_bad.fits')
 
-            coaddFound = True
 
             if saveSrc is True:
 
                 # Get the source catalog
-                srcCat = butler.get('deepCoadd_forced_src', tract=tractId,
-                                    patch=patchId, filter=filt, immediate=True,
-                                    flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
-                # Get the pixel coordinates for all objects
-                srcRa  = np.array(map(lambda x: x.get('coord').getRa().asDegrees(),
-                                      srcCat))
-                srcDec = np.array(map(lambda x: x.get('coord').getDec().asDegrees(),
-                                      srcCat))
-                # Simple Box match
-                indMatch = ((srcRa > (ra - sizeDeg)) & (srcRa < (ra + sizeDeg)) &
-                            (srcDec > (dec - sizeDeg)) & (srcDec < (dec + sizeDeg)))
-                # Extract the matched subset
-                srcMatch = srcCat.subset(indMatch)
-                # Save the src catalog to a FITS file
-                outSrc = outPre + '_src.fits'
-                srcMatch.writeFits(outSrc)
+                """ Sometimes the forced photometry catalog might not be available """
+                try:
+                    srcCat = butler.get('deepCoadd_forced_src', tract=tractId,
+                                        patch=patchId, filter=filt, immediate=True,
+                                        flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
+                    # Get the pixel coordinates for all objects
+                    srcRa  = np.array(map(lambda x: x.get('coord').getRa().asDegrees(),
+                                          srcCat))
+                    srcDec = np.array(map(lambda x: x.get('coord').getDec().asDegrees(),
+                                          srcCat))
+                    # Simple Box match
+                    indMatch = ((srcRa > (ra - sizeDeg)) & (srcRa < (ra + sizeDeg)) &
+                                (srcDec > (dec - sizeDeg)) & (srcDec < (dec + sizeDeg)))
+                    # Extract the matched subset
+                    srcMatch = srcCat.subset(indMatch)
+                    # Save the src catalog to a FITS file
+                    outSrc = outPre + '_src.fits'
+                    srcMatch.writeFits(outSrc)
+                except:
+                    print "### Tract: %d  Patch: %s" % (tractId, patchId)
+                    warnings.warn("### Can not find the forced photometry catalog !")
+                    if not os.path.isfile('no_src.lis'):
+                        noSrc = open('no_src.lis', 'w')
+                        noSrc.write("%d  %s \n" % (tractId, patchId))
+                        noSrc.close()
+                    else:
+                        noSrc = open('no_src.lis', 'a+')
+                        noSrc.write("%d  %s \n" % (tractId, patchId))
+                        noSrc.close()
+
+
 
     # If only part of the desired cutout region is covered, and the circleMatch
     # Flag is set, find all the Patches that overlap with a circle region around
@@ -217,7 +266,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
         # Return the list of RA, DEC that described a circle region around the
         # input (RA, DEC).  The radius is the input size in unit of arcsec
-        raList, decList = getCircleRaDec(ra, dec, (size * 0.7))
+        raList, decList = getCircleRaDec(ra, dec, (size * 0.8))
         points = map(lambda x, y: afwGeom.Point2D(x, y), raList, decList)
         coords = map(lambda x: afwCoord.IcrsCoord(x), points)
 
@@ -253,6 +302,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                 except Exception, errMsg:
 
                     print "#############################################"
+                    print "              PARTIAL OVERLAP                "
                     print " The desired coordinate is not available !!! "
                     print "#############################################"
                     print errMsg
@@ -277,7 +327,8 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                         continue
                     elif bbox.getArea() < int(sizeExpect * 0.1):
                         # Ignore small overlapped image
-                        print "### %d - %s has very small overlapped region" % (tractId, patchId)
+                        print "### %d - %s has very small overlapped region" % (tractId,
+                                                                                patchId)
                         continue
                     else:
                         print "### Find one useful overlap: %d, %s" % (tractId,
@@ -307,7 +358,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                         mskBad = getCoaddBadMsk(subImage)
                         mskBad.writeFits(outPre + '_bad.fits')
 
-    return coaddFound
+    return coaddFound, noData, partialCut
 
 
 if __name__ == '__main__':
