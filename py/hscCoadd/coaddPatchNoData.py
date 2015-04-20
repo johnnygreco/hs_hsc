@@ -662,8 +662,7 @@ def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
         for tt, pp in zip(tract, patch):
             dataId = {'tract': tt, 'patch': pp, 'filter': filter}
             coaddPatchShape(rootDir, tt, pp, filter, prefix=prefix,
-                            savePNG=False, verbose=True, clobber=False,
-                            butler=butler, dataId=dataId)
+                            verbose=True, clobber=False, butler=butler, dataId=dataId)
 
 
 def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
