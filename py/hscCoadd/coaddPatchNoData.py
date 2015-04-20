@@ -33,7 +33,8 @@ from scipy import ndimage
 from skimage.measure import find_contours, approximate_polygon
 
 # TODO: Need to be more organized
-import coaddPatchShape as coaddPS
+import coaddPatchShape as cdPatch
+import coaddTractShape as cdTract
 
 def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
                   pngName='tract_mask.png', xsize=20, ysize=18, dpi=150,
@@ -55,7 +56,7 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
     ax.set_title(title, fontsize=25, fontweight='bold')
     ax.title.set_position((0.5,1.01))
 
-    maskShow = coaddPS.polyReadWkb(wkbFile, load=True)
+    maskShow = cdPatch.polyReadWkb(wkbFile, load=True)
     # Outline all the mask regions
     if maskShow.type is "Polygon":
         bounds = maskShow.boundary
@@ -81,7 +82,7 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
 
     # highlight all the large ones
     if large is not None:
-        bigShow = coaddPS.polyReadWkb(large, load=True)
+        bigShow = cdPatch.polyReadWkb(large, load=True)
         if bigShow.type is "Polygon":
             bounds = bigShow.boundary
             if bounds.type is "LineString":
@@ -106,7 +107,7 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
 
     # highlight all the tract corner
     if corner is not None:
-        cornerShow = coaddPS.polyReadWkb(corner, load=True)
+        cornerShow = cdPatch.polyReadWkb(corner, load=True)
         if cornerShow.type is "Polygon":
             bounds = cornerShow.boundary
             if bounds.type is "LineString":
@@ -396,7 +397,7 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
             polySaveReg(maskBigList, noDataBigReg, listPoly=True, color='blue')
             # Also create a MultiPolygon object, and save a .wkb file
             maskBig = cascaded_union(maskBigList)
-            coaddPS.polySaveWkb(maskBig, noDataBigWkb)
+            cdPatch.polySaveWkb(maskBig, noDataBigWkb)
         else:
             maskBig = None
             if verbose:
@@ -406,7 +407,7 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
         polySaveReg(maskShapes, noDataAllReg, listPoly=True, color='red')
         # Also create a MultiPolygon object, and save a .wkb file
         maskAll = cascaded_union(maskShapes)
-        coaddPS.polySaveWkb(maskAll, noDataAllWkb)
+        cdPatch.polySaveWkb(maskAll, noDataAllWkb)
 
         if savePNG:
             if maskBig is None:
@@ -508,7 +509,7 @@ def combineWkbFiles(listFile, output=None, check=True, local=True):
         fileRead = wkbDir + wkb.strip()
 
         if os.path.exists(fileRead):
-            wkbRead = coaddPS.polyReadWkb(fileRead)
+            wkbRead = cdPatch.polyReadWkb(fileRead)
             if wkbRead.geom_type is 'Polygon':
                 combWkb.append(wkbRead)
             elif wkbRead.geom_type is 'MultiPolygon':
@@ -524,7 +525,7 @@ def combineWkbFiles(listFile, output=None, check=True, local=True):
     combWkb = cascaded_union(combWkb)
 
     """ Save the .wkb file """
-    coaddPS.polySaveWkb(combWkb, fileComb)
+    cdPatch.polySaveWkb(combWkb, fileComb)
 
 
 def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
@@ -621,7 +622,7 @@ def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
         # Save the Polygon to .wkb and .reg file
         polySaveReg(patchPoly, shapeReg, color='green')
         # Also create a MultiPolygon object, and save a .wkb file
-        coaddPS.polySaveWkb(patchPoly, shapeWkb)
+        cdPatch.polySaveWkb(patchPoly, shapeWkb)
 
         return patchPoly
 
@@ -635,6 +636,9 @@ def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
     TODO: Merge this into coaddPatchShape later
     """
 
+    """ Save a list of tract IDs """
+    trUniq = cdTract.getTractList(rootDir, filter, imgType='deepCoadd', toInt=True,
+                                  prefix=prefix, toFile=True)
     # Get the list of coadded images in the direction
     imgList = listAllImages(rootDir, filter)
     nImg = len(imgList)
@@ -645,7 +649,7 @@ def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
     patch = map(lambda x: x.split('/')[-1].split('.')[0], imgList)
 
     # Get the uniqe tract
-    trUniq = np.unique(tract)
+    #trUniq = np.unique(tract)
     print "### There are %d unique tracts!" % len(trUniq)
     if saveList:
         for tr in trUniq:
