@@ -9,6 +9,7 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.coord as afwCoord
 import lsst.afw.image as afwImage
 
+
 def getCircleRaDec(ra, dec, size):
 
     # Get a small but representative set of (RA, DEC) that describe a circle
@@ -30,7 +31,8 @@ def getCircleRaDec(ra, dec, size):
 
     return raList, decList
 
-def saveRgbPng(outRgb, imgRgb):
+
+def saveRgbPng(outRgb, imgRgb, xCen=None, yCen=None, name=None, info=None):
 
     """
     Save the RGB image as a PNG figure
@@ -38,10 +40,40 @@ def saveRgbPng(outRgb, imgRgb):
     """
 
     import matplotlib.pyplot as plt
+    import matplotlib.axes   as axes
 
-    fig = plt.figure(dpi=120)
-    fig.imshow(imgRgb, interpolation='none')
-    fig.savefig(outRgb)
+    # TODO: How to determine figure size
+    fig = plt.figure(dpi=150, frameon=False)
+
+    # Show the image
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.imshow(imgRgb, interpolation='none')
+    ax.set_aspect('equal')
+
+    # Suppress all the ticks and tick labels
+    ax.xaxis.set_visible(False)
+    ax.yaxis.set_visible(False)
+
+    # Highlight the new center: TODO
+    if (xCen is not None) and (yCen is not None):
+        ax.scatter(xCen, yCen, s=60, lw=2.0, marker='o', edgecolors='r',
+                   facecolors='none')
+
+    # Add some information on the image
+    if name is not None:
+        ax.text(0.5, 0.10, name, fontsize=20, fontweight='bold',
+                ha='center', va='center', color='w',
+                transform=ax.transAxes)
+    if info is not None:
+        ax.text(0.8, 0.88, info, fontsize=18, fontweight='bold',
+                ha='center', va='center', color='w',
+                transform=ax.transAxes)
+
+    ax.margins(0.00, 0.00, tight=True)
+
+    fig.savefig(outRgb, bbox_inches='tight', pad_inches=0, ad_inches=0)
+    plt.close(fig)
+
 
 def isHscFilter(filter, short=True):
 
@@ -52,9 +84,10 @@ def isHscFilter(filter, short=True):
 
     return (filter in hscFilters)
 
+
 def coaddColourImage(root, ra, dec, size, filt='gri',
                      prefix='hsc_coadd_cutout', info=None,
-                     min=-0.0, max=0.6, Q=4):
+                     min=-0.0, max=0.6, Q=4, name=None):
 
     # Get the SkyMap of the database
     butler = dafPersist.Butler(root)
@@ -62,6 +95,10 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
 
     # [Ra, Dec] pair
     raDec = afwCoord.Coord(ra*afwGeom.degrees, dec*afwGeom.degrees)
+
+    # Expected size and center position
+    dimExpect = (2 * size +1)
+    cenExpect = (dimExpect/2.0, dimExpect/2.0)
 
     # Check the choice of filters
     if len(filt) is not 3:
@@ -127,7 +164,26 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
 
             # Grow the bounding box to the desired size
             bbox.grow(int(cutoutSize))
+            """
+            Here the bbox is still the desired one
+            """
+            xOriBefore, yOriBefore = bbox.getBeginX(), bbox.getBeginY()
+
+            # Compare to the coadd image, and clip
             bbox.clip(coadd.getBBox(afwImage.PARENT))
+            """
+            Here the bbox has been updated to the clipped one
+            """
+            xOriAfter, yOriAfter = bbox.getBeginX(), bbox.getBeginY()
+
+            # Difference of the origin points of the bounding box
+            xOriDiff = (xOriAfter - xOriBefore)
+            yOriDiff = (yOriAfter - yOriBefore)
+
+            # TODO: Need to be tested
+            # Put into the header
+            newX = cenExpect[0] - xOriDiff
+            newY = bbox.getHeight() - (cenExpect[1] - xOriDiff)
 
             # Get the masked image
             subImage  = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
@@ -141,7 +197,6 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
         B, G, R = images[0].getImage(), images[1].getImage(), images[2].getImage()
 
         # To see if data are available for all the cut-out region
-        dimExpect = (2 * size +1)
         if (B.getHeight < dimExpect) or (B.getWidth() < dimExpect):
             print " ### Only part of the desired cutout-region is returned !"
             # Define the name of the output file
@@ -155,8 +210,8 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
 
         # Better way to show the image
         # TODO
-        #saveRgbPng(outRgb, imgRgb)
-        afwRgb.writeRGB(outRgb, imgRgb)
+        saveRgbPng(outRgb, imgRgb, xCen=newX, yCen=newY, name=name, info=info)
+        #afwRgb.writeRGB(outRgb, imgRgb)
 
     #return imgRgb
 

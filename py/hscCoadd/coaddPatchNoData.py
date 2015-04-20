@@ -274,21 +274,30 @@ def listAllImages(rootDir, filter):
 
 def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
                      savePNG=True, verbose=True, tolerence=4,
-                     minArea=10000, clobber=False, butler=None, dataId=None):
+                     minArea=10000, clobber=False, butler=None, dataId=None,
+                     workDir=''):
 
     # Get the name of the wkb and deg file
     strTractPatch = (str(tract).strip() + '_' + patch + '_' + filter)
     ## For all the accepted regions
-    noDataAllWkb = prefix + '_' + strTractPatch + '_nodata_all.wkb'
+    if (workDir is not '') and (workDir[-1] is not '/'):
+        workDir += '/'
+    noDataAllWkb = workDir + prefix + '_' + strTractPatch + '_nodata_all.wkb'
     fileExist1 = os.path.isfile(noDataAllWkb)
-    noDataAllReg = prefix + '_' + strTractPatch + '_nodata_all.reg'
+    noDataAllReg = workDir + prefix + '_' + strTractPatch + '_nodata_all.reg'
     fileExist2 = os.path.isfile(noDataAllReg)
     ## For all the big mask regions
-    noDataBigWkb = prefix + '_' + strTractPatch + '_nodata_big.wkb'
-    noDataBigReg = prefix + '_' + strTractPatch + '_nodata_big.reg'
+    noDataBigWkb = workDir + prefix + '_' + strTractPatch + '_nodata_big.wkb'
+    noDataBigReg = workDir + prefix + '_' + strTractPatch + '_nodata_big.reg'
 
     # See if all the files have been generated
     fileAllExist = (fileExist1 and fileExist2)
+
+    # Just for test
+    print '########'
+    print noDataAllWkb
+    print noDataAllReg
+    print '########'
 
     # Only generate new one when
     #  1) Not all files are available

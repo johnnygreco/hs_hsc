@@ -77,7 +77,7 @@ def getCircleRaDec(ra, dec, size):
 
 def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                      filt='HSC-I', prefix='hsc_coadd_cutout',
-                     circleMatch=True):
+                     circleMatch=True, verbose=True, extraField1=None, extraValue1=None):
 
     # Get the SkyMap of the database
     butler = dafPersist.Butler(root)
@@ -85,14 +85,16 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
     # Get the expected cutout size
     dimExpect  = (2 * size + 1)
+    cenExpect  = (dimExpect/2.0, dimExpect/2.0)
     sizeExpect = dimExpect ** 2
     # Cutout size in unit of degree
     sizeDeg = size * 0.168 / 3600.0
 
     # Verbose
-    print '####################################################################'
-    print " Input Ra, Dec: %10.5f, %10.5f" % (ra, dec)
-    print " Cutout size is expected to be %d x %d" % (dimExpect, dimExpect)
+    if verbose:
+        print '####################################################################'
+        print " Input Ra, Dec: %10.5f, %10.5f" % (ra, dec)
+        print " Cutout size is expected to be %d x %d" % (dimExpect, dimExpect)
 
     ############################################################################
     # First, search for the central (Ra, Dec)
@@ -108,7 +110,8 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
     nPatch = 0
     for tt in range(nTract):
         nPatch += len(matches[tt][1])
-    print "### Find %d possible matches !" % nPatch
+    if verbose:
+        print "### Find %d possible matches !" % nPatch
 
     matchCen = []
     for tract, patch in matches:
@@ -116,7 +119,8 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
         # Get the (tract, patch) ID
         tractId = tract.getId()
         patchId = "%d,%d" % patch[0].getIndex()
-        print "### Choose (Tract, Patch) for center: %d, %s !" % (tractId, patchId)
+        if verbose:
+            print "### Choose (Tract, Patch) for center: %d, %s !" % (tractId, patchId)
         matchCen.append((tractId, patchId))
 
         # Get the coadd images
@@ -171,9 +175,22 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
             """
             Here the bbox is still the desired one
             """
-            xCBefore = map(lambda x: x.getX(), bbox.getCorners())
-            yCBefore = map(lambda x: x.getY(), bbox.getCorners())
+            xOriBefore, yOriBefore = bbox.getBeginX(), bbox.getBeginY()
+
+            # Compare to the coadd image, and clip
             bbox.clip(coadd.getBBox(afwImage.PARENT))
+            """
+            Here the bbox has been updated to the clipped one
+            """
+            xOriAfter, yOriAfter = bbox.getBeginX(), bbox.getBeginY()
+            # Difference of the origin points of the bounding box
+            xOriDiff = (xOriAfter - xOriBefore)
+            yOriDiff = (yOriAfter - yOriBefore)
+
+            # TODO: Need to be tested
+            # Put into the header
+            newX = cenExpect[0] - xOriDiff
+            newY = cenExpect[1] - yOriDiff
 
             if bbox.isEmpty():
                 noData = True
@@ -182,11 +199,23 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
             else:
                 if bbox.getArea() < sizeExpect:
                     partialCut = True
+                    if verbose:
+                        print "### Cut out image dimension " + \
+                                "is : %d x %d " % (bbox.getWidth(), bbox.getHeight())
                 else:
                     partialCut = False
 
             # Make a new ExposureF object for the cutout region
             subImage = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
+
+            # Get the header of the new subimage
+            subHead = subImage.getMetadata()
+            subHead.set('RA_CUT', ra)
+            subHead.set('DEC_CUT', dec)
+            subHead.set('NEW_X', newX)
+            subHead.set('NEW_Y', newY)
+            if (extraField1 is not None) and (extraValue1 is not None):
+                subHead.set(extraField1, extraValue1)
 
             # To see if data are available for all the cut-out region
             if partialCut:
@@ -262,7 +291,8 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
     # the input Ra, Dec
     if partialCut and circleMatch:
 
-        print "####### Search for other overlapped patches #######"
+        if verbose:
+            print "####### Search for other overlapped patches #######"
 
         # Return the list of RA, DEC that described a circle region around the
         # input (RA, DEC).  The radius is the input size in unit of arcsec
@@ -278,7 +308,8 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
         nPatch = 0
         for tt in range(nTract):
             nPatch += len(matches[tt][1])
-        print "### Find %d possible overlap patches" % nPatch
+        if verbose:
+            print "### Find %d possible overlap patches" % nPatch
 
         for tract, patch in matches:
 
@@ -289,7 +320,8 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
                 # Skip the image that has been used
                 if (tractId, patchId) in matchCen:
-                    print "### %d - %s is the patch used for CENT cutout" % (tractId, patchId)
+                    if verbose:
+                        print "### %d - %s is the patch used for CENT cutout" % (tractId, patchId)
                     continue
 
                 # Get the coadd images
@@ -320,22 +352,51 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                     bbox = afwGeom.Box2I(pixel, pixel)
 
                     # Grow the bounding box to the desired size
-                    bbox.grow(int(size * 1.1))
+                    bbox.grow(int(size))
+                    """
+                    Here the bbox is still the desired one
+                    """
+                    xOriBefore, yOriBefore = bbox.getBeginX(), bbox.getBeginY()
+
+                    # Compare to the coadd image, and clip
                     bbox.clip(coadd.getBBox(afwImage.PARENT))
+                    """
+                    Here the bbox has been updated to the clipped one
+                    """
+                    xOriAfter, yOriAfter = bbox.getBeginX(), bbox.getBeginY()
+                    # Difference of the origin points of the bounding box
+                    xOriDiff = (xOriAfter - xOriBefore)
+                    yOriDiff = (yOriAfter - yOriBefore)
+
+                    # TODO: Need to be tested
+                    # Put into the header
+                    newX = cenExpect[0] - xOriDiff
+                    newY = cenExpect[1] - yOriDiff
 
                     if bbox.isEmpty():
                         continue
                     elif bbox.getArea() < int(sizeExpect * 0.1):
                         # Ignore small overlapped image
-                        print "### %d - %s has very small overlapped region" % (tractId,
-                                                                                patchId)
+                        if verbose:
+                            print "### %d - %s has very small overlapped region" % (tractId,
+                                                                                    patchId)
                         continue
                     else:
-                        print "### Find one useful overlap: %d, %s" % (tractId,
-                                                                       patchId)
+                        if verbose:
+                            print "### Find one useful overlap: %d, %s" % (tractId,
+                                                                           patchId)
 
                     # Make a new ExposureF object for the cutout region
                     subImage = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
+
+                    # Get the header of the new subimage
+                    subHead = subImage.getMetadata()
+                    subHead.set('RA_CUT', ra)
+                    subHead.set('DEC_CUT', dec)
+                    subHead.set('NEW_X', newX)
+                    subHead.set('NEW_Y', newY)
+                    if (extraField1 is not None) and (extraValue1 is not None):
+                        subHead.set(extraField1, extraValue1)
 
                     # To see if data are available for all the cut-out region
                     outPre = prefix + '_' + str(tractId) + '_' + patchId + '_' + \

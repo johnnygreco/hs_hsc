@@ -53,30 +53,27 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
     except KeyError:
         raise Exception('Can not find the DEC field')
 
-    if not zCutoutSize:
+    if zField is not None:
+        try:
+            redshift = cat.field(zField)
+        except KeyError:
+            raise Exception('Can not find the REDSHIFT field')
+    else:
+        redshift = None
+
+    if zCutoutSize and (redshift is not None):
+        size = map(lambda x: decideCutoutSize(x), redshift)
+        size = numpy.asarray(size)
+    else:
         try:
             size = cat.field(sizeField)
         except KeyError:
+            warnings.warn("### No field name for cutout size is provided !")
             nObjs = len(id)
             size = numpy.empty(nObjs)
             size.fill(sizeDefault)
-    else:
-        if zField is None:
-            warnings.warn("### No field name for redshift is provided !")
-            try:
-                size = cat.field(sizeField)
-            except KeyError:
-                nObjs = len(id)
-                size = numpy.empty(nObjs)
-                size.fill(sizeDefault)
-        try:
-            redshift = cat.field(zField)
-            size = map(lambda x: decideCutoutSize(x), redshift)
-            size = numpy.asarray(size)
-        except KeyError:
-            raise Exception("### Can not find the field for redshift: %s" % zField)
 
-    return id, ra, dec, size
+    return id, ra, dec, size, redshift
 
 
 def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout',
@@ -90,11 +87,11 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
     if not os.path.exists(inCat):
         raise Exception("Can not find the input catalog! %s" % list)
     else:
-        id, ra, dec, size = parseInputCatalog(inCat, sizeDefault=size,
-                                              idField=idField, raField=raField,
-                                              decField=decField,
-                                              sizeField=sizeField, zField=zField,
-                                              zCutoutSize=zCutoutSize)
+        id, ra, dec, size, z = parseInputCatalog(inCat, sizeDefault=size,
+                                                 idField=idField, raField=raField,
+                                                 decField=decField,
+                                                 sizeField=sizeField, zField=zField,
+                                                 zCutoutSize=zCutoutSize)
 
     logFile = prefix + '_match_status.lis'
     logMatch = open(logFile, 'w')
@@ -106,8 +103,7 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
     for i in range(nObjs):
 
         if verbose:
-            print "### %d: ID: %d ; RA: %10.5f DEC %10.5f ;" + \
-                " Size: %d" % (i+1, id[i], ra[i], dec[i], size[i])
+            print "### %d -- ID: %d ; RA: %10.5f DEC %10.5f ; Size: %d" % (i+1, id[i], ra[i], dec[i], size[i])
 
         # New prefix
         newPrefix = prefix + '_' + str(id[i]).strip()
@@ -130,9 +126,15 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
         logMatch.write(str(id[i]) + '   ' + matchStatus + '\n')
 
         # Color Image
+        if (zField is not None) and (z is not None):
+            info = "z= %5.3f" % z[i]
+        else:
+            info = None
         if (matchStatus is 'Full') or (matchStatus is 'Part'):
+            name = str(id[i])
             cdColor.coaddColourImage(root, ra[i], dec[i], size[i], filt='gri',
-                                    prefix=newPrefix)
+                                     prefix=newPrefix, name=name,
+                                     info=info )
 
     logMatch.close()
 
