@@ -62,11 +62,11 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
         bounds = maskShow.boundary
         if bounds.type is "LineString":
             x, y = bounds.xy
-            ax.plot(x, y, c='r', lw=2.5)
+            ax.plot(x, y, c='r', lw=2.0)
         elif bounds.type is "MultiLineString":
             for bb in bounds:
                 x, y = bb.xy
-                ax.plot(x, y, lw=2.5, color='r')
+                ax.plot(x, y, lw=2.0, color='r')
     elif maskShow.type is "MultiPolygon":
         for ii, mask in enumerate(maskShow):
             bounds = mask.boundary
@@ -97,11 +97,11 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
                 bounds = mask.boundary
                 if bounds.type is "LineString":
                     x, y = bounds.xy
-                    ax.plot(x, y, c='b', lw=2.0)
+                    ax.plot(x, y, c='b', lw=2.5)
                 elif bounds.type is "MultiLineString":
                     for bb in bounds:
                         x, y = bb.xy
-                        ax.plot(x, y, lw=2.0, color='b')
+                        ax.plot(x, y, lw=2.5, color='b')
                 else:
                     print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
 
@@ -112,11 +112,11 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
             bounds = cornerShow.boundary
             if bounds.type is "LineString":
                 x, y = bounds.xy
-                ax.plot(x, y, c='g', lw=2.5)
+                ax.plot(x, y, c='g', lw=3.5)
             elif bounds.type is "MultiLineString":
                 for bb in bounds:
                     x, y = bb.xy
-                    ax.plot(x, y, lw=2.5, color='g')
+                    ax.plot(x, y, lw=3.5, color='g')
             else:
                 print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
         elif cornerShow.type is "MultiPolygon":
@@ -124,11 +124,11 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
                 bounds = mask.boundary
                 if bounds.type is "LineString":
                     x, y = bounds.xy
-                    ax.plot(x, y, c='g', lw=2.5)
+                    ax.plot(x, y, c='g', lw=3.5)
                 elif bounds.type is "MultiLineString":
                     for bb in bounds:
                         x, y = bb.xy
-                        ax.plot(x, y, lw=2.5, color='g')
+                        ax.plot(x, y, lw=3.5, color='g')
                 else:
                     print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
         else:
@@ -136,8 +136,8 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
 
     ax.margins(0.02, 0.02, tight=True)
 
-    ax.set_xlabel(r'RA (deg)',  fontsize=22)
-    ax.set_ylabel(r'DEC (deg)', fontsize=22)
+    ax.set_xlabel('R.A.  (deg)', fontsize=25)
+    ax.set_ylabel('Decl. (deg)', fontsize=25)
 
     fig.subplots_adjust(hspace=0.1, wspace=0.1,
                         top=0.95, right=0.95)
@@ -504,7 +504,7 @@ def combineWkbFiles(listFile, output=None, check=True, local=True, listAll=False
     if allOutput is None:
         fileList = os.path.splitext(os.path.split(listFile)[1])[0] + '_list.wkb'
     else:
-        fileList = alloutput
+        fileList = allOutput
     if not local:
         fileComb = wkbDir + fileComb
         fileList = wkbDir + fileList
@@ -528,10 +528,10 @@ def combineWkbFiles(listFile, output=None, check=True, local=True, listAll=False
             raise Exception("Can not find the .wkb file: %s !" % fileRead)
 
     """ Take the cascaded_union of all the mask regions for a tract """
-    combWkb = cascaded_union(combWkb)
+    unionWkb = cascaded_union(combWkb)
 
     """ Save the .wkb file """
-    cdPatch.polySaveWkb(combWkb, fileComb)
+    cdPatch.polySaveWkb(unionWkb, fileComb)
 
     if listAll:
         combList = MultiPolygon(combWkb)
@@ -745,14 +745,11 @@ def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
             """ Combine the .wkb file """
             outWkb = prefix + '_' + str(tractId) + '_' + filter + \
                     '_nodata' + strComb + '.wkb'
-            outAll = prefix + '_' + str(tractId) + '_' + filter + \
-                    '_nodata' + strComb + '_list.wkb'
 
             if verbose:
                 print "### Try to combined their .wkb files into %s" % outWkb
 
-            combineWkbFiles(wkbLis, output=outWkb, check=check, listAll=True,
-                            allOutput=outAll)
+            combineWkbFiles(wkbLis, output=outWkb, check=check, listAll=True)
             if not os.path.isfile(outWkb):
                 raise Exception("Something is wrong with the output .wkb file:\
                                 %s" % outWkb)
@@ -762,7 +759,7 @@ def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
                     pngTitle = prefix + '_' + str(tractId) + '_' + filter + \
                                '_nodata' + strComb
                     pngName = pngTitle + '.png'
-                    showNoDataMask(outWkb, large=outAll, title=pngTitle, pngName=pngName)
+                    showNoDataMask(outWkb, title=pngTitle, pngName=pngName)
 
 
 def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
@@ -822,10 +819,14 @@ def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
             """ Combine the .wkb file """
             outWkb = prefix + '_' + str(tractId) + '_' + filter + \
                     '_shape' + strComb + '.wkb'
+            outAll = prefix + '_' + str(tractId) + '_' + filter + \
+                    '_nodata' + strComb + '_list.wkb'
+
             if verbose:
                 print "### Try to combined their .wkb files into %s" % outWkb
 
-            combineWkbFiles(wkbLis, output=outWkb, check=check, listAll=True)
+            combineWkbFiles(wkbLis, output=outWkb, check=check, listAll=True,
+                            allOutput=outAll)
             if not os.path.isfile(outWkb):
                 raise Exception("Something is wrong with the output .wkb file:\
                                 %s" % outWkb)
@@ -835,7 +836,7 @@ def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
                     pngTitle = prefix + '_' + str(tractId) + '_' + filter + \
                                '_shape' + strComb
                     pngName = pngTitle + '.png'
-                    showNoDataMask(outWkb, title=pngTitle, pngName=pngName)
+                    showNoDataMask(outAll, corner=outWkb, title=pngTitle, pngName=pngName)
 
 
 if __name__ == '__main__':
