@@ -571,6 +571,101 @@ def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
                              dataId=dataId)
 
 
+def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
+                    savePNG=True, verbose=True,
+                    clobber=False, butler=None, dataId=None):
+
+    """ TODO XXX Under construction"""
+    # Get the name of the wkb and deg file
+    strTractPatch = (str(tract).strip() + '_' + patch + '_' + filter)
+    ## For all the accepted regions
+    ShapeWkb = prefix + '_' + strTractPatch + '_nodata_all.wkb'
+    fileExist1 = os.path.isfile(noDataAllWkb)
+    noDataAllReg = prefix + '_' + strTractPatch + '_nodata_all.reg'
+    fileExist2 = os.path.isfile(noDataAllReg)
+    ## For all the big mask regions
+    noDataBigWkb = prefix + '_' + strTractPatch + '_nodata_big.wkb'
+    noDataBigReg = prefix + '_' + strTractPatch + '_nodata_big.reg'
+
+    # See if all the files have been generated
+    fileAllExist = (fileExist1 and fileExist2)
+
+    # Only generate new one when
+    #  1) Not all files are available
+    #  2) All available, but clobber = True
+    if (not fileAllExist) or clobber:
+
+        # Make a butler and specify the dataID
+        if butler is None:
+            butler = dafPersist.Butler(rootDir)
+        if dataId is None:
+            dataId = {'tract':tract, 'patch':patch, 'filter':filter}
+
+        # Get the name of the input fits image
+        if rootDir[-1] is '/':
+            fitsName = rootDir + 'deepCoadd/' + filter + '/' + str(tract).strip() \
+                    + '/' + patch + '.fits'
+        else:
+            fitsName = rootDir + '/deepCoadd/' + filter + '/' + str(tract).strip() \
+                    + '/' + patch + '.fits'
+            if not os.path.isfile(fitsName):
+                raise Exception('Can not find the input fits image: %s' % fitsName)
+
+        # Get the name of the png file
+        titlePng = prefix + strTractPatch + '_NODATA'
+        noDataPng = prefix + '_' + strTractPatch + '_nodata.png'
+
+        if verbose:
+            print "## Reading Fits Image: %s" % fitsName
+
+        # Get the exposure from the butler
+        calExp = butler.get('deepCoadd', dataId, immediate=True)
+        # Get the Bounding Box of the image
+        bbox = calExp.getBBox(afwImage.PARENT)
+        xBegin, yBegin = bbox.getBeginX(), bbox.getBeginY()
+        # Get the WCS information
+        imgWcs = calExp.getWcs()
+
+
+def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
+                    saveList=True, notRun=False):
+    """
+    Get the shape of patches in batch mode
+    This is better than the method in coaddPatchShape
+
+    TODO: Merge this into coaddPatchShape later
+    """
+
+    # Get the list of coadded images in the direction
+    imgList = listAllImages(rootDir, filter)
+    nImg = len(imgList)
+    print '### Will go through %d images !' % nImg
+
+    # Get the list of tract and patch for these images
+    tract = map(lambda x: int(x.split('/')[-2]), imgList)
+    patch = map(lambda x: x.split('/')[-1].split('.')[0], imgList)
+
+    # Get the uniqe tract
+    trUniq = np.unique(tract)
+    print "### There are %d unique tracts!" % len(trUniq)
+    if saveList:
+        for tr in trUniq:
+            tArr = np.asarray(tract)
+            pArr = np.asarray(patch)
+            pMatch = pArr[tArr == tr]
+            saveTractFileList(tr, pMatch, filter, prefix)
+
+    if not notRun:
+        """ Load the Butler """
+        butler = dafPersist.Butler(rootDir)
+        # If there are too many images, do not generate the combined region file at
+        # first
+        for tt, pp in zip(tract, patch):
+            dataId = {'tract':tt, 'patch':pp, 'filter':filter}
+            coaddPatchShape(rootDir, tt, pp, filter, prefix=prefix,
+                             savePNG=False, verbose=True, clobber=False,
+                             butler=butler, dataId=dataId)
+
 
 def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
                        verbose=True, check=True):
