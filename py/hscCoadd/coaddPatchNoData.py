@@ -26,7 +26,7 @@ mpl.rcParams['ytick.minor.size'] = 4.0
 mpl.rc('axes', linewidth=2)
 
 # Shapely related imports
-from shapely.geometry import Polygon, LineString
+from shapely.geometry import Polygon, MultiPolygon, LineString
 from shapely.ops      import cascaded_union
 
 from scipy import ndimage
@@ -485,7 +485,8 @@ def combineRegFiles(listFile, output=None, check=True, local=True):
     regComb.close()
 
 
-def combineWkbFiles(listFile, output=None, check=True, local=True):
+def combineWkbFiles(listFile, output=None, check=True, local=True, listAll=False,
+                    allOutput=None):
 
     """ Get the list of .wkb files """
     wkbList = open(listFile, 'r').readlines()
@@ -500,8 +501,13 @@ def combineWkbFiles(listFile, output=None, check=True, local=True):
         fileComb = os.path.splitext(os.path.split(listFile)[1])[0] + '.wkb'
     else:
         fileComb = output
+    if allOutput is none:
+        fileList = os.path.splitext(os.path.split(listFile)[1])[0] + '_list.wkb'
+    else:
+        fileList = alloutput
     if not local:
         fileComb = wkbDir + fileComb
+        fileList = wkbDir + fileList
 
     """ Go through every .wkb file """
     combWkb = []
@@ -526,6 +532,10 @@ def combineWkbFiles(listFile, output=None, check=True, local=True):
 
     """ Save the .wkb file """
     cdPatch.polySaveWkb(combWkb, fileComb)
+
+    if listAll:
+        combList = MultiPolygon(combWkb)
+        cdPatch.polySaveWkb(combList, fileList)
 
 
 def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
@@ -735,9 +745,14 @@ def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
             """ Combine the .wkb file """
             outWkb = prefix + '_' + str(tractId) + '_' + filter + \
                     '_nodata' + strComb + '.wkb'
+            outAll = prefix + '_' + str(tractId) + '_' + filter + \
+                    '_nodata' + strComb + '_list.wkb'
+
             if verbose:
                 print "### Try to combined their .wkb files into %s" % outWkb
-            combineWkbFiles(wkbLis, output=outWkb, check=check)
+
+            combineWkbFiles(wkbLis, output=outWkb, check=check, listAll=True,
+                            allOutput=outAll)
             if not os.path.isfile(outWkb):
                 raise Exception("Something is wrong with the output .wkb file:\
                                 %s" % outWkb)
@@ -747,7 +762,7 @@ def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
                     pngTitle = prefix + '_' + str(tractId) + '_' + filter + \
                                '_nodata' + strComb
                     pngName = pngTitle + '.png'
-                    showNoDataMask(outWkb, title=pngTitle, pngName=pngName)
+                    showNoDataMask(outWkb, large=outAll, title=pngTitle, pngName=pngName)
 
 
 def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
@@ -783,9 +798,9 @@ def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
 
         """ Get the list file names """
         regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                '_shape.lis'
+                '_shape_reg.lis'
         wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                '_shape.lis'
+                '_shape_wkb.lis'
         strComb = '_all'
 
         if not os.path.isfile(regLis):
@@ -809,7 +824,8 @@ def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
                     '_shape' + strComb + '.wkb'
             if verbose:
                 print "### Try to combined their .wkb files into %s" % outWkb
-            combineWkbFiles(wkbLis, output=outWkb, check=check)
+
+            combineWkbFiles(wkbLis, output=outWkb, check=check, listAll=True)
             if not os.path.isfile(outWkb):
                 raise Exception("Something is wrong with the output .wkb file:\
                                 %s" % outWkb)
