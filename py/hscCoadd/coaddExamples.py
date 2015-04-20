@@ -33,6 +33,13 @@
 #udeepDec = 2.794748
 #
 #################################################################################
+import coaddBatchCutout as cbc
+
+wideRoot = '/lustre/Subaru/SSP/rerun/yasuda/SSP3.4.1_20141224/'
+inCat = '/home/song/work/hs_hsc/py/data/hsc_redmapper_xmm.fits'
+cbc.coaddBatchCutout(wideRoot, inCat, size=400, filter='HSC-I', prefix='redmapper_xmm')
+
+#################################################################################
 ## Get the common patches shape for surveys at different bands
 #import coaddPatchShape as cps
 #
@@ -72,13 +79,20 @@
 #################################################################################
 # Match external catalogs
 
-inCat = "/home/hs/Dropbox/work/project/hs_hsc/py/data/test_extra_cat.fits"
-acpMask = "/home/hs/Dropbox/work/project/hs_hsc/py/ipynb/ssp341_cosmos_HSC-I_corners.wkb"
-rejMask = "/home/hs/Dropbox/work/project/hs_hsc/py/ipynb/ssp341_cosmos_0_HSC-I_nodata_all.wkb"
+#""" For Thinkpad """
+##inCat = "/home/hs/Dropbox/work/project/hs_hsc/py/data/test_extra_cat.fits"
+##acpMask = "/home/hs/Dropbox/work/project/hs_hsc/py/ipynb/ssp341_cosmos_HSC-I_corners.wkb"
+##rejMask = "/home/hs/Dropbox/work/project/hs_hsc/py/ipynb/ssp341_cosmos_0_HSC-I_nodata_all.wkb"
 
-import coaddMaskMatch as cmm
-cmm.coaddMaskMatch(inCat, acpMask, raField='RA', decField='DEC',
-                   showMatch=True, infoField1=None, infoText1=None,
-                   infoField2=None, infoText2=None, outCat=None,
-                   rejMask=rejMask)
+#""" For Master """
+#inCat = "/home/song/work/hs_hsc/py/data/test_extra_cat.fits"
+#acpMask = "/home/song/work/hs_hsc/py/ipynb/ssp341_cosmos_HSC-I_corners.wkb"
+#rejMask = "/home/song/work/hs_hsc/py/ipynb/ssp341_cosmos_0_HSC-I_nodata_all.wkb"
 
+#import coaddMaskMatch as cmm
+#cmm.coaddMaskMatch(inCat, acpMask, raField='RA', decField='DEC',
+                   #showMatch=True, infoField1=None, infoText1=None,
+                   #infoField2=None, infoText2=None, outCat=None,
+                   #rejMask=rejMask)
+
+#################################################################################

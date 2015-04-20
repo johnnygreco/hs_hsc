@@ -56,8 +56,11 @@ def fourCornerRaDec(tractWcs, xDim, yDim):
 
     return corners
 
-""" Get all the tractID from certain rootDir """
-def getTractList(rootDir, filter, imgType='deepCoadd', toInt=True):
+def getTractList(rootDir, filter, imgType='deepCoadd', toInt=True,
+                 prefix='hsc_coadd', toFile=True):
+    """
+    Get all the tractID from certain rootDir
+    """
 
     if rootDir[-1] is not '/':
         rootDir += '/'
@@ -68,6 +71,13 @@ def getTractList(rootDir, filter, imgType='deepCoadd', toInt=True):
     else:
         tractStrs = [d for d in os.listdir(tractDir) if
                      os.path.isdir(os.path.join(tractDir, d))]
+        """ Save to a list file """
+        if toFile:
+            tractName = prefix + '_' + filter + '_tract.lis'
+            tractFile = open(tractName, 'w')
+            for tt in tractStrs:
+                tractFile.write(tt + '\n')
+            tractFile.close()
         if toInt:
             tractList = map(lambda x: int(x), tractStrs)
         else:
@@ -194,7 +204,7 @@ def coaddTractShape(rootDir, filter, verbose=True, prefix='hsc_tract',
 
     """ Get the list of tract IDs """
     tractList = getTractList(rootDir, filter, imgType='deepCoadd',
-                             toInt=True)
+                             toInt=True, prefix=prefix, toFile=True)
     nTracts = len(tractList)
     if verbose:
         print "### Will deal with %d tracts in total" % nTracts

@@ -3,19 +3,41 @@
 import os
 import numpy
 import argparse
-from astropy.io import fits
-from coaddImageCutout import coaddImageCutout
-from coaddColourImage import coaddColourImage
+import warnings
 
-def parseInputCatalog(list, sizeDefault=100, idField='id',
-                     raField='ra', decField='dec', sizeField='cutout_size'):
+from astropy.io import fits
+
+import coaddImageCutout as cdCutout
+import coaddColourImage as cdColor
+
+
+def decideCutoutSize(z):
+
+    """
+    Decide the typical cutout size for certain redshift
+    """
+
+    if (z <= 0.15):
+        return 800
+    if (z > 0.15) and (z < 0.25):
+        return 500
+    if (z > 0.25) and (z < 0.35):
+        return 400
+    if (z > 0.35) and (z < 0.45):
+        return 350
+    if (z > 0.45):
+        return 300
+
+
+def parseInputCatalog(list, sizeDefault=300, idField='id',
+                     raField='ra', decField='dec', sizeField='cutout_size',
+                     zField=None, zCutoutSize=False):
 
     # Read in the catalog
     hduList = fits.open(list)
     cat = hduList[1].data
 
     # Try to get the ID, Ra, Dec
-    # TODO: provide the field name for ID, Ra, Dec, Size
     try:
         id = cat.field(idField)
     except KeyError:
@@ -31,42 +53,88 @@ def parseInputCatalog(list, sizeDefault=100, idField='id',
     except KeyError:
         raise Exception('Can not find the DEC field')
 
-    try:
-        size = cat.field(sizeField)
-    except KeyError:
-        nObjs = len(id)
-        size = numpy.empty(nObjs)
-        size.fill(sizeDefault)
+    if not zCutoutSize:
+        try:
+            size = cat.field(sizeField)
+        except KeyError:
+            nObjs = len(id)
+            size = numpy.empty(nObjs)
+            size.fill(sizeDefault)
+    else:
+        if zField is None:
+            warnings.warn("### No field name for redshift is provided !")
+            try:
+                size = cat.field(sizeField)
+            except KeyError:
+                nObjs = len(id)
+                size = numpy.empty(nObjs)
+                size.fill(sizeDefault)
+        try:
+            redshift = cat.field(zField)
+            size = map(lambda x: decideCutoutSize(x), redshift)
+            size = numpy.asarray(size)
+        except KeyError:
+            raise Exception("### Can not find the field for redshift: %s" % zField)
 
     return id, ra, dec, size
 
 
-def coaddBatchCutout(root, list, size=100, filter='HSC-I', prefix='coadd_cutout',
+def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout',
                      idField='id', raField='ra', decField='dec',
-                     sizeField='cutout_size'):
+                     sizeField='cutout_size', zCutoutSize=False, zField=None,
+                     verbose=True):
 
     if not os.path.isdir(root):
         raise Exception("Wrong root directory for data! %s" % root)
 
-    if not os.path.exists(list):
+    if not os.path.exists(inCat):
         raise Exception("Can not find the input catalog! %s" % list)
     else:
-        id, ra, dec, size = parseInputCatalog(list, sizeDefault=size,
+        id, ra, dec, size = parseInputCatalog(inCat, sizeDefault=size,
                                               idField=idField, raField=raField,
                                               decField=decField,
-                                              sizeField=sizeField)
+                                              sizeField=sizeField, zField=zField,
+                                              zCutoutSize=zCutoutSize)
+
+    logFile = prefix + '_match_status.lis'
+    logMatch = open(logFile, 'w')
 
     nObjs = len(id)
+    if verbose:
+        print "### Will try to get cutout image for %d objects" % nObjs
 
     for i in range(nObjs):
+
+        if verbose:
+            print "### %d: ID: %d ; RA: %10.5f DEC %10.5f ;" + \
+                " Size: %d" % (i+1, id[i], ra[i], dec[i], size[i])
+
         # New prefix
         newPrefix = prefix + '_' + str(id[i]).strip()
+
         # Cutout Image
-        coaddImageCutout(root, ra[i], dec[i], size[i], saveMsk=True,
-                         filt=filter, prefix=newPrefix)
+        coaddFound, noData, partialCut = cdCutout.coaddImageCutout(root, ra[i], dec[i],
+                                                                   size[i], saveMsk=True,
+                                                                   filt=filter,
+                                                                   prefix=newPrefix)
+        if coaddFound:
+            if not noData:
+                if not partialCut:
+                    matchStatus = 'Full'
+                else:
+                    matchStatus = 'Part'
+            else:
+                matchStatus = 'NoData'
+        else:
+            matchStatus = 'Outside'
+        logMatch.write(str(id[i]) + '   ' + matchStatus + '\n')
+
         # Color Image
-        coaddColourImage(root, ra[i], dec[i], size[i], filt='gri',
-                        prefix=newPrefix)
+        if (matchStatus is 'Full') or (matchStatus is 'Part'):
+            cdColor.coaddColourImage(root, ra[i], dec[i], size[i], filt='gri',
+                                    prefix=newPrefix)
+
+    logMatch.close()
 
 
 if __name__ == '__main__':

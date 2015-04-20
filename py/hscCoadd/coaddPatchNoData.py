@@ -26,14 +26,15 @@ mpl.rcParams['ytick.minor.size'] = 4.0
 mpl.rc('axes', linewidth=2)
 
 # Shapely related imports
-from shapely.geometry import Polygon, LineString
+from shapely.geometry import Polygon, MultiPolygon, LineString
 from shapely.ops      import cascaded_union
 
 from scipy import ndimage
 from skimage.measure import find_contours, approximate_polygon
 
 # TODO: Need to be more organized
-import coaddPatchShape as coaddPS
+import coaddPatchShape as cdPatch
+import coaddTractShape as cdTract
 
 def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
                   pngName='tract_mask.png', xsize=20, ysize=18, dpi=150,
@@ -55,17 +56,17 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
     ax.set_title(title, fontsize=25, fontweight='bold')
     ax.title.set_position((0.5,1.01))
 
-    maskShow = coaddPS.polyReadWkb(wkbFile, load=True)
+    maskShow = cdPatch.polyReadWkb(wkbFile, load=True)
     # Outline all the mask regions
     if maskShow.type is "Polygon":
         bounds = maskShow.boundary
         if bounds.type is "LineString":
             x, y = bounds.xy
-            ax.plot(x, y, c='r', lw=2.5)
+            ax.plot(x, y, c='r', lw=2.0)
         elif bounds.type is "MultiLineString":
             for bb in bounds:
                 x, y = bb.xy
-                ax.plot(x, y, lw=2.5, color='r')
+                ax.plot(x, y, lw=2.0, color='r')
     elif maskShow.type is "MultiPolygon":
         for ii, mask in enumerate(maskShow):
             bounds = mask.boundary
@@ -81,7 +82,7 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
 
     # highlight all the large ones
     if large is not None:
-        bigShow = coaddPS.polyReadWkb(large, load=True)
+        bigShow = cdPatch.polyReadWkb(large, load=True)
         if bigShow.type is "Polygon":
             bounds = bigShow.boundary
             if bounds.type is "LineString":
@@ -96,26 +97,26 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
                 bounds = mask.boundary
                 if bounds.type is "LineString":
                     x, y = bounds.xy
-                    ax.plot(x, y, c='b', lw=2.0)
+                    ax.plot(x, y, c='b', lw=2.5)
                 elif bounds.type is "MultiLineString":
                     for bb in bounds:
                         x, y = bb.xy
-                        ax.plot(x, y, lw=2.0, color='b')
+                        ax.plot(x, y, lw=2.5, color='b')
                 else:
                     print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
 
     # highlight all the tract corner
     if corner is not None:
-        cornerShow = coaddPS.polyReadWkb(corner, load=True)
+        cornerShow = cdPatch.polyReadWkb(corner, load=True)
         if cornerShow.type is "Polygon":
             bounds = cornerShow.boundary
             if bounds.type is "LineString":
                 x, y = bounds.xy
-                ax.plot(x, y, c='g', lw=2.5)
+                ax.plot(x, y, c='g', lw=3.5)
             elif bounds.type is "MultiLineString":
                 for bb in bounds:
                     x, y = bb.xy
-                    ax.plot(x, y, lw=2.5, color='g')
+                    ax.plot(x, y, lw=3.5, color='g')
             else:
                 print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
         elif cornerShow.type is "MultiPolygon":
@@ -123,11 +124,11 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
                 bounds = mask.boundary
                 if bounds.type is "LineString":
                     x, y = bounds.xy
-                    ax.plot(x, y, c='g', lw=2.5)
+                    ax.plot(x, y, c='g', lw=3.5)
                 elif bounds.type is "MultiLineString":
                     for bb in bounds:
                         x, y = bb.xy
-                        ax.plot(x, y, lw=2.5, color='g')
+                        ax.plot(x, y, lw=3.5, color='g')
                 else:
                     print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
         else:
@@ -135,8 +136,8 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
 
     ax.margins(0.02, 0.02, tight=True)
 
-    ax.set_xlabel(r'RA (deg)',  fontsize=22)
-    ax.set_ylabel(r'DEC (deg)', fontsize=22)
+    ax.set_xlabel('R.A.  (deg)', fontsize=25)
+    ax.set_ylabel('Decl. (deg)', fontsize=25)
 
     fig.subplots_adjust(hspace=0.1, wspace=0.1,
                         top=0.95, right=0.95)
@@ -396,7 +397,7 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
             polySaveReg(maskBigList, noDataBigReg, listPoly=True, color='blue')
             # Also create a MultiPolygon object, and save a .wkb file
             maskBig = cascaded_union(maskBigList)
-            coaddPS.polySaveWkb(maskBig, noDataBigWkb)
+            cdPatch.polySaveWkb(maskBig, noDataBigWkb)
         else:
             maskBig = None
             if verbose:
@@ -406,7 +407,7 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
         polySaveReg(maskShapes, noDataAllReg, listPoly=True, color='red')
         # Also create a MultiPolygon object, and save a .wkb file
         maskAll = cascaded_union(maskShapes)
-        coaddPS.polySaveWkb(maskAll, noDataAllWkb)
+        cdPatch.polySaveWkb(maskAll, noDataAllWkb)
 
         if savePNG:
             if maskBig is None:
@@ -484,7 +485,8 @@ def combineRegFiles(listFile, output=None, check=True, local=True):
     regComb.close()
 
 
-def combineWkbFiles(listFile, output=None, check=True, local=True):
+def combineWkbFiles(listFile, output=None, check=True, local=True, listAll=False,
+                    allOutput=None):
 
     """ Get the list of .wkb files """
     wkbList = open(listFile, 'r').readlines()
@@ -499,8 +501,13 @@ def combineWkbFiles(listFile, output=None, check=True, local=True):
         fileComb = os.path.splitext(os.path.split(listFile)[1])[0] + '.wkb'
     else:
         fileComb = output
+    if allOutput is None:
+        fileList = os.path.splitext(os.path.split(listFile)[1])[0] + '_list.wkb'
+    else:
+        fileList = allOutput
     if not local:
         fileComb = wkbDir + fileComb
+        fileList = wkbDir + fileList
 
     """ Go through every .wkb file """
     combWkb = []
@@ -508,7 +515,7 @@ def combineWkbFiles(listFile, output=None, check=True, local=True):
         fileRead = wkbDir + wkb.strip()
 
         if os.path.exists(fileRead):
-            wkbRead = coaddPS.polyReadWkb(fileRead)
+            wkbRead = cdPatch.polyReadWkb(fileRead)
             if wkbRead.geom_type is 'Polygon':
                 combWkb.append(wkbRead)
             elif wkbRead.geom_type is 'MultiPolygon':
@@ -521,10 +528,14 @@ def combineWkbFiles(listFile, output=None, check=True, local=True):
             raise Exception("Can not find the .wkb file: %s !" % fileRead)
 
     """ Take the cascaded_union of all the mask regions for a tract """
-    combWkb = cascaded_union(combWkb)
+    unionWkb = cascaded_union(combWkb)
 
     """ Save the .wkb file """
-    coaddPS.polySaveWkb(combWkb, fileComb)
+    cdPatch.polySaveWkb(unionWkb, fileComb)
+
+    if listAll:
+        combList = MultiPolygon(combWkb)
+        cdPatch.polySaveWkb(combList, fileList)
 
 
 def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
@@ -621,7 +632,7 @@ def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
         # Save the Polygon to .wkb and .reg file
         polySaveReg(patchPoly, shapeReg, color='green')
         # Also create a MultiPolygon object, and save a .wkb file
-        coaddPS.polySaveWkb(patchPoly, shapeWkb)
+        cdPatch.polySaveWkb(patchPoly, shapeWkb)
 
         return patchPoly
 
@@ -635,6 +646,9 @@ def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
     TODO: Merge this into coaddPatchShape later
     """
 
+    """ Save a list of tract IDs """
+    trUniq = cdTract.getTractList(rootDir, filter, imgType='deepCoadd', toInt=True,
+                                  prefix=prefix, toFile=True)
     # Get the list of coadded images in the direction
     imgList = listAllImages(rootDir, filter)
     nImg = len(imgList)
@@ -645,7 +659,7 @@ def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
     patch = map(lambda x: x.split('/')[-1].split('.')[0], imgList)
 
     # Get the uniqe tract
-    trUniq = np.unique(tract)
+    #trUniq = np.unique(tract)
     print "### There are %d unique tracts!" % len(trUniq)
     if saveList:
         for tr in trUniq:
@@ -731,9 +745,11 @@ def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
             """ Combine the .wkb file """
             outWkb = prefix + '_' + str(tractId) + '_' + filter + \
                     '_nodata' + strComb + '.wkb'
+
             if verbose:
                 print "### Try to combined their .wkb files into %s" % outWkb
-            combineWkbFiles(wkbLis, output=outWkb, check=check)
+
+            combineWkbFiles(wkbLis, output=outWkb, check=check, listAll=True)
             if not os.path.isfile(outWkb):
                 raise Exception("Something is wrong with the output .wkb file:\
                                 %s" % outWkb)
@@ -779,9 +795,9 @@ def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
 
         """ Get the list file names """
         regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                '_shape.lis'
+                '_shape_reg.lis'
         wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                '_shape.lis'
+                '_shape_wkb.lis'
         strComb = '_all'
 
         if not os.path.isfile(regLis):
@@ -803,9 +819,14 @@ def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
             """ Combine the .wkb file """
             outWkb = prefix + '_' + str(tractId) + '_' + filter + \
                     '_shape' + strComb + '.wkb'
+            outAll = prefix + '_' + str(tractId) + '_' + filter + \
+                    '_nodata' + strComb + '_list.wkb'
+
             if verbose:
                 print "### Try to combined their .wkb files into %s" % outWkb
-            combineWkbFiles(wkbLis, output=outWkb, check=check)
+
+            combineWkbFiles(wkbLis, output=outWkb, check=check, listAll=True,
+                            allOutput=outAll)
             if not os.path.isfile(outWkb):
                 raise Exception("Something is wrong with the output .wkb file:\
                                 %s" % outWkb)
@@ -815,7 +836,7 @@ def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
                     pngTitle = prefix + '_' + str(tractId) + '_' + filter + \
                                '_shape' + strComb
                     pngName = pngTitle + '.png'
-                    showNoDataMask(outWkb, title=pngTitle, pngName=pngName)
+                    showNoDataMask(outAll, corner=outWkb, title=pngTitle, pngName=pngName)
 
 
 if __name__ == '__main__':
