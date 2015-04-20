@@ -621,7 +621,7 @@ def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
         # Save the Polygon to .wkb and .reg file
         polySaveReg(patchPoly, shapeReg, color='green')
         # Also create a MultiPolygon object, and save a .wkb file
-        coaddPS.polySaveWkb(patchPoly, shapeReg)
+        coaddPS.polySaveWkb(patchPoly, shapeWkb)
 
         return patchPoly
 
