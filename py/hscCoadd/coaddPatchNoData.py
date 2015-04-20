@@ -501,7 +501,7 @@ def combineWkbFiles(listFile, output=None, check=True, local=True, listAll=False
         fileComb = os.path.splitext(os.path.split(listFile)[1])[0] + '.wkb'
     else:
         fileComb = output
-    if allOutput is none:
+    if allOutput is None:
         fileList = os.path.splitext(os.path.split(listFile)[1])[0] + '_list.wkb'
     else:
         fileList = alloutput
