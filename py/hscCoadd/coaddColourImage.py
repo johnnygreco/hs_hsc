@@ -164,7 +164,7 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
         saveRgbPng(outRgb, imgRgb)
         # afwRgb.writeRGB(outRgb, imgRgb)
 
-    return imgRgb
+    #return imgRgb
 
 def getTractPatchList(matches):
 
