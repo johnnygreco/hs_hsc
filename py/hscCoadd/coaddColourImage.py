@@ -42,8 +42,7 @@ def saveRgbPng(outRgb, imgRgb, xCen=None, yCen=None, name=None, info=None):
     import matplotlib.pyplot as plt
     import matplotlib.axes   as axes
 
-    # TODO: How to determine figure size
-    fig = plt.figure(dpi=150, frameon=False)
+    fig = plt.figure(dpi=120, frameon=False)
 
     # Show the image
     ax = fig.add_axes([0, 0, 1, 1])
@@ -87,7 +86,7 @@ def isHscFilter(filter, short=True):
 
 def coaddColourImage(root, ra, dec, size, filt='gri',
                      prefix='hsc_coadd_cutout', info=None,
-                     min=-0.0, max=0.6, Q=4, name=None):
+                     min=-0.0, max=0.75, Q=50, name=None):
 
     # Get the SkyMap of the database
     butler = dafPersist.Butler(root)
@@ -143,7 +142,9 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
 
         #Then we can read the desired pixels
         images = {}
-        wcs    = {}
+        newcen = {}
+        height = {}
+        width  = {}
         cutoutSize = int(size)
 
         for i in range(3):
@@ -164,37 +165,33 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
 
             # Grow the bounding box to the desired size
             bbox.grow(int(cutoutSize))
-            """
-            Here the bbox is still the desired one
-            """
-            xOriBefore, yOriBefore = bbox.getBeginX(), bbox.getBeginY()
 
             # Compare to the coadd image, and clip
             bbox.clip(coadd.getBBox(afwImage.PARENT))
-            """
-            Here the bbox has been updated to the clipped one
-            """
-            xOriAfter, yOriAfter = bbox.getBeginX(), bbox.getBeginY()
-
-            # Difference of the origin points of the bounding box
-            xOriDiff = (xOriAfter - xOriBefore)
-            yOriDiff = (yOriAfter - yOriBefore)
-
-            # TODO: Need to be tested
-            # Put into the header
-            newX = cenExpect[0] - xOriDiff
-            newY = bbox.getHeight() - (cenExpect[1] - xOriDiff)
 
             # Get the masked image
             subImage  = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
             # Get the WCS
             subWcs = subImage.getWcs()
 
+            # Get the central pixel coordinates on new subImage WCS
+            newcen[i] = subWcs.skyToPixel(raDec)
+
+            height[i] = bbox.getHeight()
+            width[i]  = bbox.getWidth()
+
             images[i] = subImage.getMaskedImage()
 
         # Define the Blue, Green, and Red channels
-        # TODO: Need to be tested
         B, G, R = images[0].getImage(), images[1].getImage(), images[2].getImage()
+
+        for j in range(3):
+            newCenX, newCenY = newcen[j]
+            newOriX, newOriY = images[j].getImage().getXY0()
+            newCenX = newCenX - newOriX
+            newCenY = height[j] - (newCenY - newOriY)
+        newX = newCenX
+        newY = newCenY
 
         # To see if data are available for all the cut-out region
         if (B.getHeight < dimExpect) or (B.getWidth() < dimExpect):
@@ -209,9 +206,7 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
                                saturatedPixelValue=None)
 
         # Better way to show the image
-        # TODO
         saveRgbPng(outRgb, imgRgb, xCen=newX, yCen=newY, name=name, info=info)
-        #afwRgb.writeRGB(outRgb, imgRgb)
 
     #return imgRgb
 
