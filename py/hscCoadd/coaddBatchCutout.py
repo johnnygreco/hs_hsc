@@ -77,9 +77,16 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
 
 
 def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout',
-                     idField='id', raField='ra', decField='dec',
+                     idField='id', raField='ra', decField='dec', colorFilters='gri',
                      sizeField='cutout_size', zCutoutSize=False, zField=None,
-                     verbose=True):
+                     verbose=True, noColor=False, onlyColor=False):
+    """
+    Givin an input catalog with RA, DEC information, generate HSC
+    coadd cutout images.
+
+    Also have the option to generate (or just generate) a 3-band
+    color image
+    """
 
     if not os.path.isdir(root):
         raise Exception("Wrong root directory for data! %s" % root)
@@ -93,8 +100,9 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
                                                  sizeField=sizeField, zField=zField,
                                                  zCutoutSize=zCutoutSize)
 
-    logFile = prefix + '_match_status.lis'
-    logMatch = open(logFile, 'w')
+    if not onlyColor:
+        logFile = prefix + '_match_status.lis'
+        logMatch = open(logFile, 'w')
 
     nObjs = len(id)
     if verbose:
@@ -109,34 +117,37 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
         newPrefix = prefix + '_' + str(id[i]).strip()
 
         # Cutout Image
-        coaddFound, noData, partialCut = cdCutout.coaddImageCutout(root, ra[i], dec[i],
-                                                                   size[i], saveMsk=True,
-                                                                   filt=filter,
-                                                                   prefix=newPrefix)
-        if coaddFound:
-            if not noData:
-                if not partialCut:
-                    matchStatus = 'Full'
+        if not onlyColor:
+            coaddFound, noData, partialCut = cdCutout.coaddImageCutout(root, ra[i], dec[i],
+                                                                       size[i], saveMsk=True,
+                                                                       filt=filter,
+                                                                       prefix=newPrefix)
+            if coaddFound:
+                if not noData:
+                    if not partialCut:
+                        matchStatus = 'Full'
+                    else:
+                        matchStatus = 'Part'
                 else:
-                    matchStatus = 'Part'
+                    matchStatus = 'NoData'
             else:
-                matchStatus = 'NoData'
-        else:
-            matchStatus = 'Outside'
-        logMatch.write(str(id[i]) + '   ' + matchStatus + '\n')
+                matchStatus = 'Outside'
+            logMatch.write(str(id[i]) + '   ' + matchStatus + '\n')
 
         # Color Image
-        if (zField is not None) and (z is not None):
-            info = "z= %5.3f" % z[i]
-        else:
-            info = None
-        if (matchStatus is 'Full') or (matchStatus is 'Part'):
-            name = str(id[i])
-            cdColor.coaddColourImage(root, ra[i], dec[i], size[i], filt='gri',
-                                     prefix=newPrefix, name=name,
-                                     info=info )
+        if not noColor:
+            if (zField is not None) and (z is not None):
+                info = "z= %5.3f" % z[i]
+            else:
+                info = None
+            if (matchStatus is 'Full') or (matchStatus is 'Part'):
+                name = str(id[i])
+                cdColor.coaddColourImage(root, ra[i], dec[i], size[i], filt=colorFilters,
+                                         prefix=newPrefix, name=name,
+                                         info=info )
 
-    logMatch.close()
+    if not onlyColor:
+        logMatch.close()
 
 
 if __name__ == '__main__':
