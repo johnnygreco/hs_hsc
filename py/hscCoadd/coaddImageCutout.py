@@ -172,25 +172,9 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
             # Grow the bounding box to the desired size
             bbox.grow(int(size))
-            """
-            Here the bbox is still the desired one
-            """
-            xOriBefore, yOriBefore = bbox.getBeginX(), bbox.getBeginY()
 
             # Compare to the coadd image, and clip
             bbox.clip(coadd.getBBox(afwImage.PARENT))
-            """
-            Here the bbox has been updated to the clipped one
-            """
-            xOriAfter, yOriAfter = bbox.getBeginX(), bbox.getBeginY()
-            # Difference of the origin points of the bounding box
-            xOriDiff = (xOriAfter - xOriBefore)
-            yOriDiff = (yOriAfter - yOriBefore)
-
-            # TODO: Need to be tested
-            # Put into the header
-            newX = cenExpect[0] - xOriDiff
-            newY = cenExpect[1] - yOriDiff
 
             if bbox.isEmpty():
                 noData = True
@@ -207,6 +191,14 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
             # Make a new ExposureF object for the cutout region
             subImage = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
+            # Get the WCS
+            subWcs = subImage.getWcs()
+            # Get the central pixel coordinates on new subImage WCS
+            newX, newY = subWcs.skyToPixel(raDec)
+            # Get the new origin pixel
+            newOriX, newOriY = subImage.getImage().getXY0()
+            newX = newX - newOriX
+            newY = newY - newOriY
 
             # Get the header of the new subimage
             subHead = subImage.getMetadata()
@@ -214,6 +206,10 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
             subHead.set('DEC_CUT', dec)
             subHead.set('NEW_X', newX)
             subHead.set('NEW_Y', newY)
+            if partialCut:
+                subHead.set('PARTIAL', 1)
+            else:
+                subHead.set('PARTIAL', 0)
             if (extraField1 is not None) and (extraValue1 is not None):
                 subHead.set(extraField1, extraValue1)
 
@@ -353,25 +349,9 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
                     # Grow the bounding box to the desired size
                     bbox.grow(int(size))
-                    """
-                    Here the bbox is still the desired one
-                    """
-                    xOriBefore, yOriBefore = bbox.getBeginX(), bbox.getBeginY()
 
                     # Compare to the coadd image, and clip
                     bbox.clip(coadd.getBBox(afwImage.PARENT))
-                    """
-                    Here the bbox has been updated to the clipped one
-                    """
-                    xOriAfter, yOriAfter = bbox.getBeginX(), bbox.getBeginY()
-                    # Difference of the origin points of the bounding box
-                    xOriDiff = (xOriAfter - xOriBefore)
-                    yOriDiff = (yOriAfter - yOriBefore)
-
-                    # TODO: Need to be tested
-                    # Put into the header
-                    newX = cenExpect[0] - xOriDiff
-                    newY = cenExpect[1] - yOriDiff
 
                     if bbox.isEmpty():
                         continue
@@ -388,6 +368,14 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
                     # Make a new ExposureF object for the cutout region
                     subImage = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
+                    # Get the WCS
+                    subWcs = subImage.getWcs()
+                    # Get the central pixel coordinates on new subImage WCS
+                    newX, newY = subWcs.skyToPixel(raDec)
+                    # Get the new origin pixel
+                    newOriX, newOriY = subImage.getImage().getXY0()
+                    newX = newX - newOriX
+                    newY = newY - newOriY
 
                     # Get the header of the new subimage
                     subHead = subImage.getMetadata()
