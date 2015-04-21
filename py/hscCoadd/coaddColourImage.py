@@ -86,7 +86,7 @@ def isHscFilter(filter, short=True):
 
 def coaddColourImage(root, ra, dec, size, filt='gri',
                      prefix='hsc_coadd_cutout', info=None,
-                     min=-0.0, max=0.75, Q=50, name=None):
+                     min=-0.0, max=0.70, Q=10, name=None):
 
     # Get the SkyMap of the database
     butler = dafPersist.Butler(root)
