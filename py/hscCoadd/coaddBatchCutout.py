@@ -79,7 +79,8 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
 def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout',
                      idField='id', raField='ra', decField='dec', colorFilters='gri',
                      sizeField='cutout_size', zCutoutSize=False, zField=None,
-                     verbose=True, noColor=False, onlyColor=False):
+                     verbose=True, noColor=False, onlyColor=False,
+                     min=-0.0, max=0.72, Q=15):
     """
     Givin an input catalog with RA, DEC information, generate HSC
     coadd cutout images.
@@ -111,7 +112,8 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
     for i in range(nObjs):
 
         if verbose:
-            print "### %d -- ID: %d ; RA: %10.5f DEC %10.5f ; Size: %d" % (i+1, id[i], ra[i], dec[i], size[i])
+            print "### %d -- ID: %s ; " % (i+1, str(id[1])) + \
+                    "RA: %10.5f DEC %10.5f ; Size: %d" % (ra[i], dec[i], size[i])
 
         # New prefix
         newPrefix = prefix + '_' + str(id[i]).strip()
@@ -140,11 +142,16 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
                 info = "z= %5.3f" % z[i]
             else:
                 info = None
-            if (matchStatus is 'Full') or (matchStatus is 'Part'):
+            if onlyColor:
                 name = str(id[i])
                 cdColor.coaddColourImage(root, ra[i], dec[i], size[i], filt=colorFilters,
                                          prefix=newPrefix, name=name,
-                                         info=info )
+                                         info=info, min=min, max=max, Q=Q)
+            elif (matchStatus is 'Full') or (matchStatus is 'Part'):
+                name = str(id[i])
+                cdColor.coaddColourImage(root, ra[i], dec[i], size[i], filt=colorFilters,
+                                         prefix=newPrefix, name=name,
+                                         info=info, min=min, max=max, Q=Q)
 
     if not onlyColor:
         logMatch.close()
