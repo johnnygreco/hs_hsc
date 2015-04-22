@@ -31,7 +31,8 @@ def decideCutoutSize(z):
 
 def parseInputCatalog(list, sizeDefault=300, idField='id',
                      raField='ra', decField='dec', sizeField='cutout_size',
-                     zField=None, zCutoutSize=False):
+                     zField=None, zCutoutSize=False, infoField1=None,
+                     infoField2=None):
 
     # Read in the catalog
     hduList = fits.open(list)
@@ -61,6 +62,31 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
     else:
         redshift = None
 
+    # Extra information 1
+    if infoField1 is not None:
+        try:
+            info2 = cat.field(infoField1)
+        except KeyError:
+            print "### Can not find field: %s in the catalog !" % infoField1
+            info2 = None
+        else:
+            if isinstance(info2[0], (float, int, long)):
+                info2 = map(lambda x: "{:10.3f}".format(x).strip(), info2)
+    else:
+        info2 = None
+
+    # Extra information 2
+    if infoField2 is not None:
+        try:
+            info3 = cat.field(infoField2)
+        except KeyError:
+            print "### Can not find field: %s in the catalog !" % infoField2
+        else:
+            if isinstance(info3[0], (float, int, long)):
+                info3 = map(lambda x: "{:10.3f}".format(x).strip(), info3)
+    else:
+        info3 = None
+
     if zCutoutSize and (redshift is not None):
         size = map(lambda x: decideCutoutSize(x), redshift)
         size = numpy.asarray(size)
@@ -73,13 +99,14 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
             size = numpy.empty(nObjs)
             size.fill(sizeDefault)
 
-    return id, ra, dec, size, redshift
+    return id, ra, dec, size, redshift, info2, info3
 
 
 def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout',
                      idField='id', raField='ra', decField='dec', colorFilters='gri',
                      sizeField='cutout_size', zCutoutSize=False, zField=None,
                      verbose=True, noColor=False, onlyColor=False,
+                     infoField1=None, infoField2=None,
                      min=-0.0, max=0.72, Q=15):
     """
     Givin an input catalog with RA, DEC information, generate HSC
@@ -92,14 +119,16 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
     if not os.path.isdir(root):
         raise Exception("Wrong root directory for data! %s" % root)
 
-    if not os.path.exists(inCat):
-        raise Exception("Can not find the input catalog! %s" % list)
-    else:
-        id, ra, dec, size, z = parseInputCatalog(inCat, sizeDefault=size,
+    if os.path.exists(inCat):
+        id, ra, dec, size, z, extr1, extr2  = parseInputCatalog(inCat, sizeDefault=size,
                                                  idField=idField, raField=raField,
-                                                 decField=decField,
-                                                 sizeField=sizeField, zField=zField,
-                                                 zCutoutSize=zCutoutSize)
+                                                 decField=decField, zField=zField,
+                                                 zCutoutSize=zCutoutSize,
+                                                 infoField1=infoField1,
+                                                 infoField2=infoField2)
+    else:
+        raise Exception("### Can not find the input catalog: %s" % inCat)
+
 
     if not onlyColor:
         logFile = prefix + '_match_status.lis'
@@ -121,7 +150,8 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
         # Cutout Image
         if not onlyColor:
             coaddFound, noData, partialCut = cdCutout.coaddImageCutout(root, ra[i], dec[i],
-                                                                       size[i], saveMsk=True,
+                                                                       size[i],
+                                                                       saveMsk=True,
                                                                        filt=filter,
                                                                        prefix=newPrefix)
             if coaddFound:
@@ -137,21 +167,33 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
             logMatch.write(str(id[i]) + '   ' + matchStatus + '\n')
 
         # Color Image
-        if not noColor:
-            if (zField is not None) and (z is not None):
-                info = "z= %5.3f" % z[i]
-            else:
-                info = None
-            if onlyColor:
-                name = str(id[i])
-                cdColor.coaddColourImage(root, ra[i], dec[i], size[i], filt=colorFilters,
-                                         prefix=newPrefix, name=name,
-                                         info=info, min=min, max=max, Q=Q)
-            elif (matchStatus is 'Full') or (matchStatus is 'Part'):
-                name = str(id[i])
-                cdColor.coaddColourImage(root, ra[i], dec[i], size[i], filt=colorFilters,
-                                         prefix=newPrefix, name=name,
-                                         info=info, min=min, max=max, Q=Q)
+        # Whether put redshift on the image
+        if (zField is not None) and (z is not None):
+            info1 = "z=%5.3f" % z[i]
+        else:
+            info1 = None
+        # Extra information
+        if (infoField1 is not None) and (extr1 is not None):
+            info2 = extr1[i].strip()
+        else:
+            info2 = None
+        if (infoField2 is not None) and (extr2 is not None):
+            info3 = extr2[i].strip()
+        else:
+            info3 = None
+
+        if onlyColor:
+            name = str(id[i])
+            cdColor.coaddColourImage(root, ra[i], dec[i], size[i], filt=colorFilters,
+                                     prefix=newPrefix, name=name,
+                                     info1=info1, info2=info2, info3=info3,
+                                     min=min, max=max, Q=Q)
+        elif (matchStatus is 'Full') or (matchStatus is 'Part'):
+            name = str(id[i])
+            cdColor.coaddColourImage(root, ra[i], dec[i], size[i], filt=colorFilters,
+                                     prefix=newPrefix, name=name,
+                                     info1=info1, info2=info2, info3=info3,
+                                     min=min, max=max, Q=Q)
 
     if not onlyColor:
         logMatch.close()
