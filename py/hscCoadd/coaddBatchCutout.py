@@ -70,7 +70,7 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
             print "### Can not find field: %s in the catalog !" % infoField1
             info2 = None
         else:
-            if isinstance(info2[0], (float, int, long)):
+            if isinstance(info2[0], (float, int, numpy.number)):
                 info2 = map(lambda x: "{:10.3f}".format(x).strip(), info2)
     else:
         info2 = None
@@ -82,7 +82,7 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
         except KeyError:
             print "### Can not find field: %s in the catalog !" % infoField2
         else:
-            if isinstance(info3[0], (float, int, long)):
+            if isinstance(info3[0], (float, int, numpy.number)):
                 info3 = map(lambda x: "{:10.3f}".format(x).strip(), info3)
     else:
         info3 = None
@@ -107,7 +107,7 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
                      sizeField='cutout_size', zCutoutSize=False, zField=None,
                      verbose=True, noColor=False, onlyColor=False,
                      infoField1=None, infoField2=None,
-                     min=-0.0, max=0.72, Q=15):
+                     min=-0.0, max=0.72, Q=15, stitch=False):
     """
     Givin an input catalog with RA, DEC information, generate HSC
     coadd cutout images.
@@ -174,27 +174,42 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
             info1 = None
         # Extra information
         if (infoField1 is not None) and (extr1 is not None):
-            info2 = extr1[i].strip()
+            info2 = str(extr1[i]).strip()
         else:
             info2 = None
         if (infoField2 is not None) and (extr2 is not None):
-            info3 = extr2[i].strip()
+            info3 = str(extr2[i]).strip()
         else:
             info3 = None
 
         if onlyColor:
             name = str(id[i])
-            cdColor.coaddColourImage(root, ra[i], dec[i], size[i], filt=colorFilters,
-                                     prefix=newPrefix, name=name,
-                                     info1=info1, info2=info2, info3=info3,
-                                     min=min, max=max, Q=Q)
+            if stitch:
+                cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
+                                            filt=colorFilters,
+                                            prefix=newPrefix, name=name,
+                                            info1=info1, info2=info2, info3=info3,
+                                            min=min, max=max, Q=Q)
+            else:
+                cdColor.coaddColourImage(root, ra[i], dec[i], size[i],
+                                         filt=colorFilters,
+                                         prefix=newPrefix, name=name,
+                                         info1=info1, info2=info2, info3=info3,
+                                         min=min, max=max, Q=Q)
         elif (matchStatus is 'Full') or (matchStatus is 'Part'):
             name = str(id[i])
-            cdColor.coaddColourImage(root, ra[i], dec[i], size[i], filt=colorFilters,
-                                     prefix=newPrefix, name=name,
-                                     info1=info1, info2=info2, info3=info3,
-                                     min=min, max=max, Q=Q)
-
+            if stitch:
+                cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
+                                            filt=colorFilters,
+                                            prefix=newPrefix, name=name,
+                                            info1=info1, info2=info2, info3=info3,
+                                            min=min, max=max, Q=Q)
+            else:
+                cdColor.coaddColourImage(root, ra[i], dec[i], size[i],
+                                         filt=colorFilters,
+                                         prefix=newPrefix, name=name,
+                                         info1=info1, info2=info2, info3=info3,
+                                         min=min, max=max, Q=Q)
     if not onlyColor:
         logMatch.close()
 
