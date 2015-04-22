@@ -403,19 +403,31 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
                     newX.append(bbox.getBeginX() - xOri)
                     newY.append(bbox.getBeginY() - yOri)
                 # Get the masked image
-                subImage  = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
-                # Extract the image array
-                images[i] = subImage.getMaskedImage().getImage()
+                try:
+                    subImage  = afwImage.ExposureF(coadd, bbox,
+                                                   afwImage.PARENT)
+                    # Extract the image array
+                    images[i] = subImage.getMaskedImage().getImage()
+                    bboxGood  = True
+                except:
+                    print '### SOMETHING IS WRONG WITH THIS BOUNDING BOX !!'
+                    print "    %d -- %s -- %s " % (tract, patch, filtArr[i])
+                    print "    Bounding Box Size: %d" % (bbox.getWidth() * bbox.getHeight())
+                    bboxGood  = False
+                    continue
 
-            # Define the Blue, Green, and Red channels
-            # These cutouts are still HSC ImageF object, not numpy array
-            bCut, gCut, rCut = images[0], images[1], images[2]
-            # Generate the RGB image
-            # 15/04/22: min ==> minimum
-            imgRgb = afwRgb.makeRGB(rCut, gCut, bCut, minimum=min,
-                                   range=(max - min), Q=Q,
-                                   saturatedPixelValue=None)
-            rgbArr.append(imgRgb)
+            if bboxGood:
+                # Define the Blue, Green, and Red channels
+                # These cutouts are still HSC ImageF object, not numpy array
+                bCut, gCut, rCut = images[0], images[1], images[2]
+                # Generate the RGB image
+                # 15/04/22: min ==> minimum
+                imgRgb = afwRgb.makeRGB(rCut, gCut, bCut, minimum=min,
+                                       range=(max - min), Q=Q,
+                                       saturatedPixelValue=None)
+                rgbArr.append(imgRgb)
+            else:
+                continue
 
     # Number of returned RGB image
     nReturn = len(newX)
