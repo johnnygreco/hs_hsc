@@ -5,11 +5,15 @@ from __future__ import division
 import os
 import argparse
 import numpy   as np
+
 import lsst.daf.persistence as dafPersist
 import lsst.afw.display.rgb as afwRgb
 import lsst.afw.geom as afwGeom
 import lsst.afw.coord as afwCoord
 import lsst.afw.image as afwImage
+
+import matplotlib.pyplot as plt
+import matplotlib.axes   as axes
 
 
 def getCircleRaDec(ra, dec, size):
@@ -40,13 +44,17 @@ def saveRgbPng(outRgb, imgRgb, cenMark=False, xCen=None, yCen=None, name=None,
 
     """
     Save the RGB image as a PNG figure
-    TODO: Need more works!
     """
 
-    import matplotlib.pyplot as plt
-    import matplotlib.axes   as axes
+    # Decide the image size
+    sizeX, sizeY, dim = imgRgb.shape
+    sizeX = int(sizeX / 100) if (sizeX / 100) < 15 else 15
+    sizeY = int(sizeY / 100) if (sizeY / 100) < 15 else 15
+    sizeX = sizeX if sizeX > 6 else 6
+    sizeY = sizeY if sizeY > 6 else 6
 
-    fig = plt.figure(dpi=120, frameon=False)
+    fig = plt.figure(figsize=(sizeX, sizeY),
+                     dpi=100, frameon=False)
 
     # Show the image
     ax = fig.add_axes([0, 0, 1, 1])
@@ -56,7 +64,6 @@ def saveRgbPng(outRgb, imgRgb, cenMark=False, xCen=None, yCen=None, name=None,
     # Suppress all the ticks and tick labels
     ax.xaxis.set_visible(False)
     ax.yaxis.set_visible(False)
-
     # Highlight the new center: TODO
     if cenMark and (xCen is not None) and (yCen is not None):
         ax.scatter(xCen, yCen, s=80, lw=0.5, marker='o', edgecolors='r',
@@ -120,7 +127,7 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
     cenExpect = (dimExpect/2.0, dimExpect/2.0)
     # Create a empty array
     # For RGB image, the data type should be uint8
-    rgbEmpty = np.empty((dimExpect, dimExpect, 3), dtype="uint8")
+    rgbEmpty = np.zeros((dimExpect, dimExpect, 3), dtype="uint8")
 
     # Check the choice of filters
     if len(filt) is not 3:
@@ -164,10 +171,10 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
     else:
 
         #Then we can read the desired pixels
-        images = {}
+        images  = {}
         #newcen = {}
-        newX   = {}
-        newY   = {}
+        newX    = {}
+        newY    = {}
         cutoutSize = int(size)
 
         for i in range(3):
@@ -212,7 +219,7 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
         if localMax:
             maxArr = []
             for m in range(3):
-                imgPad = np.empty((dimExpect, dimExpect), dtype=float)
+                imgPad = np.zeros((dimExpect, dimExpect), dtype=float)
                 imgPad[newY[m]:(newY[m] + images[m].getHeight()),
                        newX[m]:(newX[m] + images[m].getWidth())] = images[m].getArray()
                 globalMax = np.max(images[m].getArray())
@@ -254,7 +261,6 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
         # Add a scale bar
         if scaleBar is not None:
             sLength = (scaleBar * 1.0) / 0.170 / (dimExpect * 1.0)
-            print "### %10.3f" % sLength
             sString = "%d\"" % int(scaleBar)
         else:
             sLength = None
@@ -296,6 +302,146 @@ def getFitsImgName(root, tract, patch, filter, imgType='deepCoadd'):
     imgName = root + imgType + '/' + filter + '/' + str(tract) + '/' + patch + '.fits'
 
     return imgName
+
+
+def coaddColourImageFull(root, ra, dec, size, filt='gri',
+                         prefix='hsc_coadd_cutout',
+                         info1=None, info2=None, info3=None,
+                         min=-0.0, max=0.70, Q=10, name=None, localMax=True,
+                         scaleBar=10):
+
+    # Get the SkyMap of the database
+    butler = dafPersist.Butler(root)
+    skyMap = butler.get("deepCoadd_skyMap", immediate=True)
+
+    # [Ra, Dec] list
+    raDec = afwCoord.Coord(ra*afwGeom.degrees, dec*afwGeom.degrees)
+    raList, decList = getCircleRaDec(ra, dec, size)
+    points = map(lambda x, y: afwGeom.Point2D(x, y), raList, decList)
+    raDecList = map(lambda x: afwCoord.IcrsCoord(x), points)
+
+    # Expected size and center position
+    dimExpect = (2 * size +1)
+    cenExpect = (dimExpect/2.0, dimExpect/2.0)
+    # Create a empty array
+    # For RGB image, the data type should be uint8
+    rgbEmpty = np.zeros((dimExpect, dimExpect, 3), dtype="uint8")
+
+    # Check the choice of filters
+    if len(filt) is not 3:
+        raise Exception("Have to be three filters!")
+    elif not (isHscFilter(filt[0]) & isHscFilter(filt[1]) &
+              isHscFilter(filt[2])):
+        raise Exception("Not all filters are valid !")
+    # Get the correct HSC filter name
+    filter1 = "HSC-%s" % filt[0].upper()
+    filter2 = "HSC-%s" % filt[1].upper()
+    filter3 = "HSC-%s" % filt[2].upper()
+    filtArr = [filter1, filter2, filter3]
+    # Cutout size
+    cutoutSize = int(size)
+
+    #Figure out the area we want, and read the data.
+    #For coadds the WCS is the same in all bands, but the code handles the general case
+    #Start by finding the tract and patch
+    matches = skyMap.findTractPatchList(raDecList)
+    tractList, patchList = getTractPatchList(matches)
+    nPatch = len(patchList)
+    # Output RGB image
+    print "### WILL DEAL WITH %d (TRACT, PATCH)" % nPatch
+    outRgb = prefix + '_' + filt + '_color.png'
+
+    newX = []
+    newY = []
+    boxX = []
+    boxY = []
+    boxSize = []
+    rgbArr = []
+    # Go through all these images
+    for j in range(nPatch):
+        # Tract, patch
+        tract, patch = tractList[j], patchList[j]
+        print "### Dealing with %d - %s" % (tract, patch)
+        # Check if the coordinate is available in all three bands.
+        try:
+            # Get the metadata
+            md1 = butler.get("deepCoadd_md", immediate=True,
+                            tract=tract, patch=patch, filter=filter1)
+            md2 = butler.get("deepCoadd_md", immediate=True,
+                            tract=tract, patch=patch, filter=filter2)
+            md3 = butler.get("deepCoadd_md", immediate=True,
+                            tract=tract, patch=patch, filter=filter3)
+        except Exception, errMsg:
+            print "#########################################################"
+            print " The galaxy is not available in %d - %s" % (tract, patch)
+            print "#########################################################"
+            print errMsg
+        else:
+            #Then we can read the desired pixels
+            images  = {}
+            # Go through the three bands
+            for i in range(3):
+                # Find the file of the coadd image
+                coadd = butler.get("deepCoadd", immediate=True,
+                                      tract=tract, patch=patch, filter=filtArr[i])
+                # Get the WCS information
+                wcs = coadd.getWcs()
+                # Convert the central coordinate from Ra,Dec to pixel unit
+                pixel = wcs.skyToPixel(raDec)
+                pixel = afwGeom.Point2I(pixel)
+                # Define the bounding box for the central pixel
+                bbox = afwGeom.Box2I(pixel, pixel)
+                # Grow the bounding box to the desired size
+                bbox.grow(int(cutoutSize))
+                xOri, yOri = bbox.getBegin()
+                # Compare to the coadd image, and clip
+                bbox.clip(coadd.getBBox(afwImage.PARENT))
+                if i == 1:
+                    boxX.append(bbox.getWidth())
+                    boxY.append(bbox.getHeight())
+                    boxSize.append(bbox.getWidth() * bbox.getHeight())
+                    newX.append(bbox.getBeginX() - xOri)
+                    newY.append(bbox.getBeginY() - yOri)
+                # Get the masked image
+                subImage  = afwImage.ExposureF(coadd, bbox, afwImage.PARENT)
+                # Extract the image array
+                images[i] = subImage.getMaskedImage().getImage()
+
+            # Define the Blue, Green, and Red channels
+            # These cutouts are still HSC ImageF object, not numpy array
+            bCut, gCut, rCut = images[0], images[1], images[2]
+            # Generate the RGB image
+            # 15/04/22: min ==> minimum
+            imgRgb = afwRgb.makeRGB(rCut, gCut, bCut, minimum=min,
+                                   range=(max - min), Q=Q,
+                                   saturatedPixelValue=None)
+            rgbArr.append(imgRgb)
+
+    # Number of returned RGB image
+    nReturn = len(newX)
+    print "### Return %d Useful Images" % nReturn
+    indSize = np.argsort(boxSize)
+    # Go through the returned images, put them in the cutout region
+    for n in range(nReturn):
+        ind = indSize[n]
+        rgbUse = rgbArr[ind]
+        for k in range(3):
+            rgbEmpty[newY[ind]:(newY[ind] + boxY[ind]),
+                     newX[ind]:(newX[ind] + boxX[ind]), k] = rgbUse[:, :, k]
+
+    imgRgb = rgbEmpty
+
+    # Add a scale bar
+    if scaleBar is not None:
+        sLength = (scaleBar * 1.0) / 0.170 / (dimExpect * 1.0)
+        sString = "%d\"" % int(scaleBar)
+    else:
+        sLength = None
+        sString = None
+    # Better way to show the image
+    saveRgbPng(outRgb, imgRgb,  name=name,
+               info1=info1, info2=info2, info3=info3,
+               sLength=sLength, sString=sString)
 
 
 if __name__ == '__main__':
