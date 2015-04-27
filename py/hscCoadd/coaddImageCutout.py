@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# encoding: utf-8
 
 import os
 import copy
@@ -12,6 +13,13 @@ import lsst.afw.coord         as afwCoord
 import lsst.afw.image         as afwImage
 import lsst.afw.geom          as afwGeom
 import lsst.afw.table         as afwTable
+
+# Astropy
+from astropy import wcs
+from astropy.io import fits
+
+# Personal
+import coaddColourImage as cdColor
 
 
 def getCoaddPsfImage(calExp, coord):
@@ -408,6 +416,260 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                         mskBad.writeFits(outPre + '_bad.fits')
 
     return coaddFound, noData, partialCut
+
+
+def coaddImageCutFull(root, ra, dec, size, saveMsk=True, saveSrc=True,
+                      filt='HSC-I', prefix='hsc_coadd_cutout', verbose=True,
+                      extraField1=None, extraValue1=None, skyMap=None):
+
+    # Get the SkyMap of the database
+    if skyMap is None:
+        try:
+            butler = dafPersist.Butler(root)
+            skyMap = butler.get("deepCoadd_skyMap", immediate=True)
+        except Exception:
+            print '### Can not load the correct SkyMap!'
+
+    # Check the filter
+    if not cdColor.isHscFilter(filt, short=False):
+        raise Exception("### Wrong Filter for HSC Data!")
+
+    # (Ra, Dec) Pair for the center
+    raDec = afwCoord.Coord(ra*afwGeom.degrees, dec*afwGeom.degrees)
+    # [Ra, Dec] list
+    raList, decList = cdColor.getCircleRaDec(ra, dec, size)
+    points = map(lambda x, y: afwGeom.Point2D(x, y), raList, decList)
+    raDecList = map(lambda x: afwCoord.IcrsCoord(x), points)
+
+    # Expected size and center position
+    dimExpect = (2 * size +1)
+    cenExpect = (dimExpect/2.0, dimExpect/2.0)
+    sizeExpect = dimExpect ** 2
+    # Get the half size of the image in degree
+    sizeDegree = size * 0.168 / 3600.0
+
+    # Create empty arrays
+    imgEmpty = np.zeros((dimExpect, dimExpect), dtype="float")
+    mskEmpty = np.zeros((dimExpect, dimExpect), dtype="uint8")
+    varEmpty = np.zeros((dimExpect, dimExpect), dtype="float")
+    sigEmpty = np.zeros((dimExpect, dimExpect), dtype="float")
+    # Fill it with NaN
+    imgEmpty.fill(np.nan)
+    mskEmpty.fill(np.nan)
+    varEmpty.fill(np.nan)
+    sigEmpty.fill(np.nan)
+
+    # Figure out the area we want, and read the data.
+    # For coadds the WCS is the same in all bands, but the code handles the general case
+    # Start by finding the tract and patch
+    matches = skyMap.findTractPatchList(raDecList)
+    tractList, patchList = cdColor.getTractPatchList(matches)
+    nPatch = len(patchList)
+    # Prefix of the output file
+    outPre = prefix + '_' + filt + '_full'
+
+    # Verbose
+    if verbose:
+        print '####################################################################'
+        print " Input Ra, Dec: %10.5f, %10.5f" % (ra, dec)
+        print " Cutout size is expected to be %d x %d" % (dimExpect, dimExpect)
+
+    newX = []
+    newY = []
+    boxX = []
+    boxY = []
+    boxSize = []
+    #
+    trList = []
+    paList = []
+    zpList = []
+    #
+    imgArr = []
+    mskArr = []
+    varArr = []
+    sigArr = []
+    srcArr = []
+
+    # Go through all these images
+    for j in range(nPatch):
+        # Tract, patch
+        tract, patch = tractList[j], patchList[j]
+        print "### Dealing with %d - %s" % (tract, patch)
+        # Check if the coordinate is available in all three bands.
+        try:
+            # Get the coadded exposure
+            coadd = butler.get("deepCoadd", tract=tractId,
+                               patch=patchId, filter=filt, immediate=True)
+        except Exception, errMsg:
+            print "#########################################################"
+            print " No data is available in %d - %s" % (tract, patch)
+            print "#########################################################"
+            print errMsg
+        else:
+            # Get the WCS information
+            wcs = coadd.getWcs()
+            if j is 0:
+                # Get the CD Matrix of the WCS
+                cdMatrix = wcs.getCDMatrix()
+                # Get the pixel size in arcsec
+                pixScale = wcs.pixelScale().asDegrees() * 3600.0
+            # Convert the central coordinate from Ra,Dec to pixel unit
+            pixel = wcs.skyToPixel(raDec)
+            pixel = afwGeom.Point2I(pixel)
+            # Define the bounding box for the central pixel
+            bbox = afwGeom.Box2I(pixel, pixel)
+            # Grow the bounding box to the desired size
+            bbox.grow(int(size))
+            xOri, yOri = bbox.getBegin()
+            # Compare to the coadd image, and clip
+            bbox.clip(coadd.getBBox(afwImage.PARENT))
+            # Get the masked image
+            try:
+                subImage  = afwImage.ExposureF(coadd, bbox,
+                                               afwImage.PARENT)
+                # Extract the image array
+                imgArr.append(subImage.getMaskedImage().getImage().getArray())
+                # Extract the mask array
+                mskBad = getCoaddBadMsk(subImage)
+                mskArr.append(mskBad.getArray())
+                # Extract the variance array
+                imgVar = subImage.getMaskedImage().getVariance().getArray()
+                # Convert it into sigma array
+                imgSig = np.sqrt(imgVar)
+                varArr.append(imgVar)
+                sigArr.append(imgSig)
+                # Get the source catalog
+                if saveSrc:
+                    """ Sometimes the forced photometry catalog might not be available """
+                    try:
+                        srcCat = butler.get('deepCoadd_forced_src', tract=tract,
+                                            patch=patch, filter=filt,
+                                            immediate=True,
+                                            flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
+                        # Get the pixel coordinates for all objects
+                        srcRa  = np.array(map(
+                            lambda x: x.get('coord').getRa().asDegrees(), srcCat))
+                        srcDec = np.array(map(
+                            lambda x: x.get('coord').getDec().asDegrees(), srcCat))
+                        # Simple Box match
+                        indMatch = ((srcRa > (ra - sizeDegree)) &
+                                    (srcRa < (ra + sizeDegree)) &
+                                    (srcDec > (dec - sizeDegree)) &
+                                    (srcDec < (dec + sizeDegree)))
+                        # Extract the matched subset
+                        srcArr.append(srcCat.subset(indMatch))
+                    except:
+                        print "### Tract: %d  Patch: %s" % (tractId, patchId)
+                        warnings.warn("### Can not find the forced photometry catalog !")
+                        srcArr.append(None)
+                        if not os.path.isfile('no_src.lis'):
+                            noSrc = open('no_src.lis', 'w')
+                            noSrc.write("%d  %s \n" % (tractId, patchId))
+                            noSrc.close()
+                        else:
+                            noSrc = open('no_src.lis', 'a+')
+                            noSrc.write("%d  %s \n" % (tractId, patchId))
+                            noSrc.close()
+                # Save the width of the BBox
+                boxX.append(bbox.getWidth())
+                # Save the heigth of the BBox
+                boxY.append(bbox.getHeight())
+                # Save the size of the BBox in unit of pixels
+                boxSize.append(bbox.getWidth() * bbox.getHeight())
+                # New X, Y origin coordinates
+                newX.append(bbox.getBeginX() - xOri)
+                newY.append(bbox.getBeginY() - yOri)
+                # Tract, Patch
+                trList.append(tract)
+                paList.append(patch)
+                # Photometric zeropoint
+                zpList.append(2.5 * np.log10(coadd.getFluxMag0()[0]))
+            except:
+                print '### SOMETHING IS WRONG WITH THIS BOUNDING BOX !!'
+                print "    %d -- %s -- %s " % (tract, patch, filtArr[i])
+                print "    Bounding Box Size: %d" % (bbox.getWidth() * bbox.getHeight())
+
+
+    # Number of returned RGB image
+    nReturn = len(newX)
+    print "### Return %d Useful Images" % nReturn
+    indSize = np.argsort(boxSize)
+    # Go through the returned images, put them in the cutout region
+    for n in range(nReturn):
+        ind = indSize[n]
+        # Put in the image array
+        imgUse = imgArr[ind]
+        imgEmpty[newY[ind]:(newY[ind] + boxY[ind]),
+                 newX[ind]:(newX[ind] + boxX[ind])] = imgUse[:, :]
+        # Put in the mask array
+        mskUse = mskArr[ind]
+        mskEmpty[newY[ind]:(newY[ind] + boxY[ind]),
+                 newX[ind]:(newX[ind] + boxX[ind])] = mskUse[:, :]
+        # Put in the variance array
+        varUse = varArr[ind]
+        varEmpty[newY[ind]:(newY[ind] + boxY[ind]),
+                 newX[ind]:(newX[ind] + boxX[ind])] = varUse[:, :]
+        # Put in the sigma array
+        sigUse = sigArr[ind]
+        sigEmpty[newY[ind]:(newY[ind] + boxY[ind]),
+                 newX[ind]:(newX[ind] + boxX[ind])] = sigUse[:, :]
+        if n is (nReturn - 1):
+            # This is the largest available sub-image
+            phoZp = zpList[ind]
+            trLarge, paLarge = trList[ind], paList[ind]
+            """ TODO: Get the total exposure time at the image center """
+
+    # Save the source catalog
+    if saveSrc:
+        srcCount = 0
+        for m in range(nReturn):
+            if srcArr[m] is not None:
+                if srcCount is 0:
+                    srcUse = srcArr[m]
+                    srcCount += 1
+                else:
+                    for item in srcArr[m]:
+                        srcUse.append(item)
+                    srcCount += 1
+
+    # Create a WCS for the combined image
+    outWcs = wcs.WCS(naxis=2)
+    outWcs.wcs.crpix = [dimExpect/2.0, dimExpect/2.0]
+    outWcs.wcs.crval = [ra, dec]
+    outWcs.wcs.ctype = ["RA---TAN", "DEC--TAN"]
+    outWcs.wcs.cdelt = cdMatrix
+    # Output to header
+    outHead = outWcs.to_header()
+    outHead.set("PIXEL", pixScale, "Pixel Scale [arcsec/pix]")
+    outHead.set("PHOZP", phoZp, "Photometric Zeropoint")
+    outHead.set("EXPTIME", 1.0, "Set exposure time to 1 sec")
+    outHead.set("GAIN", 3.0, "Average GAIN for HSC CCDs")
+
+    # Define the output file name
+    # Save the image array
+    outImg = outPre + '_img.fits'
+    hduImg = fits.PrimaryHDU(imgEmpty, header=outHead)
+    hduList = fits.HDUList([hduImg])
+    hduList.writeto(outImg)
+    # Save the mask array
+    outMsk = outPre + '_bad.fits'
+    hduMsk = fits.PrimaryHDU(mskEmpty, header=outHead)
+    hduList = fits.HDUList([hduMsk])
+    hduList.writeto(outMsk)
+    # Save the variance array
+    outVar = outPre + '_var.fits'
+    hduVar = fits.PrimaryHDU(varEmpty, header=outHead)
+    hduList = fits.HDUList([hduVar])
+    hduList.writeto(outVar)
+    # Save the sigma array
+    outSig = outPre + '_sig.fits'
+    hduSig = fits.PrimaryHDU(sigEmpty, header=outHead)
+    hduList = fits.HDUList([hduSig])
+    hduList.writeto(outSig)
+    # If necessary, save the source catalog
+    if saveSrc:
+        outSrc = outPre + '_src.fits'
+        srcUse.writeFits(outSrc)
 
 
 if __name__ == '__main__':
