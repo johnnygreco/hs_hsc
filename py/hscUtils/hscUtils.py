@@ -143,31 +143,37 @@ def normalize(num, lower=0, upper=360, b=False):
     return res
 
 
+#"""
+#Coordinate related shortcuts
+
+    #* Convert from (ra, dec) to (l, b)
+#"""
+
+#def radec2lb(ra, dec):
+
+    #"""
+    #Convert (ra, dec) into Galactic coordinate (l, b)
+
+    #Parameters
+    #----------
+    #ra : float or list or array
+        #RA Coordinates in degree
+    #dec : float or list or array
+        #DEC Coordinates in degree
+
+    #Returns
+    #-------
+    #l : float or list or array
+    #b : float or list or array
+    #"""
+
+    #""" See if
+    #if not (isiterable(ra) or isiterable(dec)):
+
+
 """
-Coordinate related shortcuts
+Image Visualization Related
 
-    * Convert from (ra, dec) to (l, b)
+   * zScale of the image
 """
-
-def radec2lb(ra, dec):
-
-    """
-    Convert (ra, dec) into Galactic coordinate (l, b)
-
-    Parameters
-    ----------
-    ra : float or list or array
-        RA Coordinates in degree
-    dec : float or list or array
-        DEC Coordinates in degree
-
-    Returns
-    -------
-    l : float or list or array
-    b : float or list or array
-    """
-
-    """ See if
-    if not (isiterable(ra) or isiterable(dec)):
-
 
