@@ -712,10 +712,13 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
             outSrc = outPre + '_src.fits'
             srcUse.writeFits(outSrc)
         # Return the image array
-        return imgEmpty, mskEmpty, varEmpty, detEmpty
+        if nReturn > 0:
+            return True
+        else:
+            return False
     else:
         print "### No use data was collected for this RA,DEC !!"
-        return None, None, None, None
+        return False
 
 
 if __name__ == '__main__':
