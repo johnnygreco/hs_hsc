@@ -401,7 +401,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
     return coaddFound, noData, partialCut
 
 
-def coaddImageCutFull(root, ra, dec, size, saveMsk=True, saveSrc=True,
+def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                       filt='HSC-I', prefix='hsc_coadd_cutout', verbose=True,
                       extraField1=None, extraValue1=None, butler=None,
                       visual=True):
@@ -477,6 +477,7 @@ def coaddImageCutFull(root, ra, dec, size, saveMsk=True, saveSrc=True,
     varArr = []
     detArr = []
     srcArr = []
+    psfArr = []
 
     # Go through all these images
     for j in range(nPatch):
@@ -597,6 +598,10 @@ def coaddImageCutFull(root, ra, dec, size, saveMsk=True, saveSrc=True,
                 paList.append(patch)
                 # Photometric zeropoint
                 zpList.append(2.5 * np.log10(coadd.getCalib().getFluxMag0()[0]))
+                # If necessary, save the psf images
+                if savePsf:
+                    psfImg = getCoaddPsfImage(coadd, raDec)
+                    psfArr.append(psfImg)
                 # Get the new (X,Y) coordinate of the galaxy center
                 if j is 0:
                     subWcs = subImage.getWcs()
@@ -634,8 +639,14 @@ def coaddImageCutFull(root, ra, dec, size, saveMsk=True, saveSrc=True,
             if n is (nReturn - 1):
                 # This is the largest available sub-image
                 phoZp = zpList[ind]
-                trLarge, paLarge = trList[ind], paList[ind]
-                """ TODO: Get the total exposure time at the image center """
+                # Save the psf image if necessary
+                if savePsf:
+                    psfOut = outPre + '_psf.fits'
+                    if psfArr[ind] is not None:
+                        psfUse = psfArr[ind]
+                        psfUse.writeFits(psfOut)
+                    else:
+                        warnings.warn("### Can not compute useful PSF image !!")
 
         # Save the source catalog
         if saveSrc:
@@ -664,6 +675,9 @@ def coaddImageCutFull(root, ra, dec, size, saveMsk=True, saveSrc=True,
         outHead.set("EXPTIME", 1.0, "Set exposure time to 1 sec")
         outHead.set("GAIN", 3.0, "Average GAIN for HSC CCDs")
         outHead.set("TOTEXPT", totalExpTime, "Total Exposure Time")
+        for m in range(nReturn):
+            outHead.set("TRACT" + str(n), trList[m])
+            outHead.set("PATCH" + str(n), trList[m])
 
         # Define the output file name
         if verbose:
@@ -697,9 +711,7 @@ def coaddImageCutFull(root, ra, dec, size, saveMsk=True, saveSrc=True,
         if saveSrc:
             outSrc = outPre + '_src.fits'
             srcUse.writeFits(outSrc)
-
-
-
+        # Return the image array
         return imgEmpty, mskEmpty, varEmpty, detEmpty
     else:
         print "### No use data was collected for this RA,DEC !!"
