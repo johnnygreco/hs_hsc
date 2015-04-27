@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# encoding: utf-8
 
 """
 Collection of useful tools to deal with galaxy images from HSC and other surveys
@@ -9,9 +10,18 @@ Collection of useful tools to deal with galaxy images from HSC and other surveys
  * Coordinate related shortcuts
 
 """
-
+import os
 import numpy as np
-from astropy.utils.misc import isiterable
+import astropy.units as u
+from astropy.utils.misc  import isiterable
+from astropy.coordinates import SkyCoord
+
+""" Path of the package"""
+__path__     = os.path.realpath(__file__)
+""" Path of the data directory"""
+__dataDir__  = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
+if not os.path.exists(__dataDir__):
+    raise Exception("Can not find the data directory: %s" % __dataDir__)
 
 """
 Angle related functions:
@@ -37,7 +47,7 @@ def deg2hr(hr):
     """ Convert hours into degrees"""
     return (hr * 15.0)
 
-def normalize(num, lower=0, upper=360, b=False):
+def normAngle(num, lower=0, upper=360, b=False):
     """Normalize number to range [lower, upper) or [lower, upper].
     Parameters
     ----------
@@ -143,37 +153,132 @@ def normalize(num, lower=0, upper=360, b=False):
     return res
 
 
-#"""
-#Coordinate related shortcuts
+"""
+Coordinate related shortcuts
 
-    #* Convert from (ra, dec) to (l, b)
-#"""
+    * Convert from (ra, dec) to (l, b)
+    * Conversion between ICRS and FK5
+"""
 
-#def radec2lb(ra, dec):
+def radec2lb(ra, dec, radian=False, FK5=False):
 
-    #"""
-    #Convert (ra, dec) into Galactic coordinate (l, b)
+    """
+    Convert (ra, dec) into Galactic coordinate (l, b)
 
-    #Parameters
-    #----------
-    #ra : float or list or array
-        #RA Coordinates in degree
-    #dec : float or list or array
-        #DEC Coordinates in degree
+    Parameters
+    ----------
+    ra : float or list or array
+        RA Coordinates in degree
+    dec : float or list or array
+        DEC Coordinates in degree
 
-    #Returns
-    #-------
-    #l : float or list or array
-    #b : float or list or array
-    #"""
+    Returns
+    -------
+    l : float or list or array
+    b : float or list or array
+    """
 
-    #""" See if
-    #if not (isiterable(ra) or isiterable(dec)):
+    """ See if the input is number or array"""
+    if not (isiterable(ra) or isiterable(dec)):
+        returnScalar = True
+        if not FK5:
+            raDec = [SkyCoord(ra, dec, frame='icrs', unit='deg')]
+        else:
+            raDec = [SkyCoord(ra, dec, frame='fk5', unit='deg')]
+    else:
+        returnScalar = False
+        if not FK5:
+            raDec = [SkyCoord(ra, dec, frame='icrs', unit='deg')
+                     for rrr, ddd in zip(ra, dec)]
+        else:
+            raDec = [SkyCoord(ra, dec, frame='fk5', unit='deg')
+                     for rrr, ddd in zip(ra, dec)]
+
+    """ Convert to galactic coordinates
+        Currently, coordinates do not support arrays; have to loop.
+    """
+    l = np.empty(len(raDec), dtype=np.float)
+    b = np.empty(len(raDec), dtype=np.float)
+
+    for ii, cc in enumerate(raDec):
+        gg = cc.galactic
+        # Hack to support both astropy v0.2.4 and v0.3.dev
+        # TODO: remove this hack once v0.3 is out (and array-ify this
+        # whole thing)
+        if radian:
+            l[ii] = gg.l.radian
+            b[ii] = gg.b.radian
+        else:
+            l[ii] = gg.l.degree
+            b[ii] = gg.b.degree
+
+    if returnScalar:
+        return l[0], b[0]
+    else:
+        return l, b
+
+
+def icrs2fk5(ra, dec, radian=False):
+
+    """ Convert coordinates from ICRS to FK5 frame """
+    if not radian:
+        raDec = SkyCoord(ra, dec, frame='icrs', unit='deg')
+    else:
+        raDec = SkyCoord(ra, dec, frame='icrs', unit='radian')
+
+    raDecFK5 = raDec.transform_to('fk5')
+
+    if not radian:
+        return raDecFK5.ra.degree, raDecFK5.dec.degree
+    else:
+        return raDecFK5.ra.radian, raDecFK5.dec.radian
+
+def fk52icrs(ra, dec, radian=False):
+
+    """ Convert coordinates from FK5 to ICRS frame """
+    if not radian:
+        raDec = SkyCoord(ra, dec, frame='fk5', unit='deg')
+    else:
+        raDec = SkyCoord(ra, dec, frame='fk5', unit='radian')
+
+    raDecFK5 = raDec.transform_to('icrs')
+
+    if not radian:
+        return raDecFK5.ra.degree, raDecFK5.dec.degree
+    else:
+        return raDecFK5.ra.radian, raDecFK5.dec.radian
 
 
 """
 Image Visualization Related
 
-   * zScale of the image
+    * zScale of image
 """
+
+def zscale(img, contrast=0.25, samples=500):
+
+    # Image scaling function form http://hsca.ipmu.jp/hscsphinx/scripts/psfMosaic.html
+    ravel = img.ravel()
+    if len(ravel) > samples:
+        imsort = np.sort(np.random.choice(ravel, size=samples))
+    else:
+        imsort = np.sort(ravel)
+
+    n = len(imsort)
+    idx = np.arange(n)
+
+    med = imsort[n/2]
+    w = 0.25
+    i_lo, i_hi = int((0.5-w)*n), int((0.5+w)*n)
+    p = np.polyfit(idx[i_lo:i_hi], imsort[i_lo:i_hi], 1)
+    slope, intercept = p
+
+    z1 = med - (slope/contrast)*(n/2-n*w)
+    z2 = med + (slope/contrast)*(n/2-n*w)
+
+    return z1, z2
+
+
+
+
 
