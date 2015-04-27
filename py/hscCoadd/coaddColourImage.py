@@ -113,11 +113,17 @@ def isHscFilter(filter, short=True):
 def coaddColourImage(root, ra, dec, size, filt='gri',
                      prefix='hsc_coadd_cutout', info1=None, info2=None, info3=None,
                      min=-0.0, max=0.70, Q=10, name=None, localMax=True,
-                     scaleBar=10):
+                     scaleBar=10, butler=None):
 
     # Get the SkyMap of the database
-    butler = dafPersist.Butler(root)
-    skyMap = butler.get("deepCoadd_skyMap", immediate=True)
+    if butler is None:
+        try:
+            butler = dafPersist.Butler(root)
+            skyMap = butler.get("deepCoadd_skyMap", immediate=True)
+        except Exception:
+            print '### Can not load the correct Butler!'
+    else:
+            skyMap = butler.get("deepCoadd_skyMap", immediate=True)
 
     # [Ra, Dec] pair
     raDec = afwCoord.Coord(ra*afwGeom.degrees, dec*afwGeom.degrees)
@@ -308,11 +314,17 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
                          prefix='hsc_coadd_cutout',
                          info1=None, info2=None, info3=None,
                          min=-0.0, max=0.70, Q=10, name=None, localMax=True,
-                         scaleBar=10):
+                         scaleBar=10, butler=None):
 
     # Get the SkyMap of the database
-    butler = dafPersist.Butler(root)
-    skyMap = butler.get("deepCoadd_skyMap", immediate=True)
+    if butler is None:
+        try:
+            butler = dafPersist.Butler(root)
+            skyMap = butler.get("deepCoadd_skyMap", immediate=True)
+        except Exception:
+            print '### Can not load the correct Butler!'
+    else:
+            skyMap = butler.get("deepCoadd_skyMap", immediate=True)
 
     # [Ra, Dec] list
     raDec = afwCoord.Coord(ra*afwGeom.degrees, dec*afwGeom.degrees)
