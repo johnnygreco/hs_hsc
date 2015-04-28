@@ -798,8 +798,8 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
         outHead.set("GAIN", 3.0, "Average GAIN for HSC CCDs")
         outHead.set("TOTEXPT", totalExpTime, "Total Exposure Time")
         for m in range(nReturn):
-            outHead.set("TRACT" + str(n), trList[m])
-            outHead.set("PATCH" + str(n), trList[m])
+            outHead.set("TRACT" + str(m), trList[m])
+            outHead.set("PATCH" + str(m), paList[m])
 
         # Define the output file name
         if verbose:
