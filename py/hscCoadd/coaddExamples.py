@@ -5,10 +5,10 @@
 
 ################################################################################
 ## Get the cutout image
-#import coaddImageCutout as cic
+import coaddImageCutout as cic
 #
 ## Example galaxies in the WIDE field
-#wideRoot = '/lustre/Subaru/SSP/rerun/yasuda/SSP3.4.1_20141224/'
+wideRoot = '/lustre/Subaru/SSP/rerun/yasuda/SSP3.4.1_20141224/'
 ## From redmapper ID=16474; z=0.38
 #wideRa  = 133.02153
 #wideDec = 1.3656108
@@ -19,13 +19,13 @@
 #                     circleMatch=True)
 #
 ## Example of very large galaxy cutout
-#largeRa   = 133.65253
-#largeDec  = 0.64257544
-#largeSize = 1000
+largeRa   = 133.65253
+largeDec  = 0.64257544
+largeSize = 1000
 #
-#cic.coaddImageCutout(wideRoot, largeRa, largeDec, largeSize, saveMsk=True,
-#                     saveSrc=True, filt='HSC-I', prefix='hsc_wide2_cutout',
-#                     circleMatch=True)
+cic.coaddImageCutFull(wideRoot, largeRa, largeDec, largeSize, savePsf=True,
+                     saveSrc=True, filt='HSC-I', prefix='hsc_wide2_cutout',
+                     verbose=True, visual=True)
 #
 ## Exampe galaxies in the UDEEP field
 ## From COSMOS campact galaxies: ID=6026402
@@ -33,11 +33,11 @@
 #udeepDec = 2.794748
 #
 #################################################################################
-import coaddBatchCutout as cbc
+#import coaddBatchCutout as cbc
 
-wideRoot = '/lustre/Subaru/SSP/rerun/yasuda/SSP3.4.1_20141224/'
-inCat = '/home/song/work/hs_hsc/py/data/hsc_redmapper_xmm.fits'
-cbc.coaddBatchCutout(wideRoot, inCat, size=400, filter='HSC-I', prefix='redmapper_xmm')
+#wideRoot = '/lustre/Subaru/SSP/rerun/yasuda/SSP3.4.1_20141224/'
+#inCat = '/home/song/work/hs_hsc/py/data/hsc_redmapper_xmm.fits'
+#cbc.coaddBatchCutout(wideRoot, inCat, size=400, filter='HSC-I', prefix='redmapper_xmm')
 
 #################################################################################
 ## Get the common patches shape for surveys at different bands

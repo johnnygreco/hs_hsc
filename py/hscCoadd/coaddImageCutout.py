@@ -25,6 +25,110 @@ import hscUtils as hUtil
 # The CubeHelix color scheme
 import cubehelix
 
+# Matplotlib
+import matplotlib.pyplot  as plt
+import matplotlib.patches as mpatches
+
+
+def previewCoaddImage(img, msk, var, det, sizeX=16, sizeY=16,
+                    prefix='hsc_cutout', outPNG=None, oriX=None, oriY=None,
+                    boxW=None, boxH=None):
+
+    fig, axes = plt.subplots(sharex=True, sharey=True,
+                          figsize=(sizeX, sizeY))
+
+    # Image
+    cmap = cubehelix.cmap(start=0.5, rot=-0.8,
+                          minSat=1.2, maxSat=1.2,
+                          minLight=0., maxLight=1.,
+                          gamma=1.0)
+    cmap.set_bad('k',1.)
+
+    imin, imax = hUtil.zscale(img, contrast=0.05, samples=500)
+
+    ax1 = plt.subplot(2,2,1)
+    ax1.imshow(np.arcsinh(img), interpolation="none",
+                   vmin=imin, vmax=imax, cmap=cmap)
+    ax1.minorticks_on()
+    ax1.xaxis.set_visible(False)
+    ax1.yaxis.set_visible(False)
+    ax1.text(0.5, 0.9, 'Coadd Image', fontsize=25, fontweight='bold',
+            ha='center', va='center', color='r',
+            transform=ax1.transAxes)
+    ax1.plot([150, 269.1], [150, 150], 'r-', lw=2.5)
+    ax1.text(209, 200, '20"', fontsize=15, ha='center',
+            va='center', color='r', fontweight='bold')
+    ax1.margins(0.00, 0.00, tight=True)
+
+
+    # Variance
+    cmap = cubehelix.cmap(start=0.5, rot=-0.8, reverse=True,
+                          minSat=1.2, maxSat=1.2,
+                          minLight=0., maxLight=1., gamma=0.5)
+    cmap.set_bad('k',1.)
+
+    smin, smax = hUtil.zscale(var, contrast=0.1, samples=500)
+
+    ax2 = plt.subplot(2,2,2)
+    ax2.imshow(np.arcsinh(var), interpolation="none",
+                   vmin=smin, vmax=smax,
+                   cmap=cmap)
+
+    ax2.minorticks_on()
+    ax2.xaxis.set_visible(False)
+    ax2.yaxis.set_visible(False)
+    ax2.text(0.5, 0.9, 'Variance', fontsize=25, fontweight='bold',
+            ha='center', va='center', color='r',
+            transform=ax2.transAxes)
+
+    # Mask
+    ax3 = plt.subplot(2,2,3)
+    ax3.imshow((msk * 2) + det, cmap=cubehelix.cmap(reverse=True))
+
+    ax3.minorticks_on()
+    ax3.xaxis.set_visible(False)
+    ax3.yaxis.set_visible(False)
+    ax3.text(0.5, 0.9, 'Mask Plane', fontsize=25, fontweight='bold',
+            ha='center', va='center', color='r',
+            transform=ax3.transAxes)
+    # If necessary, outline the BBox of each overlapped Patch
+    if ((oriX is not None) and (oriY is not None) and \
+            (boxW is not None) and (boxH is not None)):
+        numBox = len(oriX)
+        for ii in range(numBox):
+            box = mpatches.Rectangle((oriX[ii], oriY[ii]), boxW[ii], boxH[ii],
+                    fc="none", ec=np.random.rand(3,1), linewidth=3.5, alpha=0.7,
+                    linestyle='dashed')
+            ax3.add_patch(box)
+
+    # Masked Image
+    imgMsk = copy.deepcopy(img)
+    imgMsk[(msk > 0) | (det > 0)] = np.nan
+
+    mmin, mmax = hUtil.zscale(img, contrast=0.75, samples=500)
+    cmap = cubehelix.cmap(start=0.5, rot=-0.8, minSat=1.2, maxSat=1.2,
+                          minLight=0., maxLight=1., gamma=1.0)
+    cmap.set_bad('k',1.)
+    ax4 = plt.subplot(2,2,4)
+    ax4.imshow(np.arcsinh(imgMsk), interpolation="none",
+          vmin=mmin, vmax=mmax, cmap=cmap)
+    ax4.minorticks_on()
+    ax4.xaxis.set_visible(False)
+    ax4.yaxis.set_visible(False)
+    ax4.text(0.5, 0.9, 'Masked Image', fontsize=25, fontweight='bold',
+            ha='center', va='center', color='r',
+            transform=ax4.transAxes)
+
+    # Adjust the figure
+    plt.subplots_adjust(hspace=0.0, wspace=0.0, bottom=0.0,
+                        top=1.0, right=1.0, left=0.0)
+
+    # Save a PNG file
+    if outPNG is None:
+        outPNG = prefix + '_pre.png'
+    plt.savefig(outPNG)
+    plt.close(fig)
+
 
 def getCoaddPsfImage(calExp, coord):
 
@@ -647,7 +751,26 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                         psfUse.writeFits(psfOut)
                     else:
                         warnings.warn("### Can not compute useful PSF image !!")
-
+        # See if all the cutout region is covered by data
+        nanPix = np.sum(np.isnan(imgEmpty))
+        if nanPix < (sizeExpect * 0.1):
+            cutFull = True
+            if verbose:
+                print "### More than 90 percent of the cutout region is covered! "
+        else:
+            cutFull = False
+            if verbose:
+                print "### There are still %d NaN pixels!" % nanPix
+        # For mask images, replace NaN with a large value: 999
+        mskEmpty[np.isnan(mskEmpty)] = 999
+        # For detections, replace NaN with 0
+        detEmpty[np.isnan(detEmpty)] = 0
+        # Save a preview image
+        if visual:
+            pngOut = outPre + '_pre.png'
+            previewCoaddImage(imgEmpty, mskEmpty, varEmpty, detEmpty,
+                              oriX=newX, oriY=newY, boxW=boxX, boxH=boxY,
+                              outPNG=pngOut)
         # Save the source catalog
         if saveSrc:
             srcCount = 0
@@ -660,7 +783,6 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                         for item in srcArr[m]:
                             srcUse.append(item)
                         srcCount += 1
-
         # Create a WCS for the combined image
         outWcs = apWcs.WCS(naxis=2)
         outWcs.wcs.crpix = [newCenX + 1, newCenY + 1]
@@ -711,14 +833,15 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
         if saveSrc:
             outSrc = outPre + '_src.fits'
             srcUse.writeFits(outSrc)
-        # Return the image array
         if nReturn > 0:
-            return True
+            cutFound = True
         else:
-            return False
+            cutFound = False
     else:
         print "### No use data was collected for this RA,DEC !!"
-        return False
+        cutFound = False
+
+    return cutFound, cutFull, nReturn
 
 
 if __name__ == '__main__':

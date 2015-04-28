@@ -273,7 +273,9 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
     if verbose:
         print "### Will try to get cutout image for %d objects" % nObjs
 
+    # Test
     for i in range(nObjs):
+    #for i in range(5):
 
         if verbose:
             print "### %d -- ID: %s ; " % (i+1, str(id[1])) + \
@@ -284,16 +286,24 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
 
         # Cutout Image
         if not onlyColor:
-            coaddFound = cdCutout.coaddImageCutFull(root, ra[i], dec[i], size[i],
-                                                     savePsf=True, saveSrc=True,
-                                                     visual=True, filt=filter,
-                                                     prefix=newPrefix, butler=butler)
-            if coaddFound:
+            # Don't save source catalog at first, it is quite time consuming!
+            found, full, npatch = cdCutout.coaddImageCutFull(root, ra[i], dec[i], size[i],
+                                                             savePsf=True, saveSrc=False,
+                                                             visual=True, filt=filter,
+                                                             prefix=newPrefix,
+                                                             butler=butler)
+            if found:
                 matchStatus = 'Found'
+                if full:
+                    full = 'Full'
+                else:
+                    full = 'Part'
             else:
                 matchStatus = 'NoData'
+                full = 'None'
 
-            logMatch.write(str(id[i]) + '   ' + matchStatus + '\n')
+            logMatch.write(str(id[i]) + '   ' + matchStatus +  '   ' + full + '   ' + \
+                    str(npatch) + '\n')
 
         # Color Image
         # Whether put redshift on the image
