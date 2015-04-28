@@ -40,11 +40,16 @@ def decideCutoutSize(z, safe=False):
             return 350
         else:
             return 400
-    if (z > 0.45):
+    if (z > 0.45) and (z < 0.65):
         if safe:
             return 300
         else:
             return 350
+    if (z > 0.65):
+        if safe:
+            return 200
+        else:
+            return 250
 
 
 def parseInputCatalog(list, sizeDefault=300, idField='id',
