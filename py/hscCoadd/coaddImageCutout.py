@@ -707,11 +707,10 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                     psfImg = getCoaddPsfImage(coadd, raDec)
                     psfArr.append(psfImg)
                 # Get the new (X,Y) coordinate of the galaxy center
-                if j is 0:
-                    subWcs = subImage.getWcs()
-                    newCenX, newCenY = subWcs.skyToPixel(raDec)
-                    newCenX = newCenX - xOri
-                    newCenY = newCenY - yOri
+                subWcs = subImage.getWcs()
+                newCenX, newCenY = subWcs.skyToPixel(raDec)
+                newCenX = newCenX - xOri
+                newCenY = newCenY - yOri
 
     # Number of returned images
     nReturn = len(newX)
