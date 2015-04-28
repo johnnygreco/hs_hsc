@@ -50,7 +50,7 @@ def decideCutoutSize(z, safe=False):
 def parseInputCatalog(list, sizeDefault=300, idField='id',
                      raField='ra', decField='dec', sizeField='cutout_size',
                      zField=None, zCutoutSize=False, infoField1=None,
-                     infoField2=None):
+                     infoField2=None, safe=False):
 
     # Read in the catalog
     hduList = fits.open(list)
@@ -106,7 +106,7 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
         info3 = None
 
     if zCutoutSize and (redshift is not None):
-        size = map(lambda x: decideCutoutSize(x), redshift)
+        size = map(lambda x: decideCutoutSize(x, safe=safe), redshift)
         size = numpy.asarray(size)
     else:
         try:
@@ -237,7 +237,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
                       sizeField='cutout_size', zCutoutSize=False, zField=None,
                       verbose=True, noColor=False, onlyColor=False,
                       infoField1=None, infoField2=None,
-                      min=-0.0, max=0.72, Q=15):
+                      min=-0.0, max=0.72, Q=15, safe=False):
     """
     Givin an input catalog with RA, DEC information, generate HSC
     coadd cutout images.
@@ -260,7 +260,8 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
                                                  decField=decField, zField=zField,
                                                  zCutoutSize=zCutoutSize,
                                                  infoField1=infoField1,
-                                                 infoField2=infoField2)
+                                                 infoField2=infoField2,
+                                                 safe=safe)
     else:
         raise Exception("### Can not find the input catalog: %s" % inCat)
 

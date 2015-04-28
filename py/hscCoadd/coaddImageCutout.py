@@ -601,7 +601,9 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
         else:
             # Get the WCS information
             wcs = coadd.getWcs()
-            if j is 0:
+            # Check if cdMatrix has been assigned
+            cdExist = 'cdMatrix' in locals()
+            if not cdExist:
                 # Get the CD Matrix of the WCS
                 cdMatrix = wcs.getCDMatrix()
                 # Get the pixel size in arcsec
@@ -707,10 +709,12 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                     psfImg = getCoaddPsfImage(coadd, raDec)
                     psfArr.append(psfImg)
                 # Get the new (X,Y) coordinate of the galaxy center
-                subWcs = subImage.getWcs()
-                newCenX, newCenY = subWcs.skyToPixel(raDec)
-                newCenX = newCenX - xOri
-                newCenY = newCenY - yOri
+                newCenExist = 'newCenX' in locals() and 'newCenY' in locals()
+                if not newCenExist:
+                    subWcs = subImage.getWcs()
+                    newCenX, newCenY = subWcs.skyToPixel(raDec)
+                    newCenX = newCenX - xOri
+                    newCenY = newCenY - yOri
 
     # Number of returned images
     nReturn = len(newX)
@@ -839,6 +843,7 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
     else:
         print "### No use data was collected for this RA,DEC !!"
         cutFound = False
+        cutFull  = False
 
     return cutFound, cutFull, nReturn
 
