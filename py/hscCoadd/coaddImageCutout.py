@@ -26,6 +26,9 @@ import hscUtils as hUtil
 import cubehelix
 
 # Matplotlib
+import matplotlib as mpl
+mpl.use('Agg')
+ioff()
 import matplotlib.pyplot  as plt
 import matplotlib.patches as mpatches
 
