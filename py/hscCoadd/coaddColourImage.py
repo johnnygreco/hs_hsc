@@ -14,8 +14,8 @@ import lsst.afw.image as afwImage
 
 import matplotlib as mpl
 mpl.use('Agg')
-ioff()
 import matplotlib.pyplot as plt
+plt.ioff()
 import matplotlib.axes   as axes
 
 
