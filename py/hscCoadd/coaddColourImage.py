@@ -317,17 +317,18 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
                          prefix='hsc_coadd_cutout',
                          info1=None, info2=None, info3=None,
                          min=-0.0, max=0.70, Q=10, name=None, localMax=True,
-                         scaleBar=10, butler=None):
+                         scaleBar=10, butler=None, verbose=False):
 
     # Get the SkyMap of the database
     if butler is None:
         try:
             butler = dafPersist.Butler(root)
             skyMap = butler.get("deepCoadd_skyMap", immediate=True)
+            if verbose:
+                print "### Load in the Butler"
         except Exception:
             print '### Can not load the correct Butler!'
-    else:
-            skyMap = butler.get("deepCoadd_skyMap", immediate=True)
+    skyMap = butler.get("deepCoadd_skyMap", immediate=True)
 
     # [Ra, Dec] list
     raDec = afwCoord.Coord(ra*afwGeom.degrees, dec*afwGeom.degrees)
@@ -363,7 +364,8 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
     tractList, patchList = getTractPatchList(matches)
     nPatch = len(patchList)
     # Output RGB image
-    print "### WILL DEAL WITH %d (TRACT, PATCH)" % nPatch
+    if verbose:
+        print "### WILL DEAL WITH %d (TRACT, PATCH)" % nPatch
     outRgb = prefix + '_' + filt + '_color.png'
 
     newX = []
@@ -376,7 +378,8 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
     for j in range(nPatch):
         # Tract, patch
         tract, patch = tractList[j], patchList[j]
-        print "### Dealing with %d - %s" % (tract, patch)
+        if verbose:
+            print "### Dealing with %d - %s" % (tract, patch)
         # Check if the coordinate is available in all three bands.
         try:
             # Get the metadata
@@ -446,7 +449,8 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
 
     # Number of returned RGB image
     nReturn = len(newX)
-    print "### Return %d Useful Images" % nReturn
+    if verbose:
+        print "### Return %d Useful Images" % nReturn
     indSize = np.argsort(boxSize)
     # Go through the returned images, put them in the cutout region
     for n in range(nReturn):

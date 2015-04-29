@@ -212,7 +212,7 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
                                             filt=colorFilters,
                                             prefix=newPrefix, name=name,
                                             info1=info1, info2=info2, info3=info3,
-                                            min=min, max=max, Q=Q)
+                                            min=min, max=max, Q=Q, butler=butler)
             else:
                 cdColor.coaddColourImage(root, ra[i], dec[i], size[i],
                                          filt=colorFilters,
@@ -226,7 +226,7 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
                                             filt=colorFilters,
                                             prefix=newPrefix, name=name,
                                             info1=info1, info2=info2, info3=info3,
-                                            min=min, max=max, Q=Q)
+                                            min=min, max=max, Q=Q, butler=butler)
             else:
                 cdColor.coaddColourImage(root, ra[i], dec[i], size[i],
                                          filt=colorFilters,
@@ -256,6 +256,8 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
     else:
         try:
             butler = dafPersist.Butler(root)
+            if verbose:
+                "### Load in the Butler "
         except Exception:
             warnings.warn("### Get not load the Butler!")
 
@@ -333,7 +335,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
                                          filt=colorFilters,
                                          prefix=newPrefix, name=name,
                                          info1=info1, info2=info2, info3=info3,
-                                         min=min, max=max, Q=Q)
+                                         min=min, max=max, Q=Q, butler=butler)
 
         elif (matchStatus is 'Found'):
             name = str(id[i])
@@ -341,7 +343,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
                                          filt=colorFilters,
                                          prefix=newPrefix, name=name,
                                          info1=info1, info2=info2, info3=info3,
-                                         min=min, max=max, Q=Q)
+                                         min=min, max=max, Q=Q, butler=butler)
 
     if not onlyColor:
         logMatch.close()

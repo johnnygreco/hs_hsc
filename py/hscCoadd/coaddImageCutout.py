@@ -196,10 +196,17 @@ def getCircleRaDec(ra, dec, size):
 
 def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                      filt='HSC-I', prefix='hsc_coadd_cutout',
-                     circleMatch=True, verbose=True, extraField1=None, extraValue1=None):
+                     circleMatch=True, verbose=True, extraField1=None, extraValue1=None,
+                     butler=None):
 
     # Get the SkyMap of the database
-    butler = dafPersist.Butler(root)
+    if butler is None:
+        try:
+            butler = dafPersist.Butler(root)
+            if verbose:
+                print "### Load in the Butler"
+        except:
+            raise Exception("### Can not load the Butler")
     skyMap = butler.get("deepCoadd_skyMap", immediate=True)
 
     # Get the expected cutout size
@@ -518,10 +525,11 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
         try:
             butler = dafPersist.Butler(root)
             skyMap = butler.get("deepCoadd_skyMap", immediate=True)
+            if verbose:
+                print "### Load in the Butler"
         except Exception:
             print '### Can not load the correct Butler!'
-    else:
-            skyMap = butler.get("deepCoadd_skyMap", immediate=True)
+    skyMap = butler.get("deepCoadd_skyMap", immediate=True)
 
     # Check the filter
     if not cdColor.isHscFilter(filt, short=False):
