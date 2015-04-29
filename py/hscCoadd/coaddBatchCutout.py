@@ -391,6 +391,6 @@ if __name__ == '__main__':
                      colorFilters=args.colorFilters, zField=args.zField,
                      zCutoutSize=args.zCutoutSize, noColor=args.noColor,
                      onlyColor=args.onlyColor, infoField1=args.infoField1,
-                     infoField2=args.infoFields2, safe=args.safe,
+                     infoField2=args.infoField2, safe=args.safe,
                      verbose=args.verbose)
 
