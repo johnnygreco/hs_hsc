@@ -122,11 +122,9 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
     if butler is None:
         try:
             butler = dafPersist.Butler(root)
-            skyMap = butler.get("deepCoadd_skyMap", immediate=True)
         except Exception:
             print '### Can not load the correct Butler!'
-    else:
-            skyMap = butler.get("deepCoadd_skyMap", immediate=True)
+    skyMap = butler.get("deepCoadd_skyMap", immediate=True)
 
     # [Ra, Dec] pair
     raDec = afwCoord.Coord(ra*afwGeom.degrees, dec*afwGeom.degrees)
@@ -189,8 +187,8 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
         for i in range(3):
 
             # Find the file of the coadd image
-            coadd = butler.get("deepCoadd", immediate=True,
-                                  tract=tract, patch=patch, filter=filtArr[i])
+            coadd = butler.get("deepCoadd", tract=tract, patch=patch,
+                                filter=filtArr[i])
 
             # Get the WCS information
             wcs = coadd.getWcs()
@@ -323,7 +321,6 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
     if butler is None:
         try:
             butler = dafPersist.Butler(root)
-            skyMap = butler.get("deepCoadd_skyMap", immediate=True)
             if verbose:
                 print "### Load in the Butler"
         except Exception:
@@ -400,8 +397,8 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
             # Go through the three bands
             for i in range(3):
                 # Find the file of the coadd image
-                coadd = butler.get("deepCoadd", immediate=True,
-                                      tract=tract, patch=patch, filter=filtArr[i])
+                coadd = butler.get("deepCoadd", tract=tract, patch=patch,
+                                    filter=filtArr[i], immediate=True)
                 # Get the WCS information
                 wcs = coadd.getWcs()
                 # Convert the central coordinate from Ra,Dec to pixel unit

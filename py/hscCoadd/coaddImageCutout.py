@@ -253,7 +253,8 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
         # available data, which will cause Butler to fail sometime
         try:
             coadd = butler.get("deepCoadd", tract=tractId,
-                               patch=patchId, filter=filt, immediate=True)
+                               patch=patchId, filter=filt,
+                               immediate=True)
         except Exception, errMsg:
             print "#############################################"
             print " The desired coordinate is not available !!! "
@@ -360,7 +361,8 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                 """ Sometimes the forced photometry catalog might not be available """
                 try:
                     srcCat = butler.get('deepCoadd_forced_src', tract=tractId,
-                                        patch=patchId, filter=filt, immediate=True,
+                                        patch=patchId, filter=filt,
+                                        immediate=True,
                                         flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
                     # Get the pixel coordinates for all objects
                     srcRa  = np.array(map(lambda x: x.get('coord').getRa().asDegrees(),
@@ -430,7 +432,8 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                 # available data, which will cause Butler to fail sometime
                 try:
                     coadd = butler.get("deepCoadd", tract=tractId,
-                                       patch=patchId, filter=filt, immediate=True)
+                                       patch=patchId, filter=filt,
+                                       immediate=True)
 
                 except Exception, errMsg:
 
@@ -524,7 +527,6 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
     if butler is None:
         try:
             butler = dafPersist.Butler(root)
-            skyMap = butler.get("deepCoadd_skyMap", immediate=True)
             if verbose:
                 print "### Load in the Butler"
         except Exception:
@@ -603,7 +605,8 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
         try:
             # Get the coadded exposure
             coadd = butler.get("deepCoadd", tract=tract,
-                               patch=patch, filter=filt, immediate=True)
+                               patch=patch, filter=filt,
+                               immediate=True)
         except Exception, errMsg:
             print "#########################################################"
             print " No data is available in %d - %s" % (tract, patch)
@@ -622,7 +625,9 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                 # Get the total exposure time
                 visitIn = coadd.getInfo().getCoaddInputs().visits
                 ccdIn   = coadd.getInfo().getCoaddInputs().ccds
-                totalExpTime = 0.0
+                totalExpTime = len(visitIn)
+                # TODO: This part seems to cause problem, turn it off XXX
+                """
                 expTimeVisits = set()
                 for k in range(len(visitIn) + 1):
                     input = ccdIn[k]
@@ -636,6 +641,7 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                     if visit not in expTimeVisits:
                         totalExpTime += expT
                         expTimeVisits.add(visit)
+                """
                 if verbose:
                     print "### The total exposure time is %5.1f" % totalExpTime
             # Convert the central coordinate from Ra,Dec to pixel unit
@@ -675,7 +681,6 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                     try:
                         srcCat = butler.get('deepCoadd_forced_src', tract=tract,
                                             patch=patch, filter=filt,
-                                            immediate=True,
                                             flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
                         # Get the pixel coordinates for all objects
                         srcRa  = np.array(map(
@@ -823,26 +828,31 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
         hduImg = fits.PrimaryHDU(imgEmpty, header=outHead)
         hduList = fits.HDUList([hduImg])
         hduList.writeto(outImg, clobber=True)
+        hduList.close()
         # Save the mask array
         outMsk = outPre + '_bad.fits'
         hduMsk = fits.PrimaryHDU(mskEmpty, header=outHead)
         hduList = fits.HDUList([hduMsk])
         hduList.writeto(outMsk, clobber=True)
+        hduList.close()
         # Save the variance array
         outVar = outPre + '_var.fits'
         hduVar = fits.PrimaryHDU(varEmpty, header=outHead)
         hduList = fits.HDUList([hduVar])
         hduList.writeto(outVar, clobber=True)
+        hduList.close()
         # Save the sigma array
         outSig = outPre + '_sig.fits'
         hduSig = fits.PrimaryHDU(sigEmpty, header=outHead)
         hduList = fits.HDUList([hduSig])
         hduList.writeto(outSig, clobber=True)
+        hduList.close()
         # Save the detection mask array
         outDet = outPre + '_det.fits'
         hduDet = fits.PrimaryHDU(detEmpty, header=outHead)
         hduList = fits.HDUList([hduDet])
         hduList.writeto(outDet, clobber=True)
+        hduList.close()
         # If necessary, save the source catalog
         if saveSrc:
             outSrc = outPre + '_src.fits'

@@ -262,6 +262,10 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
             warnings.warn("### Get not load the Butler!")
 
     if os.path.exists(inCat):
+        if verbose:
+            print "######################################################"
+            print "              PARSE THE INPUT CATALOG                 "
+            print "######################################################"
         id, ra, dec, size, z, extr1, extr2  = parseInputCatalog(inCat, sizeDefault=size,
                                                  idField=idField, raField=raField,
                                                  decField=decField, zField=zField,
@@ -295,6 +299,8 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
         # Cutout Image
         if not onlyColor:
             # Don't save source catalog at first, it is quite time consuming!
+            if verbose:
+                print "### Make the Cutout Fits Files!  "
             found, full, npatch = cdCutout.coaddImageCutFull(root, ra[i], dec[i], size[i],
                                                              savePsf=True, saveSrc=False,
                                                              visual=True, filt=filter,
@@ -331,6 +337,8 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
 
         if onlyColor:
             name = str(id[i])
+            if verbose:
+                print "### Generate Color Image !"
             cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
                                          filt=colorFilters,
                                          prefix=newPrefix, name=name,
@@ -339,6 +347,8 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
 
         elif (matchStatus is 'Found'):
             name = str(id[i])
+            if verbose:
+                print "### Generate Color Image !"
             cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
                                          filt=colorFilters,
                                          prefix=newPrefix, name=name,
