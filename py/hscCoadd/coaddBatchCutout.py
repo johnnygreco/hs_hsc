@@ -351,7 +351,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("root", help="Root directory of data repository")
-    parser.add_argument("list", help="The input catalog for cutout")
+    parser.add_argument("incat", help="The input catalog for cutout")
     parser.add_argument("-s", '--size', dest='size', type=int,
                         help="Half size of the cutout box", default=200)
     parser.add_argument('-f', '--filter', dest='filt', help="Filter",
@@ -359,7 +359,38 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--prefix', dest='prefix',
                         help='Prefix of the output file',
                         default='hsc_coadd_cutout')
+    parser.add_argument('-id', '--id', dest='idField', help="Column name for ID",
+                       default='id')
+    parser.add_argument('-ra', '--ra', dest='raField', help="Column name for RA",
+                       default='ra')
+    parser.add_argument('-dec', '--dec', dest='decField', help="Column name for DEC",
+                       default='dec')
+    parser.add_argument('-z', '--redshift', dest='zField', help="Column name for z",
+                       default=None)
+    parser.add_argument('-cf', '--color-filters', dest='colorFilters',
+                        help="Choice of filters for color images", default='riz')
+    parser.add_argument('-sf', '--size-field', dest='sizeField',
+                        help="Column name for cutout size", default='cutout_size')
+    parser.add_argument('-info1', '--infoField1', dest='infoField1',
+                        help="Column name for first extra information",
+                        default=None)
+    parser.add_argument('-info2', '--infoField2', dest='infoField2',
+                        help="Column name for second extra information",
+                        default=None)
+    parser.add_argument('-zc', '--zCutoutSize', action="store_true", default=False)
+    parser.add_argument('-nc', '--noColor', action="store_true", default=False)
+    parser.add_argument('-oc', '--onlyColor', action="store_true", default=False)
+    parser.add_argument('-safe', '--safe', action="store_true", default=False)
+    parser.add_argument('-v', '--verbose', action="store_true", default=False)
     args = parser.parse_args()
 
     coaddBatchCutout(args.root, args.list, size=args.size,
-                     filter=args.filt, prefix=args.prefix)
+                     filter=args.filt, prefix=args.prefix,
+                     idField=args.idField, raField=args.raField,
+                     decField=args.decField, sizeField=args.sizeField,
+                     colorFilters=args.colorFilters, zField=args.zField,
+                     zCutoutSize=args.zCutoutSize, noColor=args.noColor,
+                     onlyColor=args.onlyColor, infoField1=args.infoField1,
+                     infoField2=args.infoFields2, safe=args.safe,
+                     verbose=args.verbose)
+
