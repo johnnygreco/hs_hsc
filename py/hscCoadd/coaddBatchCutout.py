@@ -384,7 +384,7 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--verbose', action="store_true", default=False)
     args = parser.parse_args()
 
-    coaddBatchCutout(args.root, args.list, size=args.size,
+    coaddBatchCutout(args.root, args.incat, size=args.size,
                      filter=args.filt, prefix=args.prefix,
                      idField=args.idField, raField=args.raField,
                      decField=args.decField, sizeField=args.sizeField,
