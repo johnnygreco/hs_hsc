@@ -12,6 +12,9 @@ import lsst.afw.geom as afwGeom
 import lsst.afw.coord as afwCoord
 import lsst.afw.image as afwImage
 
+import matplotlib as mpl
+mpl.use('Agg')
+ioff()
 import matplotlib.pyplot as plt
 import matplotlib.axes   as axes
 
