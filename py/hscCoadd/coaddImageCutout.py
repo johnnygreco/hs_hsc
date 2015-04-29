@@ -28,8 +28,8 @@ import cubehelix
 # Matplotlib
 import matplotlib as mpl
 mpl.use('Agg')
-ioff()
 import matplotlib.pyplot  as plt
+plt.ioff()
 import matplotlib.patches as mpatches
 
 
