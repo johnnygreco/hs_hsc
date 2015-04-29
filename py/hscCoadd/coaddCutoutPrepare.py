@@ -7,18 +7,36 @@ import os
 import copy
 import argparse
 import numpy as np
+import scipy
 
 # Astropy
 from astropy.io import fits
 from astropy    import units as u
+from astropy.stats import sigma_clip
+
 # SEP
 import sep
 
 # Cubehelix color scheme
 import cubehelix  # Cubehelix color scheme from https://github.com/jradavenport/cubehelix
+# For high-contrast image
+cmap1 = cubehelix.cmap(start=0.5, rot=-0.8, gamma=1.0,
+                       minSat=1.2, maxSat=1.2,
+                       minLight=0.0, maxLight=1.0)
+cmap1.set_bad('k',1.)
+# For Mask
+cmap2 = cubehelix.cmap(start=2.0, rot=-1.0, gamma=2.5,
+                       minSat=1.2, maxSat=1.2,
+                       minLight=0.0, maxLight=1.0, reverse=True)
+# For Variance
+cmap3 = cubehelix.cmap(start=0.5, rot=-0.8, gamma=1.2,
+                       minSat=1.2, maxSat=1.2,
+                       minLight=0.0, maxLight=1.0)
 
 # Matplotlib related
 import matplotlib as mpl
+mpl.use('Agg')
+ioff()
 import matplotlib.pyplot as plt
 mpl.rcParams['figure.figsize'] = 12, 10
 mpl.rcParams['xtick.major.size'] = 8.0
