@@ -381,7 +381,6 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
         # Change the method, try to generate something as long as it is
         # covered by at least one band
         images = {}
-        bboxes = {}
         for i in range(3):
             try:
                 # Find the coadd image
@@ -404,29 +403,52 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
                                                afwImage.PARENT)
                 # Extract the image array
                 images[i] = subImage.getMaskedImage().getImage()
-                bboxes[i] = bbox
-                if ('')
+                # Get the size and begginng coordinates of the BBox
+                bWidth  = bbox.getWidth()
+                bHeight = bbox.getHeight()
+                bXbegin = bbox.getBeginX()
+                bYbegin = bbox.getBeginY()
             except Exception:
-                print "#########################################################"
-                print " The galaxy is not available in %d - %s - %s" % (tract, patchi,filtArr[i])
-                print "#########################################################"
+                print "### The galaxy is not available in %d - %s - %s" % (tract, patch,
+                                                                           filtArr[i])
                 images[i] = None
-                bboxes[i] = None
 
         if not ((images[0] is None) and (images[1] is None) and (images[2] is None)):
+            # Image from at least one band is available
+            # So bWidth, bHeight, bXbegin, bYbegin should be defined
+            boxX.append(bWidth)
+            boxY.append(bHeight)
+            boxSize.append(bWidth * bHeight)
+            newX.append(bXbegin - xOri)
+            newY.append(bYbegin - yOri)
+            for l in range(3):
+                if images[0] is not None:
+                    bCut = images[0]
+                else:
+                    # Replace the unavailable data with zero array XXX
+                    bCut = np.zeros([bWidth, bHeight])
+                if images[1] is not None:
+                    gCut = images[1]
+                else:
+                    # Replace the unavailable data with zero array XXX
+                    gCut = np.zeros([bWidth, bHeight])
+                if images[2] is not None:
+                    rCut = images[2]
+                else:
+                    # Replace the unavailable data with zero array XXX
+                    rCut = np.zeros([bWidth, bHeight])
+            # Generate the RGB image
+            # 15/04/22: min ==> minimum
+            imgRgb = afwRgb.makeRGB(rCut, gCut, bCut, minimum=min,
+                                   range=(max - min), Q=Q,
+                                   saturatedPixelValue=None)
+            rgbArr.append(imgRgb)
+        else:
+            # Bypass the bad data
+            print "##########################################################"
+            print "### NO DATA IS AVAILABLE IN %d - %s" % (tract, patch)
+            print "##########################################################"
 
-                if i == 1:
-                    boxX.append(bbox.getWidth())
-                    boxY.append(bbox.getHeight())
-                    boxSize.append(bbox.getWidth() * bbox.getHeight())
-                    newX.append(bbox.getBeginX() - xOri)
-                    newY.append(bbox.getBeginY() - yOri)
-                # Generate the RGB image
-                # 15/04/22: min ==> minimum
-                imgRgb = afwRgb.makeRGB(rCut, gCut, bCut, minimum=min,
-                                       range=(max - min), Q=Q,
-                                       saturatedPixelValue=None)
-                rgbArr.append(imgRgb)
         """
         try:
             # Get the metadata
@@ -493,12 +515,16 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
                 rgbArr.append(imgRgb)
             else:
                 continue
+            """
 
     # Number of returned RGB image
     nReturn = len(rgbArr)
     if verbose:
         print "### Return %d Useful Images" % nReturn
     if nReturn > 0:
+        # XXX Test, should be removed later
+        if len(rgbArr) != len(boxSize):
+            raise Exception("### Something is weird here !")
         indSize = np.argsort(boxSize)
         # Go through the returned images, put them in the cutout region
         for n in range(nReturn):
@@ -508,7 +534,6 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
             for k in range(3):
                 rgbEmpty[newY[ind]:(newY[ind] + boxY[ind]),
                          newX[ind]:(newX[ind] + boxX[ind]), k] = rgbUse[:, :, k]
-
         imgRgb = rgbEmpty
         # Add a scale bar
         if scaleBar is not None:
@@ -521,9 +546,10 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
         saveRgbPng(outRgb, imgRgb, name=name,
                    info1=info1, info2=info2, info3=info3,
                    sLength=sLength, sString=sString)
-
     else:
+        print "##########################################################"
         print "### NO COLOR IMAGE IS GENERATED FOR THIS OBJECT !!"
+        print "##########################################################"
 
 
 if __name__ == '__main__':
