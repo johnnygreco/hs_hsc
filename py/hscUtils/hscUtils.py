@@ -286,7 +286,9 @@ def zscale(img, contrast=0.25, samples=500):
 """
 Image Manipulation
 
-    * resampling, like the rebin function in IDL
+    * Image resampling, like the rebin function in IDL
+    * Image rotation
+    * Image shift (sub-pixel accurarcy)
 """
 def congrid(a, newdims, method='linear', centre=False, minusone=False):
     '''
@@ -393,4 +395,294 @@ def congrid(a, newdims, method='linear', centre=False, minusone=False):
         return None
 
 
+"""
+File Manipulation
 
+    * Save numpy array to cPickle file format
+    * Save numpy array to hickle/HDF5 format
+    * Save numpy array to csv file format
+"""
+def saveToPickle(array, name):
+    """
+    Save a numpy array to a cPickle/Pickle format binary file
+    """
+    try:
+       import cPickle as pickle
+    except:
+       import pickle
+
+    output= open(name, 'w')
+    pickle.dump(array, output, protocol=2)
+    output.close()
+
+
+def saveToHickle(array, name):
+    """
+    Save a numpy array to a hickle/HDF5 format binary file
+    """
+    try:
+       import hickle
+    except:
+        raise Exception("### The Hickle package is required!")
+
+    output= open(name, 'w')
+    hickle.dump(array, output, protocol=2)
+    output.close()
+
+
+def saveToCSV(array, name):
+    """
+    Save a numpy array to a CSV file
+
+    Use the dtype.name as column name if possible
+    """
+    output= open(name, 'w')
+    output.write(', '.join(array.dtype.names) + '\n')
+    np.savetxt(name, array, delimiter=",")
+    output.close()
+
+def parseRegEllipse(regName):
+    """
+    Parse a DS9 .reg files, convert the Ellipse or Circle regions
+    into arrays of parameters for ellipse:
+    x, y, a, b, theta
+    """
+    if os.path.isfile(regName):
+        raise Exception("### Can not find the .reg file!")
+    # Parse the .reg file into lines
+    lines = [line.strip() for line in open(regName, 'r')]
+    # Coordinate type of this .reg file: e.g. 'image'
+    coordType = lines[2].strip()
+    # Parse each region
+    regs = [reg.split(" ") for reg in lines[3:]]
+
+    xc = []
+    yc = []
+    ra = []
+    rb = []
+    theta = []
+
+    for reg in regs:
+        if reg[0].strip() == 'ellipse' and len(reg) is 6:
+            xc.append(float(reg[1]))
+            yc.append(float(reg[2]))
+            ra.append(float(reg[3]))
+            rb.append(float(reg[4]))
+            theta.append(float(reg[5]) * np.pi / 180.0)
+        elif reg[0].strip() == 'circle' and len(reg) is 4:
+            xc.append(float(reg[1]))
+            yc.append(float(reg[2]))
+            ra.append(float(reg[3]))
+            rb.append(float(reg[3]))
+            theta.append(0.0)
+
+    xc = np.array(xc, dtype=np.float32)
+    yc = np.array(yc, dtype=np.float32)
+    ra = np.array(ra, dtype=np.float32)
+    rb = np.array(rb, dtype=np.float32)
+    theta = np.array(theta, dtype=np.float32)
+
+    return xc, yc, ra, rb, theta, coordType
+
+
+"""
+Cosmology Related
+
+    * Get luminosity distance at redshift=z
+    * Get angular diameter distance at redshift = z
+    * Get pixel scale at redshift = z
+    * Get distance module at redshift = z
+    * Get comoving volume at redshift = z
+    * Get differential volume at redsfhit = z
+    * Get the age of the Universe at redshift = z
+    * Get the look-back time at redshift = z
+
+"""
+
+def cosmoDL(redshift, WMAP9=True, H0=69.3, Om0=0.287,
+             Planck15=True, kpc=False):
+    """
+    Get the Luminosity Distance at redshift=z
+
+    This is simply a wrapper of astropy.cosmology
+    The input redsfhit can be an array
+    """
+    if WMAP9:
+        from astropy.cosmology import WMAP9 as cosmo
+    elif Planck15:
+        from astropy.cosmology import Planck15 as cosmo
+    else:
+        from astropy.cosmology import FlatLambdaCDM
+        cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
+
+    dl = cosmo.luminosity_distance(redshift)
+
+    if not kpc:
+        return dl.value
+    else:
+        return dl.to(u.kpc).value
+
+
+def cosmoDA(redshift, WMAP9=True, H0=69.3, Om0=0.287,
+             Planck15=True, kpc=False):
+    """
+    Get the Angular Diameter Distance at redshift=z
+
+    This is simply a wrapper of astropy.cosmology
+    The input redsfhit can be an array
+    """
+    if WMAP9:
+        from astropy.cosmology import WMAP9 as cosmo
+    elif Planck15:
+        from astropy.cosmology import Planck15 as cosmo
+    else:
+        from astropy.cosmology import FlatLambdaCDM
+        cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
+
+    da = cosmo.angular_diameter_distance(redshift)
+
+    if not kpc:
+        return da.value
+    else:
+        return da.to(u.kpc).value
+
+
+def cosmoScale(redshift, WMAP9=True, H0=69.3, Om0=0.287,
+                Planck15=True):
+    """
+    Get the Angular Scale (kpc/") at redshift=z
+
+    This is simply a wrapper of astropy.cosmology
+    The input redsfhit can be an array
+    """
+    if WMAP9:
+        from astropy.cosmology import WMAP9 as cosmo
+    elif Planck15:
+        from astropy.cosmology import Planck15 as cosmo
+    else:
+        from astropy.cosmology import FlatLambdaCDM
+        cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
+
+    scale = cosmo.kpc_proper_per_arcmin(redshift).to(u.kpc / u.arcsec)
+
+    return scale.value
+
+
+def cosmoDistMod(redshift, WMAP9=True, H0=69.3, Om0=0.287,
+                  Planck15=True):
+    """
+    Get the Distance Module at redshift=z
+
+    This is simply a wrapper of astropy.cosmology
+    The input redsfhit can be an array
+    """
+    if WMAP9:
+        from astropy.cosmology import WMAP9 as cosmo
+    elif Planck15:
+        from astropy.cosmology import Planck15 as cosmo
+    else:
+        from astropy.cosmology import FlatLambdaCDM
+        cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
+
+    dm = cosmo.distmod(redshift)
+
+    return dm.value
+
+
+def cosmoComVol(redshift, WMAP9=True, H0=69.3, Om0=0.287,
+                 Planck15=True, Gpc=False):
+    """
+    Get the Comoving Volume at redshift=z
+
+    This is simply a wrapper of astropy.cosmology
+    The input redsfhit can be an array
+    """
+    if WMAP9:
+        from astropy.cosmology import WMAP9 as cosmo
+    elif Planck15:
+        from astropy.cosmology import Planck15 as cosmo
+    else:
+        from astropy.cosmology import FlatLambdaCDM
+        cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
+
+    v = cosmo.comoving_volume(redshift)
+
+    if not Gpc:
+        return v.value
+    else:
+        return v.to(u.Gpc).value
+
+
+def cosmodVol(redshift, WMAP9=True, H0=69.3, Om0=0.287,
+              Planck15=True):
+    """
+    Get the Differential Comoving Volume at redshift=z
+
+    This is simply a wrapper of astropy.cosmology
+    The input redsfhit can be an array
+    """
+    if WMAP9:
+        from astropy.cosmology import WMAP9 as cosmo
+    elif Planck15:
+        from astropy.cosmology import Planck15 as cosmo
+    else:
+        from astropy.cosmology import FlatLambdaCDM
+        cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
+
+    dv = cosmo.differential_comoving_volume(redshift)
+
+    return dv.value
+
+
+def cosmoAge(redshift, WMAP9=True, H0=69.3, Om0=0.287,
+             Planck15=True, Myr=False):
+    """
+    Get the Age of the Universe at redshift=z
+
+    This is simply a wrapper of astropy.cosmology
+    The input redsfhit can be an array
+    """
+    if WMAP9:
+        from astropy.cosmology import WMAP9 as cosmo
+    elif Planck15:
+        from astropy.cosmology import Planck15 as cosmo
+    else:
+        from astropy.cosmology import FlatLambdaCDM
+        cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
+
+    age = cosmo.age(redshift)
+
+    if not Myr:
+        return age.value
+    else:
+        return age.to(u.Myr).value
+
+
+def cosmoLookBack(redshift, WMAP9=True, H0=69.3, Om0=0.287,
+                 Planck15=True, Myr=False):
+    """
+    Get the Look-back Time at redshift=z
+
+    This is simply a wrapper of astropy.cosmology
+    The input redsfhit can be an array
+    """
+    if WMAP9:
+        from astropy.cosmology import WMAP9 as cosmo
+    elif Planck15:
+        from astropy.cosmology import Planck15 as cosmo
+    else:
+        from astropy.cosmology import FlatLambdaCDM
+        cosmo = FlatLambdaCDM(H0=H0, Om0=Om0)
+
+    lbt = cosmo.lookback_time(redshift)
+
+    if not Myr:
+        return lbt.value
+    else:
+        return lbt.to(u.Myr).value
+
+
+"""
+Galactic Extinction Related
+
+"""
