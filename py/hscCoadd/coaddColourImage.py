@@ -411,19 +411,19 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
                 xOri, yOri = bbox.getBegin()
                 # Compare to the coadd image, and clip
                 bbox.clip(coadd.getBBox(afwImage.PARENT))
-                if i == 1:
-                    boxX.append(bbox.getWidth())
-                    boxY.append(bbox.getHeight())
-                    boxSize.append(bbox.getWidth() * bbox.getHeight())
-                    newX.append(bbox.getBeginX() - xOri)
-                    newY.append(bbox.getBeginY() - yOri)
                 # Get the masked image
                 try:
                     subImage  = afwImage.ExposureF(coadd, bbox,
                                                    afwImage.PARENT)
                     # Extract the image array
                     images[i] = subImage.getMaskedImage().getImage()
-                    bboxGood  = True
+                    bboxGood = True
+                    if i == 1:
+                        boxX.append(bbox.getWidth())
+                        boxY.append(bbox.getHeight())
+                        boxSize.append(bbox.getWidth() * bbox.getHeight())
+                        newX.append(bbox.getBeginX() - xOri)
+                        newY.append(bbox.getBeginY() - yOri)
                 except:
                     print '### SOMETHING IS WRONG WITH THIS BOUNDING BOX !!'
                     print "    %d -- %s -- %s " % (tract, patch, filtArr[i])
@@ -445,31 +445,35 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
                 continue
 
     # Number of returned RGB image
-    nReturn = len(newX)
+    nReturn = len(rgbArr)
     if verbose:
         print "### Return %d Useful Images" % nReturn
-    indSize = np.argsort(boxSize)
-    # Go through the returned images, put them in the cutout region
-    for n in range(nReturn):
-        ind = indSize[n]
-        rgbUse = rgbArr[ind]
-        for k in range(3):
-            rgbEmpty[newY[ind]:(newY[ind] + boxY[ind]),
-                     newX[ind]:(newX[ind] + boxX[ind]), k] = rgbUse[:, :, k]
+    if nReturn > 0:
+        indSize = np.argsort(boxSize)
+        # Go through the returned images, put them in the cutout region
+        for n in range(nReturn):
+            ind = indSize[n]
+            # This could lead to problem FIXME
+            rgbUse = rgbArr[ind]
+            for k in range(3):
+                rgbEmpty[newY[ind]:(newY[ind] + boxY[ind]),
+                         newX[ind]:(newX[ind] + boxX[ind]), k] = rgbUse[:, :, k]
 
-    imgRgb = rgbEmpty
+        imgRgb = rgbEmpty
+        # Add a scale bar
+        if scaleBar is not None:
+            sLength = (scaleBar * 1.0) / 0.170 / (dimExpect * 1.0)
+            sString = "%d\"" % int(scaleBar)
+        else:
+            sLength = None
+            sString = None
+        # Better way to show the image
+        saveRgbPng(outRgb, imgRgb, name=name,
+                   info1=info1, info2=info2, info3=info3,
+                   sLength=sLength, sString=sString)
 
-    # Add a scale bar
-    if scaleBar is not None:
-        sLength = (scaleBar * 1.0) / 0.170 / (dimExpect * 1.0)
-        sString = "%d\"" % int(scaleBar)
     else:
-        sLength = None
-        sString = None
-    # Better way to show the image
-    saveRgbPng(outRgb, imgRgb,  name=name,
-               info1=info1, info2=info2, info3=info3,
-               sLength=sLength, sString=sString)
+        print "### NO COLOR IMAGE IS GENERATED FOR THIS OBJECT !!"
 
 
 if __name__ == '__main__':
@@ -493,3 +497,9 @@ if __name__ == '__main__':
     coaddColourImage(args.root, args.ra, args.dec, args.size,
                      filt=args.filt, prefix=args.outfile,
                      info=args.info)
+
+#def coaddColourImageFull(root, ra, dec, size, filt='gri',
+                         #prefix='hsc_coadd_cutout',
+                         #info1=None, info2=None, info3=None,
+                         #min=-0.0, max=0.70, Q=10, name=None, localMax=True,
+                         #scaleBar=10, butler=None, verbose=False):
