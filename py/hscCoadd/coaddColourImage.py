@@ -426,17 +426,17 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
                     bCut = images[0]
                 else:
                     # Replace the unavailable data with zero array XXX
-                    bCut = np.zeros([bWidth, bHeight])
+                    bCut = np.zeros([bHeight, bWidth])
                 if images[1] is not None:
                     gCut = images[1]
                 else:
                     # Replace the unavailable data with zero array XXX
-                    gCut = np.zeros([bWidth, bHeight])
+                    gCut = np.zeros([bHeight, bWidth])
                 if images[2] is not None:
                     rCut = images[2]
                 else:
                     # Replace the unavailable data with zero array XXX
-                    rCut = np.zeros([bWidth, bHeight])
+                    rCut = np.zeros([bHeight, bWidth])
             # Generate the RGB image
             # 15/04/22: min ==> minimum
             imgRgb = afwRgb.makeRGB(rCut, gCut, bCut, minimum=min,
