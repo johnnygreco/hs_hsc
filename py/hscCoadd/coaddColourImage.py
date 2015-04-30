@@ -378,6 +378,56 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
         if verbose:
             print "### Dealing with %d - %s" % (tract, patch)
         # Check if the coordinate is available in all three bands.
+        # Change the method, try to generate something as long as it is
+        # covered by at least one band
+        images = {}
+        bboxes = {}
+        for i in range(3):
+            try:
+                # Find the coadd image
+                coadd = butler.get("deepCoadd", tract=tract, patch=patch,
+                                   filter=filtArr[i], immediate=True)
+                # Get the WCS information
+                wcs = coadd.getWcs()
+                # Convert the central coordinate from Ra,Dec to pixel unit
+                pixel = wcs.skyToPixel(raDec)
+                pixel = afwGeom.Point2I(pixel)
+                # Define the bounding box for the central pixel
+                bbox = afwGeom.Box2I(pixel, pixel)
+                # Grow the bounding box to the desired size
+                bbox.grow(int(cutoutSize))
+                xOri, yOri = bbox.getBegin()
+                # Compare to the coadd image, and clip
+                bbox.clip(coadd.getBBox(afwImage.PARENT))
+
+                subImage  = afwImage.ExposureF(coadd, bbox,
+                                               afwImage.PARENT)
+                # Extract the image array
+                images[i] = subImage.getMaskedImage().getImage()
+                bboxes[i] = bbox
+                if ('')
+            except Exception:
+                print "#########################################################"
+                print " The galaxy is not available in %d - %s - %s" % (tract, patchi,filtArr[i])
+                print "#########################################################"
+                images[i] = None
+                bboxes[i] = None
+
+        if not ((images[0] is None) and (images[1] is None) and (images[2] is None)):
+
+                if i == 1:
+                    boxX.append(bbox.getWidth())
+                    boxY.append(bbox.getHeight())
+                    boxSize.append(bbox.getWidth() * bbox.getHeight())
+                    newX.append(bbox.getBeginX() - xOri)
+                    newY.append(bbox.getBeginY() - yOri)
+                # Generate the RGB image
+                # 15/04/22: min ==> minimum
+                imgRgb = afwRgb.makeRGB(rCut, gCut, bCut, minimum=min,
+                                       range=(max - min), Q=Q,
+                                       saturatedPixelValue=None)
+                rgbArr.append(imgRgb)
+        """
         try:
             # Get the metadata
             md1 = butler.get("deepCoadd_md", immediate=True,
