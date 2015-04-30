@@ -5,10 +5,10 @@
 
 ################################################################################
 ## Get the cutout image
-import coaddImageCutout as cic
+#import coaddImageCutout as cic
 #
 ## Example galaxies in the WIDE field
-wideRoot = '/lustre/Subaru/SSP/rerun/yasuda/SSP3.4.1_20141224/'
+#wideRoot = '/lustre/Subaru/SSP/rerun/yasuda/SSP3.4.1_20141224/'
 ## From redmapper ID=16474; z=0.38
 #wideRa  = 133.02153
 #wideDec = 1.3656108
@@ -19,13 +19,13 @@ wideRoot = '/lustre/Subaru/SSP/rerun/yasuda/SSP3.4.1_20141224/'
 #                     circleMatch=True)
 #
 ## Example of very large galaxy cutout
-largeRa   = 133.65253
-largeDec  = 0.64257544
-largeSize = 1000
-#
-cic.coaddImageCutFull(wideRoot, largeRa, largeDec, largeSize, savePsf=True,
-                     saveSrc=True, filt='HSC-I', prefix='hsc_wide2_cutout',
-                     verbose=True, visual=True)
+#largeRa   = 133.65253
+#largeDec  = 0.64257544
+#largeSize = 1000
+##
+#cic.coaddImageCutFull(wideRoot, largeRa, largeDec, largeSize, savePsf=True,
+                     #saveSrc=True, filt='HSC-I', prefix='hsc_wide2_cutout',
+                     #verbose=True, visual=True)
 #
 ## Exampe galaxies in the UDEEP field
 ## From COSMOS campact galaxies: ID=6026402
@@ -96,3 +96,18 @@ cic.coaddImageCutFull(wideRoot, largeRa, largeDec, largeSize, savePsf=True,
                    #rejMask=rejMask)
 
 #################################################################################
+
+# Test Cutout Prepare
+
+import coaddCutoutPrepare as coaddPre
+
+dataDir = '/Users/songhuang/Downloads/temp/redmapper/example'
+prefix = 'hsc_wide2_cutout_HSC-I_full'
+
+coaddPre.coaddCutoutPrepare(prefix, root=dataDir, srcCat=None, verbose=True,
+                          bSizeH=10, bSizeC=100, thrH=3.5, thrC=1.5, mask=2,
+                          growC=5.0, growW=2.0, growH=1.5, kernel=6, central=1,
+                          galX=None, galY=None, galR1=None, galR2=None, galR3=None,
+                          galQ=None, galPA=None, visual=True, suffix='',
+                          badMsk=None, skyClip=3, rebin=8)
+
