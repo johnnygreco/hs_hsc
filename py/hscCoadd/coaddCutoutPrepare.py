@@ -56,6 +56,57 @@ from matplotlib.patches import Ellipse
 import hscUtils as hUtil
 
 
+def showObjects(objs, dist, rad=None, outPNG='sep_object.png'):
+    """
+    Plot the properties of objects detected on the images
+
+    """
+    # Choice of radius to plot
+    if rad is not None:
+        r = rad
+    else:
+        r = objs['a']
+    # Set up the plot
+    fig, axes = plt.subplots(2, 2, figsize=(14, 14))
+    fig.subplots_adjust(hspace=0.1, wspace=0.1,
+                        left=0.08, bottom=0.08,
+                        top=0.95, right=0.95)
+
+    fontsize = 18
+    #  Fig1
+    axes[0, 0].scatter(np.log10(objs['flux']), np.log10(r),
+                       color='g', alpha=0.75,
+                       s=(300.0 / np.sqrt(dist)))
+    axes[0, 0].set_xlabel('log(Flux)')
+    axes[0, 0].set_ylabel('log(Radius/pixel)')
+    #  Fig2
+    axes[0, 1].scatter(np.log10(objs['flux']/(objs['a'] * objs['b'])),
+                       np.log10(r), color='g', alpha=0.75,
+                       s=(300.0 / np.sqrt(dist)))
+    axes[0, 1].set_xlabel('log(Flux/Area)')
+    axes[0, 1].set_ylabel('log(Radius/pixel)')
+    #  Fig3
+    axes[1, 0].scatter(dist, np.log10(objs['flux']), color='g',
+                       alpha=0.75, s=(np.log10(r)*15.0))
+    axes[1, 0].set_xlabel('Central Distance (pixels)')
+    axes[1, 0].set_ylabel('log(Flux)')
+    #  Fig4
+    axes[1, 1].scatter(dist, np.log10(r), color='g',
+                       alpha=0.75, s=(np.log10(objs['npix'])*15.0))
+    axes[1, 1].set_xlabel('Central Distance (pixels)')
+    axes[1, 1].set_ylabel('log(Radius/pixel)')
+    # Adjust the figure
+    for ax in axes.flatten():
+        ax.minorticks_on()
+        for tick in ax.xaxis.get_major_ticks():
+            tick.label1.set_fontsize(fontsize)
+        for tick in ax.yaxis.get_major_ticks():
+            tick.label1.set_fontsize(fontsize)
+    # Save the figure
+    fig.savefig(outPNG)
+    plt.close(fig)
+
+
 def showSkyHist(skypix, skypix2=None, pngName='skyhist.png'):
     """
     Plot the distribution of sky pixels
@@ -178,6 +229,7 @@ def addFlag(dictName, flagName, flagValue):
 def objList2Reg(objs, regName='ds9.reg', color='Blue'):
     """
     Save the Object List to DS9 Region File
+
     """
     # DS9 region file header
     head1 = '# Region file format: DS9 version 4.1\n'
@@ -254,6 +306,7 @@ def adaptiveMask(objC, a=2.0, b=1.5, c=4.0, seeing=1.0,
     XXX This is still very empirical!
     We adopt the form of: Ratio = a*((log(A)-thrA) <= 0 ? 0) + b*logRho + c
     logRho = log10(Flux/(A*B));  and thrA=log10(seeing_fwhm/(2.0*pixscale))
+
     """
     # Corresponding to the pixel size of a seeing disk
     # Use as a threshold to select "point-ish" objects
@@ -274,6 +327,19 @@ def adaptiveMask(objC, a=2.0, b=1.5, c=4.0, seeing=1.0,
         print np.median(rAdRatio)
 
     return rAdRatio
+
+
+def combMskImage(msk1, msk2):
+    """
+    Combine two mask images
+
+    """
+    if (msk1.shape[0] != msk2.shape[0]) or (msk1.shape[1] != msk2.shape[1]):
+        raise Exception("### The two masks need to have the same shape!")
+    mskComb = np.zeros(msk1.shape, dtype='uint8')
+    mskComb[(msk1 > 0) | (msk2 >0)] = 1
+
+    return mskComb
 
 
 def combObjCat(objCold, objHot, tol=1.0):
@@ -561,7 +627,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
                        growC=4.0, growW=3.0, growH=1.5, kernel=4, central=1,
                        galX=None, galY=None, galR1=None, galR2=None, galR3=None,
                        galQ=None, galPA=None, visual=True, suffix='',
-                       badMsk=None, skyClip=3.0, rebin=4):
+                       skyClip=3.0, rebin=4, combBad=True):
     """
     The structure of the cutout has been changed.  Now the cutout procedure
     will generate separated files for Image, Bad Mask, Detection Plane, and
@@ -570,8 +636,8 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     Right now, this new format is only available for the coaddImageCutFull()
     function; coaddImageCutout() will be modified later to also adopt this
     format
-    """
 
+    """
     # 0. Get necessary information
     # Read the input cutout image
     imgArr, imgHead, mskArr, detArr = readCutoutImage(prefix, root=root)
@@ -602,6 +668,8 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     # Suffix
     if (suffix is not '') and (suffix[-1] is not '_'):
         suffix = suffix + '_'
+    # Flags
+    sepFlags = np.array([], dtype=[('name', 'a20'), ('value', 'i1')])
 
     # 1. Get the backgrounds
     """
@@ -718,6 +786,8 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     if verbose:
         print "### 4. EXTRACTING R20, R50, R90 OF EACH OBJECTS "
     r20, r50, r90 = getFluxRadius(imgArr, objComb, maxSize=16.0, subpix=5)
+    # Concentration index
+    concen = (r90/r50)
     if visual:
         # Fig.f
         objPNG4 = prefix + '_' + suffix + 'objRad.png'
@@ -769,7 +839,6 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         mskPNG1 = prefix + '_' + suffix + 'mskall.png'
         showSEPImage(imgSubC, contrast=0.75, title='Mask - All Objects',
                      pngName=mskPNG1, mask=mskAll)
-    # TODO: Use this mask to estimate the average background level
 
     # 6. Find the central galaxy, get its shape and radius, remove it
     if verbose:
@@ -789,8 +858,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     if verbose:
         print "###    (b/a) of the galaxy: %6.2f" % galQ
         print "###      PA  of the galaxy: %6.1f" % galPA
-    # TODO: Make it possible to scale r20 to galR1, r50 to galR2,
-    #       r90 to galR3
+    # Scale r50 to galR1, r90 to galR2 and galR3
     if verbose:
         print "###  6.3. ESTIMATING THE GAL_R1/R2/R3"
     if galR1 is None:
@@ -803,7 +871,11 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         print "###    galR1: %7.2f" % galR1
         print "###    galR2: %7.2f" % galR2
         print "###    galR3: %7.2f" % galR3
-    # TODO: Check if these R1, R2, R3 are reasonbale, compared to image size
+    # Make a flag if the galR3 is too large
+    if (galR3 >= 0.75 * dimX / 2.0):
+        addFlag(sepFlags, 'GALR3_TOO_LARGE', True)
+    else:
+        addFlag(sepFlags, 'GALR3_TOO_LARGE', False)
 
     # 7. Remove the central object (or clear the central region)
     #    Separate the objects into different group and mask them out using
@@ -854,9 +926,20 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
                      objG3['theta'], r=growC)
     mskFinal = (mskG1 | mskG2 | mskG3)
     # Save the mask to FITS file
-    # TODO: Add an option to combine with HSC BAD MASK
+    # Have the option to combine with HSC BAD MASK
+    if combBad:
+        mskFinal = combMskImage(mskFinal, mskArr)
     mskFinFile = prefix + '_' + suffix + 'mskfin.fits'
-    saveFits(mskFinal, mskFinFile, head=imgHead)
+    # Add a few information about the central galaxy to the header
+    mskHead = copy.deepcopy(imgHead)
+    mskHead.set('GAL_X', galX)
+    mskHead.set('GAL_Y', galY)
+    mskHead.set('GAL_Q', galQ)
+    mskHead.set('GAL_PA', galPA)
+    mskHead.set('GAL_R1', galR1)
+    mskHead.set('GAL_R2', galR2)
+    mskHead.set('GAL_R3', galR3)
+    saveFits(mskFinal, mskFinFile, head=mskHead)
     # Save the Objlist using the growed size
     prefixF = prefix + '_' + suffix + 'mskfin'
     objFin = copy.deepcopy(objNoCen)
@@ -918,10 +1001,9 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     # 10. Visualize the detected objects, and find the ones need to be fit
     if verbose:
         print "### 10. SELECTING OBJECTS NEED TO BE FIT"
-    # TODO: Plot the basic properties of the detected objects
-    # log(flux) v.s. log(R50) v.s. log(R90/R50) v.s. log(cenDist)
     if visual:
-        a = 1
+        objPNG = prefix + '_' + suffix + 'objs.png'
+        showObjects(objComb, cenDistComb, rad=r90, outPNG=objPNG)
 
 
 if __name__ == '__main__':
