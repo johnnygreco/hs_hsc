@@ -887,5 +887,5 @@ if __name__ == '__main__':
                         default='hsc_coadd_cutout')
     args = parser.parse_args()
 
-    coaddImageCutout(args.root, args.ra, args.dec, args.size,
-                     filt=args.filt, prefix=args.outfile)
+    coaddImageCutoutFull(args.root, args.ra, args.dec, args.size,
+                         filt=args.filt, prefix=args.outfile)
