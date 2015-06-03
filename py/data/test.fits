@@ -1,0 +1,164 @@
+SIMPLE  =                    T / Standard FITS format                           BITPIX  =                    8 / Character data                                 NAXIS   =                    1 / Text string                                    NAXIS1  =                 6226 / Number of characters                           VOTMETA =                    T / Table metadata in VOTable format               EXTEND  =                    T / There are standard extensions                  COMMENT                                                                         COMMENT The data in this primary HDU consists of bytes which                    COMMENT comprise a VOTABLE document.                                            COMMENT The VOTable describes the metadata of the table contained               COMMENT in the following BINTABLE extension.                                    COMMENT Such a BINTABLE extension can be used on its own as a perfectly         COMMENT good table, but the information from this HDU may provide some          COMMENT useful additional metadata.                                             COMMENT There is one following BINTABLE.                                        NTABLE  =                    1 / Number of following BINTABLE HDUs              END                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             <?xml version='1.0' encoding='UTF-8'?>
+<VOTABLE version='1.1'>
+<!--
+ !  VOTable written by uk.ac.starlink.votable.FitsPlusTableWriter
+ !  Describes BINTABLE extensions in following HDUs
+ !-->
+<RESOURCE>
+<TABLE name="Joined" nrows="2">
+<PARAM arraysize="19" datatype="char" name="DATE-HDU" value="2015-04-06T03:41:29">
+<DESCRIPTION>Date of HDU creation (UTC)</DESCRIPTION>
+</PARAM>
+<PARAM arraysize="5" datatype="char" name="STILVERS" value="3.0-6">
+<DESCRIPTION>Version of STIL software</DESCRIPTION>
+</PARAM>
+<PARAM arraysize="42" datatype="char" name="STILCLAS" value="uk.ac.starlink.votable.FitsPlusTableWriter">
+<DESCRIPTION>Author class in STIL so</DESCRIPTION>
+</PARAM>
+<PARAM arraysize="33" datatype="char" name="Match type" value="Pair match; Best match, symmetric">
+<DESCRIPTION>Type of match which created this table</DESCRIPTION>
+</PARAM>
+<PARAM arraysize="11" datatype="char" name="Match algorithm" value="Exact Value">
+<DESCRIPTION>Matching algorithm which created this table</DESCRIPTION>
+</PARAM>
+<PARAM arraysize="82" datatype="char" name="Join Type" value="1 and 2 (An output row for each row represented in both input tables (INNER JOIN))">
+<DESCRIPTION>Determines which rows appear in output table</DESCRIPTION>
+</PARAM>
+<PARAM arraysize="26" datatype="char" name="First input table" value="6: xmm_good_pcencut_150601"/>
+<PARAM arraysize="25" datatype="char" name="Second input table" value="7: hsc_redmapper_xmm.fits"/>
+<FIELD datatype="int" name="ID">
+<VALUES null='-2147483648'/>
+</FIELD>
+<FIELD arraysize="20" datatype="char" name="NAME"/>
+<FIELD datatype="double" name="RA"/>
+<FIELD datatype="double" name="DEC"/>
+<FIELD datatype="float" name="Z_LAMBDA"/>
+<FIELD datatype="float" name="Z_LAMBDA_ERR"/>
+<FIELD datatype="float" name="LAMBDA"/>
+<FIELD datatype="float" name="LAMBDA_ERR"/>
+<FIELD datatype="float" name="S"/>
+<FIELD datatype="float" name="Z_SPEC"/>
+<FIELD datatype="long" name="OBJID">
+<VALUES null='-9223372036854775808'/>
+</FIELD>
+<FIELD datatype="float" name="IMAG"/>
+<FIELD datatype="float" name="IMAG_ERR"/>
+<FIELD datatype="float" name="MODEL_MAG_u">
+<DESCRIPTION>Element 1 of MODEL_MAG ($14[0])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="MODEL_MAG_g">
+<DESCRIPTION>Element 2 of MODEL_MAG ($14[1])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="MODEL_MAG_r">
+<DESCRIPTION>Element 3 of MODEL_MAG ($14[2])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="MODEL_MAG_i">
+<DESCRIPTION>Element 4 of MODEL_MAG ($14[3])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="MODEL_MAG_z">
+<DESCRIPTION>Element 5 of MODEL_MAG ($14[4])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="MODEL_MAGERR_u">
+<DESCRIPTION>Element 1 of MODEL_MAGERR ($15[0])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="MODEL_MAGERR_g">
+<DESCRIPTION>Element 2 of MODEL_MAGERR ($15[1])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="MODEL_MAGERR_r">
+<DESCRIPTION>Element 3 of MODEL_MAGERR ($15[2])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="MODEL_MAGERR_i">
+<DESCRIPTION>Element 4 of MODEL_MAGERR ($15[3])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="MODEL_MAGERR_z">
+<DESCRIPTION>Element 5 of MODEL_MAGERR ($15[4])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="ILUM"/>
+<FIELD datatype="float" name="PZBINS_1">
+<DESCRIPTION>Element 1 of PZBINS ($17[0])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="PZBINS_2">
+<DESCRIPTION>Element 2 of PZBINS ($17[1])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="PZBINS_3">
+<DESCRIPTION>Element 3 of PZBINS ($17[2])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="PZ_1">
+<DESCRIPTION>Element 1 of PZ ($18[0])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="PZ_2">
+<DESCRIPTION>Element 2 of PZ ($18[1])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="PZ_3">
+<DESCRIPTION>Element 3 of PZ ($18[2])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="P_CEN_1">
+<DESCRIPTION>Element 1 of P_CEN ($19[0])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="P_CEN_2">
+<DESCRIPTION>Element 2 of P_CEN ($19[1])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="P_CEN_3">
+<DESCRIPTION>Element 3 of P_CEN ($19[2])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="P_CEN_4">
+<DESCRIPTION>Element 4 of P_CEN ($19[3])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="P_CEN_5">
+<DESCRIPTION>Element 5 of P_CEN ($19[4])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="RA_CEN_1">
+<DESCRIPTION>Element 1 of RA_CEN ($20[0])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="RA_CEN_2">
+<DESCRIPTION>Element 2 of RA_CEN ($20[1])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="RA_CEN_3">
+<DESCRIPTION>Element 3 of RA_CEN ($20[2])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="RA_CEN_4">
+<DESCRIPTION>Element 4 of RA_CEN ($20[3])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="RA_CEN_5">
+<DESCRIPTION>Element 5 of RA_CEN ($20[4])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="DEC_CEN_1">
+<DESCRIPTION>Element 1 of DEC_CEN ($21[0])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="DEC_CEN_2">
+<DESCRIPTION>Element 2 of DEC_CEN ($21[1])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="DEC_CEN_3">
+<DESCRIPTION>Element 3 of DEC_CEN ($21[2])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="DEC_CEN_4">
+<DESCRIPTION>Element 4 of DEC_CEN ($21[3])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="float" name="DEC_CEN_5">
+<DESCRIPTION>Element 5 of DEC_CEN ($21[4])</DESCRIPTION>
+</FIELD>
+<FIELD datatype="long" name="ID_CEN_1">
+<DESCRIPTION>Element 1 of ID_CEN ($22[0])</DESCRIPTION>
+<VALUES null='-9223372036854775808'/>
+</FIELD>
+<FIELD datatype="long" name="ID_CEN_2">
+<DESCRIPTION>Element 2 of ID_CEN ($22[1])</DESCRIPTION>
+<VALUES null='-9223372036854775808'/>
+</FIELD>
+<FIELD datatype="long" name="ID_CEN_3">
+<DESCRIPTION>Element 3 of ID_CEN ($22[2])</DESCRIPTION>
+<VALUES null='-9223372036854775808'/>
+</FIELD>
+<FIELD datatype="long" name="ID_CEN_4">
+<DESCRIPTION>Element 4 of ID_CEN ($22[3])</DESCRIPTION>
+<VALUES null='-9223372036854775808'/>
+</FIELD>
+<FIELD datatype="long" name="ID_CEN_5">
+<DESCRIPTION>Element 5 of ID_CEN ($22[4])</DESCRIPTION>
+<VALUES null='-9223372036854775808'/>
+</FIELD>
+<!-- Dummy VOTable - no DATA element -->
+</TABLE>
+</RESOURCE>
+</VOTABLE>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              XTENSION= 'BINTABLE'           / binary table extension                         BITPIX  =                    8 / 8-bit bytes                                    NAXIS   =                    2 / 2-dimensional table                            NAXIS1  =                  248 / width of table in bytes                        NAXIS2  =                    2 / number of rows in table                        PCOUNT  =                    0 / size of special data area                      GCOUNT  =                    1 / one data group                                 TFIELDS =                   50 / number of columns                              EXTNAME = 'Joined  '           / table name                                     TTYPE1  = 'ID      '           / label for column 1                             TFORM1  = 'J       '           / format for column 1                            TTYPE2  = 'NAME    '           / label for column 2                             TFORM2  = '20A     '           / format for column 2                            TTYPE3  = 'RA      '           / label for column 3                             TFORM3  = 'D       '           / format for column 3                            TTYPE4  = 'DEC     '           / label for column 4                             TFORM4  = 'D       '           / format for column 4                            TTYPE5  = 'Z_LAMBDA'           / label for column 5                             TFORM5  = 'E       '           / format for column 5                            TTYPE6  = 'Z_LAMBDA_ERR'       / label for column 6                             TFORM6  = 'E       '           / format for column 6                            TTYPE7  = 'LAMBDA  '           / label for column 7                             TFORM7  = 'E       '           / format for column 7                            TTYPE8  = 'LAMBDA_ERR'         / label for column 8                             TFORM8  = 'E       '           / format for column 8                            TTYPE9  = 'S       '           / label for column 9                             TFORM9  = 'E       '           / format for column 9                            TTYPE10 = 'Z_SPEC  '           / label for column 10                            TFORM10 = 'E       '           / format for column 10                           TTYPE11 = 'OBJID   '           / label for column 11                            TFORM11 = 'K       '           / format for column 11                           TTYPE12 = 'IMAG    '           / label for column 12                            TFORM12 = 'E       '           / format for column 12                           TTYPE13 = 'IMAG_ERR'           / label for column 13                            TFORM13 = 'E       '           / format for column 13                           TTYPE14 = 'MODEL_MAG_u'        / label for column 14                            TFORM14 = 'E       '           / format for column 14                           TCOMM14 = 'Element 1 of MODEL_MAG ($14[0])'                                     TTYPE15 = 'MODEL_MAG_g'        / label for column 15                            TFORM15 = 'E       '           / format for column 15                           TCOMM15 = 'Element 2 of MODEL_MAG ($14[1])'                                     TTYPE16 = 'MODEL_MAG_r'        / label for column 16                            TFORM16 = 'E       '           / format for column 16                           TCOMM16 = 'Element 3 of MODEL_MAG ($14[2])'                                     TTYPE17 = 'MODEL_MAG_i'        / label for column 17                            TFORM17 = 'E       '           / format for column 17                           TCOMM17 = 'Element 4 of MODEL_MAG ($14[3])'                                     TTYPE18 = 'MODEL_MAG_z'        / label for column 18                            TFORM18 = 'E       '           / format for column 18                           TCOMM18 = 'Element 5 of MODEL_MAG ($14[4])'                                     TTYPE19 = 'MODEL_MAGERR_u'     / label for column 19                            TFORM19 = 'E       '           / format for column 19                           TCOMM19 = 'Element 1 of MODEL_MAGERR ($15[0])'                                  TTYPE20 = 'MODEL_MAGERR_g'     / label for column 20                            TFORM20 = 'E       '           / format for column 20                           TCOMM20 = 'Element 2 of MODEL_MAGERR ($15[1])'                                  TTYPE21 = 'MODEL_MAGERR_r'     / label for column 21                            TFORM21 = 'E       '           / format for column 21                           TCOMM21 = 'Element 3 of MODEL_MAGERR ($15[2])'                                  TTYPE22 = 'MODEL_MAGERR_i'     / label for column 22                            TFORM22 = 'E       '           / format for column 22                           TCOMM22 = 'Element 4 of MODEL_MAGERR ($15[3])'                                  TTYPE23 = 'MODEL_MAGERR_z'     / label for column 23                            TFORM23 = 'E       '           / format for column 23                           TCOMM23 = 'Element 5 of MODEL_MAGERR ($15[4])'                                  TTYPE24 = 'ILUM    '           / label for column 24                            TFORM24 = 'E       '           / format for column 24                           TTYPE25 = 'PZBINS_1'           / label for column 25                            TFORM25 = 'E       '           / format for column 25                           TCOMM25 = 'Element 1 of PZBINS ($17[0])'                                        TTYPE26 = 'PZBINS_2'           / label for column 26                            TFORM26 = 'E       '           / format for column 26                           TCOMM26 = 'Element 2 of PZBINS ($17[1])'                                        TTYPE27 = 'PZBINS_3'           / label for column 27                            TFORM27 = 'E       '           / format for column 27                           TCOMM27 = 'Element 3 of PZBINS ($17[2])'                                        TTYPE28 = 'PZ_1    '           / label for column 28                            TFORM28 = 'E       '           / format for column 28                           TCOMM28 = 'Element 1 of PZ ($18[0])'                                            TTYPE29 = 'PZ_2    '           / label for column 29                            TFORM29 = 'E       '           / format for column 29                           TCOMM29 = 'Element 2 of PZ ($18[1])'                                            TTYPE30 = 'PZ_3    '           / label for column 30                            TFORM30 = 'E       '           / format for column 30                           TCOMM30 = 'Element 3 of PZ ($18[2])'                                            TTYPE31 = 'P_CEN_1 '           / label for column 31                            TFORM31 = 'E       '           / format for column 31                           TCOMM31 = 'Element 1 of P_CEN ($19[0])'                                         TTYPE32 = 'P_CEN_2 '           / label for column 32                            TFORM32 = 'E       '           / format for column 32                           TCOMM32 = 'Element 2 of P_CEN ($19[1])'                                         TTYPE33 = 'P_CEN_3 '           / label for column 33                            TFORM33 = 'E       '           / format for column 33                           TCOMM33 = 'Element 3 of P_CEN ($19[2])'                                         TTYPE34 = 'P_CEN_4 '           / label for column 34                            TFORM34 = 'E       '           / format for column 34                           TCOMM34 = 'Element 4 of P_CEN ($19[3])'                                         TTYPE35 = 'P_CEN_5 '           / label for column 35                            TFORM35 = 'E       '           / format for column 35                           TCOMM35 = 'Element 5 of P_CEN ($19[4])'                                         TTYPE36 = 'RA_CEN_1'           / label for column 36                            TFORM36 = 'E       '           / format for column 36                           TCOMM36 = 'Element 1 of RA_CEN ($20[0])'                                        TTYPE37 = 'RA_CEN_2'           / label for column 37                            TFORM37 = 'E       '           / format for column 37                           TCOMM37 = 'Element 2 of RA_CEN ($20[1])'                                        TTYPE38 = 'RA_CEN_3'           / label for column 38                            TFORM38 = 'E       '           / format for column 38                           TCOMM38 = 'Element 3 of RA_CEN ($20[2])'                                        TTYPE39 = 'RA_CEN_4'           / label for column 39                            TFORM39 = 'E       '           / format for column 39                           TCOMM39 = 'Element 4 of RA_CEN ($20[3])'                                        TTYPE40 = 'RA_CEN_5'           / label for column 40                            TFORM40 = 'E       '           / format for column 40                           TCOMM40 = 'Element 5 of RA_CEN ($20[4])'                                        TTYPE41 = 'DEC_CEN_1'          / label for column 41                            TFORM41 = 'E       '           / format for column 41                           TCOMM41 = 'Element 1 of DEC_CEN ($21[0])'                                       TTYPE42 = 'DEC_CEN_2'          / label for column 42                            TFORM42 = 'E       '           / format for column 42                           TCOMM42 = 'Element 2 of DEC_CEN ($21[1])'                                       TTYPE43 = 'DEC_CEN_3'          / label for column 43                            TFORM43 = 'E       '           / format for column 43                           TCOMM43 = 'Element 3 of DEC_CEN ($21[2])'                                       TTYPE44 = 'DEC_CEN_4'          / label for column 44                            TFORM44 = 'E       '           / format for column 44                           TCOMM44 = 'Element 4 of DEC_CEN ($21[3])'                                       TTYPE45 = 'DEC_CEN_5'          / label for column 45                            TFORM45 = 'E       '           / format for column 45                           TCOMM45 = 'Element 5 of DEC_CEN ($21[4])'                                       TTYPE46 = 'ID_CEN_1'           / label for column 46                            TFORM46 = 'K       '           / format for column 46                           TCOMM46 = 'Element 1 of ID_CEN ($22[0])'                                        TTYPE47 = 'ID_CEN_2'           / label for column 47                            TFORM47 = 'K       '           / format for column 47                           TCOMM47 = 'Element 2 of ID_CEN ($22[1])'                                        TTYPE48 = 'ID_CEN_3'           / label for column 48                            TFORM48 = 'K       '           / format for column 48                           TCOMM48 = 'Element 3 of ID_CEN ($22[2])'                                        TTYPE49 = 'ID_CEN_4'           / label for column 49                            TFORM49 = 'K       '           / format for column 49                           TCOMM49 = 'Element 4 of ID_CEN ($22[3])'                                        TTYPE50 = 'ID_CEN_5'           / label for column 50                            TFORM50 = 'K       '           / format for column 50                           TCOMM50 = 'Element 5 of ID_CEN ($22[4])'                                        DATE-HDU= '2015-06-03T10:27:10' / Date of HDU creation (UTC)                    STILVERS= '3.0-6   '           / Version of STIL software                       STILCLAS= 'uk.ac.starlink.votable.FitsPlusTableWriter' / Author class in STIL soEND                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               XRMJ021529.5-053255.3@@ÔΩíÅ7ø¿1€&GÁÂ>ñ¶<PJXB-
+@=3ò?Å¯>î¢#-‰¿Q AÜL;÷æªA´<0AñÈ†AäêmAÜœAÉz>»©V<ÖÀW;ÓVæ;÷ó<i‰ëA…Ø§>Sw->\U˝>e4Õ*á/I73ƒ˝Æ?~xú;ìBi:£[à9hÅ8«U)B}ÌBy@ByoBnpBk[¿±éŸ¿±ßé¿±‚W¿≤ ¿±¥C-‰¿Q -‰¿Q -‰¿Q ◊-‰¿QÌ-‰¿Q ˛  úURMJ022320.8-023502.1@AÎ"Œ∞e¿´ﬂn∑‚>óì˜<{ÛA§k€@)_2?~ˇˇ>ñÜ◊-bB, ∞AãçŸ<LòzA©¯9AõŸ¢Aèu›Aä˙1AáˆK>¬íê<ÚÇƒ<dÆZ<L∏<¯·=Abïƒ>7ƒ >C¥Ç>O§‚ˆ…&†Âœ-¡»W?~ˇº;f~k9¢Rx8sgk7◊#ÚBX—B{7By§B_˘BjM¿%^˚¿"k¿!÷‡¿#Ãã¿$î§-bB, ∞-d`ç ¨-d`çn-d`ç!-bB,Û                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
