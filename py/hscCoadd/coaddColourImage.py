@@ -570,9 +570,9 @@ if __name__ == '__main__':
                         default=None)
     args = parser.parse_args()
 
-    coaddColourImage(args.root, args.ra, args.dec, args.size,
-                     filt=args.filt, prefix=args.outfile,
-                     info=args.info)
+    coaddColourImageFull(args.root, args.ra, args.dec, args.size,
+                         filt=args.filt, prefix=args.outfile,
+                         info1=args.info, verbose=True)
 
 #def coaddColourImageFull(root, ra, dec, size, filt='gri',
                          #prefix='hsc_coadd_cutout',

@@ -66,11 +66,13 @@ def previewCoaddImage(img, msk, var, det, sizeX=16, sizeY=16,
 
     # Variance
     cmap = cubehelix.cmap(start=0.5, rot=-0.8, reverse=True,
-                          minSat=1.2, maxSat=1.2,
+                          minSat=1.1, maxSat=1.2,
                           minLight=0., maxLight=1., gamma=0.5)
     cmap.set_bad('k',1.)
 
     smin, smax = hUtil.zscale(var, contrast=0.1, samples=500)
+    if (smax < smin * 1.001):
+        smax = smin * 1.001
 
     ax2 = plt.subplot(2,2,2)
     ax2.imshow(np.arcsinh(var), interpolation="none",
@@ -772,8 +774,10 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                     if psfArr[ind] is not None:
                         psfUse = psfArr[ind]
                         psfUse.writeFits(psfOut)
+                        noPsf = False
                     else:
                         warnings.warn("### Can not compute useful PSF image !!")
+                        noPsf = True
         # See if all the cutout region is covered by data
         nanPix = np.sum(np.isnan(imgEmpty))
         if nanPix < (sizeExpect * 0.1):
@@ -788,12 +792,6 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
         mskEmpty[np.isnan(mskEmpty)] = 999
         # For detections, replace NaN with 0
         detEmpty[np.isnan(detEmpty)] = 0
-        # Save a preview image
-        if visual:
-            pngOut = outPre + '_pre.png'
-            previewCoaddImage(imgEmpty, mskEmpty, varEmpty, detEmpty,
-                              oriX=newX, oriY=newY, boxW=boxX, boxH=boxY,
-                              outPNG=pngOut)
         # Save the source catalog
         if saveSrc:
             srcCount = 0
@@ -861,12 +859,19 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
         if saveSrc:
             outSrc = outPre + '_src.fits'
             srcUse.writeFits(outSrc)
-        if nReturn > 0:
+        if (nReturn > 0 and not noPsf):
             cutFound = True
+            # Save a preview image
+            if visual:
+                pngOut = outPre + '_pre.png'
+                previewCoaddImage(imgEmpty, mskEmpty, varEmpty, detEmpty,
+                                  oriX=newX, oriY=newY, boxW=boxX, boxH=boxY,
+                                  outPNG=pngOut)
         else:
             cutFound = False
+            print "### No use data was collected for this RA, DEC in %s band !!" % filt
     else:
-        print "### No use data was collected for this RA,DEC !!"
+        print "### No use data was collected for this RA, DEC in %s band !!" % filt
         cutFound = False
         cutFull  = False
 

@@ -164,7 +164,7 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
     for i in range(nObjs):
 
         if verbose:
-            print "### %d -- ID: %s ; " % (i+1, str(id[1])) + \
+            print "### %d -- ID: %s ; " % (i+1, str(id[i])) + \
                     "RA: %10.5f DEC %10.5f ; Size: %d" % (ra[i], dec[i], size[i])
 
         # New prefix
@@ -259,7 +259,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
             if verbose:
                 "### Load in the Butler "
         except Exception:
-            warnings.warn("### Get not load the Butler!")
+            warnings.warn("### Can not load the Butler!")
 
     if os.path.exists(inCat):
         if verbose:
@@ -290,7 +290,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
     #for i in range(5):
 
         if verbose:
-            print "### %d -- ID: %s ; " % (i+1, str(id[1])) + \
+            print "### %d -- ID: %s ; " % (i+1, str(id[i])) + \
                     "RA: %10.5f DEC %10.5f ; Size: %d" % (ra[i], dec[i], size[i])
 
         # New prefix
@@ -344,8 +344,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
                                          prefix=newPrefix, name=name,
                                          info1=info1, info2=info2, info3=info3,
                                          min=min, max=max, Q=Q, butler=butler)
-
-        elif (matchStatus is 'Found'):
+        elif (matchStatus is 'Found' and not noColor):
             name = str(id[i])
             if verbose:
                 print "### Generate Color Image !"
