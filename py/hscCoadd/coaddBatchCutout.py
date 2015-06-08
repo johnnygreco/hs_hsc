@@ -104,6 +104,7 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
             info3 = cat.field(infoField2)
         except KeyError:
             print "### Can not find field: %s in the catalog !" % infoField2
+            info3 = None
         else:
             if isinstance(info3[0], (float, int, numpy.number)):
                 info3 = map(lambda x: "{:10.3f}".format(x).strip(), info3)
