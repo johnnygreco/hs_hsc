@@ -127,7 +127,7 @@ def objToGalfit(objs, rad=None, concen=None, zp=27.0, rbox=8.0,
 
 def showObjects(objs, dist, rad=None, outPNG='sep_object.png',
                 cenInd=None, prefix=None, r1=None, r2=None, r3=None,
-                fluxRatio1=None, fluxRatio2=None):
+                fluxRatio1=None, fluxRatio2=None, highlight=None):
     """
     Plot the properties of objects detected on the images
 
@@ -153,33 +153,43 @@ def showObjects(objs, dist, rad=None, outPNG='sep_object.png',
                            linestyle=':', lw=2.0)
     axes[0, 0].scatter(np.log10(objs['flux']), np.log10(r),
                        facecolors='g', edgecolors='gray',
-                       alpha=0.55, s=(500.0 / np.sqrt(dist)))
+                       alpha=0.30, s=(500.0 / np.sqrt(dist)))
     axes[0, 0].set_xlabel('log(Flux)', fontsize=22)
     axes[0, 0].set_ylabel('log(Radius/pixel)', fontsize=22)
+    if highlight is not None:
+        axes[0, 0].scatter(np.log10(objs[highlight]['flux']),
+                           np.log10(r[highlight]),
+                           color='b', alpha=0.50,
+                           s=(500.0 / np.sqrt(dist[highlight])))
     if cenInd is not None:
         axes[0, 0].scatter(np.log10(objs[cenInd]['flux']),
                            np.log10(r[cenInd]),
-                           color='r', alpha=0.40,
+                           color='r', alpha=0.60,
                            s=(500.0 / np.sqrt(dist[cenInd])))
     axes[0, 0].text(0.60, 0.06, 'Size: Approximity', fontsize=25,
                     transform=axes[0,0].transAxes, ha='center')
-    if prefix is not None:
-        axes[0, 0].text(0.50, 0.91, prefix, fontsize=25, ha='center',
-                        transform=axes[0,0].transAxes)
 
     #  Fig2
     axes[0, 1].scatter(np.log10(objs['flux']/(objs['a'] * objs['b'])),
                        np.log10(r), facecolors='g', edgecolors='gray',
-                       alpha=0.55, s=(500.0 / np.sqrt(dist)))
+                       alpha=0.30, s=(500.0 / np.sqrt(dist)))
     axes[0, 1].set_xlabel('log(Flux/Area)', fontsize=22)
     axes[0, 1].set_ylabel('log(Radius/pixel)', fontsize=22)
+    if highlight is not None:
+        axes[0, 1].scatter((np.log10(objs[highlight]['flux']/
+                           (objs[highlight]['a'] * objs[highlight]['b']))),
+                           np.log10(r[highlight]), color='b',
+                           alpha=0.50, s=(500.0 / np.sqrt(dist[highlight])))
     if cenInd is not None:
         axes[0, 1].scatter((np.log10(objs[cenInd]['flux']/
                             (objs[cenInd]['a'] * objs[cenInd]['b']))),
                            np.log10(r[cenInd]), color='r',
-                           alpha=0.40, s=(500.0 / np.sqrt(dist[cenInd])))
+                           alpha=0.60, s=(500.0 / np.sqrt(dist[cenInd])))
     axes[0, 1].text(0.60, 0.06, 'Size: Approximity', fontsize=25,
                     transform=axes[0,1].transAxes, ha='center')
+    if prefix is not None:
+        axes[0, 1].text(0.50, 0.91, prefix, fontsize=20, ha='center',
+                        transform=axes[0,0].transAxes)
 
     #  Fig3
     if fluxRatio1 is not None:
@@ -196,13 +206,18 @@ def showObjects(objs, dist, rad=None, outPNG='sep_object.png',
         axes[1, 0].axvline(r3, linestyle=':', lw=2.0)
     axes[1, 0].scatter(dist, np.log10(objs['flux']),
                        facecolors='g', edgecolors='gray',
-                       alpha=0.55, s=(r*3.0))
+                       alpha=0.30, s=(r*3.0))
     axes[1, 0].set_xlabel('Central Distance (pixels)', fontsize=22)
     axes[1, 0].set_ylabel('log(Flux)', fontsize=22)
+    if highlight is not None:
+        axes[1, 0].scatter(dist[highlight],
+                           np.log10(objs[highlight]['flux']),
+                           color='b', alpha=0.50,
+                           s=(r[highlight]*3.0))
     if cenInd is not None:
         axes[1, 0].scatter(dist[cenInd],
                            np.log10(objs[cenInd]['flux']),
-                           color='r', alpha=0.40,
+                           color='r', alpha=0.60,
                            s=(r[cenInd]*3.0))
     axes[1, 0].text(0.60, 0.06, 'Size: Object Size', fontsize=25,
                     transform=axes[1,0].transAxes, ha='center')
@@ -215,13 +230,17 @@ def showObjects(objs, dist, rad=None, outPNG='sep_object.png',
     if r3 is not None:
         axes[1, 1].axvline(r3, linestyle=':', lw=2.0)
     axes[1, 1].scatter(dist, np.log10(r), facecolors='g',
-                       edgecolors='gray', alpha=0.55,
+                       edgecolors='gray', alpha=0.30,
                        s=(np.log10(objs['flux']) ** 4.0 + 10.0))
     axes[1, 1].set_xlabel('Central Distance (pixels)', fontsize=22)
     axes[1, 1].set_ylabel('log(Radius/pixel)', fontsize=22)
+    if highlight is not None:
+        axes[1, 1].scatter(dist[highlight], np.log10(r[highlight]),
+                           color='b', alpha=0.50,
+                           s=(np.log10(objs[highlight]['flux']) ** 4.0 + 10.0))
     if cenInd is not None:
         axes[1, 1].scatter(dist[cenInd], np.log10(r[cenInd]),
-                           color='r', alpha=0.40,
+                           color='r', alpha=0.60,
                            s=(np.log10(objs[cenInd]['flux']) ** 4.0 + 10.0))
     axes[1, 1].text(0.60, 0.06, 'Size: Object Flux', fontsize=25,
                     transform=axes[1,1].transAxes, ha='center')
@@ -242,6 +261,7 @@ def showSEPImage(image, contrast=0.2, size=10, cmap=cmap1,
                  title='Image', pngName='sep.png', titleInside=True,
                  ellList1=None, ellList2=None, ellList3=None,
                  ellColor1='b', ellColor2='r', ellColor3='g',
+                 ell1=None, ell2=None, ell3=None,
                  ax=None, mask=None):
     """
     Visualization of the results
@@ -300,6 +320,33 @@ def showSEPImage(image, contrast=0.2, size=10, cmap=cmap1,
             e.set_edgecolor(ellColor3)
             e.set_facecolor('none')
             e.set_linewidth(1.5)
+
+    if ell1 is not None:
+        ax.add_artist(ell1)
+        ell1.set_clip_box(ax.bbox)
+        ell1.set_alpha(0.8)
+        ell1.set_edgecolor('r')
+        ell1.set_facecolor('none')
+        ell1.set_linewidth(2.0)
+        ell1.set_linestyle('dashed')
+
+    if ell2 is not None:
+        ax.add_artist(ell2)
+        ell2.set_clip_box(ax.bbox)
+        ell2.set_alpha(0.8)
+        ell2.set_edgecolor('k')
+        ell2.set_facecolor('none')
+        ell2.set_linewidth(2.0)
+        ell2.set_linestyle('dashed')
+
+    if ell3 is not None:
+        ax.add_artist(ell3)
+        ell3.set_clip_box(ax.bbox)
+        ell3.set_alpha(0.8)
+        ell3.set_edgecolor('k')
+        ell3.set_facecolor('none')
+        ell3.set_linewidth(2.0)
+        ell3.set_linestyle('dashed')
 
     fig.savefig(pngName)
     plt.close(fig)
@@ -438,7 +485,7 @@ def combMskImage(msk1, msk2):
     return mskComb
 
 
-def combObjCat(objCold, objHot, tol=1.0):
+def combObjCat(objCold, objHot, tol=2.0, cenDistC=None, rad=80.0):
     """
     Merge the object lists from cold and hot run
 
@@ -452,6 +499,7 @@ def combObjCat(objCold, objHot, tol=1.0):
     objCY = objC['ypeak']
     objHX = objH['xpeak']
     objHY = objH['ypeak']
+
     # Get the minimum separation between each Hot run object and all the
     # Cold run objects
     minDistH = np.asarray(map(lambda x, y: np.min(np.sqrt((x-objCX)**2.0
@@ -463,9 +511,18 @@ def combObjCat(objCold, objHot, tol=1.0):
     objHnew = copy.deepcopy(objH)
     objHnew = np.delete(objHnew, indMatchH)
 
+    if cenDistC is not None:
+        # Locate objects witin certain radii
+        indObjCen = np.where(cenDistC < rad)
+        objCnew = copy.deepcopy(objC)
+        objCnew = np.delete(objCnew, indObjCen)
+    else:
+        objCnew = None
+
     # Try to account for the difference in size and area of the same
     # object from Cold and Hot run
     objMatchH = objH[(minDistH < tol) & (np.log10(objH['npix']) < 2.6)]
+
     # Do something similar to the Cold run list
     minDistC = np.asarray(map(lambda x, y: np.min(np.sqrt((x-objHX)**2.0
                                                          + (y-objHY)**2.0)),
@@ -479,14 +536,20 @@ def combObjCat(objCold, objHot, tol=1.0):
               np.nanmedian(objMatchH['a']))
     objHnew['a'] *= aRatio
     objHnew['b'] *= aRatio
+    objH['a'] *= aRatio
+    objH['b'] *= aRatio
 
     nRatio = (np.nanmedian(objMatchC['npix']) /
               np.nanmedian(objMatchH['npix']))
-    objHnew['npix'] *=  nRatio
+    objHnew['npix'] *= nRatio
+    objH['npix'] *= nRatio
 
-    objComb = np.concatenate((objC, objHnew))
+    if cenDistC is None:
+        objComb = np.concatenate((objC, objHnew))
+    else:
+        objComb = np.concatenate((objH, objCnew))
 
-    return objComb, objHnew
+    return objComb, objHnew, objCnew
 
 
 def getConvKernel(kernel):
@@ -623,7 +686,8 @@ def getFluxRadius(img, objs, maxSize=25.0, subpix=5, byteswap=True,
     return r20, r50, r90
 
 
-def objDistTo(objs, cenX, cenY, usePeak=False, convol=False):
+def objDistTo(objs, cenX, cenY, usePeak=False, convol=False, ellipse=True,
+        pa=0.0, q=0.99):
     """
     Get the distance of objects from SEP to a reference point on the image
 
@@ -636,7 +700,13 @@ def objDistTo(objs, cenX, cenY, usePeak=False, convol=False):
     else:
         xc, yc = objs['x'], objs['y']
 
-    return np.sqrt((xc - cenX)**2 + (yc - cenY)**2)
+    if ellipse:
+        theta = (pa * np.pi / 180.0)
+        distA = ((xc - cenX) * np.cos(theta) + (yc - cenY) * np.sin(theta)) ** 2.0
+        distB = (((yc - cenY) * np.cos(theta) - (xc - cenX) * np.sin(theta)) / q) ** 2.0
+        return np.sqrt(distA + distB)
+    else:
+        return np.sqrt((xc - cenX)**2 + (yc - cenY)**2)
 
 
 def readCutoutHeader(imgHead, pixDefault=0.168,
@@ -720,19 +790,18 @@ def readCutoutImage(prefix, root=None, variance=False):
         imgFile = os.path.join(root, imgFile)
         mskFile = os.path.join(root, mskFile)
         detFile = os.path.join(root, detFile)
-    if (not os.path.isfile(imgFile)) or (not os.path.isfile(mskFile)):
-        print imgFile
-        print mskFile
-        raise Exception("### Can not find the Image or BadMask File!")
-    else:
-        imgHdu = fits.open(imgFile)
-        imgArr = imgHdu[0].data
-        # Header
-        imgHead = imgHdu[0].header
-        # TODO: Should also make this optional
-        # Bad mask
-        mskHdu = fits.open(mskFile)
-        mskArr = mskHdu[0].data
+    if not os.path.isfile(imgFile):
+        raise Exception("### Can not find the Input Image File : %s !" % imgFile)
+    if not os.path.isfile(mskFile):
+        raise Exception("### Can not find the Input Mask File : %s !" % mskFile)
+    imgHdu = fits.open(imgFile)
+    imgArr = imgHdu[0].data
+    # Header
+    imgHead = imgHdu[0].header
+    # TODO: Should also make this optional
+    # Bad mask
+    mskHdu = fits.open(mskFile)
+    mskArr = mskHdu[0].data
 
     # Optional detection plane
     if not os.path.isfile(detFile):
@@ -782,6 +851,21 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         detFound = False
     else:
         detFound = True
+    # Flags
+    sepFlags = np.array([], dtype=[('name', 'a20'), ('value', 'i1')])
+
+    # Sometimes NaN pixels exist for the image. Replace them, and make sure that they are
+    #    masked out
+    indImgNaN = np.isnan(imgArr)
+    if verbose:
+        print "###   %6d NaN pixels have been replaced and masked out!" % len(np.where(
+            indImgNaN)[0])
+    if len(np.where(indImgNaN)[0] > 0):
+        sepFlags = addFlag(sepFlags, 'NAN_PIX', True)
+        imgArr[indImgNaN] = 0.0
+    else:
+        sepFlags = addFlag(sepFlags, 'NAN_PIX', False)
+
     ### TODO: expTot is still not working
     pixX, pixY, dimX, dimY, photZP, expTot = readCutoutHeader(imgHead)
     if verbose:
@@ -804,8 +888,6 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     # Suffix
     if (suffix is not '') and (suffix[-1] is not '_'):
         suffix = suffix + '_'
-    # Flags
-    sepFlags = np.array([], dtype=[('name', 'a20'), ('value', 'i1')])
 
     # 1. Get the backgrounds
     """
@@ -823,7 +905,6 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     imgC = imgByteSwap(imgArr)
     bkgC, imgSubC = sepGetBkg(imgC, bkgSize=bSizeC, bkgFilter=fSizeC)
     rmsC = bkgC.globalrms
-
     if verbose:
         print "###     Cold Background -- Avg: %9.5f " % bkgC.globalback + \
               "       RMS: %9.5f " % bkgC.globalrms
@@ -831,6 +912,9 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         if verbose:
             print "### SKIP THE BACKGROUND SUBTRACTION FOR THE COLD RUN!"
         imgSubC = imgByteSwap(imgArr)
+        sepFlags = addFlag(sepFlags, 'NO_CBKG', True)
+    else:
+        sepFlags = addFlag(sepFlags, 'NO_CBKG', False)
 
     if visual:
         # Fig.a
@@ -845,7 +929,6 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     imgH = imgByteSwap(imgArr)
     bkgH, imgSubH = sepGetBkg(imgH, bkgSize=bSizeH, bkgFilter=fSizeH)
     rmsH = bkgH.globalrms
-
     if verbose:
         print "###     Hot Background  -- Avg: %9.5f " % bkgH.globalback + \
               "       RMS: %9.5f " % bkgH.globalrms
@@ -854,6 +937,9 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         if verbose:
             print "### 1b. SKIP THE BACKGROUND SUBTRACTION FOR THE COLD RUN!"
         imgSubH = imgByteSwap(imgArr)
+        sepFlags = addFlag(sepFlags, 'NO_HBKG', True)
+    else:
+        sepFlags = addFlag(sepFlags, 'NO_HBKG', False)
 
     if visual:
         # Fig.b
@@ -866,15 +952,16 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     Use SEP to extract information of detected objects
     """
     """ Cold Run """
-    errArr = imgByteSwap(sigArr)
     if verbose:
         print "### 2. DETECT OBJECTS USING SEP"
     # Parameters for cold run
     if verbose:
+        print "###  2.1. OBJECT DETECTION: COLD RUN"
         print "###     Cold run detection threshold: %4.1f" % thrC
     convKerC = getConvKernel(kernel)
     # Cold Run
     if useSigArr and (sigArr is not None):
+        errArr = imgByteSwap(sigArr)
         detThrC = thrC
         objC = sep.extract(imgSubC, detThrC, minarea=minDetC, conv=convKerC,
                            deblend_nthresh=debThrC, deblend_cont=debConC,
@@ -893,9 +980,76 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     # Calculate the object-galaxy center distance
     cenDistC = objDistTo(objC, galX, galY)
 
+    ## Get first estimations of basic parameters for central galaxy
+    # Center; Add a flag about this
+    cenObjIndexC = np.argmin(cenDistC)
+    # Get its shape and size
+    galFlux = objC[cenObjIndexC]['cflux']
+    galCenX = objC[cenObjIndexC]['x']
+    galCenY = objC[cenObjIndexC]['y']
+    if verbose:
+        print "###  2.2. ESTIMATE THE B/A AND PA OF THE GALAXY"
+    if galQ is None:
+        galQ  = (objC[cenObjIndexC]['b'] / objC[cenObjIndexC]['a'])
+    if galPA is None:
+        galPA = (objC[cenObjIndexC]['theta'] * 180.0 / np.pi)
+    if verbose:
+        print "###    (b/a) of the galaxy: %6.2f" % galQ
+        print "###      PA  of the galaxy: %6.1f" % galPA
+    # XXX: imgArr or imgSubC
+    galR20, galR50, galR90 = getFluxRadius(imgArr, objC[cenObjIndexC], maxSize=20.0,
+            subpix=5)
+    if np.isnan(galR20):
+        sepFlags = addFlag(sepFlags, 'R20_FAIL', True)
+        galR20 = objC[cenObjIndexC]['a']
+    else:
+        sepFlags = addFlag(sepFlags, 'R20_FAIL', False)
+    if np.isnan(galR50):
+        sepFlags = addFlag(sepFlags, 'R50_FAIL', True)
+        galR50 = objC[cenObjIndexC]['a'] * 1.5
+    else:
+        sepFlags = addFlag(sepFlags, 'R50_FAIL', False)
+    if np.isnan(galR90):
+        sepFlags = addFlag(sepFlags, 'R90_FAIL', True)
+        galR90 = objC[cenObjIndexC]['a'] * 3.0
+    else:
+        sepFlags = addFlag(sepFlags, 'R90_FAIL', False)
+
+    if verbose:
+        print "###    R20 Cen: %7.2f" % galR20
+        print "###    R50 Cen: %7.2f" % galR50
+        print "###    R90 Cen: %7.2f" % galR90
+    if (galR90 > (dimX / 3.0) or galR90 > (dimY / 3.0)):
+        sepFlags = addFlag(sepFlags, 'R90_BIG', True)
+    else:
+        sepFlags = addFlag(sepFlags, 'R90_BIG', False)
+    # Scale r50 to galR1, r90 to galR2 and galR3
+    if verbose:
+        print "###  2.3. ESTIMATING THE GAL_R1/R2/R3"
+    ### TODO: Not perfect parameters
+    if galR1 is None:
+        galR1 = (galR50 * 2.5)
+    if galR2 is None:
+        galR2 = (galR90 * 3.5)
+    if galR3 is None:
+        galR3 = (galR90 * 6.5)
+    if verbose:
+        print "###    galR1: %7.2f" % galR1
+        print "###    galR2: %7.2f" % galR2
+        print "###    galR3: %7.2f" % galR3
+    # Make a flag if the galR3 is too large
+    if (galR3 >= dimX / 1.4):
+        sepFlags = addFlag(sepFlags, 'R3_BIG', True)
+    else:
+        sepFlags = addFlag(sepFlags, 'R3_BIG', False)
+
+    # New estimations of central distance using elliptical coordinates
+    cenDistC = objDistTo(objC, galX, galY, pa=galPA, q=galQ)
+
     """ Hot Run """
     # Parameters for hot run
     if verbose:
+        print "###  2.4. OBJECT DETECTION: HOT RUN"
         print "###     Hot run detection threshold: %4.1f" % thrH
     convKerH = getConvKernel(kernel)
     # Hot Run
@@ -914,7 +1068,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     prefixH = prefix + '_' + suffix + 'objH'
     saveSEPObjects(objH, prefix=prefixH, color='Red')
     # Calculate the object-galaxy center distance
-    cenDistH = objDistTo(objH, galX, galY)
+    cenDistH = objDistTo(objH, galX, galY, pa=galPA, q=galQ)
 
     # Visualize these detections
     if visual:
@@ -933,24 +1087,28 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     if verbose:
         print "### 3. COMBINE OBJECTS FROM COLD AND HOT RUN "
     # Merge the object lists from Cold and
-    objComb, objHnew = combObjCat(objC, objH, tol=1.0)
+    objComb, objHnew, objCnew = combObjCat(objC, objH, cenDistC=cenDistC,
+            rad=galR90, tol=2.0)
+
     # Also save the combined object lists
     prefixComb = prefix + '_' + suffix + 'objComb'
     saveSEPObjects(objComb, prefix=prefixComb, color='Green')
     # Calculate the object-galaxy center distance
-    cenDistComb = objDistTo(objComb, galX, galY)
+    cenDistComb = objDistTo(objComb, galX, galY, pa=galPA, q=galQ)
+    cenObjIndex = np.argmin(cenDistComb)
     if verbose:
         print "###    %d objects are left in the combined list" % len(objComb)
     if visual:
         # Fig.e
         objPNG3 = prefix + '_' + suffix + 'objComb.png'
-        objEllComb = getEll2Plot(objComb, radius=(objComb['a'] * growC))
+        objEllComb = getEll2Plot(objComb, radius=(objComb['a'] * growH))
         showSEPImage(imgSubC, contrast=0.06, title='Detections - Combined',
                      pngName=objPNG3, ellList1=objEllComb, ellColor1='orange')
 
     # 4. Extract Different Flux Radius: R20, R50, R90 for every objects
     if verbose:
         print "### 4. EXTRACTING R20, R50, R90 OF EACH OBJECTS "
+    # XXX: imgArr or imgSubC
     r20, r50, r90 = getFluxRadius(imgArr, objComb, maxSize=25.0, subpix=5)
     rPhoto = objComb['a']
     # Some objects at the edge could have failed R50/R90, replace then with 'a'
@@ -966,47 +1124,61 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         objEllR20 = getEll2Plot(objComb, radius=r20)
         objEllR50 = getEll2Plot(objComb, radius=r50)
         objEllR90 = getEll2Plot(objComb, radius=r90)
+        # Add three ellipses to highlight galR1, R2, & R3
+        ell1 = Ellipse(xy=(galX, galY),
+                       width=(2.0 * galR90 * galQ),
+                       height=(2.0 * galR90),
+                       angle=(galPA + 90.0))
+        ell2 = Ellipse(xy=(galX, galY),
+                       width=(2.0 * galR2 * galQ),
+                       height=(2.0 * galR2),
+                       angle=(galPA + 90.0))
+        ell3 = Ellipse(xy=(galX, galY), width=(2.0 * galR3 * galQ),
+                       height=(2.0 * galR3),
+                       angle=(galPA + 90.0))
         showSEPImage(imgSubC, contrast=0.20, title='Flux Radius: R20/R50/R90',
-                     pngName=objPNG4, ellList1=objEllR20, ellColor1='r',
+                     pngName=objPNG4,
+                     ellList1=objEllR20, ellColor1='r',
                      ellList2=objEllR50, ellColor2='orange',
-                     ellList3=objEllR90, ellColor3='b')
+                     ellList3=objEllR90, ellColor3='b',
+                     ell1=ell1, ell2=ell2, ell3=ell3)
+
 
     # 5. Mask all objects on the image
-    growConcenIndex = 0.6  ## XXX: Very, very empirical right now
+    growConcenIndex = 0.8  ## XXX: Very, very empirical right now
 
     if verbose:
         print "### 5. MASKING OUT ALL OBJECTS ON THE IMAGE "
     mskAll = np.zeros(imgSubC.shape, dtype='uint8')
+    objMskAll = copy.deepcopy(objC)
     if mask == 1:
         # TODO: This is still not idea, even using flux radius, should take
         #       the compactness (R90/R50) and (R50/R20) into account
         # Make a ALL_OBJECT mask using the r90
-
-        objMskAll = copy.deepcopy(objComb)
-        #rMajor = r90
-        #rMinor = r90 * (objMskAll['b'] / objMskAll['a'])
         rMajor = objMskAll['a']
-        rMinor = r90 * (objMskAll['b'] / objMskAll['a'])
-        growMsk = concen * growC * growConcenIndex
-
-        sep.mask_ellipse(mskAll, objComb['x'], objComb['y'],
-                         rMajor, rMinor, objComb['theta'], r=growMsk)
+        rMinor = objMskAll['b']
+        growMsk = growC * 1.5
+        sep.mask_ellipse(mskAll, objC['x'], objC['y'],
+                         rMajor, rMinor, objC['theta'], r=growMsk)
         # Make a new objList, and change the size
         objMskAll['a'] = rMajor * growMsk
         objMskAll['b'] = rMinor * growMsk
     elif mask == 2:
         # Grow the cold run detections using the adaptive method
         # Use the new size to mask out all objects
-        adGrowC = adaptiveMask(objComb, a=2.2)
+        adGrowC = adaptiveMask(objC, a=2.2)
         # Build a ALL_OBJECT Mask
-        sep.mask_ellipse(mskAll, objComb['x'], objComb['y'],
-                rMajor, rMinor, objComb['theta'], r=adGrowC)
+        sep.mask_ellipse(mskAll, objC['x'], objC['y'],
+                rMajor, rMinor, objC['theta'], r=adGrowC)
         # Make a new objList, and change the size
-        objMskAll = copy.deepcopy(objComb)
         objMskAll['a'] = adGrowC * rMajor
         objMskAll['b'] = adGrowC * rMinor
     else:
         raise Exception("mask == 1 or mask == 2")
+    if combBad:
+        mskAll = combMskImage(mskAll, mskArr)
+    # Also mask out the NaN pixels
+    mskAll[indImgNaN] = 1
 
     # Save the mask to FITS
     mskAllFile = prefix + '_' + suffix + 'mskall.fits'
@@ -1020,87 +1192,100 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         showSEPImage(imgSubC, contrast=0.75, title='Mask - All Objects',
                      pngName=mskPNG1, mask=mskAll)
 
-    # 6. Find the central galaxy, get its shape and radius, remove it
-    if verbose:
-        print "### 6. CLEAR THE CENTRAL REGION AROUND THE GALAXY"
-        print "###  6.1. LOCATE THE CENTRAL GALAXY IN THE OBJECT LIST"
-    # Find the main galaxy from the cold run
-    # The index of the "central" galaxy
-    # TODO: Check whether or not it is truely the central galaxy
-    # TODO: Check if there are more than one objects detected in the
-    # TODO: Add the case for double core
-    # Center; Add a flag about this
-    cenObjIndex = np.argmin(cenDistC)
-    # Get its shape and size
-    if verbose:
-        print "###  6.2. ESTIMATE THE B/A AND PA OF THE GALAXY"
-    if galQ is None:
-        galQ  = (objC[cenObjIndex]['b'] / objComb[cenObjIndex]['a'])
-    if galPA is None:
-        galPA = (objC[cenObjIndex]['theta'] * 180.0 / np.pi)
-    if verbose:
-        print "###    (b/a) of the galaxy: %6.2f" % galQ
-        print "###      PA  of the galaxy: %6.1f" % galPA
-    r20cen, r50cen, r90cen = getFluxRadius(imgArr, objC[cenObjIndex], maxSize=20.0,
-            subpix=5)
-    if verbose:
-        print "###    R20 Cen: %7.2f" % r20cen
-        print "###    R50 Cen: %7.2f" % r50cen
-        print "###    R90 Cen: %7.2f" % r90cen
 
-    # Scale r50 to galR1, r90 to galR2 and galR3
-    if verbose:
-        print "###  6.3. ESTIMATING THE GAL_R1/R2/R3"
-    ### TODO: Not perfect parameters
-    if galR1 is None:
-        galR1 = (r20cen * 3.0)
-        #galR1 = (r50[cenObjIndex] * 1.5)
-    if galR2 is None:
-        galR2 = (r50cen * 4.0)
-    if galR3 is None:
-        galR3 = (r90cen * 4.0)
-    if verbose:
-        print "###    galR1: %7.2f" % galR1
-        print "###    galR2: %7.2f" % galR2
-        print "###    galR3: %7.2f" % galR3
-    # Make a flag if the galR3 is too large
-    if (galR3 >= 0.75 * dimX / 2.0):
-        sepFlags = addFlag(sepFlags, 'GALR3_TOO_LARGE', True)
-    else:
-        sepFlags = addFlag(sepFlags, 'GALR3_TOO_LARGE', False)
-
-    # 7. Remove the central object (or clear the central region)
+    # 6. Remove the central object (or clear the central region)
     #    Separate the objects into different group and mask them out using
     #    different growth ratio
     if verbose:
-        print "###  6.4. CLEAR A REGION AROUND CENTRAL GALAXY"
+        print "### 6. CLEAR THE CENTRAL REGION AROUND THE GALAXY"
+        print "###  6.2. CLEAR A REGION AROUND CENTRAL GALAXY"
     objNoCen  = copy.deepcopy(objComb)
     r90NoCen  = copy.deepcopy(r90)
     distNoCen = copy.deepcopy(cenDistComb)
     if central == 1:
         indCen = np.where(cenDistComb < minCenDist)
         if verbose:
-            print "###    %d objects are found in the central region" % len(indCen[0])
+            print "###    %d objects are found in the central region of the CombList" % len(indCen[0])
         # Remove the central objects from the list and r90 array
         objNoCen  = np.delete(objNoCen,  indCen)
         r90NoCen  = np.delete(r90NoCen,  indCen)
         distNoCen = np.delete(distNoCen, indCen)
     elif central == 2:
         # Remove all objects within certain radii to the center of galaxy
-        # TODO: Now, circular distance is used; Should take the
-        #       geometry of the galaxy into account
         # TODO: Not perfect parameter choice
-        indCen = np.where(cenDistComb < galR3)
+        indCen = np.where(cenDistComb < galR2)
         if verbose:
             print "###    %d objects are found in the central region" % len(indCen[0])
         objNoCen  = np.delete(objNoCen,  indCen)
         r90NoCen  = np.delete(r90NoCen,  indCen)
         distNoCen = np.delete(distNoCen, indCen)
+    if len(indCen[0]) > 1:
+        sepFlags = addFlag(sepFlags, 'MULTICEN', True)
+    else:
+        sepFlags = addFlag(sepFlags, 'MULTICEN', False)
+
+    # Put the central objects from hot run to the mask
+    if verbose:
+        print "###  6.3. REMOVE THE CENTRAL OBJECT FROM THE HOT RUN"
+    indCenH = np.where(cenDistH < minCenDist)
+    objNoCenH = copy.deepcopy(objH)
+    objNoCenH = np.delete(objNoCenH, indCenH)
+
+    # 7. Convert the list of SEP detections to initial guess of 1-Comp
+    #     GALFIT model
+    if verbose:
+        print "### 7. INITIAL GUESS OF PARAMETERS FOR 1-SERSIC MODEL OF GALAXIES"
+        print "###  7.1. SELECTING OBJECTS NEED TO BE FIT"
+    # Group 1: Objects that are too close to the galaxy center
+    #          Could be star or galaxy
+    group1 = np.where(cenDistComb <= galR50)
+    if len(group1[0]) > 1:
+        sepFlags = addFlag(sepFlags, 'G1_EXIST', True)
+    else:
+        sepFlags = addFlag(sepFlags, 'G1_EXIST', False)
+    if verbose:
+        print "###    %d objects are found in Group1" % len(group1[0])
+    # Group 2: Objects that are within certain radius, and flux is larger
+    #          than certain fraction of the main galaxy (Near)
+    fluxRatio1 = 0.20
+    group2 = np.where((cenDistComb > galR50) & (cenDistComb <= galR90) & (objComb['cflux'] >
+        fluxRatio1 * galFlux))
+    if len(group2[0]) != 0:
+        sepFlags = addFlag(sepFlags, 'G2_EXIST', True)
+    else:
+        sepFlags = addFlag(sepFlags, 'G2_EXIST', False)
+    if verbose:
+        print "###    %d objects are found in Group2" % len(group2[0])
+    # Group 3: Objects that are within certain radius, and flux is larger
+    #          than certain fraction of the main galaxy (Far)
+    fluxRatio2 = 0.50
+    group3 = np.where((cenDistComb > galR90) & (cenDistComb <= galR90 * 3.0) & (objComb['cflux'] >
+        fluxRatio2 * galFlux))
+    if len(group3[0]) != 0:
+        sepFlags = addFlag(sepFlags, 'G3_EXIST', True)
+    else:
+        sepFlags = addFlag(sepFlags, 'G3_EXIST', False)
+    if verbose:
+        print "###    %d objects are found in Group3" % len(group3[0])
+    # Number of galaxies which should be considering fitting
+    nObjFit = (len(group1[0]) + len(group2[0]) + len(group3[0]))
+    iObjFit = np.concatenate((group1[0], group2[0], group3[0]))
+    if verbose:
+        print "###    %d objects that should be fitted" % nObjFit
+        print "###  7.2. CONVERT THE SEP PARAMETERS TO INITIAL GUESSES OF 1-SERSIC MODEL"
+    objSersic = objToGalfit(objComb, rad=r90, concen=concen, zp=photZP,
+                            rbox=3.0, dimX=dimX, dimY=dimY)
+    sersicAll = prefix + '_' + suffix + '1ser'
+    saveSEPObjects(objSersic, prefix=sersicAll, reg=False,
+                   color='blue')
+    sersicFit = prefix + '_' + suffix + '1ser_fit'
+    saveSEPObjects(objSersic[iObjFit], prefix=sersicFit, reg=False,
+                   color='blue')
 
     # 8. Separate the rest objects into different groups according to
     #    their distance to the central galaxy
     if verbose:
-        print "### 7. GENERATING THE FINAL MASK"
+        print "### 8. GENERATING THE FINAL MASK"
     # Index of objects in different groups
     # TODO: Not perfect parameter choice
     indG1 = (distNoCen <= galR2)
@@ -1123,87 +1308,89 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     sep.mask_ellipse(mskG3, objG3['x'], objG3['y'], r90NoCen[indG3],
                     (r90NoCen[indG3] * objG3['b'] / objG3['a']),
                      objG3['theta'], r=growC)
-    mskFinal = (mskG1 | mskG2 | mskG3)
+
+    # Hot run mask
+    mskHot = np.zeros(imgArr.shape, dtype='uint8')
+    sep.mask_ellipse(mskHot, objNoCenH['x'], objNoCenH['y'],
+            objNoCenH['a'], objNoCenH['b'], objNoCenH['theta'],
+            r=4.5)
+
+    # Combine them into the final mask
+    mskFinal = (mskG1 | mskG2 | mskG3 | mskHot)
     # Save the mask to FITS file
     # Have the option to combine with HSC BAD MASK
     if combBad:
         mskFinal = combMskImage(mskFinal, mskArr)
+    # Mask out all the NaN pixels
+    mskFinal[indImgNaN] = 1
     mskFinFile = prefix + '_' + suffix + 'mskfin.fits'
+
+    # See if the center of the image has been masked out
+    sumMskR20, dump1, dump2 = sep.sum_ellipse(np.float32(mskFinal), galCenX, galCenY,
+                                galR20, (galR20 * galQ), (galPA * np.pi / 180.0), r=1.0)
+    if sumMskR20 > 0:
+        sepFlags = addFlag(sepFlags, 'MSK_R20', True)
+        print "###    %d pixels within R20 have been masked out" % sumMskR20
+    else:
+        sepFlags = addFlag(sepFlags, 'MSK_R20', False)
+    sumMskR50, dump1, dump2 = sep.sum_ellipse(np.float32(mskFinal), galCenX, galCenY,
+                                galR50, (galR50 * galQ), (galPA * np.pi / 180.0), r=1.0)
+    if sumMskR50 > 0:
+        sepFlags = addFlag(sepFlags, 'MSK_R50', True)
+        print "###    %d pixels within R50 have been masked out" % sumMskR50
+    else:
+        sepFlags = addFlag(sepFlags, 'MSK_R50', False)
+
     # Add a few information about the central galaxy to the header
     mskHead = copy.deepcopy(imgHead)
     mskHead.set('GAL_X', galX)
     mskHead.set('GAL_Y', galY)
+    mskHead.set('GAL_CENX', galCenX)
+    mskHead.set('GAL_CENY', galCenY)
+    mskHead.set('GAL_FLUX', galFlux)
     mskHead.set('GAL_Q', galQ)
     mskHead.set('GAL_PA', galPA)
+    mskHead.set('GAL_R20', galR20)
+    mskHead.set('GAL_R50', galR50)
+    mskHead.set('GAL_R90', galR90)
     mskHead.set('GAL_R1', galR1)
     mskHead.set('GAL_R2', galR2)
     mskHead.set('GAL_R3', galR3)
+    mskHead.set('NUM_FIT', nObjFit)
+    # Put the Flags into the header
+    for flag in sepFlags:
+        if visual:
+            print "###      %s : %1d" % (flag['name'], flag['value'])
+        mskHead.set(flag['name'], flag['value'])
+
     saveFits(mskFinal, mskFinFile, head=mskHead)
-    # Save the Objlist using the growed size
+
+    # Save the Objlist
+    # Replace the object size with R90
     prefixF = prefix + '_' + suffix + 'mskfin'
     objFin = copy.deepcopy(objNoCen)
-    objFin[indG1]['a'] *= growH
-    objFin[indG1]['b'] *= growH
-    objFin[indG2]['a'] *= growW
-    objFin[indG2]['b'] *= growW
-    objFin[indG3]['a'] *= growC
-    objFin[indG3]['b'] *= growC
+    baNoCen = copy.deepcopy(objFin['b'] / objFin['a'])
+    objFin['a'] = r90NoCen
+    objFin['b'] = r90NoCen * baNoCen
     saveSEPObjects(objFin, prefix=prefixM, color='Blue')
+
     if visual:
         # Fig.g
         mskPNG2 = prefix + '_' + suffix + 'mskfin.png'
         showSEPImage(imgArr, contrast=0.75, title='Mask - Final',
                      pngName=mskPNG2, mask=mskFinal)
 
-    # 8. Visualize the detected objects, and find the ones need to be fit
-    if verbose:
-        print "### 8. SELECTING OBJECTS NEED TO BE FIT"
-    # Group 1: Objects that are too close to the galaxy center
-    #          Could be star or galaxy
-    r1 = galR1
-    group1 = np.where(distNoCen <= galR1)
-    if len(group1[0]) !=0:
-        sepFlags = addFlag(sepFlags, 'CROWDED_CENTER', True)
-    else:
-        sepFlags = addFlag(sepFlags, 'CROWDED_CENTER', False)
-    # Group 2: Objects that are within certain radius, and flux is larger
-    #          than certain fraction of the main galaxy (Near)
-    r2 = galR2
-    fluxRatio1 = 0.05
-    group2 = np.where((distNoCen > galR1) & (distNoCen <= galR2) & (objNoCen['flux'] >
-        fluxRatio1 * objComb[cenObjIndex]['flux']))
-    if len(group2[0]) != 0:
-        sepFlags = addFlag(sepFlags, 'GROUP2_NOT_EMPTY', True)
-    else:
-        sepFlags = addFlag(sepFlags, 'GROUP2_NOT_EMPTY', False)
-    # Group 3: Objects that are within certain radius, and flux is larger
-    #          than certain fraction of the main galaxy (Far)
-    r3 = galR3
-    fluxRatio2 = 0.25
-    group3 = np.where((distNoCen > galR2) & (distNoCen <= galR3) & (objNoCen['flux'] >
-        fluxRatio2 * objComb[cenObjIndex]['flux']))
-    if len(group2[0]) != 0:
-        sepFlags = addFlag(sepFlags, 'GROUP3_NOT_EMPTY', True)
-    else:
-        sepFlags = addFlag(sepFlags, 'GROUP3_NOT_EMPTY', False)
+    # 9. Visualize the detected objects, and find the ones need to be fit
     # Make a few plots
+    if verbose:
+        print "### 9. VISULIZATION OF THE DETECTED OBJECTS"
     if visual:
         # Fig.h
         objPNG = prefix + '_' + suffix + 'objs.png'
         showObjects(objComb, cenDistComb, rad=r90, outPNG=objPNG,
-                    cenInd=cenObjIndex, r1=r1, r2=r2, r3=r3,
+                    cenInd=cenObjIndex, r1=galR50, r2=galR90, r3=(3.0 * galR90),
                     fluxRatio1=fluxRatio1, fluxRatio2=fluxRatio2,
-                    prefix=prefix)
-
-    # 9. Convert the list of SEP detections to initial guess of 1-Comp
-    #     GALFIT model
-    objGalfit = objToGalfit(objComb, rad=r90, concen=concen, zp=photZP,
-                            rbox=3.0, dimX=dimX, dimY=dimY)
-    galfitOut = prefix + '_' + suffix + 'galfit1C'
-    saveSEPObjects(objGalfit, prefix=galfitOut, reg=False,
-                   color='blue')
-
-    #print sepFlags
+                    prefix=prefix, highlight=iObjFit)
 
 
 if __name__ == '__main__':
@@ -1219,17 +1406,17 @@ if __name__ == '__main__':
     parser.add_argument('-m', dest='mask', help='Method to grow the object mask',
                        type=int, default=1, choices=range(1, 3))
     parser.add_argument('--bkgH', dest='bSizeH', help='Background size for the Hot Run',
-                       type=int, default=8)
+                       type=int, default=12)
     parser.add_argument('--bkgC', dest='bSizeC', help='Background size for the Cold Run',
-                       type=int, default=120)
+                       type=int, default=200)
     parser.add_argument('--thrH', dest='thrH', help='Detection threshold for the Hot Run',
                        type=float, default=3.5)
     parser.add_argument('--thrC', dest='thrC', help='Detection threshold for the Cold Run',
-                       type=float, default=1.5)
+                       type=float, default=1.2)
     parser.add_argument('--growC', dest='growC', help='Ratio of Growth for the Cold Objects',
-                       type=float, default=6.0)
+                       type=float, default=5.2)
     parser.add_argument('--growW', dest='growW', help='Ratio of Growth for the Warm Objects',
-                       type=float, default=3.0)
+                       type=float, default=2.8)
     parser.add_argument('--growH', dest='growH', help='Ratio of Growth for the Hot Objects',
                        type=float, default=1.5)
     parser.add_argument('--minDetC', dest='minDetC',
@@ -1240,7 +1427,7 @@ if __name__ == '__main__':
                        type=float, default=5.0)
     parser.add_argument('--debThrC', dest='debThrC',
                        help='Deblending threshold for the Cold Run',
-                       type=float, default=24.0)
+                       type=float, default=32.0)
     parser.add_argument('--debThrH', dest='debThrH',
                        help='Deblending threshold for the Hot Run',
                        type=float, default=16.0)

@@ -15,7 +15,7 @@ def getFakeSources(rootdir, dataId, tol=0.1):
     """Get list of sources which agree in position with fake ones with tol
     """
     butler = dafPersist.Butler(rootdir)
-    
+
     sources = butler.get('src', dataId)
     cal_md = butler.get('calexp_md', dataId)
 
@@ -32,7 +32,7 @@ def getFakeSources(rootdir, dataId, tol=0.1):
     srcX, srcY = sources.getX(), sources.getY()
     srcIndex = collections.defaultdict(list)
     for fid, fcoord  in fakeXY.items():
-        matched = ((np.abs(srcX-fcoord[0]) < tol) & 
+        matched = ((np.abs(srcX-fcoord[0]) < tol) &
                    (np.abs(srcY-fcoord[1]) < tol))
         s1 = sources.subset(matched)
         srcIndex[fid] = np.where(matched)[0]
@@ -54,10 +54,10 @@ def main():
     parser.add_argument('visit', help='id of visit', type=int)
     parser.add_argument('ccd', help='id of ccd', type=int)
     args = parser.parse_args()
-    
+
     print getFakeSources(args.rootDir, {'visit':args.visit, 'ccd':args.ccd})
 
 
-    
+
 if __name__=='__main__':
     main()

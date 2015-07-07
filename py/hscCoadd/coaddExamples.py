@@ -101,13 +101,14 @@
 
 import coaddCutoutPrepare as coaddPre
 
-dataDir = '/Users/songhuang/Downloads/temp/redmapper/example'
+#dataDir = '/Users/songhuang/Downloads/cutout/redmapper/example'
+dataDir = '/home/hs/Downloads/redmapper_example'
 prefix = 'hsc_wide2_cutout_HSC-I_full'
 
 coaddPre.coaddCutoutPrepare(prefix, root=dataDir, srcCat=None, verbose=True,
-                          bSizeH=10, bSizeC=100, thrH=3.5, thrC=1.5, mask=2,
-                          growC=5.0, growW=2.0, growH=1.5, kernel=6, central=1,
-                          galX=None, galY=None, galR1=None, galR2=None, galR3=None,
-                          galQ=None, galPA=None, visual=True, suffix='',
-                          badMsk=None, skyClip=3, rebin=8)
+                           bSizeH=10, bSizeC=400, thrH=3.5, thrC=1.5, mask=2,
+                           growC=5.0, growW=2.0, growH=1.5, kernel=6, central=1,
+                           galX=None, galY=None, galR1=None, galR2=None, galR3=None,
+                           galQ=None, galPA=None, visual=True, suffix='',
+                           combBad=True)
 

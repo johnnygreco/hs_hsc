@@ -437,8 +437,15 @@ def saveToCSV(array, name):
     Use the dtype.name as column name if possible
     """
     output= open(name, 'w')
-    output.write(', '.join(array.dtype.names) + '\n')
-    np.savetxt(name, array, delimiter=",")
+    colNames = array.dtype.names
+    output.write("#" + ', '.join(colNames) + '\n')
+    for item in array:
+        line = ''
+        for i in range(0, len(colNames)-1):
+            col = colNames[i]
+            line += str(item[col]) + ' , '
+        line += str(item[colNames[-1]]) + '\n'
+        output.write(line)
     output.close()
 
 def parseRegEllipse(regName):
@@ -686,3 +693,20 @@ def cosmoLookBack(redshift, WMAP9=True, H0=69.3, Om0=0.287,
 Galactic Extinction Related
 
 """
+
+
+"""
+Geometry Related
+"""
+
+def ellipDist(x, y, x0, y0, pa=0.0, q=0.9):
+    """
+    doc
+    """
+    theta = (pa * np.pi / 180.0)
+
+    distA = ((x - x0) * np.cos(theta) + (y - y0) * np.sin(theta)) ** 2.0
+    distB = (((y - y0) * np.cos(theta) - (x - x0) * np.sin(theta)) / q) ** 2.0
+
+    return np.sqrt(distA + distB)
+

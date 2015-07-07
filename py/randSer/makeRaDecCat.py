@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# encoding: utf-8
+
 """
 Create N random selected (RA, Dec) pairs within a desired region.
 The inputs can be:
@@ -6,8 +8,10 @@ The inputs can be:
    2. DataId for single frame image: (visit, ccd)
    3. DataId for coadd image: (tract, patch, filter)
 """
+
 import numpy as np
 from numpy.random import uniform
+
 
 def getImageRaDecRange(rootDir, dataId, dataType='calexp'):
     """
