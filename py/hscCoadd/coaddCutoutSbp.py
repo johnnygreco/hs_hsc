@@ -125,20 +125,14 @@ def imgSameSize(img1, img2):
     """
     dimX1, dimY1 = img1.shape
     dimX2, dimY2 = img2.shape
-    if (dimX1 == dimX2) and (dimY1 = dimY2):
+    if (dimX1 == dimX2) and (dimY1 == dimY2):
         return True
     else:
         return False
 
 
-def prepareSbpInput(imgHead, mskHead):
-    """
-    doc
-    """
-
-
 def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
-        ellStage=3, bkg=True, zp=None):
+        ellStage=3, bkg=True, zp=27.0):
     """
     doc
     """
@@ -149,6 +143,45 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             root=root)
     if not imgSameSize(imgArr, mskArr):
         raise Exception("### The Image and Mask need to have EXACTLY same dimensions!")
+
+    """ 1. Prepare the Input for SBP """
+    galX, galY = mskHead['GAL_CENX'], mskHead['GAL_CENY']
+    galQ, galPA = mskHead['GAL_Q'], mskHead['GAL_PA']
+    galR50 = mskHead['GAL_R50']
+
+    maxR = mskHead['NAXIS1'] if mskHead['NAXIS1'] >= mskHead['NAXIS2'] else mskHead['NAXIS2']
+    maxR *= np.sqrt(2.0)
+
+    if mskHead['MSK_R20'] != 1:
+        print "### The central region is masked out"
+    else:
+        if inEllip is None:
+            """ # Start with Stage 1 """
+            maxSma1 = maxR * 0.8
+            ellOut1 = galSBP.galSBP(imgFile, mskFile, galX=galX, galY=galY,
+                                    maxSma=maxSma1, iniSma=int(galR50),
+                                    galQ=galQ, galPA=galPA, stage=1, zpPhoto=zp)
+            galX0 = ellOut1['avg_x0'][0]
+            galY0 = ellOut1['avg_y0'][0]
+
+            """ # Start with Stage 2 """
+            maxSma2 = maxR
+            ellOut2 = galSBP.galSBP(imgFile, mskFile, galX=galX0, galY=galY0,
+                                    maxSma=maxSma2, iniSma=int(galR50),
+                                    galQ=galQ, galPA=galPA, stage=2, zpPhoto=zp)
+            galQ0  = ellOut1['avg_q'][0]
+            galPA0 = ellOut1['avg_pa'][0]
+
+            """ # Start with Stage 3 """
+            maxSma3 = maxR
+            ellOut3 = galSBP.galSBP(imgFile, mskFile, galX=galX0, galY=galY0,
+                                    maxSma=maxSma3, iniSma=int(galR50),
+                                    galQ=galQ0, galPA=galPA0, stage=3, zpPhoto=zp)
+        else:
+            """ # Run Ellipse in Forced Photometry Mode """
+            ellOut4 = galSBP.galSBP(imgFile, mskFile, galX=galX, galY=galY,
+                                    inEllip=inEllip, maxSma=maxSma1, iniSma=int(galR50),
+                                    galQ=galQ, galPA=galPA, stage=1, zpPhoto=zp)
 
 
 
