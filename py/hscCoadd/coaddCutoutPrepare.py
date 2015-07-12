@@ -1372,7 +1372,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     baNoCen = copy.deepcopy(objFin['b'] / objFin['a'])
     objFin['a'] = r90NoCen
     objFin['b'] = r90NoCen * baNoCen
-    saveSEPObjects(objFin, prefix=prefixF, color='Blue')
+    saveSEPObjects(objFin, prefix=prefixF, color='Green')
 
     if visual:
         # Fig.g
