@@ -710,3 +710,69 @@ def ellipDist(x, y, x0, y0, pa=0.0, q=0.9):
 
     return np.sqrt(distA + distB)
 
+"""
+Weighted mean and median
+
+Based on https://github.com/tinybike/weightedstats
+"""
+
+def weighted_mean(data, weights=None):
+    """
+    Calculate the weighted mean of a list.
+    """
+    if weights is None:
+        return mean(data)
+    total_weight = float(sum(weights))
+    weights = [weight / total_weight for weight in weights]
+    w_mean = 0
+    for i, weight in enumerate(weights):
+        w_mean += weight * data[i]
+    return w_mean
+
+def numpy_weighted_mean(data, weights=None):
+    """
+    Calculate the weighted mean of an array/list using numpy.
+    """
+    weights = np.array(weights).flatten() / float(sum(weights))
+    return np.dot(np.array(data), weights)
+
+def weighted_median(data, weights=None):
+    """
+    Calculate the weighted median of a list
+    """
+    if weights is None:
+        return median(data)
+    midpoint = 0.5 * sum(weights)
+    if any([j > midpoint for j in weights]):
+        return data[weights.index(max(weights))]
+    if any([j > 0 for j in weights]):
+        sorted_data, sorted_weights = zip(*sorted(zip(data, weights)))
+        cumulative_weight = 0
+        below_midpoint_index = 0
+        while cumulative_weight <= midpoint:
+            below_midpoint_index += 1
+            cumulative_weight += sorted_weights[below_midpoint_index-1]
+        cumulative_weight -= sorted_weights[below_midpoint_index-1]
+        if cumulative_weight - midpoint < sys.float_info.epsilon:
+            bounds = sorted_data[below_midpoint_index-2:below_midpoint_index]
+            return sum(bounds) / float(len(bounds))
+        return sorted_data[below_midpoint_index-1]
+
+def numpy_weighted_median(data, weights=None):
+    """
+    Calculate the weighted median of an array/list using numpy.
+    """
+    if weights is None:
+        return np.median(np.array(data).flatten())
+    data, weights = np.array(data).flatten(), np.array(weights).flatten()
+    if any(weights > 0):
+        sorted_data, sorted_weights = map(np.array, zip(*sorted(zip(data, weights))))
+        midpoint = 0.5 * sum(sorted_weights)
+        if any(weights > midpoint):
+            return (data[weights == np.max(weights)])[0]
+        cumulative_weight = np.cumsum(sorted_weights)
+        below_midpoint_index = np.where(cumulative_weight <= midpoint)[0][-1]
+        if cumulative_weight[below_midpoint_index] - midpoint < sys.float_info.epsilon:
+            return np.mean(sorted_data[below_midpoint_index:below_midpoint_index+2])
+        return sorted_data[below_midpoint_index+1]
+
