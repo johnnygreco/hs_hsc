@@ -1367,7 +1367,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
 
     # Save the Objlist
     # Replace the object size with R90
-    prefixF = prefix + '_' + suffix + 'mskfin'
+    prefixF = prefix + '_' + suffix + 'objAll'
     objFin = copy.deepcopy(objNoCen)
     baNoCen = copy.deepcopy(objFin['b'] / objFin['a'])
     objFin['a'] = r90NoCen
