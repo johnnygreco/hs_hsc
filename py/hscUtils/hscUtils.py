@@ -776,3 +776,22 @@ def numpy_weighted_median(data, weights=None):
             return np.mean(sorted_data[below_midpoint_index:below_midpoint_index+2])
         return sorted_data[below_midpoint_index+1]
 
+"""
+PolyNomial Fitting
+"""
+
+def polyFit(x, y, order=4):
+
+    """
+    doc
+    """
+
+    if len(x) != len(y):
+        raise Exception("### X and Y should have the same size")
+
+    coefficients = np.polyfit(x, y, order)
+    polynomial = np.poly1d(coefficients)
+    fit = polynomial(x)
+
+    return fit
+
