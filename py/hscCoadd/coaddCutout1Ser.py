@@ -9,6 +9,7 @@ import argparse
 import subprocess
 import numpy as np
 import scipy
+from distutils import spawn
 
 # Astropy
 from astropy.io import fits
@@ -56,6 +57,65 @@ from matplotlib.patches import Ellipse
 # Personal
 import hscUtils as hUtil
 
+
+def coaddRunGalfit(readFile, root=None, imax=120, galfit=None, updateRead=True):
+    """
+    Run GALFIT
+    """
+
+    """ Find GALFIT """
+    if galfit is None:
+        galfit = spawn.find_executable('galfit')
+        if galfit is None:
+            raise Exception("XXX Can not find the GALFIT executable")
+
+    """ Check the Read-in File """
+    if not os.path.isfile(readFile):
+        raise Exception("XXX Can not find the READIN file: %s", readFile)
+
+    """ IMAX string """
+    imaxStr = " -imax %4d", imax
+
+    """ GALFIT command """
+    galfitCommand = galfit + ' ' + imaxStr + ' ' + readFile
+
+    """ Excecute the command """
+    proc = subprocess.Popen([galfitCommand], cwd=root, shell=True,
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    for line in proc.stdout.readlines():
+        print line
+    retval = proc.wait()
+
+    return
+
+
+def readSbpInput(prefix, root=None):
+    """
+    doc
+    """
+    # Get the names of necessary input images
+    imgFile = prefix + '_img.fits'
+    mskFile = prefix + '_mskfin.fits'
+
+    if root is not None:
+        imgFile = os.path.join(root, imgFile)
+        mskFile = os.path.join(root, mskFile)
+
+    if not os.path.isfile(imgFile):
+        raise Exception("### Can not find the input cutout image : %s !" % imgFile)
+    if not os.path.isfile(mskFile):
+        raise Exception("### Can not find the input mask image : %s !" % mskFile)
+
+    # Image
+    imgHdu = fits.open(imgFile)
+    imgArr = imgHdu[0].data
+    imgHead = imgHdu[0].header
+    # Mask
+    mskHdu = fits.open(mskFile)
+    mskArr = mskHdu[0].data
+    mskHead = mskHdu[0].header
+
+    return imgFile, imgArr, imgHead, mskFile, mskArr, mskHead
 
 
 def coaddCutout1Ser(prefix, root=None):

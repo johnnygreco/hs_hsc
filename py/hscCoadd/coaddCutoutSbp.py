@@ -349,6 +349,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
     paBuffer = 4.0
     minPA = np.nanmin(ellipOut2['pa_norm'][indexUse2] - ellipOut2['pa_err'][indexUse2])
     maxPA = np.nanmax(ellipOut2['pa_norm'][indexUse2] + ellipOut2['pa_err'][indexUse2])
+    minPA = minPA if minPA >= -110.0 else -100.0
+    maxPA = maxPA if maxPA <= 110.0 else 100.0
     ax3.set_ylim(minPA-paBuffer, maxPA+paBuffer)
 
     """ ax4 X0/Y0 """
@@ -437,13 +439,20 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
     ax6.set_ylabel('Curve of Growth (mag)', fontsize=24)
 
     growthCurveOri = -2.5 * np.log10(ellipOut3['growth_ori']) + zp
-    growthCurveFit = -2.5 * np.log10(ellipOut3['growth_fit']) + zp
+    growthCurveNew = -2.5 * np.log10(ellipOut3['growth_cor']) + zp
 
-    maxIsoFlux = np.nanmax(ellipOut3['growth_fit'][indexUse3])
+    maxIsoFluxOri = np.nanmax(ellipOut3['growth_ori'][indexUse3])
+    magFluxOri50  = -2.5 * np.log10(maxIsoFluxOri * 0.50) + zp
+    magFluxOri100 = -2.5 * np.log10(maxIsoFluxOri) + zp
+    print "###     MagTot OLD : ", magFluxOri100
+    ax1.text(0.6, 0.85, 'mag$_{tot,old}=%5.2f$' % magFluxOri100, fontsize=24,
+            transform=ax1.transAxes)
+
+    maxIsoFlux = np.nanmax(ellipOut3['growth_cor'][indexUse3])
     magFlux50 = -2.5 * np.log10(maxIsoFlux * 0.50) + zp
     magFlux100 = -2.5 * np.log10(maxIsoFlux) + zp
-    print "###     Mag100", magFlux100
-    ax1.text(0.6, 0.85, 'mag$_{tot}=%5.2f$' % magFlux100, fontsize=24,
+    print "###     MagTot NEW : ", magFlux100
+    ax1.text(0.6, 0.78, 'mag$_{tot,new}=%5.2f$' % magFlux100, fontsize=24,
             transform=ax1.transAxes)
 
     ax6.axhline(magFlux100, linestyle='-', color='k', alpha=0.6, linewidth=3.0,
@@ -453,12 +462,12 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
     ax6.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
     ax6.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
 
-    ax6.plot(rad3, growthCurveOri, '-', color='r', linewidth=3.5,
-             label='tflux$_e$')
-    ax6.plot(rad3, growthCurveFit, '--', color='g', linewidth=2.0,
-             label='polyfit')
+    ax6.plot(rad3, growthCurveOri, '--', color='g', linewidth=3.5,
+             label='curve$_{old}$')
+    ax6.plot(rad3, growthCurveNew, '-', color='r', linewidth=3.5,
+             label='curve$_{new}$')
 
-    ax6.legend(loc=[0.35, 0.50], fontsize=26)
+    ax6.legend(loc=[0.35, 0.60], fontsize=26)
 
     ax6.set_xlim(minRad, maxRad)
 
@@ -470,6 +479,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
     ax7.locator_params(axis='y', tight=True, nbins=4)
 
     ax7.axhline(0.0, linestyle='-', color='k', alpha=0.6, linewidth=3.0)
+    ax7.plot(rad3, ellipOut3['intens']+ellipOut3['avg_bkg'], '--', color='g',
+            linewidth=2.5)
     ax7.fill_between(rad3, ellipOut3['intens']+ellipOut3['int_err'],
             ellipOut3['intens']-ellipOut3['int_err'], facecolor='r', alpha=0.3)
     ax7.plot(rad3, ellipOut3['intens'], '-', color='r', linewidth=3.0)
@@ -543,8 +554,10 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
 
 
 def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
-                   zp=27.0, step=0.10, pix=0.168, bkgCor=True, plot=True,
-                   redshift=None, psfRecenter=True, showZoom=True):
+                   zp=27.0, step=0.10, pix=0.168, bkgCor=False, plot=True,
+                   galX0=None, galY0=None, galQ0=None, galPA0=None, maxTry=3,
+                   galRe=None, redshift=None, psfRecenter=True, showZoom=True,
+                   checkCenter=True, updateIntens=False):
     """
     doc
     """
@@ -581,10 +594,20 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         bkg = 0.00
 
     """ 1. Prepare the Input for SBP """
-    galX, galY = mskHead['GAL_CENX'], mskHead['GAL_CENY']
-    galQ, galPA = mskHead['GAL_Q'], mskHead['GAL_PA']
-    galR50 = mskHead['GAL_R50']
+    if (galX0 is None) or (galY0 is None):
+        galX, galY = mskHead['GAL_CENX'], mskHead['GAL_CENY']
+    else:
+        galX, galY = galX0, galY0
+    if (galQ0 is None) or (galPA0 is None):
+        galQ, galPA = mskHead['GAL_Q'], mskHead['GAL_PA']
+    else:
+        galQ, galPA = galQ0, galPA0
+    galQ = galQ if galQ <= 0.95 else 0.95
     galPA = hUtil.normAngle(galPA, lower=-90.0, upper=90.0)
+    if galRe is None:
+        galR50 = mskHead['GAL_R50']
+    else:
+        galR50 = galRe
     if verbose:
         print " ### Image : ", imgFile
         print " ### Mask  : ", mskFile
@@ -612,33 +635,39 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             """ # Start with Stage 1 """
             print "\n##   Ellipse Run on Image - Stage 1 "
             galSBP.unlearnEllipse()
+            iniSma = (galR50*1.5)
             ellOut1 = galSBP.galSBP(imgFile, mask=mskFile, galX=galX, galY=galY,
-                                    maxSma=maxR, iniSma=int(galR50*1.5),
+                                    maxSma=maxR, iniSma=iniSma, maxTry=maxTry,
                                     galR=galR50, ellipStep=step, pix=pix, bkg=bkg,
-                                    galQ=galQ, galPA=galPA, stage=1, zpPhoto=zp)
-            galX0 = ellOut1['avg_x0'][0]
-            galY0 = ellOut1['avg_y0'][0]
-            if (np.abs(galX0 - mskHead['NAXIS1']/2.0) >= 10.0) or (np.abs(galX0 -
-                mskHead['NAXIS1']/2.0) >= 10.0):
-                raise Exception("The Center is Off !")
+                                    galQ=galQ, galPA=galPA, stage=1, zpPhoto=zp,
+                                    updateIntens=updateIntens)
+            if (galX0 is None) or (galY0 is None):
+                galX0 = ellOut1['avg_x0'][0]
+                galY0 = ellOut1['avg_y0'][0]
+
+            if checkCenter:
+                if (np.abs(galX0-mskHead['NAXIS1']/2.0) >= 10.0) or (np.abs(galX0-
+                    mskHead['NAXIS1']/2.0) >= 10.0):
+                    raise Exception("The Center is Off !")
 
             """ # Start with Stage 2 """
             print "\n##   Ellipse Run on Image - Stage 2 "
             ellOut2 = galSBP.galSBP(imgFile, mask=mskFile, galX=galX0, galY=galY0,
-                                    maxSma=maxR, iniSma=int(galR50),
-                                    galR=galR50, ellipStep=step,
+                                    maxSma=maxR, iniSma=iniSma,
+                                    galR=galR50, ellipStep=step, maxTry=maxTry,
                                     pix=pix, bkg=bkg, galQ=galQ, galPA=galPA, stage=2,
-                                    zpPhoto=zp)
-            galQ0  = ellOut1['avg_q'][0] if ellOut1['avg_q'][0] <= 0.95 else 0.95
-            galPA0 = hUtil.normAngle(ellOut1['avg_pa'][0], lower=-90.0, upper=90.0)
+                                    zpPhoto=zp, updateIntens=updateIntens)
+            if (galQ0 is None) or (galPA0 is None):
+                galQ0  = ellOut1['avg_q'][0] if ellOut1['avg_q'][0] <= 0.95 else 0.95
+                galPA0 = hUtil.normAngle(ellOut1['avg_pa'][0], lower=-90.0, upper=90.0)
 
             """ # Start with Stage 3 """
             print "\n##   Ellipse Run on Image - Stage 3 "
             ellOut3 = galSBP.galSBP(imgFile, mask=mskFile, galX=galX0, galY=galY0,
-                                    maxSma=maxR, iniSma=int(galR50),
-                                    galR=galR50, ellipStep=step,
-                                    pix=pix, bkg=bkg, galQ=galQ0, galPA=galPA0, stage=3,
-                                    zpPhoto=zp)
+                                    maxSma=maxR, iniSma=galR50, galR=galR50,
+                                    ellipStep=step, maxTry=maxTry, pix=pix, bkg=bkg,
+                                    galQ=galQ0, galPA=galPA0, stage=3, zpPhoto=zp,
+                                    updateIntens=updateIntens)
 
             if plot:
                 print "\n##   Ellipse Summary Plot "
@@ -657,9 +686,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             """ # Run Ellipse in Forced Photometry Mode """
             print "\n##   Ellipse Run on Image - Forced Photometry "
             ellOut4 = galSBP.galSBP(imgFile, mask=mskFile, galX=galX, galY=galY,
-                                    inEllip=inEllip, maxSma=maxSma1, iniSma=int(galR50),
-                                    pix=pix, bkg=bkg,
-                                    galQ=galQ, galPA=galPA, stage=4, zpPhoto=zp)
+                                    inEllip=inEllip, maxSma=maxSma1,
+                                    pix=pix, bkg=bkg, stage=4, zpPhoto=zp, maxTry=1,
+                                    updateIntens=updateIntens)
 
 if __name__ == '__main__':
 
@@ -671,13 +700,21 @@ if __name__ == '__main__':
                        default=None)
     parser.add_argument('--pix', dest='pix', help='Pixel Scale',
                        type=float, default=0.168)
-    parser.add_argument('--bkg', dest='bkg', help='Background level',
-                       type=float, default=0.0)
     parser.add_argument('--step', dest='step', help='Step size',
                        type=float, default=0.10)
     parser.add_argument('--zp', dest='zp', help='Photometric zeropoint',
                        type=float, default=27.0)
     parser.add_argument('--redshift', dest='redshift', help='Photometric zeropoint',
+                       type=float, default=None)
+    parser.add_argument('--galX0', dest='galX0', help='Center X0',
+                       type=float, default=None)
+    parser.add_argument('--galY0', dest='galY0', help='Center Y0',
+                       type=float, default=None)
+    parser.add_argument('--galQ0', dest='galQ0', help='Input Axis Ratio',
+                       type=float, default=None)
+    parser.add_argument('--galPA0', dest='galPA0', help='Input Position Angle',
+                       type=float, default=None)
+    parser.add_argument('--galRe', dest='galRe', help='Input Effective Radius in pixel',
                        type=float, default=None)
     parser.add_argument('--verbose', dest='verbose', action="store_true",
                        default=True)
@@ -686,9 +723,15 @@ if __name__ == '__main__':
     parser.add_argument('--plot', dest='plot', action="store_true",
                        help='Generate summary plot', default=True)
     parser.add_argument('--bkgCor', dest='bkgCor', action="store_true",
-                       help='Background correction', default=True)
+                       help='Background correction', default=False)
+    parser.add_argument('--checkCenter', dest='checkCenter', action="store_true",
+                       help='Check if the center is off', default=True)
+    parser.add_argument('--updateIntens', dest='updateIntens', action="store_true",
+                       default=True)
 
     args = parser.parse_args()
     coaddCutoutSbp(args.prefix, root=args.root, verbose=args.verbose, psf=args.psf,
             inEllip=args.inEllip, bkgCor=args.bkgCor, zp=args.zp, step=args.step,
+            galX0=args.galX0, galY0=args.galY0, galQ0=args.galQ0, galPA0=args.galPA0,
+            galRe=args.galRe, checkCenter=args.checkCenter, updateIntens=args.updateIntens,
             pix=args.pix, plot=args.plot, redshift=args.redshift)

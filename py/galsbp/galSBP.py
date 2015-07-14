@@ -9,6 +9,8 @@ import argparse
 import subprocess
 import numpy as np
 
+from scipy.stats import sigmaclip
+
 # Matplotlib default settings
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -53,10 +55,11 @@ def correctPositionAngle(ellipOut):
     """
     paNorm = ellipOut['pa_norm']
     for i in range(1, len(paNorm)):
-        if (paNorm[i]-paNorm[i-1]) >= 86.0:
-            paNorm[i] -= 90.0
-        elif (paNorm[i]-paNorm[i-1] <= -86.0):
-            paNorm[i] +- 90.0
+        if (paNorm[i]-paNorm[i-1]) >= 85.0:
+            paNorm[i] -= 180.0
+        elif (paNorm[i]-paNorm[i-1] <= -85.0):
+            paNorm[i] += 180.0
+
     ellipOut['pa_norm'] = paNorm
 
     return ellipOut
@@ -191,7 +194,7 @@ def setupEllipse(ellipConfig):
 
     # 2. Initial guess of the ellipticity and PA of the first ISOPHOTE
     if (cfg['ellip0'] >= 0.0) and (cfg['ellip0'] < 1.0):
-        iraf.ellipse.ellip0 = cfg['ellip0']
+        iraf.ellipse.ellip0 = cfg['ellip0'] if cfg['ellip0'] >= 0.05 else 0.05
     else:
         raise "Make sure that the input Ellipticity is meaningful !", cfg['ellip0']
     if (cfg['pa0'] >= -90.0) and (cfg['pa0'] <= 90.0):
@@ -347,7 +350,7 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     ellipseOut['tmag_c'] += zp
 
     # Convert the intensity into surface brightness
-    parea = (pix ** 2.0)
+    parea = (pix**2.0)
     # Fixed the negative intensity
     #ellipseNew = ellipseFixNegIntens(ellipseOut)
     # Surface brightness
@@ -395,6 +398,8 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     cogOri, cogFit, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut, 14)
     ellipseOut.add_column(Column(name='growth_ori', data=(cogOri)))
     ellipseOut.add_column(Column(name='growth_fit', data=(cogFit)))
+
+    ellipseOut = correctPositionAngle(ellipseOut)
 
     return ellipseOut
 
@@ -584,7 +589,21 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     """ Find the proper outer boundary """
     radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2, threshold=threshold)
     indexUse = np.where(ellipOut['sma'] <= (radOuter*1.2))
-    print "###     OutRadius", radOuter
+    print "###     OutRadius : ", radOuter
+
+    """ Get growth curve """
+    growthCurveOri = -2.5 * np.log10(ellipOut['growth_ori']) + zp
+    growthCurveNew = -2.5 * np.log10(ellipOut['growth_cor']) + zp
+
+    maxIsoFluxOri = np.nanmax(ellipOut['growth_ori'][indexUse])
+    magFluxOri50  = -2.5 * np.log10(maxIsoFluxOri * 0.50) + zp
+    magFluxOri100 = -2.5 * np.log10(maxIsoFluxOri) + zp
+    print "###     MagTot OLD : ", magFluxOri100
+
+    maxIsoFlux = np.nanmax(ellipOut['growth_cor'][indexUse])
+    magFlux50  = -2.5 * np.log10(maxIsoFlux * 0.50) + zp
+    magFlux100 = -2.5 * np.log10(maxIsoFlux) + zp
+    print "###     MagTot NEW : ", magFlux100
 
     """ Type of Radius """
     if radMode is 'rsma':
@@ -639,7 +658,6 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
             ellipOut['sbp_low'][indexUse], facecolor='k', alpha=0.3)
 
     ax1.plot(rad[indexUse], ellipOut['sbp'][indexUse], '-', color='r', linewidth=3.0)
-    #ax1.plot(rad[indexUse], ellipOut['sbp_fit'][indexUse], '--', color='b', linewidth=2.8)
 
     ax1.set_xlim(minRad, radOut)
     sbpBuffer = 0.5
@@ -695,6 +713,8 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     paBuffer = 4.0
     minPA = np.nanmin(ellipOut['pa_norm'][indexUse] - ellipOut['pa_err'][indexUse])
     maxPA = np.nanmax(ellipOut['pa_norm'][indexUse] + ellipOut['pa_err'][indexUse])
+    minPA = minPA if minPA >= -110.0 else -100.0
+    maxPA = maxPA if maxPA <= 110.0 else 100.0
     ax3.set_ylim(minPA-paBuffer, maxPA+paBuffer)
 
     """ ax4 X0/Y0 """
@@ -724,7 +744,6 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax4.plot(rad[indexUse], ellipOut['y0'][indexUse], '-', color='b', linewidth=2.0,
             label='Y0')
 
-    #ax4.legend(loc=[0.76, 0.08], fontsize=20)
     ax4.xaxis.set_major_formatter(NullFormatter())
     ax4.set_xlim(minRad, radOut)
     xBuffer = 3.0
@@ -760,7 +779,6 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax5.plot(rad[indexUse], ellipOut['b4'][indexUse], '-', color='b', linewidth=2.0,
             label='B4')
 
-    #ax5.legend(loc=[0.76, 0.08], fontsize=20)
     ax5.xaxis.set_major_formatter(NullFormatter())
     ax5.set_xlim(minRad, radOut)
 
@@ -782,28 +800,20 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax6.set_xlabel(radStr, fontsize=23)
     ax6.set_ylabel('Curve of Growth (mag)', fontsize=24)
 
-    growthCurveOri = -2.5 * np.log10(ellipOut['growth_ori']) + zp
-    growthCurveFit = -2.5 * np.log10(ellipOut['growth_fit']) + zp
-
-    maxIsoFlux = np.nanmax(ellipOut['growth_ori'][indexUse])
-    magFlux99 = -2.5 * np.log10(maxIsoFlux * 0.99) + zp
-    magFlux50 = -2.5 * np.log10(maxIsoFlux * 0.50) + zp
-
-    magFlux100 = -2.5 * np.log10(maxIsoFlux) + zp
-    print "###     Mag100", magFlux100
     ax1.text(0.6, 0.85, 'mag$_{tot}=%5.2f$' % magFlux100, fontsize=24,
             transform=ax1.transAxes)
 
-    ax6.axhline(magFlux99, linestyle='-', color='k', alpha=0.5, linewidth=2,
-               label='mag$_{99}$')
+    ax6.axhline(magFlux100, linestyle='-', color='k', alpha=0.5, linewidth=2,
+               label='mag$_{100}$')
     ax6.axhline(magFlux50,  linestyle='--', color='k', alpha=0.5, linewidth=2,
                label='mag$_{50}$')
     ax6.axvline(imgR50,  linestyle='-', color='g', alpha=0.4, linewidth=2.5)
 
-    ax6.plot(rad, growthCurveOri, '-', color='r', linewidth=3.5,
-             label='tflux$_e$')
-    #ax6.plot(rad, growthCurveFit, '-', color='b', linewidth=3.5,
-             #label='polyfit')
+    ax6.plot(rad, growthCurveOri, '--', color='g', linewidth=3.5,
+             label='curve$_{old}$')
+    """ XXXX """
+    ax6.plot(rad, growthCurveNew, '-', color='r', linewidth=3.5,
+             label='curve$_{new}$')
 
     ax6.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
     ax6.legend(loc=[0.35, 0.50], fontsize=26)
@@ -816,8 +826,6 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax7.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax7.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax7.locator_params(axis='y', tight=True, nbins=4)
-
-    #ax7.set_ylabel('Intensity', fontsize=22)
 
     ax7.axhline(0.0, linestyle='-', color='k', alpha=0.5, linewidth=2.5)
     ax7.fill_between(rad, ellipOut['intens']+ellipOut['int_err'],
@@ -832,7 +840,8 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     minOut = np.nanmin(ellipOut['intens'][indexOut]-ellipOut['int_err'][indexOut])
     maxOut = np.nanmax(ellipOut['intens'][indexOut]+ellipOut['int_err'][indexOut])
     sepOut = (maxOut - minOut) / 10.0
-    ax7.set_ylim(minOut-sepOut, maxOut)
+    minY = (minOut-sepOut) if (minOut-sepOut) >= 0.0 else (-1.0*sepOut)
+    ax7.set_ylim(minY, maxOut)
 
     ax7.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
 
@@ -880,6 +889,8 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     """ Save Figure """
     fig.savefig(outPng)
 
+    return
+
 
 def saveEllipOut(ellipOut, prefix, ellipCfg=None, verbose=True):
 
@@ -920,10 +931,10 @@ def saveEllipOut(ellipOut, prefix, ellipCfg=None, verbose=True):
 def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, iniSma=6.0,
            galR=20.0, galQ=0.9, galPA=0.0, pix=0.168, bkg=0.00, stage=3, minSma=0.0,
            gain=3.0, expTime=1.0, zpPhoto=27.0, maxTry=2, minIt=10, maxIt=120,
-           ellipStep=0.08, uppClip=3.0, lowClip=3.0, nClip=3, fracBad=0.5,
+           ellipStep=0.10, uppClip=2.5, lowClip=2.5, nClip=4, fracBad=0.5,
            intMode="median", suffix=None, plMask=False, conver=0.05, recenter=True,
-           verbose=True, visual=True, linearStep=False, saveOut=True, savePng=True,
-           olthresh=1.00, harmonics='1 2', outerThreshold=None):
+           verbose=True, linearStep=False, saveOut=True, savePng=True,
+           olthresh=1.00, harmonics='1 2', outerThreshold=None, updateIntens=False):
 
     """TODO: Docstring for galSbp.
 
@@ -963,6 +974,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
         if galY is None:
             galY = imgY
 
+    iniSma = iniSma if iniSma >= 5.0 else 5.0
     if verbose:
         print "  ### galX, galY : ", galX, galY
         print "  ### galR : ", galR
@@ -1036,10 +1048,11 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
                 iraf.ellipse(input=image, output=outBin, inellip=inEllip,
                         verbose=verStr)
             break
-        except Exception:
+        except Exception as error:
             attempts +=1
-            ellipCfg = easierEllipse(ellipCfg)
+            print " ### Error Information : ", error
             print " ### !!! Make the Ellipse Run A Little Bit Easier !"
+            ellipCfg = easierEllipse(ellipCfg)
 
     # Check if the Ellipse run is finished
     if not os.path.isfile(outBin):
@@ -1060,17 +1073,48 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
         # Read in the Ellipse output tab
         ellipOut = readEllipseOut(outTab, zp=zpPhoto, pix=pix, exptime=expTime,
                                   bkg=bkg, harmonics=harmonics)
-        #
-        ellipOut = correctPositionAngle(ellipOut)
+        radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2)
+        sma = ellipOut['sma']
 
-        if saveOut:
-            outPre = image.replace('.fits', suffix)
-            saveEllipOut(ellipOut, outPre, ellipCfg=ellipCfg, verbose=verbose)
+        """ Update the intensity """
+        if updateIntens:
+            indexBkg = np.where(ellipOut['sma'] > radOuter*1.2)
+            if indexBkg[0].shape[0] > 0:
+                intensBkg = ellipOut['intens'][indexBkg]
+                clipArr, clipL, clipU = sigmaclip(intensBkg, 2.0, 2.0)
+                avgBkg = np.nanmean(clipArr)
+            else:
+                avgBkg = 0.0
+            print "###     Average Outer Intensity : ", avgBkg
+        else:
+            avgBkg = 0.0
+
+        ellipOut['intens'] -= avgBkg
+        ellipOut.add_column(Column(name='avg_bkg', data=(sma*0.0+avgBkg)))
+
+        """ Update the curve of growth """
+        cog1, cog2, mm, ff = ellipseGetGrowthCurve(ellipOut, 14)
+        ellipOut.add_column(Column(name='growth_cor', data=(cog1)))
+
+        """ Update the outer radius """
+        radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2)
+        ellipOut.add_column(Column(name='rad_outer', data=(sma*0.0+radOuter)))
+
+        """ Update the total magnitude """
+        indexUse = np.where(ellipOut['sma'] <= (radOuter*1.2))
+        maxIsoFlux = np.nanmax(ellipOut['growth_cor'][indexUse])
+        magFlux100 = -2.5 * np.log10(maxIsoFlux) + zpPhoto
+        ellipOut.add_column(Column(name='mag_tot', data=(sma*0.0+magFlux100)))
 
         if savePng:
             outPng = image.replace('.fits', suffix + '.png')
             ellipsePlotSummary(ellipOut, image, maxRad=None, mask=mask,
                     outPng=outPng, threshold=outerThreshold)
+
+        if saveOut:
+            outPre = image.replace('.fits', suffix)
+            saveEllipOut(ellipOut, outPre, ellipCfg=ellipCfg, verbose=verbose)
+
 
     return ellipOut
 
@@ -1111,6 +1155,16 @@ if __name__ == '__main__':
                        type=float, default=27.0)
     parser.add_argument('--outThre', dest='outerThreshold', help='Outer threshold',
                        type=float, default=None)
+    parser.add_argument('--plot', dest='plot', action="store_true",
+                       help='Generate summary plot', default=True)
+    parser.add_argument('--verbose', dest='verbose', action="store_true",
+                       default=True)
+    parser.add_argument('--linear', dest='linear', action="store_true",
+                       default=False)
+    parser.add_argument('--save', dest='save', action="store_true",
+                       default=True)
+    parser.add_argument('--updateIntens', dest='updateIntens', action="store_true",
+                       default=False)
 
     args = parser.parse_args()
 
@@ -1119,7 +1173,8 @@ if __name__ == '__main__':
             galQ=args.galQ, galPA=args.galPA, pix=args.pix, bkg=args.bkg,
             stage=args.stage, minSma=args.minSma, gain=3.0, expTime=1.0,
             zpPhoto=args.zpPhoto, maxTry=2, minIt=10, maxIt=200, ellipStep=args.step,
-            uppClip=3.0, lowClip=3.0, nClip=3, fracBad=0.5, intMode="median",
-            suffix=None, plMask=False, conver=0.05, recenter=True, verbose=True,
-            visual=True, linearStep=False, saveOut=True, savePng=True, olthresh=1.00,
-            harmonics='none', outerThreshold=args.outerThreshold)
+            uppClip=2.5, lowClip=2.5, nClip=4, fracBad=0.5, intMode="median",
+            suffix=None, plMask=False, conver=0.05, recenter=True, verbose=args.verbose,
+            linearStep=args.linear, saveOut=args.save, savePng=args.plot,
+            olthresh=1.00, harmonics='none', outerThreshold=args.outerThreshold,
+            updateIntens=args.updateIntens)
