@@ -132,7 +132,8 @@ def imgSameSize(img1, img2):
 
 def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
         radMode='rsma', outPng='ellipse_summary.png', zp=27.0, threshold=None,
-        psfOut=None, useKpc=None, pix=0.168, showZoom=True):
+        psfOut=None, useKpc=None, pix=0.168, showZoom=True, exptime=1.0,
+        bkg=0.0):
 
     """
     doc
@@ -172,12 +173,37 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
         imgMsk[msk > 0] = np.nan
 
     """ Find the proper outer boundary """
+    sma = ellipOut3['sma']
     radOuter = galSBP.ellipseGetOuterBoundary(ellipOut3, ratio=1.2, threshold=threshold)
+    if not np.isfinite(radOuter):
+        print " XXX radOuter is NaN, use 0.80 * max(SMA) instead !"
+        radOuter = np.nanmax(sma) * 0.80
 
     indexUse1 = np.where(ellipOut1['sma'] <= (radOuter*1.2))
     indexUse2 = np.where(ellipOut2['sma'] <= (radOuter*1.2))
     indexUse3 = np.where(ellipOut3['sma'] <= (radOuter*1.2))
     print "###     OutRadius", radOuter
+
+    growthCurveOri = -2.5 * np.log10(ellipOut3['growth_ori']) + zp
+    growthCurveNew = -2.5 * np.log10(ellipOut3['growth_cor']) + zp
+
+    maxIsoFluxOri = np.nanmax(ellipOut3['growth_ori'][indexUse3])
+    magFluxOri50  = -2.5 * np.log10(maxIsoFluxOri * 0.50) + zp
+    magFluxOri100 = -2.5 * np.log10(maxIsoFluxOri) + zp
+    print "###     MagTot OLD : ", magFluxOri100
+    ax1.text(0.6, 0.85, 'mag$_{tot,old}=%5.2f$' % magFluxOri100, fontsize=24,
+            transform=ax1.transAxes)
+
+    maxIsoFlux = np.nanmax(ellipOut3['growth_cor'][indexUse3])
+    magFlux50 = -2.5 * np.log10(maxIsoFlux * 0.50) + zp
+    magFlux100 = -2.5 * np.log10(maxIsoFlux) + zp
+    print "###     MagTot NEW : ", magFlux100
+    ax1.text(0.6, 0.78, 'mag$_{tot,new}=%5.2f$' % magFlux100, fontsize=24,
+            transform=ax1.transAxes)
+
+    indMaxFlux = np.nanargmax(ellipOut3['growth_cor'][indexUse3])
+    maxIsoSbp = ellipOut3['sbp_upp'][indMaxFlux]
+    print "###     MaxIsoSbp : ", maxIsoSbp
 
     """ Type of Radius """
     if radMode is 'rsma':
@@ -275,17 +301,27 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
     ax1.set_xlabel(radStr, fontsize=23)
     ax1.set_ylabel('${\mu}$ (mag/arcsec$^2$)', fontsize=28)
 
-    ax1.fill_between(rad3[indexUse3], ellipOut3['sbp_upp'][indexUse3],
-            ellipOut3['sbp_low'][indexUse3], facecolor='r', alpha=0.2)
+    #ax1.fill_between(rad3[indexUse3], ellipOut3['sbp_upp'][indexUse3],
+            #ellipOut3['sbp_low'][indexUse3], facecolor='r', alpha=0.2)
+    ax1.plot(rad3[indexUse3], ellipOut3['sbp'][indexUse3], '--', color='k',
+            linewidth=4.0)
 
-    ax1.plot(rad3[indexUse3], ellipOut3['sbp'][indexUse3], '-', color='r',
-            linewidth=3.5)
+    parea = (pix**2.0)
+    sbp = zp-2.5*np.log10((ellipOut3['intens']-bkg)/ (parea*exptime))
+    sbp_low = zp-2.5*np.log10((ellipOut3['intens']+ellipOut3['int_err']-bkg)/
+            (parea*exptime))
+    sbp_err = (sbp - sbp_low)
+    sbp_upp = (sbp + sbp_err)
+
+    ax1.fill_between(rad3[indexUse3], sbp_upp[indexUse3], sbp_low[indexUse3],
+            facecolor='r', alpha=0.2)
+    ax1.plot(rad3[indexUse3], sbp[indexUse3], '-', color='r', linewidth=3.5)
 
     ax1.set_xlim(minRad, radOut)
     sbpBuffer = 0.5
-    minSbp = np.nanmin(ellipOut3['sbp_upp'][indexUse3])
-    maxSbp = np.nanmax(ellipOut3['sbp_low'][indexUse3])
-    ax1.set_ylim((maxSbp+sbpBuffer), (minSbp-sbpBuffer))
+    minSbp = np.nanmin(ellipOut3['sbp_low'][indexUse3]) - sbpBuffer
+    maxSbp = maxIsoSbp + 1.1
+    maxSbp = maxSbp if maxSbp <= 32.0 else 31.9
 
     if psfOut is not None:
         if radMode is 'rsma':
@@ -298,6 +334,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
             raise Exception('### Wrong type of Radius: sma, rsma, log')
         psfSbp = psfOut['sbp']-(np.nanmin(psfOut['sbp'])-np.nanmin(ellipOut3['sbp']))
         ax1.plot(psfRad, psfSbp, '-', color='k', linewidth=3.0, alpha=0.7)
+
+    ax1.set_ylim(maxSbp, minSbp)
 
     """ ax2 Ellipticity """
     ax2.minorticks_on()
@@ -320,10 +358,10 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
 
     ax2.xaxis.set_major_formatter(NullFormatter())
     ax2.set_xlim(minRad, radOut)
-    ellBuffer = 0.02
-    minEll = np.nanmin(ellipOut2['ell'][indexUse2] - ellipOut2['ell_err'][indexUse2])
-    maxEll = np.nanmax(ellipOut2['ell'][indexUse2] + ellipOut2['ell_err'][indexUse2])
-    ax2.set_ylim(minEll-ellBuffer, maxEll+ellBuffer)
+    ellBuffer = 0.06
+    minEll = np.nanmin(ellipOut2['ell'][indexUse2]) - ellBuffer
+    maxEll = np.nanmax(ellipOut2['ell'][indexUse2]) + ellBuffer
+    ax2.set_ylim(minEll, maxEll)
 
     """ ax3 PA """
     ax3.minorticks_on()
@@ -334,8 +372,15 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
 
     ax3.set_ylabel('PA (degree)',  fontsize=23)
 
-    print "###     AvgPA", ellipOut2['avg_pa'][0]
-    ax3.axhline(ellipOut2['avg_pa'][0], color='k', linestyle='--', linewidth=3.0)
+    medPA = np.nanmedian(ellipOut2['pa_norm'][indexUse2])
+    avgPA = ellipOut2['avg_pa'][0]
+    if (avgPA-medPA >= 85.0) and (avgPA <= 92.0):
+        avgPA -= 180.0
+    elif (avgPA-medPA <= -85.0) and (avgPA >= -92.0):
+        avgPA += 180.0
+
+    print "###     AvgPA", avgPA
+    ax3.axhline(avgPA, color='k', linestyle='--', linewidth=3.0)
 
     ax3.fill_between(rad2[indexUse2],
             ellipOut2['pa_norm'][indexUse2]+ellipOut2['pa_err'][indexUse2],
@@ -346,12 +391,13 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
 
     ax3.xaxis.set_major_formatter(NullFormatter())
     ax3.set_xlim(minRad, radOut)
-    paBuffer = 4.0
-    minPA = np.nanmin(ellipOut2['pa_norm'][indexUse2] - ellipOut2['pa_err'][indexUse2])
-    maxPA = np.nanmax(ellipOut2['pa_norm'][indexUse2] + ellipOut2['pa_err'][indexUse2])
+
+    paBuffer = 10.0
+    minPA = np.nanmin(ellipOut2['pa_norm'][indexUse2])-paBuffer
+    maxPA = np.nanmax(ellipOut2['pa_norm'][indexUse2])+paBuffer
     minPA = minPA if minPA >= -110.0 else -100.0
     maxPA = maxPA if maxPA <= 110.0 else 100.0
-    ax3.set_ylim(minPA-paBuffer, maxPA+paBuffer)
+    ax3.set_ylim(minPA, maxPA)
 
     """ ax4 X0/Y0 """
     ax4.minorticks_on()
@@ -438,23 +484,6 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
     ax6.set_xlabel(radStr, fontsize=23)
     ax6.set_ylabel('Curve of Growth (mag)', fontsize=24)
 
-    growthCurveOri = -2.5 * np.log10(ellipOut3['growth_ori']) + zp
-    growthCurveNew = -2.5 * np.log10(ellipOut3['growth_cor']) + zp
-
-    maxIsoFluxOri = np.nanmax(ellipOut3['growth_ori'][indexUse3])
-    magFluxOri50  = -2.5 * np.log10(maxIsoFluxOri * 0.50) + zp
-    magFluxOri100 = -2.5 * np.log10(maxIsoFluxOri) + zp
-    print "###     MagTot OLD : ", magFluxOri100
-    ax1.text(0.6, 0.85, 'mag$_{tot,old}=%5.2f$' % magFluxOri100, fontsize=24,
-            transform=ax1.transAxes)
-
-    maxIsoFlux = np.nanmax(ellipOut3['growth_cor'][indexUse3])
-    magFlux50 = -2.5 * np.log10(maxIsoFlux * 0.50) + zp
-    magFlux100 = -2.5 * np.log10(maxIsoFlux) + zp
-    print "###     MagTot NEW : ", magFlux100
-    ax1.text(0.6, 0.78, 'mag$_{tot,new}=%5.2f$' % magFlux100, fontsize=24,
-            transform=ax1.transAxes)
-
     ax6.axhline(magFlux100, linestyle='-', color='k', alpha=0.6, linewidth=3.0,
                label='mag$_{100}$')
     ax6.axhline(magFlux50,  linestyle='--', color='k', alpha=0.6, linewidth=3.0,
@@ -467,7 +496,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
     ax6.plot(rad3, growthCurveNew, '-', color='r', linewidth=3.5,
              label='curve$_{new}$')
 
-    ax6.legend(loc=[0.35, 0.60], fontsize=26)
+    ax6.legend(loc=[0.34, 0.59], fontsize=24)
 
     ax6.set_xlim(minRad, maxRad)
 
@@ -554,10 +583,10 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
 
 
 def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
-                   zp=27.0, step=0.10, pix=0.168, bkgCor=False, plot=True,
+                   zp=27.0, step=0.10, pix=0.168, exptime=1.0, bkgCor=False, plot=True,
                    galX0=None, galY0=None, galQ0=None, galPA0=None, maxTry=3,
                    galRe=None, redshift=None, psfRecenter=True, showZoom=True,
-                   checkCenter=True, updateIntens=False):
+                   checkCenter=True, updateIntens=False, olthresh=0.5):
     """
     doc
     """
@@ -603,7 +632,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     else:
         galQ, galPA = galQ0, galPA0
     galQ = galQ if galQ <= 0.95 else 0.95
-    galPA = hUtil.normAngle(galPA, lower=-90.0, upper=90.0)
+    galPA = hUtil.normAngle(galPA, lower=-90.0, upper=90.0, b=True)
     if galRe is None:
         galR50 = mskHead['GAL_R50']
     else:
@@ -640,14 +669,14 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     maxSma=maxR, iniSma=iniSma, maxTry=maxTry,
                                     galR=galR50, ellipStep=step, pix=pix, bkg=bkg,
                                     galQ=galQ, galPA=galPA, stage=1, zpPhoto=zp,
-                                    updateIntens=updateIntens)
+                                    updateIntens=updateIntens, olthresh=olthresh)
             if (galX0 is None) or (galY0 is None):
                 galX0 = ellOut1['avg_x0'][0]
                 galY0 = ellOut1['avg_y0'][0]
 
             if checkCenter:
-                if (np.abs(galX0-mskHead['NAXIS1']/2.0) >= 10.0) or (np.abs(galX0-
-                    mskHead['NAXIS1']/2.0) >= 10.0):
+                if (np.abs(galX0-mskHead['NAXIS1']/2.0) >= 20.0) or (np.abs(galX0-
+                    mskHead['NAXIS1']/2.0) >= 20.0):
                     raise Exception("The Center is Off !")
 
             """ # Start with Stage 2 """
@@ -659,12 +688,13 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     zpPhoto=zp, updateIntens=updateIntens)
             if (galQ0 is None) or (galPA0 is None):
                 galQ0  = ellOut1['avg_q'][0] if ellOut1['avg_q'][0] <= 0.95 else 0.95
-                galPA0 = hUtil.normAngle(ellOut1['avg_pa'][0], lower=-90.0, upper=90.0)
+                galPA0 = hUtil.normAngle(ellOut1['avg_pa'][0], lower=-90.0, upper=90.0,
+                                         b=True)
 
             """ # Start with Stage 3 """
             print "\n##   Ellipse Run on Image - Stage 3 "
             ellOut3 = galSBP.galSBP(imgFile, mask=mskFile, galX=galX0, galY=galY0,
-                                    maxSma=maxR, iniSma=galR50, galR=galR50,
+                                    maxSma=maxR, iniSma=iniSma, galR=galR50,
                                     ellipStep=step, maxTry=maxTry, pix=pix, bkg=bkg,
                                     galQ=galQ0, galPA=galPA0, stage=3, zpPhoto=zp,
                                     updateIntens=updateIntens)
@@ -676,12 +706,12 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                     ellipSummary(ellOut1, ellOut2, ellOut3, imgFile, psfOut=psfOut,
                                  maxRad=maxR, mask=mskFile, radMode='rsma',
                                  outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
-                                 showZoom=showZoom)
+                                 showZoom=showZoom, exptime=exptime, bkg=bkg)
                 else:
                     ellipSummary(ellOut1, ellOut2, ellOut3, imgFile, psfOut=None,
                                  maxRad=maxR, mask=mskFile, radMode='rsma',
                                  outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
-                                 showZoom=showZoom)
+                                 showZoom=showZoom, exptime=exptime, bkg=bkg)
         else:
             """ # Run Ellipse in Forced Photometry Mode """
             print "\n##   Ellipse Run on Image - Forced Photometry "
@@ -706,6 +736,8 @@ if __name__ == '__main__':
                        type=float, default=27.0)
     parser.add_argument('--redshift', dest='redshift', help='Photometric zeropoint',
                        type=float, default=None)
+    parser.add_argument('--olthresh', dest='olthresh', help='Central locator threshold',
+                       type=float, default=0.30)
     parser.add_argument('--galX0', dest='galX0', help='Center X0',
                        type=float, default=None)
     parser.add_argument('--galY0', dest='galY0', help='Center Y0',
@@ -734,4 +766,4 @@ if __name__ == '__main__':
             inEllip=args.inEllip, bkgCor=args.bkgCor, zp=args.zp, step=args.step,
             galX0=args.galX0, galY0=args.galY0, galQ0=args.galQ0, galPA0=args.galPA0,
             galRe=args.galRe, checkCenter=args.checkCenter, updateIntens=args.updateIntens,
-            pix=args.pix, plot=args.plot, redshift=args.redshift)
+            pix=args.pix, plot=args.plot, redshift=args.redshift, olthresh=args.olthresh)

@@ -823,8 +823,8 @@ def readCutoutImage(prefix, root=None, variance=False):
 
 
 def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
-                       bSizeH=8, bSizeC=80, thrH=3.5, thrC=1.5, mask=1,
-                       growC=6.0, growW=3.0, growH=1.5, kernel=4, central=1,
+                       bSizeH=8, bSizeC=80, thrH=2.5, thrC=1.2, mask=1,
+                       growC=6.8, growW=4.0, growH=1.8, kernel=4, central=1,
                        galX=None, galY=None, galR1=None, galR2=None, galR3=None,
                        galQ=None, galPA=None, visual=True, suffix='',
                        combBad=True, combDet=False, noBkgC=False, noBkgH=False,
@@ -996,7 +996,6 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     if verbose:
         print "###    (b/a) of the galaxy: %6.2f" % galQ
         print "###      PA  of the galaxy: %6.1f" % galPA
-    # XXX: imgArr or imgSubC
     galR20, galR50, galR90 = getFluxRadius(imgArr, objC[cenObjIndexC], maxSize=20.0,
             subpix=5)
     if np.isnan(galR20):
@@ -1030,9 +1029,9 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     if galR1 is None:
         galR1 = (galR50 * 2.5)
     if galR2 is None:
-        galR2 = (galR90 * 3.5)
+        galR2 = (galR90 * 2.5)
     if galR3 is None:
-        galR3 = (galR90 * 6.5)
+        galR3 = (galR90 * 5.0)
     if verbose:
         print "###    galR1: %7.2f" % galR1
         print "###    galR2: %7.2f" % galR2
@@ -1177,6 +1176,8 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         raise Exception("mask == 1 or mask == 2")
     if combBad:
         mskAll = combMskImage(mskAll, mskArr)
+    if combDet and detFound:
+        mskAll = combMskImage(mskAll, detArr)
     # Also mask out the NaN pixels
     mskAll[indImgNaN] = 1
 
@@ -1299,21 +1300,26 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     mskG1 = np.zeros(imgArr.shape, dtype='uint8')
     mskG2 = np.zeros(imgArr.shape, dtype='uint8')
     mskG3 = np.zeros(imgArr.shape, dtype='uint8')
-    sep.mask_ellipse(mskG1, objG1['x'], objG1['y'], r90NoCen[indG1],
-                    (r90NoCen[indG1] * objG1['b'] / objG1['a']),
-                     objG1['theta'], r=growH)
-    sep.mask_ellipse(mskG2, objG2['x'], objG2['y'], r90NoCen[indG2],
-                    (r90NoCen[indG2] * objG2['b'] / objG2['a']),
-                     objG2['theta'], r=growW)
-    sep.mask_ellipse(mskG3, objG3['x'], objG3['y'], r90NoCen[indG3],
-                    (r90NoCen[indG3] * objG3['b'] / objG3['a']),
-                     objG3['theta'], r=growC)
+    #sep.mask_ellipse(mskG1, objG1['x'], objG1['y'], r90NoCen[indG1],
+                    #(r90NoCen[indG1] * objG1['b'] / objG1['a']),
+                     #objG1['theta'], r=growH)
+    #sep.mask_ellipse(mskG2, objG2['x'], objG2['y'], r90NoCen[indG2],
+                    #(r90NoCen[indG2] * objG2['b'] / objG2['a']),
+                     #objG2['theta'], r=growW)
+    #sep.mask_ellipse(mskG3, objG3['x'], objG3['y'], r90NoCen[indG3],
+                    #(r90NoCen[indG3] * objG3['b'] / objG3['a']),
+                     #objG3['theta'], r=growC)
+    sep.mask_ellipse(mskG1, objG1['x'], objG1['y'], objG1['a'],
+                     objG1['b'], objG1['theta'], r=growH)
+    sep.mask_ellipse(mskG2, objG2['x'], objG2['y'], objG2['a'],
+                     objG2['b'], objG2['theta'], r=growW)
+    sep.mask_ellipse(mskG3, objG3['x'], objG3['y'], objG3['a'],
+                     objG3['b'], objG3['theta'], r=growC)
 
     # Hot run mask
     mskHot = np.zeros(imgArr.shape, dtype='uint8')
     sep.mask_ellipse(mskHot, objNoCenH['x'], objNoCenH['y'],
-            objNoCenH['a'], objNoCenH['b'], objNoCenH['theta'],
-            r=4.5)
+            objNoCenH['a'], objNoCenH['b'], objNoCenH['theta'], r=5.0)
 
     # Combine them into the final mask
     mskFinal = (mskG1 | mskG2 | mskG3 | mskHot)
@@ -1321,6 +1327,15 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     # Have the option to combine with HSC BAD MASK
     if combBad:
         mskFinal = combMskImage(mskFinal, mskArr)
+    if combDet and detFound:
+        mskIn = np.zeros(imgArr.shape, dtype='uint8')
+        sep.mask_ellipse(mskIn, np.array([galCenX]),
+                np.array([galCenY]), np.array([galR3*1.6]),
+                np.array([galR3*galQ*1.6]),
+                np.array([galPA*np.pi/180.0]))
+        """ TODO: Blow the detection array a little bit"""
+        detArr[np.where(mskIn > 0)] = 0
+        mskFinal = combMskImage(mskFinal, detArr)
     # Mask out all the NaN pixels
     mskFinal[indImgNaN] = 1
     mskFinFile = prefix + '_' + suffix + 'mskfin.fits'
@@ -1406,17 +1421,17 @@ if __name__ == '__main__':
     parser.add_argument('-m', dest='mask', help='Method to grow the object mask',
                        type=int, default=1, choices=range(1, 3))
     parser.add_argument('--bkgH', dest='bSizeH', help='Background size for the Hot Run',
-                       type=int, default=12)
+                       type=int, default=10)
     parser.add_argument('--bkgC', dest='bSizeC', help='Background size for the Cold Run',
-                       type=int, default=200)
+                       type=int, default=80)
     parser.add_argument('--thrH', dest='thrH', help='Detection threshold for the Hot Run',
-                       type=float, default=3.5)
+                       type=float, default=2.5)
     parser.add_argument('--thrC', dest='thrC', help='Detection threshold for the Cold Run',
                        type=float, default=1.2)
     parser.add_argument('--growC', dest='growC', help='Ratio of Growth for the Cold Objects',
-                       type=float, default=5.2)
+                       type=float, default=6.8)
     parser.add_argument('--growW', dest='growW', help='Ratio of Growth for the Warm Objects',
-                       type=float, default=2.8)
+                       type=float, default=4.0)
     parser.add_argument('--growH', dest='growH', help='Ratio of Growth for the Hot Objects',
                        type=float, default=1.5)
     parser.add_argument('--minDetC', dest='minDetC',
@@ -1441,8 +1456,10 @@ if __name__ == '__main__':
     parser.add_argument('--noBkgH', dest='noBkgH', action="store_true", default=False)
     parser.add_argument('--useSigArr', dest='useSigArr', action="store_true",
                         default=False)
-    parser.add_argument('--combMask', dest='combMask', action="store_true",
-                        default=False)
+    parser.add_argument('--combBad', dest='combBad', action="store_true",
+                        default=True)
+    parser.add_argument('--combDet', dest='combDet', action="store_true",
+                        default=True)
 
     args = parser.parse_args()
 
@@ -1455,4 +1472,15 @@ if __name__ == '__main__':
                        noBkgC=args.noBkgC, noBkgH=args.noBkgH,
                        minDetH=args.minDetH, minDetC=args.minDetC,
                        debThrH=args.debThrH, debThrC=args.debThrC,
-                       debConH=args.debConH, debConC=args.debConC)
+                       debConH=args.debConH, debConC=args.debConC,
+                       combBad=args.combBad, combDet=args.combDet)
+
+#def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
+                       #bSizeH=8, bSizeC=80, thrH=3.5, thrC=1.5, mask=1,
+                       #growC=6.0, growW=3.0, growH=1.5, kernel=4, central=1,
+                       #galX=None, galY=None, galR1=None, galR2=None, galR3=None,
+                       #galQ=None, galPA=None, visual=True, suffix='',
+                       #combBad=True, combDet=False, noBkgC=False, noBkgH=False,
+                       #minDetH=5.0, minDetC=5.0, debThrH=20.0, debThrC=32.0,
+                       #debConH=0.01, debConC=0.01, useSigArr=False,
+                       #minCenDist=20.0):

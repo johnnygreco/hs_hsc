@@ -49,18 +49,25 @@ cmap.set_bad('k',1.)
 import hscUtils as hUtil
 
 
-def correctPositionAngle(ellipOut):
+def correctPositionAngle(ellipOut, paNorm=False):
     """
     Correct the position angle for large
     """
-    paNorm = ellipOut['pa_norm']
-    for i in range(1, len(paNorm)):
-        if (paNorm[i]-paNorm[i-1]) >= 85.0:
-            paNorm[i] -= 180.0
-        elif (paNorm[i]-paNorm[i-1] <= -85.0):
-            paNorm[i] += 180.0
+    if paNorm:
+        posAng = ellipOut['pa_norm']
+    else:
+        posAng = ellipOut['pa']
 
-    ellipOut['pa_norm'] = paNorm
+    for i in range(1, len(posAng)):
+        if (posAng[i]-posAng[i-1]) >= 85.0:
+            posAng[i] -= 180.0
+        elif (posAng[i]-posAng[i-1] <= -85.0):
+            posAng[i] += 180.0
+
+    if paNorm:
+        ellipOut['pa_norm'] = posAng
+    else:
+        ellipOut['pa'] = posAng
 
     return ellipOut
 
@@ -340,8 +347,10 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
         ellipseOut.rename_column('col48', 'b2_err')
 
     # Normalize the PA
+    ellipseOut = correctPositionAngle(ellipseOut, paNorm=False)
     ellipseOut.add_column(Column(name='pa_norm',
-                          data=np.array([hUtil.normAngle(pa, lower=-90, upper=90.0)
+                          data=np.array([hUtil.normAngle(pa, lower=-90, upper=90.0,
+                              b=True)
                               for pa in ellipseOut['pa']])))
 
     # Apply a photometric zeropoint to the magnitude
@@ -381,10 +390,9 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     nIso = len(ellipseOut)
     # Get the average X0, Y0, Q, and PA
     if galR is None:
-        galR = np.max(ellipseOut['sma']) * 0.3
-    avgX, avgY  = ellipseGetAvgCen(ellipseOut, galR, minSma=1.0)
-    avgQ, avgPA = ellipseGetAvgGeometry(ellipseOut, galR, minSma=1.0)
-
+        galR = np.max(ellipseOut['sma']) * 0.18
+    avgX, avgY  = ellipseGetAvgCen(ellipseOut, galR, minSma=2.0)
+    avgQ, avgPA = ellipseGetAvgGeometry(ellipseOut, galR, minSma=2.0)
 
     ellipseOut.add_column(Column(name='avg_x0',
                                  data=(ellipseOut['sma'] * 0.0 + avgX)))
@@ -399,7 +407,6 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     ellipseOut.add_column(Column(name='growth_ori', data=(cogOri)))
     ellipseOut.add_column(Column(name='growth_fit', data=(cogFit)))
 
-    ellipseOut = correctPositionAngle(ellipseOut)
 
     return ellipseOut
 
@@ -477,28 +484,28 @@ def ellipseGetR50(ellipseRsma, isoGrowthCurve, simple=True):
     return isoRsma50
 
 
-def ellipseGetAvgCen(ellipseOut, outRad, minSma=0.5):
+def ellipseGetAvgCen(ellipseOut, outRad, minSma=2.0):
 
     """
     Get the Average X0/Y0
     """
-    avgCenX = np.nanmedian(ellipseOut['x0'][np.logical_and((ellipseOut['sma'] <= outRad),
-                                                           (ellipseOut['sma'] >= minSma))])
-    avgCenY = np.nanmedian(ellipseOut['y0'][np.logical_and((ellipseOut['sma'] <= outRad),
-                                                           (ellipseOut['sma'] >= minSma))])
+    indexMid = np.logical_and((ellipseOut['sma'] <= outRad),
+                              (ellipseOut['sma'] >= minSma))
+    avgCenX = np.nanmedian(ellipseOut['x0'][indexMid])
+    avgCenY = np.nanmedian(ellipseOut['y0'][indexMid])
 
     return avgCenX, avgCenY
 
 
-def ellipseGetAvgGeometry(ellipseOut, outRad, minSma=0.5):
+def ellipseGetAvgGeometry(ellipseOut, outRad, minSma=2.0):
 
     """
     Get the Average Q and PA
     """
-    avgQ  = 1.0 - np.nanmedian(ellipseOut['ell'][np.logical_and((ellipseOut['sma'] <= outRad),
-                                                           (ellipseOut['sma'] >= minSma))])
-    avgPA = np.nanmedian(ellipseOut['pa_norm'][np.logical_and((ellipseOut['sma'] <= outRad),
-                                                           (ellipseOut['sma'] >= minSma))])
+    indexMid = np.logical_and((ellipseOut['sma'] <= outRad),
+                              (ellipseOut['sma'] >= minSma))
+    avgQ  = 1.0 - np.nanmean(ellipseOut['ell'][indexMid])
+    avgPA = np.nanmean(ellipseOut['pa_norm'][indexMid])
 
     return avgQ, avgPA
 
@@ -587,7 +594,12 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
         imgMsk[msk > 0] = np.nan
 
     """ Find the proper outer boundary """
+    sma = ellipOut['sma']
     radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2, threshold=threshold)
+    if not np.isfinite(radOuter):
+        print " XXX radOuter is NaN, use 0.80 * max(SMA) instead !"
+        radOuter = np.nanmax(sma) * 0.80
+
     indexUse = np.where(ellipOut['sma'] <= (radOuter*1.2))
     print "###     OutRadius : ", radOuter
 
@@ -604,6 +616,10 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     magFlux50  = -2.5 * np.log10(maxIsoFlux * 0.50) + zp
     magFlux100 = -2.5 * np.log10(maxIsoFlux) + zp
     print "###     MagTot NEW : ", magFlux100
+
+    indMaxFlux = np.nanargmax(ellipOut['growth_cor'][indexUse])
+    maxIsoSbp = ellipOut['sbp_upp'][indMaxFlux]
+    print "###     MaxIsoSbp : ", maxIsoSbp
 
     """ Type of Radius """
     if radMode is 'rsma':
@@ -661,9 +677,12 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     ax1.set_xlim(minRad, radOut)
     sbpBuffer = 0.5
-    minSbp = np.nanmin(ellipOut['sbp_upp'][indexUse])
-    maxSbp = np.nanmax(ellipOut['sbp_low'][indexUse])
-    ax1.set_ylim((maxSbp+sbpBuffer), (minSbp-sbpBuffer))
+    minSbp = np.nanmin(ellipOut['sbp_low'][indexUse]) - sbpBuffer
+    maxSbp = maxIsoSbp + 1.1
+    #maxSbp = np.nanmax(ellipOut['sbp_low'][indexUse]) + sbpBuffer + 0.1
+    maxSbp = maxSbp if maxSbp <= 32.0 else 31.9
+
+    ax1.set_ylim(maxSbp, minSbp)
 
     """ ax2 Ellipticity """
     ax2.minorticks_on()
@@ -699,8 +718,15 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     ax3.set_ylabel('PA (degree)',  fontsize=23)
 
-    print "###     AvgPA", ellipOut['avg_pa'][0]
-    ax3.axhline(ellipOut['avg_pa'][0], color='k', linestyle='--', linewidth=2)
+    medPA = np.nanmedian(ellipOut['pa_norm'][indexUse])
+    avgPA = ellipOut['avg_pa'][0]
+    if (avgPA-medPA >= 85.0) and (avgPA <= 92.0):
+        avgPA -= 180.0
+    elif (avgPA-medPA <= -85.0) and (avgPA >= -92.0):
+        avgPA += 180.0
+
+    print "###     AvgPA", avgPA
+    ax3.axhline(avgPA, color='k', linestyle='--', linewidth=3.0)
 
     ax3.fill_between(rad[indexUse],
             ellipOut['pa_norm'][indexUse]+ellipOut['pa_err'][indexUse],
@@ -816,7 +842,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
              label='curve$_{new}$')
 
     ax6.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
-    ax6.legend(loc=[0.35, 0.50], fontsize=26)
+    ax6.legend(loc=[0.35, 0.50], fontsize=24)
 
     ax6.set_xlim(minRad, maxRad)
 
@@ -931,10 +957,10 @@ def saveEllipOut(ellipOut, prefix, ellipCfg=None, verbose=True):
 def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, iniSma=6.0,
            galR=20.0, galQ=0.9, galPA=0.0, pix=0.168, bkg=0.00, stage=3, minSma=0.0,
            gain=3.0, expTime=1.0, zpPhoto=27.0, maxTry=2, minIt=10, maxIt=120,
-           ellipStep=0.10, uppClip=2.5, lowClip=2.5, nClip=4, fracBad=0.5,
+           ellipStep=0.10, uppClip=2.5, lowClip=2.5, nClip=2, fracBad=0.5,
            intMode="median", suffix=None, plMask=False, conver=0.05, recenter=True,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
-           olthresh=1.00, harmonics='1 2', outerThreshold=None, updateIntens=False):
+           olthresh=0.5, harmonics='1 2', outerThreshold=None, updateIntens=False):
 
     """TODO: Docstring for galSbp.
 
@@ -1075,6 +1101,10 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
                                   bkg=bkg, harmonics=harmonics)
         radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2)
         sma = ellipOut['sma']
+        if not np.isfinite(radOuter):
+            raise Exception("### Error : Can not decide radOuter ")
+            print " XXX radOuter is NaN, use 0.75 * max(SMA) instead !"
+            radOuter = np.nanmax(sma) * 0.75
 
         """ Update the intensity """
         if updateIntens:
@@ -1098,6 +1128,10 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
 
         """ Update the outer radius """
         radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2)
+        if not np.isfinite(radOuter):
+            raise Exception("### Error : Can not decide radOuter ")
+            print " XXX radOuter is NaN, use 0.80 * max(SMA) instead !"
+            radOuter = np.nanmax(sma) * 0.80
         ellipOut.add_column(Column(name='rad_outer', data=(sma*0.0+radOuter)))
 
         """ Update the total magnitude """
@@ -1151,6 +1185,8 @@ if __name__ == '__main__':
                        type=float, default=0.0)
     parser.add_argument('--step', dest='step', help='Step size',
                        type=float, default=0.10)
+    parser.add_argument('--olthresh', dest='olthresh', help='Central locator threshold',
+                       type=float, default=0.20)
     parser.add_argument('--zpPhoto', dest='zpPhoto', help='Photometric zeropoint',
                        type=float, default=27.0)
     parser.add_argument('--outThre', dest='outerThreshold', help='Outer threshold',
@@ -1173,8 +1209,8 @@ if __name__ == '__main__':
             galQ=args.galQ, galPA=args.galPA, pix=args.pix, bkg=args.bkg,
             stage=args.stage, minSma=args.minSma, gain=3.0, expTime=1.0,
             zpPhoto=args.zpPhoto, maxTry=2, minIt=10, maxIt=200, ellipStep=args.step,
-            uppClip=2.5, lowClip=2.5, nClip=4, fracBad=0.5, intMode="median",
+            uppClip=3.0, lowClip=3.0, nClip=4, fracBad=0.5, intMode="median",
             suffix=None, plMask=False, conver=0.05, recenter=True, verbose=args.verbose,
             linearStep=args.linear, saveOut=args.save, savePng=args.plot,
-            olthresh=1.00, harmonics='none', outerThreshold=args.outerThreshold,
+            olthresh=args.olthresh, harmonics='none', outerThreshold=args.outerThreshold,
             updateIntens=args.updateIntens)
