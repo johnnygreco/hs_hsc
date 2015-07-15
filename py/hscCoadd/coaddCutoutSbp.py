@@ -321,6 +321,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
     sbpBuffer = 0.5
     minSbp = np.nanmin(ellipOut3['sbp_low'][indexUse3]) - sbpBuffer
     maxSbp = maxIsoSbp + 1.1
+    maxSbp = maxSbp if maxSbp >= 29.0 else 28.9
     maxSbp = maxSbp if maxSbp <= 32.0 else 31.9
 
     if psfOut is not None:
@@ -583,10 +584,12 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
 
 
 def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
-                   zp=27.0, step=0.10, pix=0.168, exptime=1.0, bkgCor=False, plot=True,
+                   zp=27.0, step=0.12, pix=0.168, exptime=1.0, bkgCor=False, plot=True,
                    galX0=None, galY0=None, galQ0=None, galPA0=None, maxTry=3,
                    galRe=None, redshift=None, psfRecenter=True, showZoom=True,
-                   checkCenter=True, updateIntens=False, olthresh=0.5):
+                   checkCenter=True, updateIntens=False, olthresh=0.5,
+                   intMode='median', lowClip=3.0, uppClip=2.0, nClip=2,
+                   fracBad=0.6, minIt=10, maxIt=100):
     """
     doc
     """
@@ -643,6 +646,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         print " ### galX, galY : ", galX, galY
         print " ### galQ, galPA : ", galQ, galPA
         print " ### galR50 : ", galR50
+        print " ### intMode : ", intMode
 
     maxR = mskHead['NAXIS1'] if mskHead['NAXIS1'] >= mskHead['NAXIS2'] else mskHead['NAXIS2']
     maxR = (maxR/2.0)*np.sqrt(2.0)
@@ -669,7 +673,10 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     maxSma=maxR, iniSma=iniSma, maxTry=maxTry,
                                     galR=galR50, ellipStep=step, pix=pix, bkg=bkg,
                                     galQ=galQ, galPA=galPA, stage=1, zpPhoto=zp,
-                                    updateIntens=updateIntens, olthresh=olthresh)
+                                    updateIntens=updateIntens, olthresh=olthresh,
+                                    lowClip=lowClip, uppClip=uppClip, nClip=nClip,
+                                    fracBad=fracBad, intMode=intMode, minIt=minIt,
+                                    maxIt=maxIt)
             if (galX0 is None) or (galY0 is None):
                 galX0 = ellOut1['avg_x0'][0]
                 galY0 = ellOut1['avg_y0'][0]
@@ -682,10 +689,13 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             """ # Start with Stage 2 """
             print "\n##   Ellipse Run on Image - Stage 2 "
             ellOut2 = galSBP.galSBP(imgFile, mask=mskFile, galX=galX0, galY=galY0,
-                                    maxSma=maxR, iniSma=iniSma,
-                                    galR=galR50, ellipStep=step, maxTry=maxTry,
-                                    pix=pix, bkg=bkg, galQ=galQ, galPA=galPA, stage=2,
-                                    zpPhoto=zp, updateIntens=updateIntens)
+                                    maxSma=maxR, iniSma=iniSma, galR=galR50,
+                                    ellipStep=step, maxTry=maxTry, pix=pix, bkg=bkg,
+                                    galQ=galQ, galPA=galPA, stage=2, zpPhoto=zp,
+                                    updateIntens=updateIntens, olthresh=olthresh,
+                                    lowClip=lowClip, uppClip=uppClip, nClip=nClip,
+                                    fracBad=fracBad, intMode=intMode, minIt=minIt,
+                                    maxIt=maxIt)
             if (galQ0 is None) or (galPA0 is None):
                 galQ0  = ellOut1['avg_q'][0] if ellOut1['avg_q'][0] <= 0.95 else 0.95
                 galPA0 = hUtil.normAngle(ellOut1['avg_pa'][0], lower=-90.0, upper=90.0,
@@ -697,7 +707,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     maxSma=maxR, iniSma=iniSma, galR=galR50,
                                     ellipStep=step, maxTry=maxTry, pix=pix, bkg=bkg,
                                     galQ=galQ0, galPA=galPA0, stage=3, zpPhoto=zp,
-                                    updateIntens=updateIntens)
+                                    updateIntens=updateIntens, olthresh=olthresh,
+                                    lowClip=lowClip, uppClip=uppClip, nClip=nClip,
+                                    fracBad=fracBad, intMode=intMode)
 
             if plot:
                 print "\n##   Ellipse Summary Plot "
@@ -718,7 +730,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             ellOut4 = galSBP.galSBP(imgFile, mask=mskFile, galX=galX, galY=galY,
                                     inEllip=inEllip, maxSma=maxSma1,
                                     pix=pix, bkg=bkg, stage=4, zpPhoto=zp, maxTry=1,
-                                    updateIntens=updateIntens)
+                                    updateIntens=updateIntens, intMode=intMode)
 
 if __name__ == '__main__':
 
@@ -726,6 +738,8 @@ if __name__ == '__main__':
     parser.add_argument("prefix", help="Prefix of the input image")
     parser.add_argument("--root", dest='root', help="Directory for the input image",
                        default=None)
+    parser.add_argument("--intMode", dest='intMode', help="Method for integration",
+                       default='median')
     parser.add_argument('--inEllip', dest='inEllip', help='Input Ellipse table',
                        default=None)
     parser.add_argument('--pix', dest='pix', help='Pixel Scale',
@@ -738,6 +752,18 @@ if __name__ == '__main__':
                        type=float, default=None)
     parser.add_argument('--olthresh', dest='olthresh', help='Central locator threshold',
                        type=float, default=0.30)
+    parser.add_argument('--uppClip', dest='uppClip', help='Upper limit for clipping',
+                       type=float, default=2.0)
+    parser.add_argument('--lowClip', dest='lowClip', help='Upper limit for clipping',
+                       type=float, default=3.0)
+    parser.add_argument('--nClip', dest='nClip', help='Upper limit for clipping',
+                       type=int, default=3)
+    parser.add_argument('--fracBad', dest='fracBad', help='Outer threshold',
+                       type=float, default=0.5)
+    parser.add_argument('--minIt', dest='minIt', help='Minimum number of iterations',
+                       type=int, default=10)
+    parser.add_argument('--maxIt', dest='maxIt', help='Maximum number of iterations',
+                       type=int, default=100)
     parser.add_argument('--galX0', dest='galX0', help='Center X0',
                        type=float, default=None)
     parser.add_argument('--galY0', dest='galY0', help='Center Y0',
@@ -762,8 +788,11 @@ if __name__ == '__main__':
                        default=True)
 
     args = parser.parse_args()
+
     coaddCutoutSbp(args.prefix, root=args.root, verbose=args.verbose, psf=args.psf,
             inEllip=args.inEllip, bkgCor=args.bkgCor, zp=args.zp, step=args.step,
             galX0=args.galX0, galY0=args.galY0, galQ0=args.galQ0, galPA0=args.galPA0,
             galRe=args.galRe, checkCenter=args.checkCenter, updateIntens=args.updateIntens,
-            pix=args.pix, plot=args.plot, redshift=args.redshift, olthresh=args.olthresh)
+            pix=args.pix, plot=args.plot, redshift=args.redshift, olthresh=args.olthresh,
+            fracBad=args.fracBad, lowClip=args.lowClip, uppClip=args.uppClip,
+            nClip=args.nClip, intMode=args.intMode, minIt=args.minIt, maxIt=args.maxIt)

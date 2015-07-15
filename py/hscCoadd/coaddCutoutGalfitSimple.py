@@ -229,7 +229,8 @@ def getInput1Sersic(config, readinFile='cutout_1ser.in', skyGrad=True, useF1=Fal
     f.close()
 
 
-def getInput2Sersic(config, readinFile='cutout_2ser.in', constr=False, skyGrad=True):
+def getInput2Sersic(config, readinFile='cutout_2ser.in', constr=False, skyGrad=True,
+        useF1=False, useF4=False):
     """
     Generate the readin file for 2 Sersic GALFIT fitting
     """
@@ -291,8 +292,8 @@ def getInput2Sersic(config, readinFile='cutout_2ser.in', constr=False, skyGrad=T
     f.write('# Object number: 2\n')
     f.write(' 0) sersic    \n')
     f.write(' 1) %7.1f %7.1f  1 1 \n' % (config['x'], config['y']))
-    f.write(' 3) %7.3f     1 \n' % (config['mag']))
-    f.write(' 4) %7.3f     1 \n' % (config['re']*1.5))
+    f.write(' 3) %7.3f     1 \n' % (config['mag']+0.8))
+    f.write(' 4) %7.3f     1 \n' % (config['re']*1.2))
     f.write(' 5) 0.9    1 \n')
     f.write(' 6) 0.0000      0          #     ----- \n')
     f.write(' 7) 0.0000      0          #     ----- \n')
@@ -323,7 +324,9 @@ def getInput2Sersic(config, readinFile='cutout_2ser.in', constr=False, skyGrad=T
     f.close()
 
 
-def getInput3Sersic(config, readinFile='cutout_3ser.in', constr=False, skyGrad=True):
+def getInput3Sersic(config, readinFile='cutout_3ser.in', constr=False, skyGrad=True,
+        useF1=False, useF4=False):
+
     """
     Generate the readin file for 3 Sersic GALFIT fitting
     """
@@ -436,11 +439,11 @@ def getInput3Sersic(config, readinFile='cutout_3ser.in', constr=False, skyGrad=T
 
 
 
-def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True, zp=27.0, usePsf=True,
-        galX0=None, galY0=None, galQ0=None, galPA0=None, galRe=None, galSer=2.0,
-        model=None, inFile=None, outFile=None, useSig=True, mag=18.0, constrFile=None,
-        verbose=True, run=True, skyGrad=True, ser2Comp=True, ser3comp=True,
-        useF4=False, useF1=False):
+def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True, zp=27.0,
+        usePsf=True, galX0=None, galY0=None, galQ0=None, galPA0=None, galRe=None,
+        galSer=2.0, model=None, inFile=None, outFile=None, useSig=True, mag=18.0,
+        constrFile=None, verbose=True, run=False, skyGrad=True, ser2Comp=True,
+        ser3Comp=True, useF4=False, useF1=False):
 
     """
     Run 1-Sersic fitting on HSC cutout image
@@ -653,7 +656,8 @@ if __name__ == '__main__':
                        default=True)
     parser.add_argument('--verbose', dest='verbose', action="store_true",
                        default=True)
-    parser.add_argument('--run', dest='run', action="store_true", default=True)
+    parser.add_argument('--run', dest='run', action="store_true",
+                       default=False)
     parser.add_argument('--ser2Comp', dest='ser2Comp', action="store_true",
                        default=False)
     parser.add_argument('--ser3Comp', dest='ser3Comp', action="store_true",
@@ -662,7 +666,7 @@ if __name__ == '__main__':
                        default=True)
     parser.add_argument('--useF1', dest='useF1', action="store_true",
                        default=False)
-    parser.add_argument('--useF4', dest='useF1', action="store_true",
+    parser.add_argument('--useF4', dest='useF4', action="store_true",
                        default=False)
 
     args = parser.parse_args()

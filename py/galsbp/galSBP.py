@@ -679,7 +679,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     sbpBuffer = 0.5
     minSbp = np.nanmin(ellipOut['sbp_low'][indexUse]) - sbpBuffer
     maxSbp = maxIsoSbp + 1.1
-    #maxSbp = np.nanmax(ellipOut['sbp_low'][indexUse]) + sbpBuffer + 0.1
+    maxSbp = maxSbp if maxSbp >= 29.0 else 28.9
     maxSbp = maxSbp if maxSbp <= 32.0 else 31.9
 
     ax1.set_ylim(maxSbp, minSbp)
@@ -1159,6 +1159,8 @@ if __name__ == '__main__':
     parser.add_argument("image", help="Name of the input image")
     parser.add_argument("--mask", dest='mask', help="Name of the input mask",
                        default=None)
+    parser.add_argument("--intMode", dest='intMode', help="Method for integration",
+                       default='median')
     parser.add_argument('--x0', dest='galX', help='Galaxy center in X-dimension',
                        type=float, default=None)
     parser.add_argument('--y0', dest='galY', help='Galaxy center in Y-dimension',
@@ -1185,12 +1187,26 @@ if __name__ == '__main__':
                        type=float, default=0.0)
     parser.add_argument('--step', dest='step', help='Step size',
                        type=float, default=0.10)
+    parser.add_argument('--uppClip', dest='uppClip', help='Upper limit for clipping',
+                       type=float, default=2.0)
+    parser.add_argument('--lowClip', dest='lowClip', help='Upper limit for clipping',
+                       type=float, default=3.0)
+    parser.add_argument('--nClip', dest='nClip', help='Upper limit for clipping',
+                       type=int, default=3)
     parser.add_argument('--olthresh', dest='olthresh', help='Central locator threshold',
-                       type=float, default=0.20)
+                       type=float, default=0.50)
     parser.add_argument('--zpPhoto', dest='zpPhoto', help='Photometric zeropoint',
                        type=float, default=27.0)
     parser.add_argument('--outThre', dest='outerThreshold', help='Outer threshold',
                        type=float, default=None)
+    parser.add_argument('--fracBad', dest='fracBad', help='Outer threshold',
+                       type=float, default=0.5)
+    parser.add_argument('--maxTry', dest='maxTry', help='Maximum number of ellipse run',
+                       type=int, default=3)
+    parser.add_argument('--minIt', dest='minIt', help='Minimum number of iterations',
+                       type=int, default=10)
+    parser.add_argument('--maxIt', dest='maxIt', help='Maximum number of iterations',
+                       type=int, default=100)
     parser.add_argument('--plot', dest='plot', action="store_true",
                        help='Generate summary plot', default=True)
     parser.add_argument('--verbose', dest='verbose', action="store_true",
@@ -1208,8 +1224,9 @@ if __name__ == '__main__':
             inEllip=args.inEllip, maxSma=args.maxSma, iniSma=args.iniSma, galR=args.galR,
             galQ=args.galQ, galPA=args.galPA, pix=args.pix, bkg=args.bkg,
             stage=args.stage, minSma=args.minSma, gain=3.0, expTime=1.0,
-            zpPhoto=args.zpPhoto, maxTry=2, minIt=10, maxIt=200, ellipStep=args.step,
-            uppClip=3.0, lowClip=3.0, nClip=4, fracBad=0.5, intMode="median",
+            zpPhoto=args.zpPhoto, maxTry=args.maxTry, minIt=args.minIt, maxIt=args.maxIt,
+            ellipStep=args.step, uppClip=args.uppClip, lowClip=args.lowClip,
+            nClip=args.nClip, fracBad=args.fracBad, intMode=args.intMode,
             suffix=None, plMask=False, conver=0.05, recenter=True, verbose=args.verbose,
             linearStep=args.linear, saveOut=args.save, savePng=args.plot,
             olthresh=args.olthresh, harmonics='none', outerThreshold=args.outerThreshold,

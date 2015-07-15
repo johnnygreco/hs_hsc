@@ -13,7 +13,7 @@ then
         coaddCutoutPrepare.py $i -r $root \
             -c 1 --bkgH 8 --bkgC 80 \
             --thrH 2.5 --thrC 1.2 \
-            --growC 6.8 --growW 4.0 --growH 1.8 \
+            --growC 7.0 --growW 5.0 --growH 1.9 \
             --debConC 0.015 --debConH 0.004 \
             --debThrC 32.0 --debThrH 16.0 ;
     done
