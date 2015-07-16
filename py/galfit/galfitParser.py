@@ -38,7 +38,6 @@ class GalfitComponent(object):
             setattr(self,paramsplit[1].lower() + '_err',float(val[2]))
 
 
-
 class GalfitResults(object):
     """
     This class stores galfit results information

@@ -284,7 +284,7 @@ def ellipRemoveIndef(outTabName, replace='NaN'):
 
 
 def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
-                   harmonics='none', galR=None):
+                   harmonics='none', galR=None, minSma=2.0):
 
     """TODO: Docstring for readEllipseOut
     :returns: TODO
@@ -376,10 +376,13 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
 
     rsmaUse = ellipseOut['rsma'][np.isfinite(ellipseOut['sbp'])]
     sbpUse  = ellipseOut['sbp'][np.isfinite(ellipseOut['sbp'])]
-    coefficients = np.polyfit(rsmaUse, sbpUse, 8)
-    polynomial = np.poly1d(coefficients)
-    sbpFit = polynomial(ellipseOut['rsma'])
-    ellipseOut.add_column(Column(name='sbp_fit', data=sbpFit))
+    #try:
+        #coefficients = np.polyfit(rsmaUse, sbpUse, 8)
+        #polynomial = np.poly1d(coefficients)
+        #sbpFit = polynomial(ellipseOut['rsma'])
+        #ellipseOut.add_column(Column(name='sbp_fit', data=sbpFit))
+    #except Exception:
+        #pass
 
     # Convert the unit of radius into arcsecs
     ellipseOut.add_column(Column(name='sma_asec',
@@ -391,8 +394,8 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     # Get the average X0, Y0, Q, and PA
     if galR is None:
         galR = np.max(ellipseOut['sma']) * 0.18
-    avgX, avgY  = ellipseGetAvgCen(ellipseOut, galR, minSma=2.0)
-    avgQ, avgPA = ellipseGetAvgGeometry(ellipseOut, galR, minSma=2.0)
+    avgX, avgY  = ellipseGetAvgCen(ellipseOut, galR, minSma=minSma)
+    avgQ, avgPA = ellipseGetAvgGeometry(ellipseOut, galR, minSma=minSma)
 
     ellipseOut.add_column(Column(name='avg_x0',
                                  data=(ellipseOut['sma'] * 0.0 + avgX)))
@@ -403,10 +406,8 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     ellipseOut.add_column(Column(name='avg_pa',
                                  data=(ellipseOut['sma'] * 0.0 + avgPA)))
 
-    cogOri, cogFit, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut, 14)
+    cogOri, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut)
     ellipseOut.add_column(Column(name='growth_ori', data=(cogOri)))
-    ellipseOut.add_column(Column(name='growth_fit', data=(cogFit)))
-
 
     return ellipseOut
 
@@ -440,7 +441,7 @@ def zscale(img, contrast=0.25, samples=500):
     return z1, z2
 
 
-def ellipseGetGrowthCurve(ellipOut, polyOrder=14):
+def ellipseGetGrowthCurve(ellipOut):
 
     """TODO: Docstring for ellipseGetGrowthCurve
     :returns: TODO
@@ -458,16 +459,12 @@ def ellipseGetGrowthCurve(ellipOut, polyOrder=14):
 
     # Get the growth curve
     growthCurveOri = np.asarray(isoTFlux)
-    # Do a Polynomial fitting
-    coefficients = np.polyfit(ellipOut['sma'], growthCurveOri, polyOrder)
-    polynomial = np.poly1d(coefficients)
-    growthCurveFit = polynomial(ellipOut['sma'])
 
-    indexMax = np.argmax(growthCurveFit)
+    indexMax = np.argmax(growthCurveOri)
     maxIsoSma  = ellipOut['sma'][indexMax]
     maxIsoFlux = isoTFlux[indexMax]
 
-    return growthCurveOri, growthCurveFit, maxIsoSma, maxIsoFlux
+    return growthCurveOri, maxIsoSma, maxIsoFlux
 
 
 def ellipseGetR50(ellipseRsma, isoGrowthCurve, simple=True):
@@ -489,10 +486,24 @@ def ellipseGetAvgCen(ellipseOut, outRad, minSma=2.0):
     """
     Get the Average X0/Y0
     """
-    indexMid = np.logical_and((ellipseOut['sma'] <= outRad),
-                              (ellipseOut['sma'] >= minSma))
-    avgCenX = np.nanmedian(ellipseOut['x0'][indexMid])
-    avgCenY = np.nanmedian(ellipseOut['y0'][indexMid])
+
+    try:
+        xUse = ellipseOut['x0'][(ellipseOut['sma'] <= outRad) &
+                                (np.isfinite(ellipseOut['x0_err'])) &
+                                (np.isfinite(ellipseOut['y0_err']))]
+        yUse = ellipseOut['y0'][(ellipseOut['sma'] <= outRad) &
+                                (np.isfinite(ellipseOut['x0_err'])) &
+                                (np.isfinite(ellipseOut['y0_err']))]
+        iUse = ellipseOut['intens'][(ellipseOut['sma'] <= outRad) &
+                                    (np.isfinite(ellipseOut['x0_err'])) &
+                                    (np.isfinite(ellipseOut['y0_err']))]
+    except Exception:
+        xUse = ellipseOut['x0'][(ellipseOut['sma'] <= outRad)]
+        yUse = ellipseOut['y0'][(ellipseOut['sma'] <= outRad)]
+        iUse = ellipseOut['intens'][(ellipseOut['sma'] <= outRad)]
+
+    avgCenX = hUtil.numpy_weighted_mean(xUse, weights=iUse)
+    avgCenY = hUtil.numpy_weighted_mean(yUse, weights=iUse)
 
     return avgCenX, avgCenY
 
@@ -502,10 +513,47 @@ def ellipseGetAvgGeometry(ellipseOut, outRad, minSma=2.0):
     """
     Get the Average Q and PA
     """
-    indexMid = np.logical_and((ellipseOut['sma'] <= outRad),
-                              (ellipseOut['sma'] >= minSma))
-    avgQ  = 1.0 - np.nanmean(ellipseOut['ell'][indexMid])
-    avgPA = np.nanmean(ellipseOut['pa_norm'][indexMid])
+
+    tfluxE = ellipseOut['tflux_e']
+    ringFlux = np.append(tfluxE[0], [tfluxE[1:] - tfluxE[:-1]])
+
+    try:
+        eUse = ellipseOut['ell'][(ellipseOut['sma'] <= outRad) &
+                                 (ellipseOut['sma'] >= minSma) &
+                                 (np.isfinite(ellipseOut['ell_err'])) &
+                                 (np.isfinite(ellipseOut['pa_err']))]
+        pUse = ellipseOut['pa_norm'][(ellipseOut['sma'] <= outRad) &
+                                     (ellipseOut['sma'] >= minSma) &
+                                     (np.isfinite(ellipseOut['ell_err'])) &
+                                     (np.isfinite(ellipseOut['pa_err']))]
+        fUse = ringFlux[(ellipseOut['sma'] <= outRad) &
+                        (ellipseOut['sma'] >= minSma) &
+                        (np.isfinite(ellipseOut['ell_err'])) &
+                        (np.isfinite(ellipseOut['pa_err']))]
+    except Exception:
+        try:
+            eUse = ellipseOut['ell'][(ellipseOut['sma'] <= outRad) &
+                                     (ellipseOut['sma'] >= 0.5) &
+                                     (np.isfinite(ellipseOut['ell_err'])) &
+                                     (np.isfinite(ellipseOut['pa_err']))]
+            pUse = ellipseOut['pa_norm'][(ellipseOut['sma'] <= outRad) &
+                                         (ellipseOut['sma'] >= 0.5) &
+                                         (np.isfinite(ellipseOut['ell_err'])) &
+                                         (np.isfinite(ellipseOut['pa_err']))]
+            fUse = ringFlux[(ellipseOut['sma'] <= outRad) &
+                            (ellipseOut['sma'] >= 0.5) &
+                            (np.isfinite(ellipseOut['ell_err'])) &
+                            (np.isfinite(ellipseOut['pa_err']))]
+        except Exception:
+            eUse = ellipseOut['ell'][(ellipseOut['sma'] <= outRad) &
+                                     (ellipseOut['sma'] >= 0.5)]
+            pUse = ellipseOut['pa_norm'][(ellipseOut['sma'] <= outRad) &
+                                         (ellipseOut['sma'] >= 0.5)]
+            fUse = ringFlux[(ellipseOut['sma'] <= outRad) &
+                            (ellipseOut['sma'] >= 0.5) ]
+
+    avgQ  = 1.0 - hUtil.numpy_weighted_mean(eUse, weights=fUse)
+    avgPA = hUtil.numpy_weighted_mean(pUse, weights=fUse)
 
     return avgQ, avgPA
 
@@ -536,8 +584,13 @@ def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
     negRad = ellipseOut['rsma'][np.where(ellipseOut['intens'] <= thre)]
 
     if (negRad is np.nan) or (len(negRad) < 3):
-        uppIntens = np.nanmax(ellipseOut['intens']) * 0.01
-        indexUse = np.where(ellipseOut['intens'] <= uppIntens)
+        try:
+            uppIntens = np.nanmax(ellipseOut['intens']) * 0.01
+            indexUse = np.where(ellipseOut['intens'] <= uppIntens)
+        except Exception:
+            uppIntens = np.nanmax(ellipseOut['intens']) * 0.03
+            indexUse = np.where(ellipseOut['intens'] <= uppIntens)
+
         intensFit = hUtil.polyFit(ellipseOut['rsma'][indexUse],
                                   ellipseOut['intens'][indexUse],
                                   order=polyOrder)
@@ -960,7 +1013,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
            ellipStep=0.10, uppClip=2.5, lowClip=2.5, nClip=2, fracBad=0.5,
            intMode="median", suffix=None, plMask=False, conver=0.05, recenter=True,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
-           olthresh=0.5, harmonics='1 2', outerThreshold=None, updateIntens=False):
+           olthresh=0.5, harmonics='1 2', outerThreshold=None, updateIntens=False,
+           psfSma=6.0):
 
     """TODO: Docstring for galSbp.
 
@@ -1098,7 +1152,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
 
         # Read in the Ellipse output tab
         ellipOut = readEllipseOut(outTab, zp=zpPhoto, pix=pix, exptime=expTime,
-                                  bkg=bkg, harmonics=harmonics)
+                                  bkg=bkg, harmonics=harmonics, minSma=psfSma)
         radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2)
         sma = ellipOut['sma']
         if not np.isfinite(radOuter):
@@ -1110,20 +1164,25 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
         if updateIntens:
             indexBkg = np.where(ellipOut['sma'] > radOuter*1.2)
             if indexBkg[0].shape[0] > 0:
-                intensBkg = ellipOut['intens'][indexBkg]
-                clipArr, clipL, clipU = sigmaclip(intensBkg, 2.0, 2.0)
-                avgBkg = np.nanmean(clipArr)
+                try:
+                    intensBkg = ellipOut['intens'][indexBkg]
+                    clipArr, clipL, clipU = sigmaclip(intensBkg, 2.0, 2.0)
+                    avgBkg = np.nanmean(clipArr)
+                    if not np.isfinite(avgBkg):
+                        avgBkg = 0.0
+                except Exception:
+                    avgBkg = 0.0
             else:
                 avgBkg = 0.0
-            print "###     Average Outer Intensity : ", avgBkg
         else:
             avgBkg = 0.0
+        print "###     Average Outer Intensity : ", avgBkg
 
         ellipOut['intens'] -= avgBkg
         ellipOut.add_column(Column(name='avg_bkg', data=(sma*0.0+avgBkg)))
 
         """ Update the curve of growth """
-        cog1, cog2, mm, ff = ellipseGetGrowthCurve(ellipOut, 14)
+        cog1,  mm, ff = ellipseGetGrowthCurve(ellipOut)
         ellipOut.add_column(Column(name='growth_cor', data=(cog1)))
 
         """ Update the outer radius """

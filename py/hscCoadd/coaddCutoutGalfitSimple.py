@@ -58,7 +58,8 @@ from matplotlib.patches import Ellipse
 import hscUtils as hUtil
 
 
-def coaddRunGalfit(readFile, root=None, imax=120, galfit=None, updateRead=True):
+def coaddRunGalfit(readFile, root=None, imax=120, galfit=None, updateRead=True,
+        keepLog=True):
     """
     Run GALFIT
     """
@@ -86,9 +87,17 @@ def coaddRunGalfit(readFile, root=None, imax=120, galfit=None, updateRead=True):
     else:
         proc = subprocess.Popen([galfitCommand], shell=True,
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    for line in proc.stdout.readlines():
-        print line
-    retval = proc.wait()
+
+    if keepLog:
+        logFile = readFile + '.log'
+        f = open(logFile, 'w')
+        for line in proc.stdout.readlines():
+            f.write(line)
+        f.close()
+    else:
+        for line in proc.stdout.readlines():
+            print line
+        retval = proc.wait()
 
     return
 
@@ -443,7 +452,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True, zp=27.0,
         usePsf=True, galX0=None, galY0=None, galQ0=None, galPA0=None, galRe=None,
         galSer=2.0, model=None, inFile=None, outFile=None, useSig=True, mag=18.0,
         constrFile=None, verbose=True, run=False, skyGrad=True, ser2Comp=True,
-        ser3Comp=True, useF4=False, useF1=False):
+        ser3Comp=True, useF4=False, useF1=False, checkCenter=False):
 
     """
     Run 1-Sersic fitting on HSC cutout image
@@ -458,8 +467,9 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True, zp=27.0,
         raise Exception("### The Image and Mask need to have EXACTLY same dimensions!")
     dimX, dimY = imgArr.shape
 
-    if mskHead['MSK_R20'] == 1:
-        raise Exception("### The central region is masked out")
+    if checkCenter:
+        if mskHead['MSK_R20'] == 1:
+            raise Exception("### The central region is masked out")
 
     """ 0a. PSF """
     if usePsf:

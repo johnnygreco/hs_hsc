@@ -133,7 +133,7 @@ def imgSameSize(img1, img2):
 def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
         radMode='rsma', outPng='ellipse_summary.png', zp=27.0, threshold=None,
         psfOut=None, useKpc=None, pix=0.168, showZoom=True, exptime=1.0,
-        bkg=0.0):
+        bkg=0.0, outRatio=1.2):
 
     """
     doc
@@ -174,7 +174,9 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
 
     """ Find the proper outer boundary """
     sma = ellipOut3['sma']
-    radOuter = galSBP.ellipseGetOuterBoundary(ellipOut3, ratio=1.2, threshold=threshold)
+    radOuter = galSBP.ellipseGetOuterBoundary(ellipOut3, ratio=outRatio,
+            threshold=threshold, polyOrder=12)
+
     if not np.isfinite(radOuter):
         print " XXX radOuter is NaN, use 0.80 * max(SMA) instead !"
         radOuter = np.nanmax(sma) * 0.80
@@ -589,7 +591,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                    galRe=None, redshift=None, psfRecenter=True, showZoom=True,
                    checkCenter=True, updateIntens=False, olthresh=0.5,
                    intMode='median', lowClip=3.0, uppClip=2.0, nClip=2,
-                   fracBad=0.6, minIt=10, maxIt=100):
+                   fracBad=0.6, minIt=10, maxIt=100, outRatio=1.2):
     """
     doc
     """
@@ -718,12 +720,14 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                     ellipSummary(ellOut1, ellOut2, ellOut3, imgFile, psfOut=psfOut,
                                  maxRad=maxR, mask=mskFile, radMode='rsma',
                                  outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
-                                 showZoom=showZoom, exptime=exptime, bkg=bkg)
+                                 showZoom=showZoom, exptime=exptime, bkg=bkg,
+                                 outRatio=outRatio)
                 else:
                     ellipSummary(ellOut1, ellOut2, ellOut3, imgFile, psfOut=None,
                                  maxRad=maxR, mask=mskFile, radMode='rsma',
                                  outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
-                                 showZoom=showZoom, exptime=exptime, bkg=bkg)
+                                 showZoom=showZoom, exptime=exptime, bkg=bkg,
+                                 outRatio=outRatio)
         else:
             """ # Run Ellipse in Forced Photometry Mode """
             print "\n##   Ellipse Run on Image - Forced Photometry "
@@ -764,6 +768,8 @@ if __name__ == '__main__':
                        type=int, default=10)
     parser.add_argument('--maxIt', dest='maxIt', help='Maximum number of iterations',
                        type=int, default=100)
+    parser.add_argument('--maxTry', dest='maxTry', help='Maximum number of attempts of ellipse run',
+                       type=int, default=3)
     parser.add_argument('--galX0', dest='galX0', help='Center X0',
                        type=float, default=None)
     parser.add_argument('--galY0', dest='galY0', help='Center Y0',
@@ -774,6 +780,9 @@ if __name__ == '__main__':
                        type=float, default=None)
     parser.add_argument('--galRe', dest='galRe', help='Input Effective Radius in pixel',
                        type=float, default=None)
+    parser.add_argument('--outRatio', dest='outRatio',
+                      help='Increase the outer boundary of SBP by this ratio',
+                       type=float, default=1.2)
     parser.add_argument('--verbose', dest='verbose', action="store_true",
                        default=True)
     parser.add_argument('--psf', dest='psf', action="store_true",
@@ -795,4 +804,5 @@ if __name__ == '__main__':
             galRe=args.galRe, checkCenter=args.checkCenter, updateIntens=args.updateIntens,
             pix=args.pix, plot=args.plot, redshift=args.redshift, olthresh=args.olthresh,
             fracBad=args.fracBad, lowClip=args.lowClip, uppClip=args.uppClip,
-            nClip=args.nClip, intMode=args.intMode, minIt=args.minIt, maxIt=args.maxIt)
+            nClip=args.nClip, intMode=args.intMode, minIt=args.minIt, maxIt=args.maxIt,
+            maxTry=args.maxTry, outRatio=args.outRatio)
