@@ -7,6 +7,9 @@
 # Modified by Song Huang to include more features
 #
 
+import re
+import numpy as np
+
 from astropy.io import fits
 
 class GalfitComponent(object):
@@ -26,16 +29,42 @@ class GalfitComponent(object):
         self.component_number = component_number
         headerkeys = [i for i in galfitheader.keys()]
         comp_params = []
+
         for i in headerkeys:
             if str(component_number) + '_' in i:
                 comp_params.append(i)
+
         for param in comp_params:
+            paramsplit = param.split('_')
             val = galfitheader[param]
             #we know that val is a string formatted as 'result +/- uncertainty'
-            val = val.split()
-            paramsplit = param.split('_')
-            setattr(self,paramsplit[1].lower(),float(val[0]))
-            setattr(self,paramsplit[1].lower() + '_err',float(val[2]))
+            if "{" in val and "}" in val:
+                print " ## One parameter is constrained !"
+                val = val.replace('{', '')
+                val = val.replace('}', '')
+                val = val.split()
+                print " ## Value : ", val
+                setattr(self,paramsplit[1].lower(), float(val[0]))
+                setattr(self,paramsplit[1].lower() + '_err',np.nan)
+            elif "[" in val and "]" in val:
+                print " ## One parameter is fixed !"
+                val = val.replace('[', '')
+                val = val.replace(']', '')
+                val = val.split()
+                print " ## Value : ", val
+                setattr(self,paramsplit[1].lower(), float(val[0]))
+                setattr(self,paramsplit[1].lower() + '_err',np.nan)
+            elif "*" in val:
+                print " ## One parameter is problematic !"
+                val = val.replace('*', '')
+                val = val.split()
+                print " ## Value : ", val
+                setattr(self,paramsplit[1].lower(), float(val[0]))
+                setattr(self,paramsplit[1].lower() + '_err',np.nan)
+            else:
+                val = val.split()
+                setattr(self,paramsplit[1].lower(), float(val[0]))
+                setattr(self,paramsplit[1].lower() + '_err',float(val[2]))
 
 
 class GalfitResults(object):
@@ -68,15 +97,28 @@ class GalfitResults(object):
         self.input_psf = galfitheader["PSF"]
         self.input_constrnt = galfitheader["CONSTRNT"]
         self.input_mask = galfitheader["MASK"]
-        self.input_fitsect = galfitheader["FITSECT"]
-        self.input_convbox = galfitheader["CONVBOX"]
         self.input_magzpt = galfitheader["MAGZPT"]
+
+        # Fitting region
+        fitsect = galfitheader["FITSECT"]
+        fitsect = re.findall(r"[\w']+", fitsect)
+        self.box_x0 = fitsect[0]
+        self.box_x1 = fitsect[1]
+        self.box_y0 = fitsect[2]
+        self.box_y1 = fitsect[3]
+
+        # Convolution box
+        convbox = galfitheader["CONVBOX"]
+        convbox = convbox.split(",")
+        self.convbox_x = convbox[0]
+        self.convbox_y = convbox[1]
 
         #read in the chi-square value
         self.chisq = galfitheader["CHISQ"]
         self.ndof = galfitheader["NDOF"]
         self.nfree = galfitheader["NFREE"]
         self.reduced_chisq = galfitheader["CHI2NU"]
+        self.logfile = galfitheader["LOGFILE"]
 
         #find the number of components
         num_components = 1 #already verified above
@@ -88,6 +130,7 @@ class GalfitResults(object):
         self.num_components = num_components
 
         for i in range(1, self.num_components + 1):
+
             setattr(self,"component_" + str(i),GalfitComponent(galfitheader,i))
 
         hdulist.close()

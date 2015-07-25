@@ -6,12 +6,12 @@ from __future__ import division
 import os
 import re
 import copy
-import scipy
 import shutil
 import argparse
 import warnings
 import subprocess
 import numpy as np
+import scipy
 from distutils import spawn
 
 # Astropy
@@ -27,14 +27,18 @@ import sep
 # Cubehelix color scheme
 import cubehelix  # Cubehelix color scheme from https://github.com/jradavenport/cubehelix
 # For high-contrast image
-cmap = cubehelix.cmap(start=-0.1, rot=-0.8, gamma=1.0, minSat=1.2, maxSat=1.2,
-                      minLight=0.0, maxLight=1.0, reverse=True)
-cmap.set_bad('k', 1.)
-#cmap2 = cubehelix.cmap(start=0.5, rot=0.8, gamma=1.0, minSat=1.2, maxSat=1.2,
-                      #minLight=0.0, maxLight=1.0, reverse=True)
-cmap2 = cubehelix.cmap(start=-0.2, rot=1., reverse=True)
-cmap2.set_bad('w', 1.)
-from palettable.colorbrewer.qualitative import Set1_9 as compColor
+cmap1 = cubehelix.cmap(start=0.5, rot=-0.8, gamma=1.0,
+                       minSat=1.2, maxSat=1.2,
+                       minLight=0.0, maxLight=1.0)
+cmap1.set_bad('k',1.)
+# For Mask
+cmap2 = cubehelix.cmap(start=2.0, rot=-1.0, gamma=2.5,
+                       minSat=1.2, maxSat=1.2,
+                       minLight=0.0, maxLight=1.0, reverse=True)
+# For Sigma
+cmap3 = cubehelix.cmap(start=0.5, rot=-0.8, gamma=1.2,
+                       minSat=1.2, maxSat=1.2,
+                       minLight=0.0, maxLight=1.0)
 
 # Matplotlib related
 import matplotlib as mpl
@@ -50,52 +54,22 @@ mpl.rcParams['ytick.minor.size'] = 4.0
 mpl.rcParams['ytick.minor.width'] = 1.5
 mpl.rc('axes', linewidth=2)
 import matplotlib.pyplot as plt
-from matplotlib.ticker import NullFormatter
-from matplotlib.ticker import MaxNLocator
-from matplotlib.patches import Ellipse
 plt.ioff()
+from matplotlib.patches import Ellipse
 
 # Personal
 import hscUtils as hUtil
 import galfitParser as gPar
 
 
-def galfitAIC(galOut):
-
-    """
-    Rough estimation of AIC, BIC, and HQ for a GALFIT model
-
-    AIC=-2 ln(L) + 2 k  中文名字：赤池信息量 akaike information criterion
-    BIC=-2 ln(L) + ln(n)*k 中文名字：贝叶斯信息量 bayesian information criterion
-    HQ=-2 ln(L) + ln(ln(n))*k  hannan-quinn criterion
-    """
-
-    chisq = np.float(galOut.chisq)
-    ndof  = np.float(galOut.ndof)
-    nfree = np.float(galOut.nfree)
-
-    #aic = -2.0 * np.log(chisq) + 2.0 * nfree
-    #bic = -2.0 * np.log(chisq) + np.log(ndof) * nfree
-    #hq = -2.0 * np.log(chisq) + np.log(np.log(ndof)) * nfree
-    aic = chisq + 2.0 * nfree + (2.0 * nfree * (nfree + 1.0))/(ndof - nfree - 1.0)
-    bic = chisq + np.log(ndof) * nfree
-    hq  = chisq + np.log(np.log(ndof)) * nfree
-
-    return aic, bic, hq
-
-
-def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
-               zoomLimit=6.0, showTitle=True, showChi2=True, zoomSize=None,
-               overComp=True, maskRes=True):
+def showModels(outFile, root=None, verbose=True, vertical=False):
 
     """
     Three columns view of the Galfit models with overlapped ellipse for each component
     """
 
-    if (root is not None) and (os.path.dirname(outFile) == ''):
+    if root is not None:
         outFile = os.path.join(root, outFile)
-    elif root is None:
-        root = os.path.dirname(outFile)
 
     """  Read in the output file """
     galOut = gPar.GalfitResults(outFile)
@@ -108,14 +82,14 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
 
     """ Layout of the figure """
     if not vertical:
-        reg1 = [0.05, 0.05, 0.30, 0.90]
-        reg2 = [0.35, 0.05, 0.30, 0.90]
-        reg3 = [0.65, 0.05, 0.30, 0.90]
+        reg1 = [0.000, 0.333, 0.00, 1.00]
+        reg2 = [0.333, 0.333, 0.00, 1.00]
+        reg3 = [0.666, 0.333, 0.00, 1.00]
         xsize, ysize = 18, 6
     else:
-        reg1 = [0.05, 0.65, 0.90, 0.30]
-        reg2 = [0.05, 0.35, 0.90, 0.30]
-        reg3 = [0.05, 0.05, 0.90, 0.30]
+        reg1 = [0.00, 1.00, 0.000, 0.333]
+        reg2 = [0.00, 1.00, 0.333, 0.333]
+        reg3 = [0.00, 1.00, 0.666, 0.333]
         xsize, ysize = 6, 18
 
     """ Set up the figure """
@@ -130,7 +104,7 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
     for i in range(1, nComp+1):
         compStr = 'component_' + str(i)
         compInfo = getattr(galOut, compStr)
-        if compInfo.component_type == 'sersic':
+        if compInfo.component_type is 'sersic':
             compX.append(compInfo.xc)
             compY.append(compInfo.yc)
             compR.append(compInfo.re)
@@ -139,151 +113,20 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
 
     """ Image size and scale """
     imgOri = arrOut[1].data
-    imgMod = arrOut[2].data
-    imgRes = arrOut[3].data
-    imgX, imgY = imgOri.shape
-    imin1, imax1 = hUtil.zscale(np.arcsinh(imgOri), contrast=0.05, samples=500)
-
-    if maskRes:
-        maskFile = os.path.join(root, galOut.input_mask)
-        if os.path.isfile(maskFile):
-            mskArr = fits.open(maskFile)[0].data
-            imgMsk = mskArr[np.int(galOut.box_x0)-1:np.int(galOut.box_x1),
-                            np.int(galOut.box_y0)-1:np.int(galOut.box_y1)]
-            resShow = np.arcsinh(imgRes)
-            resShow[imgMsk > 0] == np.nan
-        else:
-            print "XXX Can not find the mask file : %s" % maskFile
-            resShow = imgRes
-    else:
-        resShow = imgRes
-    imin2, imax2 = hUtil.zscale(resShow, contrast=0.20, samples=500)
-
-    maxR = (np.max(np.asarray(compR)) * zoomLimit)
-    if zoomSize is not None:
-        zoomR = zoomSize / 2.0
-        imgOri = imgOri[np.int(imgX/2.0 - zoomR):np.int(imgY/2.0 + zoomR),
-                        np.int(imgY/2.0 - zoomR):np.int(imgY/2.0 + zoomR)]
-        imgMod = imgMod[np.int(imgX/2.0 - zoomR):np.int(imgY/2.0 + zoomR),
-                        np.int(imgY/2.0 - zoomR):np.int(imgY/2.0 + zoomR)]
-        imgRes = imgRes[np.int(imgX/2.0 - zoomR):np.int(imgY/2.0 + zoomR),
-                        np.int(imgY/2.0 - zoomR):np.int(imgY/2.0 + zoomR)]
-        xPad = np.int(imgX/2.0 - zoomR)
-        yPad = np.int(imgY/2.0 - zoomR)
-    elif (imgX/2.0 >= maxR) and (imgY/2.0 >= maxR) and showZoom:
-        imgOri = imgOri[np.int(imgX/2.0 - maxR):np.int(imgY/2.0 + maxR),
-                        np.int(imgY/2.0 - maxR):np.int(imgY/2.0 + maxR)]
-        imgMod = imgMod[np.int(imgX/2.0 - maxR):np.int(imgY/2.0 + maxR),
-                        np.int(imgY/2.0 - maxR):np.int(imgY/2.0 + maxR)]
-        imgRes = imgRes[np.int(imgX/2.0 - maxR):np.int(imgY/2.0 + maxR),
-                        np.int(imgY/2.0 - maxR):np.int(imgY/2.0 + maxR)]
-        xPad = np.int(imgX/2.0 - maxR)
-        yPad = np.int(imgY/2.0 - maxR)
-        print " ## Image has been truncated to highlight the galaxy !"
-    else:
-        xPad, yPad = 0, 0
-    compX = np.asarray(compX) - np.float(galOut.box_x0)
-    compY = np.asarray(compY) - np.float(galOut.box_y0)
-    compR = np.asarray(compR)
-    compQ = np.asarray(compQ)
-    compPA = np.asarray(compPA)
-    compX -= xPad
-    compY -= yPad
+    imin, imax = hUtil.zscale(imgOri, contrast=0.6, samples=500)
 
     """ 1. Origin Image """
-    ax1.xaxis.set_major_formatter(NullFormatter())
-    ax1.yaxis.set_major_formatter(NullFormatter())
-    ax1.imshow(np.arcsinh(imgOri), interpolation="none",
-               vmax=imax1, cmap=cmap, vmin=-1.0E-4)
+    ax1.tick_params(axis='both', which='major', labelsize=20)
+    ax1.yaxis.set_major_locator(MaxNLocator(prune='lower'))
+    ax1.yaxis.set_major_locator(MaxNLocator(prune='upper'))
+    ax1.imshow(np.arcsinh(arrOut[1].data), interpolation="none",
+              vmin=imin, vmax=imax, cmap=cmap)
 
-    if overComp:
-        for ii in range(len(compX)):
-            x0, y0, r0, q0, pa0 = compX[ii], compY[ii], compR[ii], compQ[ii], compPA[ii]
-            ellRe = Ellipse(xy=(x0, y0), width=(r0*q0*2.0), height=(r0*2.0),
-                            angle=pa0)
-            ax1.add_artist(ellRe)
-            ellRe.set_clip_box(ax1.bbox)
-            ellRe.set_alpha(1.0)
-            ellRe.set_edgecolor(compColor.mpl_colors[ii])
-            ellRe.set_facecolor('none')
-            ellRe.set_linewidth(2.0)
 
-    if showTitle:
-        titleStr = ax1.text(0.50, 0.90, os.path.basename(outFile),
-                            fontsize=16, transform=ax1.transAxes,
-                            horizontalalignment='center')
-        titleStr.set_bbox(dict(color='white', alpha=0.6, edgecolor='white'))
 
-    """ 2. Model Image """
-    ax2.xaxis.set_major_formatter(NullFormatter())
-    ax2.yaxis.set_major_formatter(NullFormatter())
-    #ax2.imshow(np.arcsinh(imgMod), interpolation="none",
-               #vmin=np.nanmin(np.arcsinh(imgOri)), vmax=imax1, cmap=cmap)
-    ax2.imshow(np.arcsinh(imgMod), interpolation="none",
-               vmax=imax1, cmap=cmap, vmin=-1.0E-4)
-    """ Contour """
-    tam = np.size(imgMod, axis=0)
-    contour_x = np.arange(tam)
-    contour_y = np.arange(tam)
-    ax2.contour(contour_x, contour_y, np.arcsinh(imgMod), colors='c',
-                linewidths=1.5)
-    #ax2.contour(contour_x, contour_y, np.arcsinh(imgOri), colors='y',
-                #linewidths=1.2)
-    #ax2.contour(contour_x, contour_y, np.arcsinh(imgMod), colors=(0.8, 0.8, 0.8),
-                #linewidths=0.8)
-    #for ii in range(len(compX)):
-        #x0, y0, r0, q0, pa0 = compX[ii], compY[ii], compR[ii], compQ[ii], compPA[ii]
-        #ellRe = Ellipse(xy=(x0, y0), width=(r0*q0*2.0), height=(r0*2.0),
-                        #angle=pa0)
-        #ax2.add_artist(ellRe)
-        #ellRe.set_clip_box(ax2.bbox)
-        #ellRe.set_alpha(1.0)
-        #ellRe.set_edgecolor(compColor.mpl_colors[ii])
-        #ellRe.set_facecolor('none')
-        #ellRe.set_linewidth(1.5)
-    """ Show the reduced chisq """
-    if showChi2:
-        ax2.text(0.06, 0.92, '${\chi}^2/N_{DoF}$ : %s' % galOut.reduced_chisq,
-                fontsize=14, transform=ax2.transAxes)
-        aic, bic, hq = galfitAIC(galOut)
-        if verbose:
-            print " ## AIC : ", aic
-            print " ## BIC : ", bic
-            print " ## HQ : " , hq
-        ax2.text(0.06, 0.87, 'AIC : %9.3f' % aic,
-                fontsize=14, transform=ax2.transAxes)
-        ax2.text(0.06, 0.82, 'BIC : %9.3f' % bic,
-                fontsize=14, transform=ax2.transAxes)
-        ax2.text(0.06, 0.77, 'HQ : %9.3f' % hq,
-                fontsize=14, transform=ax2.transAxes)
 
-    """ 3. Residual Image """
-    ax3.xaxis.set_major_formatter(NullFormatter())
-    ax3.yaxis.set_major_formatter(NullFormatter())
-    ax3.imshow(np.arcsinh(imgRes), interpolation="none",
-              vmin=imin2, vmax=imax2)
-    #ax3.imshow(mskArr, interpolation="none")
-    ax3.contour(contour_x, contour_y, np.arcsinh(imgMod), colors='k',
-                linewidths=1.2)
-    #ax3.contour(contour_x, contour_y, np.arcsinh(imgOri), colors='y',
-                #linewidths=1.2)
-    #for ii in range(len(compX)):
-        #x0, y0, r0, q0, pa0 = compX[ii], compY[ii], compR[ii], compQ[ii], compPA[ii]
-        #ellRe = Ellipse(xy=(x0, y0), width=(r0*q0*2.0), height=(r0*2.0),
-                        #angle=pa0)
-        #ax3.add_artist(ellRe)
-        #ellRe.set_clip_box(ax3.bbox)
-        #ellRe.set_alpha(1.0)
-        #ellRe.set_edgecolor(compColor.mpl_colors[ii])
-        #ellRe.set_facecolor('none')
-        #ellRe.set_linewidth(2.0)
 
-    """ Save Figure """
-    fig.savefig(outPNG, bbox_inches='tight')
 
-    plt.close(fig)
-
-    return
 
 
 def removePSF(readin, root=None, verbose=True):
