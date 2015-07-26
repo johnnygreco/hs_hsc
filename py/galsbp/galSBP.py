@@ -114,6 +114,35 @@ def maskFits2Pl(inputImage, inputMask):
     return outputMask
 
 
+def imageMaskNaN(inputImage, inputMask):
+
+    """
+    Nan-Masked Image
+    """
+
+    newImage = inputImage.replace('.fits', '_nan.fits')
+    print " ## %s ---> %s " % (inputImage, newImage)
+
+    if not os.path.isfile(inputImage):
+        raise Exception("Can not find the FITS image: %s" % inputImage)
+    else:
+        imgArr = fits.open(inputImage)[0].data
+        imgHead = fits.open(inputImage)[0].header
+
+    if not os.path.isfile(inputMask):
+        raise Exception("Can not find the FITS mask: %s" % inputMask)
+    else:
+        mskArr = fits.open(inputMask)[0].data
+
+    imgArr[mskArr > 0] = np.nan
+
+    newHdu = fits.PrimaryHDU(imgArr, header=imgHead)
+    hduList = fits.HDUList([newHdu])
+    hduList.writeto(newImage, clobber=True)
+
+    return newImage
+
+
 def defaultEllipse(x0, y0, maxsma, ellip0=0.05, pa0=0.0, sma0=6.0, minsma=0.0,
         linear=False, step=0.08, recenter=True, conver=0.05, hcenter=True,
         hellip=True, hpa=True, minit=10, maxit=250, olthresh=1.00, mag0=27.0,
@@ -1034,10 +1063,18 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
     if mask is not None:
         if not os.path.isfile(mask):
             raise Exception("### Can not find the input mask: %s !" % mask)
-        if not plMask:
+        if plMask:
             plFile = maskFits2Pl(image, mask)
             if not os.path.isfile(plFile):
                 raise Exception("### Can not find the .pl mask: %s !" % plFile)
+            imageUse = image
+        else:
+            imageNew = imageMaskNaN(image, mask)
+            if not os.path.isfile(imageNew):
+                raise Exception("### Can not find the NaN-Masked image: %s" % imageNew)
+            imageUse = imageNew
+    else:
+        imageUse = image
 
     """ Estimate the maxSMA if none is provided """
     if (maxSma is None) or (galX is None) or (galY is None):
@@ -1123,9 +1160,9 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
                 os.remove(outBin)
             # Start the Ellipse fitting
             if stage != 4:
-                iraf.ellipse(input=image, output=outBin, verbose=verStr)
+                iraf.ellipse(input=imageUse, output=outBin, verbose=verStr)
             else:
-                iraf.ellipse(input=image, output=outBin, inellip=inEllip,
+                iraf.ellipse(input=imageUse, output=outBin, inellip=inEllip,
                         verbose=verStr)
             break
         except Exception as error:

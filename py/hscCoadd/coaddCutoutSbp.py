@@ -655,7 +655,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     if verbose:
         print " ### maxR : ", maxR
 
-    if mskHead['MSK_R20'] == 1:
+    if checkCenter and mskHead['MSK_R20'] == 1:
         print "### The central region is masked out"
     else:
         if psf:
@@ -791,7 +791,7 @@ if __name__ == '__main__':
                        help='Generate summary plot', default=True)
     parser.add_argument('--bkgCor', dest='bkgCor', action="store_true",
                        help='Background correction', default=False)
-    parser.add_argument('--checkCenter', dest='checkCenter', action="store_true",
+    parser.add_argument('--noCheckCenter', dest='noCheckCenter', action="store_false",
                        help='Check if the center is off', default=True)
     parser.add_argument('--updateIntens', dest='updateIntens', action="store_true",
                        default=True)
@@ -801,7 +801,7 @@ if __name__ == '__main__':
     coaddCutoutSbp(args.prefix, root=args.root, verbose=args.verbose, psf=args.psf,
             inEllip=args.inEllip, bkgCor=args.bkgCor, zp=args.zp, step=args.step,
             galX0=args.galX0, galY0=args.galY0, galQ0=args.galQ0, galPA0=args.galPA0,
-            galRe=args.galRe, checkCenter=args.checkCenter, updateIntens=args.updateIntens,
+            galRe=args.galRe, checkCenter=args.noCheckCenter, updateIntens=args.updateIntens,
             pix=args.pix, plot=args.plot, redshift=args.redshift, olthresh=args.olthresh,
             fracBad=args.fracBad, lowClip=args.lowClip, uppClip=args.uppClip,
             nClip=args.nClip, intMode=args.intMode, minIt=args.minIt, maxIt=args.maxIt,
