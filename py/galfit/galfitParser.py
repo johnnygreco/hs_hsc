@@ -43,7 +43,7 @@ class GalfitComponent(object):
                 val = val.replace('{', '')
                 val = val.replace('}', '')
                 val = val.split()
-                print " ## Value : ", val
+                print " ## Param - Value : ", param, val
                 setattr(self,paramsplit[1].lower(), float(val[0]))
                 setattr(self,paramsplit[1].lower() + '_err',np.nan)
             elif "[" in val and "]" in val:
@@ -51,14 +51,14 @@ class GalfitComponent(object):
                 val = val.replace('[', '')
                 val = val.replace(']', '')
                 val = val.split()
-                print " ## Value : ", val
+                print " ## Param - Value : ", param, val
                 setattr(self,paramsplit[1].lower(), float(val[0]))
                 setattr(self,paramsplit[1].lower() + '_err',np.nan)
             elif "*" in val:
                 print " ## One parameter is problematic !"
                 val = val.replace('*', '')
                 val = val.split()
-                print " ## Value : ", val
+                print " ## Param - Value : ", param, val
                 setattr(self,paramsplit[1].lower(), float(val[0]))
                 setattr(self,paramsplit[1].lower() + '_err',np.nan)
             else:

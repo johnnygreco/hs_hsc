@@ -37,6 +37,10 @@ cmap2.set_bad('w', 1.)
 from palettable.colorbrewer.qualitative import Set1_9 as compColor
 
 # Matplotlib related
+import matplotlib.pyplot as plt
+from matplotlib.ticker import NullFormatter
+from matplotlib.ticker import MaxNLocator
+from matplotlib.patches import Ellipse
 import matplotlib as mpl
 mpl.use('Agg')
 mpl.rcParams['figure.figsize'] = 12, 10
@@ -49,10 +53,6 @@ mpl.rcParams['ytick.major.width'] = 1.5
 mpl.rcParams['ytick.minor.size'] = 4.0
 mpl.rcParams['ytick.minor.width'] = 1.5
 mpl.rc('axes', linewidth=2)
-import matplotlib.pyplot as plt
-from matplotlib.ticker import NullFormatter
-from matplotlib.ticker import MaxNLocator
-from matplotlib.patches import Ellipse
 plt.ioff()
 
 # Personal
@@ -225,8 +225,11 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
     tam = np.size(imgMod, axis=0)
     contour_x = np.arange(tam)
     contour_y = np.arange(tam)
-    ax2.contour(contour_x, contour_y, np.arcsinh(imgMod), colors='c',
-                linewidths=1.5)
+    try:
+        ax2.contour(contour_x, contour_y, np.arcsinh(imgMod), colors='c',
+                    linewidths=1.5)
+    except Exception:
+        print "XXX Can not generate the Contour !"
     #ax2.contour(contour_x, contour_y, np.arcsinh(imgOri), colors='y',
                 #linewidths=1.2)
     #ax2.contour(contour_x, contour_y, np.arcsinh(imgMod), colors=(0.8, 0.8, 0.8),
