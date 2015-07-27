@@ -13,10 +13,10 @@ then
         echo "### ELLIPSE RUN NUMBER $round"
         echo "    "
 
-        coaddCutoutSbp.py $i --step 0.12 --fracBad 0.70 \
-            --lowClip 3.0 --uppClip 2.0 --nClip 2 --olthresh 0.5 \
-            --intMode median --minIt 10 --maxIt 100 --maxTry 4 \
-            --outRatio 1.2 ; 
+        coaddCutoutSbp.py $i --step 0.10 --fracBad 0.50 \
+            --lowClip 3.0 --uppClip 3.0 --nClip 2 --olthresh 0.3 \
+            --intMode median --minIt 10 --maxIt 160 --maxTry 6 \
+            --outRatio 1.25 ; 
     done
 
 else

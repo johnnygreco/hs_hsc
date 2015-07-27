@@ -5,9 +5,9 @@ then
 
     for i in `cat $1`; do 
         coaddCutoutGalfitSimple.py $i --mag=18.0 --ser2Comp --ser3Comp \
-            --skyGrad --run ;
+            --skyGrad --run1 --constrCen ;
     done
 
 else
-    echo "cutout1Ser.sh prefix"
+    echo "batchGalfit.sh prefix"
 fi
