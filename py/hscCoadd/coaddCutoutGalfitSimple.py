@@ -113,7 +113,7 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
     outPNG = outFile.replace('.fits', '.png')
 
     if verbose:
-        print "### %s ---> %s " % (outFile, outPNG)
+        print " ## %s ---> %s " % (outFile, outPNG)
 
     """ Layout of the figure """
     if not vertical:
@@ -260,9 +260,9 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
                 fontsize=14, transform=ax2.transAxes)
         aic, bic, hq = galfitAIC(galOut)
         if verbose:
-            print " ## AIC : ", aic
-            print " ## BIC : ", bic
-            print " ## HQ : " , hq
+            print "  # AIC : ", aic
+            print "  # BIC : ", bic
+            print "  # HQ : " , hq
         ax2.text(0.06, 0.87, 'AIC : %9.3f' % aic,
                 fontsize=14, transform=ax2.transAxes)
         ax2.text(0.06, 0.82, 'BIC : %9.3f' % bic,
@@ -347,7 +347,7 @@ def log2Readin(outFile, root=None, verbose=True):
         iniFile = os.path.join(root, galOut.input_initfile)
         if galOut.input_initfile in open(logFile).read():
             if verbose:
-                print ' # %s  ---> %s ' % (logFile, iniFile)
+                print ' ## %s  ---> %s ' % (logFile, iniFile)
             shutil.copyfile(iniFile, iniFile + '_back')
             shutil.copyfile(logFile, iniFile)
         else:
@@ -503,9 +503,14 @@ def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
 
     if not os.path.isfile(expect):
         done = False
+        print "###################################################"
         print "### GALFIT run failed for : %s" % readFile
+        print "###################################################"
     else:
         done = True
+        print "###################################################"
+        print "### GALFIT run finished : %s" % expect
+        print "###################################################"
 
         """ Update the read in file """
         if updateRead:
@@ -679,7 +684,7 @@ def getInput2Sersic(config, readinFile='cutout_2ser.in', constr=False, skyGrad=T
         f.write('G) 2comp.cons  # File with parameter constraints \n')
         constrFile = os.path.join(loc, '2comp.cons')
         if not os.path.isfile(constrFile):
-            print "### Generate comstraint file"
+            print "### Generate constraint file"
             constrStr = getCenConstrFile(['1', '2'], location=loc)
     else:
         f.write('G) %s  # File with parameter constraints \n' % config['constr'][0])
@@ -784,7 +789,7 @@ def getInput3Sersic(config, readinFile='cutout_3ser.in', constr=False, skyGrad=T
         f.write('G) 3comp.cons  # File with parameter constraints \n')
         constrFile = os.path.join(loc, '3comp.cons')
         if not os.path.isfile(constrFile):
-            print "### Generate comstraint file"
+            print " ## Generate comstraint file"
             constrStr = getCenConstrFile(['1', '2', '3'], location=loc)
     else:
         f.write('G) %s  # File with parameter constraints \n' % config['constr'][0])
@@ -895,7 +900,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True, zp=27.0,
     Run 1-Sersic fitting on HSC cutout image
     """
 
-    print "## Input Image: ", prefix
+    print "### Input Image: ", prefix
     """ 0. Organize Input Data """
     # Read in the input image, mask, psf, and their headers
     imgFile, imgArr, imgHead, mskFile, mskArr, mskHead = readSbpInput(prefix,
@@ -934,7 +939,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True, zp=27.0,
             skyMed, skyAvg, skyStd = readInputSky(prefix, root=root)
             bkg = skyAvg
             if verbose:
-                print " ### Average Background : ", bkg
+                print "  # Average Background : ", bkg
         except Exception:
             print " XXX CAN NOT FIND THE BACKGROUND DATA !"
             bkg = 0.00
@@ -979,15 +984,15 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True, zp=27.0,
     convbox = convbox if convbox <= int(dimX*0.9) else int(dimX*0.9)
 
     if verbose:
-        print " ### Image : ", imgFile
-        print " ### Mask  : ", mskFile
-        print " ### Sigma : ", sigFile
-        print " ### PSF   : ", psfFile
-        print " ### galX, galY : ", galX, galY
-        print " ### galQ, galPA : ", galQ, galPA
-        print " ### galR50 : ", galR50
-        print " ### galSer : ", galSer
-        print " ### convbox : ", convbox
+        print " ## Image : ", imgFile
+        print " ## Mask  : ", mskFile
+        print " ## Sigma : ", sigFile
+        print " ## PSF   : ", psfFile
+        print " ## galX, galY : ", galX, galY
+        print " ## galQ, galPA : ", galQ, galPA
+        print " ## galR50 : ", galR50
+        print " ## galSer : ", galSer
+        print " ## convbox : ", convbox
 
     """ 0h. Generate the configuration file """
     galfitConfig = np.recarray((1,), dtype=[('x', float), ('y', float),
