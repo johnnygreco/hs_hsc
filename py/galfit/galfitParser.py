@@ -34,6 +34,7 @@ class GalfitComponent(object):
             if str(component_number) + '_' in i:
                 comp_params.append(i)
 
+        setattr(self, 'good', True)
         for param in comp_params:
             paramsplit = param.split('_')
             val = galfitheader[param]
@@ -60,7 +61,8 @@ class GalfitComponent(object):
                 val = val.split()
                 print " ## Param - Value : ", param, val
                 setattr(self,paramsplit[1].lower(), float(val[0]))
-                setattr(self,paramsplit[1].lower() + '_err',np.nan)
+                setattr(self,paramsplit[1].lower() + '_err', -1.0)
+                setattr(self, 'good', True)
             else:
                 val = val.split()
                 setattr(self,paramsplit[1].lower(), float(val[0]))
@@ -130,7 +132,6 @@ class GalfitResults(object):
         self.num_components = num_components
 
         for i in range(1, self.num_components + 1):
-
             setattr(self,"component_" + str(i),GalfitComponent(galfitheader,i))
 
         hdulist.close()

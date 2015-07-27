@@ -14,6 +14,28 @@ import subprocess
 import numpy as np
 from distutils import spawn
 
+# Matplotlib related
+import matplotlib as mpl
+mpl.use('Agg')
+mpl.rcParams['figure.figsize'] = 12, 10
+mpl.rcParams['xtick.major.size'] = 8.0
+mpl.rcParams['xtick.major.width'] = 1.5
+mpl.rcParams['xtick.minor.size'] = 4.0
+mpl.rcParams['xtick.minor.width'] = 1.5
+mpl.rcParams['ytick.major.size'] = 8.0
+mpl.rcParams['ytick.major.width'] = 1.5
+mpl.rcParams['ytick.minor.size'] = 4.0
+mpl.rcParams['ytick.minor.width'] = 1.5
+mpl.rc('axes', linewidth=2)
+
+import matplotlib.pyplot as plt
+plt.ioff()
+
+from matplotlib.ticker import NullFormatter
+from matplotlib.ticker import MaxNLocator
+from matplotlib.patches import Ellipse
+
+
 # Astropy
 from astropy.io import fits
 from astropy    import units as u
@@ -35,25 +57,6 @@ cmap.set_bad('k', 1.)
 cmap2 = cubehelix.cmap(start=-0.2, rot=1., reverse=True)
 cmap2.set_bad('w', 1.)
 from palettable.colorbrewer.qualitative import Set1_9 as compColor
-
-# Matplotlib related
-import matplotlib.pyplot as plt
-from matplotlib.ticker import NullFormatter
-from matplotlib.ticker import MaxNLocator
-from matplotlib.patches import Ellipse
-import matplotlib as mpl
-mpl.use('Agg')
-mpl.rcParams['figure.figsize'] = 12, 10
-mpl.rcParams['xtick.major.size'] = 8.0
-mpl.rcParams['xtick.major.width'] = 1.5
-mpl.rcParams['xtick.minor.size'] = 4.0
-mpl.rcParams['xtick.minor.width'] = 1.5
-mpl.rcParams['ytick.major.size'] = 8.0
-mpl.rcParams['ytick.major.width'] = 1.5
-mpl.rcParams['ytick.minor.size'] = 4.0
-mpl.rcParams['ytick.minor.width'] = 1.5
-mpl.rc('axes', linewidth=2)
-plt.ioff()
 
 # Personal
 import hscUtils as hUtil
@@ -86,7 +89,7 @@ def galfitAIC(galOut):
 
 def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
                zoomLimit=6.0, showTitle=True, showChi2=True, zoomSize=None,
-               overComp=True, maskRes=True):
+               overComp=True, maskRes=True, savePickle=True):
 
     """
     Three columns view of the Galfit models with overlapped ellipse for each component
@@ -101,6 +104,12 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
     galOut = gPar.GalfitResults(outFile)
     arrOut = fits.open(outFile)
 
+    """ Save a Pickle version of the output parameters """
+    if savePickle:
+        outPkl = outFile.replace('.fits', '.pkl')
+        hUtil.saveToPickle(galOut, outPkl)
+
+    """ Name of the output PNG figure """
     outPNG = outFile.replace('.fits', '.png')
 
     if verbose:
@@ -182,6 +191,7 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
         print " ## Image has been truncated to highlight the galaxy !"
     else:
         xPad, yPad = 0, 0
+
     compX = np.asarray(compX) - np.float(galOut.box_x0)
     compY = np.asarray(compY) - np.float(galOut.box_y0)
     compR = np.asarray(compR)
@@ -210,7 +220,7 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
 
     if showTitle:
         titleStr = ax1.text(0.50, 0.90, os.path.basename(outFile),
-                            fontsize=16, transform=ax1.transAxes,
+                            fontsize=14, transform=ax1.transAxes,
                             horizontalalignment='center')
         titleStr.set_bbox(dict(color='white', alpha=0.6, edgecolor='white'))
 
@@ -286,7 +296,7 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
 
     plt.close(fig)
 
-    return
+    return maxR
 
 
 def removePSF(readin, root=None, verbose=True):
@@ -345,7 +355,7 @@ def log2Readin(outFile, root=None, verbose=True):
     else:
         warnings.warn('XXX Can not find the log file: %s' % logFile)
 
-    return
+    return logFile
 
 
 def generateSubcomp(readFile, root=None, galfit=None, separate=True, verbose=True):
@@ -409,8 +419,46 @@ def generateSubcomp(readFile, root=None, galfit=None, separate=True, verbose=Tru
     return
 
 
-def coaddRunGalfit(readFile, root=None, imax=120, galfit=None, updateRead=True,
-        keepLog=True):
+def getCenConstrFile(comps, location=None, name=None):
+
+    """
+    Generate simple central constraints file
+    """
+
+    compArr = []
+    compStr = ''
+    for comp in comps:
+        compArr.append(np.int16(comp))
+        compStr += (comp + '_')
+    maxN = str(np.max(compArr))
+    compStr = compStr[0:-1]
+
+    if name is None:
+        name = maxN + 'comp.cons'
+
+    if location is not None:
+        name = os.path.join(location, name)
+
+    x_str = compStr + '   x      offset     # Hard constraint'
+    y_str = compStr + '   y      offset     # Hard constraint'
+    constrStr = [x_str, y_str]
+
+    f = open(name, 'w')
+
+    f.write('\n')
+    f.write('# Component/    parameter   constraint	Comment \n')
+    f.write('# operation	(see below)   range \n')
+    f.write(x_str + '\n')
+    f.write(y_str + '\n')
+    f.write('\n')
+
+    f.close()
+
+    return constrStr
+
+
+def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
+        keepLog=True, show=True, expect=None, showZoom=False, zoomSize=None):
     """
     Run GALFIT
     """
@@ -450,7 +498,26 @@ def coaddRunGalfit(readFile, root=None, imax=120, galfit=None, updateRead=True,
             print line
         retval = proc.wait()
 
-    return
+    if expect is None:
+        expect = readFile.replace('.in', '.fits')
+
+    if not os.path.isfile(expect):
+        done = False
+        print "### GALFIT run failed for : %s" % readFile
+    else:
+        done = True
+
+        """ Update the read in file """
+        if updateRead:
+            outLog = log2Readin(expect, root=None, verbose=True)
+
+        """ Visualization of the model """
+        if show:
+            showModels(expect, verbose=True, vertical=False, showZoom=showZoom,
+                       showTitle=True, showChi2=True, overComp=True,
+                       savePickle=True, maskRes=True, zoomSize=zoomSize)
+
+    return done
 
 
 def imgSameSize(img1, img2):
@@ -590,12 +657,14 @@ def getInput1Sersic(config, readinFile='cutout_1ser.in', skyGrad=True, useF1=Fal
 
 
 def getInput2Sersic(config, readinFile='cutout_2ser.in', constr=False, skyGrad=True,
-        useF1=False, useF4=False):
+        useF1=False, useF4=False, constrCen=True):
     """
     Generate the readin file for 2 Sersic GALFIT fitting
     """
 
     f = open(readinFile, 'w')
+
+    loc = os.path.dirname(readinFile)
 
     f.write('\n')
     f.write('===============================================================================\n')
@@ -606,7 +675,14 @@ def getInput2Sersic(config, readinFile='cutout_2ser.in', constr=False, skyGrad=T
     f.write('D) %s  # Input PSF image \n' % config['psf'][0])
     f.write('E) 1                   # PSF fine sampling factor relative to data \n')
     f.write('F) %s  # Bad pixel mask\n' % config['mask'][0])
-    f.write('G) %s  # File with parameter constraints \n' % config['constr'][0])
+    if config['constr'][0] == 'None' and constrCen:
+        f.write('G) 2comp.cons  # File with parameter constraints \n')
+        constrFile = os.path.join(loc, '2comp.cons')
+        if not os.path.isfile(constrFile):
+            print "### Generate comstraint file"
+            constrStr = getCenConstrFile(['1', '2'], location=loc)
+    else:
+        f.write('G) %s  # File with parameter constraints \n' % config['constr'][0])
     f.write('H)  1  %5d  1  %5d  # Image region to fit\n' % (config['dimx'],
         config['dimy']))
     f.write('I) %5d %5d  # Size of the convolution box\n' % (config['convbox'],
@@ -685,13 +761,15 @@ def getInput2Sersic(config, readinFile='cutout_2ser.in', constr=False, skyGrad=T
 
 
 def getInput3Sersic(config, readinFile='cutout_3ser.in', constr=False, skyGrad=True,
-        useF1=False, useF4=False):
+        useF1=False, useF4=False, constrCen=True):
 
     """
     Generate the readin file for 3 Sersic GALFIT fitting
     """
 
     f = open(readinFile, 'w')
+
+    loc = os.path.dirname(readinFile)
 
     f.write('\n')
     f.write('===============================================================================\n')
@@ -702,7 +780,14 @@ def getInput3Sersic(config, readinFile='cutout_3ser.in', constr=False, skyGrad=T
     f.write('D) %s  # Input PSF image \n' % config['psf'][0])
     f.write('E) 1                   # PSF fine sampling factor relative to data \n')
     f.write('F) %s  # Bad pixel mask\n' % config['mask'][0])
-    f.write('G) %s  # File with parameter constraints \n' % config['constr'][0])
+    if config['constr'][0] == 'None' and constrCen:
+        f.write('G) 3comp.cons  # File with parameter constraints \n')
+        constrFile = os.path.join(loc, '3comp.cons')
+        if not os.path.isfile(constrFile):
+            print "### Generate comstraint file"
+            constrStr = getCenConstrFile(['1', '2', '3'], location=loc)
+    else:
+        f.write('G) %s  # File with parameter constraints \n' % config['constr'][0])
     f.write('H)  1  %5d  1  %5d  # Image region to fit\n' % (config['dimx'],
         config['dimy']))
     f.write('I) %5d %5d  # Size of the convolution box\n' % (config['convbox'],
@@ -802,8 +887,9 @@ def getInput3Sersic(config, readinFile='cutout_3ser.in', constr=False, skyGrad=T
 def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True, zp=27.0,
         usePsf=True, galX0=None, galY0=None, galQ0=None, galPA0=None, galRe=None,
         galSer=2.0, model=None, inFile=None, outFile=None, useSig=True, mag=18.0,
-        constrFile=None, verbose=True, run=False, skyGrad=True, ser2Comp=True,
-        ser3Comp=True, useF4=False, useF1=False, checkCenter=False):
+        constrFile=None, verbose=True, run1=False, run2=False, run3=False,
+        skyGrad=True, ser2Comp=True, ser3Comp=True, useF4=False, useF1=False,
+        checkCenter=False, constrCen=True):
 
     """
     Run 1-Sersic fitting on HSC cutout image
@@ -935,14 +1021,18 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True, zp=27.0,
     galfitConfig['dimx']  = dimX
     galfitConfig['dimy']  = dimY
     galfitConfig['output']  = outFile
-    galfitConfig['constr']  = ''
+    if constrFile is None:
+        galfitConfig['constr']  = 'None'
+    else:
+        galfitConfig['constr']  = constrFile
 
     """ 1a. Generate the Read-in File for 1Ser model"""
     getInput1Sersic(galfitConfig, readinFile=inFile, skyGrad=skyGrad,
             useF1=useF1, useF4=useF4)
     """ 1b. Execute the GALFIT run """
-    if run:
-        coaddRunGalfit(inFile, root=root, imax=120)
+    if run1:
+        model1Done = coaddRunGalfit(inFile, root=root, imax=120,
+                                    zoomSize=int(dimX/2.5))
 
     """ Optional: 2-Sersic Model """
     if ser2Comp:
@@ -954,10 +1044,11 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True, zp=27.0,
         config2Ser = copy.deepcopy(galfitConfig)
         config2Ser['output'] = outFile2
         getInput2Sersic(config2Ser, readinFile=inFile2, skyGrad=skyGrad,
-            useF1=useF1, useF4=useF4)
+            useF1=useF1, useF4=useF4, constrCen=constrCen)
         """ 2d. Execute the GALFIT run """
-        if run:
-            coaddRunGalfit(inFile2, root=root, imax=120)
+        if run2:
+            model2Done = coaddRunGalfit(inFile2, root=root, imax=150,
+                                        zoomSize=int(dimX/2.5))
 
     """ Optional: 3-Sersic Model """
     if ser3Comp:
@@ -969,10 +1060,11 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True, zp=27.0,
         config3Ser = copy.deepcopy(galfitConfig)
         config3Ser['output'] = outFile3
         getInput3Sersic(config3Ser, readinFile=inFile3, skyGrad=skyGrad,
-            useF1=useF1, useF4=useF4)
+            useF1=useF1, useF4=useF4, constrCen=constrCen)
         """ 3d. Execute the GALFIT run """
-        if run:
-            coaddRunGalfit(inFile3, root=root, imax=150)
+        if run3:
+            model3Done = coaddRunGalfit(inFile3, root=root, imax=200,
+                                        zoomSize=int(dimX/2.5))
 
     return
 
@@ -1017,7 +1109,11 @@ if __name__ == '__main__':
                        default=True)
     parser.add_argument('--verbose', dest='verbose', action="store_true",
                        default=True)
-    parser.add_argument('--run', dest='run', action="store_true",
+    parser.add_argument('--run1', dest='run1', action="store_true",
+                       default=False)
+    parser.add_argument('--run2', dest='run2', action="store_true",
+                       default=False)
+    parser.add_argument('--run3', dest='run3', action="store_true",
                        default=False)
     parser.add_argument('--ser2Comp', dest='ser2Comp', action="store_true",
                        default=False)
@@ -1029,6 +1125,8 @@ if __name__ == '__main__':
                        default=False)
     parser.add_argument('--useF4', dest='useF4', action="store_true",
                        default=False)
+    parser.add_argument('--constrCen', dest='constrCen', action="store_true",
+                       default=True)
 
     args = parser.parse_args()
 
@@ -1037,6 +1135,6 @@ if __name__ == '__main__':
             galQ0=args.galQ0, galPA0=args.galPA0, galRe=args.galRe, galSer=args.galSer,
             model=args.model, inFile=args.inFile, outFile=args.outFile,
             useSig=args.useSig, mag=args.mag, constrFile=args.constrFile,
-            verbose=args.verbose, run=args.run, ser2Comp=args.ser2Comp,
-            ser3Comp=args.ser3Comp, skyGrad=args.skyGrad, useF1=args.useF1,
-            useF4=args.useF4)
+            verbose=args.verbose, run1=args.run1, run2=args.run2, run3=args.run3,
+            ser2Comp=args.ser2Comp, ser3Comp=args.ser3Comp, skyGrad=args.skyGrad,
+            useF1=args.useF1, useF4=args.useF4, constrCen=args.constrCen)
