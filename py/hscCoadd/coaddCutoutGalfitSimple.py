@@ -1127,6 +1127,8 @@ if __name__ == '__main__':
                        default=False)
     parser.add_argument('--constrCen', dest='constrCen', action="store_true",
                        default=True)
+    parser.add_argument('--checkCenter', dest='checkCenter', action="store_true",
+                       default=False)
 
     args = parser.parse_args()
 
@@ -1137,4 +1139,5 @@ if __name__ == '__main__':
             useSig=args.useSig, mag=args.mag, constrFile=args.constrFile,
             verbose=args.verbose, run1=args.run1, run2=args.run2, run3=args.run3,
             ser2Comp=args.ser2Comp, ser3Comp=args.ser3Comp, skyGrad=args.skyGrad,
-            useF1=args.useF1, useF4=args.useF4, constrCen=args.constrCen)
+            useF1=args.useF1, useF4=args.useF4, constrCen=args.constrCen,
+            checkCenter=args.checkCenter)
