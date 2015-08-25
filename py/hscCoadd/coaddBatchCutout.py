@@ -250,7 +250,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
                       sizeField='cutout_size', zCutoutSize=False, zField=None,
                       verbose=True, noColor=False, onlyColor=False,
                       infoField1=None, infoField2=None, clean=False,
-                      min=-0.0, max=0.72, Q=15, safe=False):
+                      min=-0.0, max=0.72, Q=15, safe=False, saveSrc=False):
     """
     Givin an input catalog with RA, DEC information, generate HSC
     coadd cutout images.
@@ -306,14 +306,20 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
 
         # Cutout Image
         if not onlyColor:
-            # Don't save source catalog at first, it is quite time consuming!
             if verbose:
                 print "### Make the Cutout Fits Files!  "
-            found, full, npatch = cdCutout.coaddImageCutFull(root, ra[i], dec[i], size[i],
-                                                             savePsf=True, saveSrc=False,
-                                                             visual=True, filt=filter,
-                                                             prefix=newPrefix,
-                                                             butler=butler)
+            if saveSrc:
+                found, full, npatch = cdCutout.coaddImageCutFull(root, ra[i], dec[i], size[i],
+                                                                 savePsf=True, saveSrc=True,
+                                                                 visual=True, filt=filter,
+                                                                 prefix=newPrefix,
+                                                                 butler=butler)
+            else:
+                found, full, npatch = cdCutout.coaddImageCutFull(root, ra[i], dec[i], size[i],
+                                                                 savePsf=True, saveSrc=False,
+                                                                 visual=True, filt=filter,
+                                                                 prefix=newPrefix,
+                                                                 butler=butler)
             if found:
                 matchStatus = 'Found'
                 if full:
@@ -407,6 +413,7 @@ if __name__ == '__main__':
     parser.add_argument('-nc', '--noColor', action="store_true", default=False)
     parser.add_argument('-oc', '--onlyColor', action="store_true", default=False)
     parser.add_argument('-safe', '--safe', action="store_true", default=False)
+    parser.add_argument('-src', '--src', action="store_true", default=False)
     parser.add_argument('-clean', '--clean', action="store_true", default=False)
     parser.add_argument('-v', '--verbose', action="store_true", default=False)
     args = parser.parse_args()
@@ -419,5 +426,5 @@ if __name__ == '__main__':
                      zCutoutSize=args.zCutoutSize, noColor=args.noColor,
                      onlyColor=args.onlyColor, infoField1=args.infoField1,
                      infoField2=args.infoField2, safe=args.safe,
-                     verbose=args.verbose, clean=args.clean)
+                     verbose=args.verbose, clean=args.clean, saveSrc=args.src)
 
