@@ -89,13 +89,13 @@ def saveRgbPng(outRgb, imgRgb, cenMark=False, xCen=None, yCen=None, name=None,
         ax.text(0.8, 0.74, info3, fontsize=18, fontweight='bold',
                 ha='center', va='center', color='w',
                 transform=ax.transAxes)
-        if sLength is not None:
-            ax.plot([0.14, 0.14+sLength], [0.88, 0.88], 'w-', lw=2.5,
-                    transform=ax.transAxes)
-            if sString is not None:
-                ax.text((0.28 + sLength)/2.0, 0.85, sString, fontsize=15,
-                        ha='center', va='center', color='w',
-                        fontweight='bold', transform=ax.transAxes)
+    if sLength is not None:
+        ax.plot([0.14, 0.14+sLength], [0.88, 0.88], 'w-', lw=2.5,
+                transform=ax.transAxes)
+        if sString is not None:
+            ax.text((0.28 + sLength)/2.0, 0.85, sString, fontsize=15,
+                    ha='center', va='center', color='w',
+                    fontweight='bold', transform=ax.transAxes)
 
     ax.margins(0.00, 0.00, tight=True)
 

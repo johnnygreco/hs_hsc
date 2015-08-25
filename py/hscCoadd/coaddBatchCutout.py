@@ -347,11 +347,18 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
             name = str(id[i])
             if verbose:
                 print "### Generate Color Image !"
-            cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
-                                         filt=colorFilters,
-                                         prefix=newPrefix, name=name,
-                                         info1=info1, info2=info2, info3=info3,
-                                         min=min, max=max, Q=Q, butler=butler)
+            if clean:
+                cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
+                                             filt=colorFilters,
+                                             prefix=newPrefix, name=None,
+                                             info1=None, info2=None, info3=None,
+                                             min=min, max=max, Q=Q, butler=butler)
+            else:
+                cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
+                                             filt=colorFilters,
+                                             prefix=newPrefix, name=name,
+                                             info1=info1, info2=info2, info3=info3,
+                                             min=min, max=max, Q=Q, butler=butler)
         elif (matchStatus is 'Found' and not noColor):
             name = str(id[i])
             if verbose:
