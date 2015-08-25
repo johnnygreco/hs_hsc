@@ -130,7 +130,7 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
                      idField='id', raField='ra', decField='dec', colorFilters='gri',
                      sizeField='cutout_size', zCutoutSize=False, zField=None,
                      verbose=True, noColor=False, onlyColor=False,
-                     infoField1=None, infoField2=None,
+                     infoField1=None, infoField2=None, clean=False,
                      min=-0.0, max=0.72, Q=15, stitch=False):
     """
     Givin an input catalog with RA, DEC information, generate HSC
@@ -209,11 +209,18 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
         if onlyColor:
             name = str(id[i])
             if stitch:
-                cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
-                                            filt=colorFilters,
-                                            prefix=newPrefix, name=name,
-                                            info1=info1, info2=info2, info3=info3,
-                                            min=min, max=max, Q=Q, butler=butler)
+                if not clean:
+                    cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
+                                                filt=colorFilters, scaleBar=10,
+                                                prefix=newPrefix, name=name,
+                                                info1=info1, info2=info2, info3=info3,
+                                                min=min, max=max, Q=Q, butler=butler)
+                else:
+                    cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
+                                                filt=colorFilters, scaleBar=10,
+                                                prefix=newPrefix, name=None,
+                                                info1=None, info2=None, info3=None,
+                                                min=min, max=max, Q=Q, butler=butler)
             else:
                 cdColor.coaddColourImage(root, ra[i], dec[i], size[i],
                                          filt=colorFilters,
@@ -242,7 +249,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
                       idField='id', raField='ra', decField='dec', colorFilters='gri',
                       sizeField='cutout_size', zCutoutSize=False, zField=None,
                       verbose=True, noColor=False, onlyColor=False,
-                      infoField1=None, infoField2=None,
+                      infoField1=None, infoField2=None, clean=False,
                       min=-0.0, max=0.72, Q=15, safe=False):
     """
     Givin an input catalog with RA, DEC information, generate HSC
@@ -393,6 +400,7 @@ if __name__ == '__main__':
     parser.add_argument('-nc', '--noColor', action="store_true", default=False)
     parser.add_argument('-oc', '--onlyColor', action="store_true", default=False)
     parser.add_argument('-safe', '--safe', action="store_true", default=False)
+    parser.add_argument('-clean', '--clean', action="store_true", default=False)
     parser.add_argument('-v', '--verbose', action="store_true", default=False)
     args = parser.parse_args()
 
@@ -404,5 +412,5 @@ if __name__ == '__main__':
                      zCutoutSize=args.zCutoutSize, noColor=args.noColor,
                      onlyColor=args.onlyColor, infoField1=args.infoField1,
                      infoField2=args.infoField2, safe=args.safe,
-                     verbose=args.verbose)
+                     verbose=args.verbose, clean=args.clean)
 
