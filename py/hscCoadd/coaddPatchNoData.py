@@ -781,11 +781,14 @@ def tractShape(rootDir, tractId, filter='HSC-I', prefix='hsc_coadd',
     patch = map(lambda x: x.split('/')[-1].split('.')[0], imgList)
 
     # Get the uniqe tract
+    trUniq = np.unique(tract)
+    print "### There are %d unique tracts!" % len(trUniq)
     if saveList:
-        tArr = np.asarray(tract)
-        pArr = np.asarray(patch)
-        pMatch = pArr[tArr == tr]
-        saveTractFileList(tr, pMatch, filter, prefix, suffix='shape')
+        for tr in trUniq:
+            tArr = np.asarray(tract)
+            pArr = np.asarray(patch)
+            pMatch = pArr[tArr == tr]
+            saveTractFileList(tr, pMatch, filter, prefix, suffix='shape')
 
     if not notRun:
         """ Load the Butler """
