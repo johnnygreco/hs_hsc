@@ -294,4 +294,4 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     batchTractShapes(args.root, prefix=args.prefix, xSize=args.xsize,
-                     ySize=args.ySize)
+                     ySize=args.ysize)
