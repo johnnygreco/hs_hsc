@@ -719,7 +719,7 @@ def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
 
 
 def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
-                    saveList=True, notRun=False):
+                    saveList=True, notRun=False, minSize=110):
     """
     Get the shape of patches in batch mode
     This is better than the method in coaddPatchShape
@@ -731,7 +731,7 @@ def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
     trUniq = cdTract.getTractList(rootDir, filter, imgType='deepCoadd', toInt=True,
                                   prefix=prefix, toFile=True)
     # Get the list of coadded images in the direction
-    imgList = listAllImages(rootDir, filter)
+    imgList = listAllImages(rootDir, filter, checkSize=True, minSize=minSize)
     nImg = len(imgList)
     print '### Will go through %d images !' % nImg
 
@@ -758,6 +758,48 @@ def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
             dataId = {'tract': tt, 'patch': pp, 'filter': filter}
             coaddPatchShape(rootDir, tt, pp, filter, prefix=prefix,
                             verbose=True, clobber=False, butler=butler, dataId=dataId)
+
+
+def tractShape(rootDir, tractId, filter='HSC-I', prefix='hsc_coadd',
+               saveList=True, notRun=False, minSize=110, combine=True):
+    """
+    Get the shape of patches in batch mode
+    This is better than the method in coaddPatchShape
+
+    TODO: Merge this into coaddPatchShape later
+    """
+
+    """ Save a list of tract IDs """
+    # Get the list of coadded images in the direction
+    imgList = listAllImages(rootDir, filter, checkSize=True, minSize=minSize,
+                            tract=tractId)
+    nImg = len(imgList)
+    print '### Will go through %d images !' % nImg
+
+    # Get the list of tract and patch for these images
+    tract = map(lambda x: int(x.split('/')[-2]), imgList)
+    patch = map(lambda x: x.split('/')[-1].split('.')[0], imgList)
+
+    # Get the uniqe tract
+    if saveList:
+        tArr = np.asarray(tract)
+        pArr = np.asarray(patch)
+        pMatch = pArr[tArr == tr]
+        saveTractFileList(tr, pMatch, filter, prefix, suffix='shape')
+
+    if not notRun:
+        """ Load the Butler """
+        butler = dafPersist.Butler(rootDir)
+        # If there are too many images, do not generate the combined
+        # region file at first
+        for tt, pp in zip(tract, patch):
+            dataId = {'tract': tt, 'patch': pp, 'filter': filter}
+            coaddPatchShape(rootDir, tt, pp, filter, prefix=prefix,
+                            verbose=True, clobber=False, butler=butler, dataId=dataId)
+
+        if combine:
+            tractShapeCombine(prefix, tractId, filter='HSC-I', location='.',
+                              showComb=True, verbose=True, check=False)
 
 
 def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
@@ -983,6 +1025,71 @@ def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
                                '_shape' + strComb
                     pngName = pngTitle + '.png'
                     showNoDataMask(outAll, corner=outWkb, title=pngTitle, pngName=pngName)
+
+
+def tractShapeCombine(prefix, tractId, filter='HSC-I', location='.', showComb=True,
+                      verbose=True, check=True):
+
+    """ Get the prefix and filter name """
+    prefix = str(prefix).strip()
+    filter = str(filter).strip()
+
+    if location[-1] is not '/':
+        location += '/'
+
+    """ Go through these tracts """
+    """
+        TODO: In the future, there will be too many tracts in one list
+              pre-select a group tracts that are close together
+    """
+    if verbose:
+        print "### Will deal with tract: %d" % tractId
+
+    """ Get the list file names """
+    regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
+            '_shape_reg.lis'
+    wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
+            '_shape_wkb.lis'
+    strComb = '_all'
+
+    if not os.path.isfile(regLis):
+        raise Exception("Can not find the regLis file: %s" % regLis)
+    else:
+        """ Combine the .reg file, it should be easy """
+        outReg = prefix + '_' + str(tractId) + '_' + filter + \
+                '_shape' + strComb + '.reg'
+        if verbose:
+            print "### Try to combined their .reg files into %s" % outReg
+        combineRegFiles(regLis, output=outReg, check=check)
+        if not os.path.isfile(outReg):
+            raise Exception("Something is wrong with the output .reg file: \
+                            %s" % outReg)
+
+    if not os.path.isfile(wkbLis):
+        raise Exception("Can not find the wkbLis file: %s" % wkbLis)
+    else:
+        """ Combine the .wkb file """
+        outWkb = prefix + '_' + str(tractId) + '_' + filter + \
+                '_shape' + strComb + '.wkb'
+        outAll = prefix + '_' + str(tractId) + '_' + filter + \
+                '_shape' + strComb + '_list.wkb'
+
+        if verbose:
+            print "### Try to combined their .wkb files into %s" % outWkb
+
+        combineWkbFiles(wkbLis, output=outWkb, check=check, listAll=True,
+                        allOutput=outAll)
+
+        if not os.path.isfile(outWkb):
+            raise Exception("Something is wrong with the output .wkb file:\
+                            %s" % outWkb)
+        else:
+            """ Show the results """
+            if showComb:
+                pngTitle = prefix + '_' + str(tractId) + '_' + filter + \
+                           '_shape' + strComb
+                pngName = pngTitle + '.png'
+                showNoDataMask(outAll, corner=outWkb, title=pngTitle, pngName=pngName)
 
 
 if __name__ == '__main__':

@@ -2,8 +2,11 @@
 
 from __future__ import division
 
-import numpy as np
 import os
+import re
+import glob
+import argparse
+import numpy as np
 
 # Shapely related imports
 from shapely.geometry import MultiPoint
@@ -308,7 +311,6 @@ def batchPatchShape(location, pattern, clobber=False):
         location += '/'
     pattern = location + pattern
 
-    import glob
     # Get the list of corner catalogs
     cornerList = glob.glob(pattern)
     nCorner = len(cornerList)
@@ -332,7 +334,6 @@ def batchPatchShape(location, pattern, clobber=False):
             raise Exception("Can not generate .wkb file %s" % wkbList[ii])
 
     # Get the regions that are covered by all five bands
-    import re
     commonPrefix = wkbList[0].replace('.wkb', '')
     commonPrefix = re.sub(r"HSC-._", "", commonPrefix)
     print "### Prefix for the common region is %s" % commonPrefix
@@ -343,10 +344,11 @@ def batchPatchShape(location, pattern, clobber=False):
 
 if __name__ == '__main__':
 
-    import argparse
     parser = argparse.ArgumentParser()
+
     parser.add_argument("root",    help="Root directory of data repository")
     parser.add_argument("pattern", help="Pattern for file search")
+
     args = parser.parse_args()
 
     batchPatchShape(args.root, args.pattern)
