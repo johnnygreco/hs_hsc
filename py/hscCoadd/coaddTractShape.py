@@ -287,10 +287,10 @@ if __name__ == '__main__':
                         default='hsc_tract')
     parser.add_argument('-x', '--xsize', dest='xsize',
                         help='X-size of the output figure for all tracts',
-                        default=20)
+                        default=20, type=int)
     parser.add_argument('-y', '--ysize', dest='ysize',
                         help='Y-size of the output figure for all tracts',
-                        default=18)
+                        default=18, type=int)
     args = parser.parse_args()
 
     batchTractShapes(args.root, prefix=args.prefix, xSize=args.xsize,
