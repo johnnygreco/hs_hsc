@@ -260,7 +260,7 @@ def polySaveReg(poly, regName, listPoly=False, color='blue',
 
     regFile.close()
 
-def listAllImages(rootDir, filter):
+def listAllImages(rootDir, filter, checkSize=True, minSize=70.0):
 
     import glob
 
@@ -269,7 +269,18 @@ def listAllImages(rootDir, filter):
     else:
         searchDir = rootDir + '/deepCoadd/' + filter.upper() + '/*/*.fits'
 
-    return map(lambda x: x, glob.glob(searchDir))
+    fitsList = glob.glob(searchDir)
+    if checkSize:
+        useList = []
+        for fits in fitsList:
+            if (os.path.getsize(fits) / 1024.0 / 1024.0) >= minSize:
+                useList.append(fits)
+            else:
+                print "#### WARNING: %s has size %7d Kb " % (fits, os.path.getsize(fits))
+    else:
+        useList = fitsList
+
+    return map(lambda x: x, useList)
 
 
 def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
@@ -294,10 +305,10 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
     fileAllExist = (fileExist1 and fileExist2)
 
     # Just for test
-    print '########'
+    print '#######################################################################'
     print noDataAllWkb
     print noDataAllReg
-    print '########'
+    print '#######################################################################'
 
     # Only generate new one when
     #  1) Not all files are available
@@ -328,104 +339,108 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
             print "## Reading Fits Image: %s" % fitsName
 
         # Get the exposure from the butler
-        calExp = butler.get('deepCoadd', dataId, immediate=True)
-        # Get the Bounding Box of the image
-        bbox = calExp.getBBox(afwImage.PARENT)
-        xBegin, yBegin = bbox.getBeginX(), bbox.getBeginY()
-        # Get the WCS information
-        imgWcs = calExp.getWcs()
-
-        # Get the object for mask plane
-        mskImg = calExp.getMaskedImage().getMask()
-
-        # Extract the NO_DATA plane
-        # TODO: NO_DATA is not a system mask, maybe should use INTRP later
-        noData = copy.deepcopy(mskImg)
-        noData &= noData.getPlaneBitMask('NO_DATA')
-        # Return the mask image array
-        noDataArr = noData.getArray()
-
-        # Pad the 2-D array by a little
-        noDataArr = np.lib.pad(noDataArr, ((1, 1), (1, 1)), 'constant',
-                               constant_values=0)
-
-        # Try a very different approach: Using the find_contours and
-        # approximate_polygon methods from scikit-images package
-        maskShapes = []  # For all the accepted mask regions
-        maskCoords = []  # For the "corner" coordinates of these regions
-        maskAreas  = []  # The sizes of all regions
-
-        # Only find the 0-level contour
-        contoursAll = find_contours(noDataArr, 0)
-        if verbose:
-            print "### %d contours have been detected" % len(contoursAll)
-        for maskContour in contoursAll:
-            # Approximate one extracted contour into a polygon
-            # tolerance decides the accuracy of the polygon, hence
-            # the number of coords for each polygon.
-            # Using large tolerance also means smaller number of final
-            # polygons
-            contourCoords = approximate_polygon(maskContour,
-                                                tolerance=tolerence)
-            # Convert these coordinates into (RA, DEC) using the WCS information
-            contourSkyCoords = map(lambda x: [x[1], x[0]], contourCoords)
-            contourRaDec     = map(lambda x: getPixelRaDec(imgWcs, x[0], x[1],
-                                                          xStart=xBegin,
-                                                          yStart=yBegin),
-                                   contourSkyCoords)
-            #contourRaDec     = imgWcs.wcs_pix2world(contourSkyCoords, 1)
-            # Require that any useful region must be at least an triangular
-            if len(contourCoords) > 3:
-                # Form a lineString using these coordinates
-                maskLine = LineString(contourRaDec)
-                # Check if the lineString is valid and simple, so can be used
-                # to form a closed and simple polygon
-                # if maskLine.is_valid and maskLine.is_simple:
-                if maskLine.is_valid:
-                    contourPoly = Polygon(contourRaDec)
-                    # Fix the self-intersected polygon !! VERY USEFUL
-                    if not contourPoly.is_valid:
-                        contourPoly = contourPoly.buffer(0)
-                    maskShapes.append(contourPoly)
-                    maskCoords.append(contourRaDec)
-                    maskAreas.append(Polygon(contourCoords).area)
-
-        if verbose:
-            print "### %d regions are useful" % len(maskAreas)
-
-        # Isolate the large ones
-        maskBigList = np.array(maskShapes)[np.where(np.array(maskAreas) >
-                                                    minArea)]
-        maskBigList = map(lambda x: x, maskBigList)
-
-        nBig = len(maskBigList)
-        if nBig > 0:
-            if verbose:
-                print "### %d regions are larger than the minimum mask sizes" % nBig
-            # Save all the masked regions to a .reg file
-            polySaveReg(maskBigList, noDataBigReg, listPoly=True, color='blue')
-            # Also create a MultiPolygon object, and save a .wkb file
-            maskBig = cascaded_union(maskBigList)
-            cdPatch.polySaveWkb(maskBig, noDataBigWkb)
+        # TODO Be careful here, some of the coadd image files on the disk are not useful
+        try:
+            calExp = butler.get('deepCoadd', dataId, immediate=True)
+        except Exception:
+            print "Oops! Can not read this image: %s !" % fitsName
         else:
-            maskBig = None
+            # Get the Bounding Box of the image
+            bbox = calExp.getBBox(afwImage.PARENT)
+            xBegin, yBegin = bbox.getBeginX(), bbox.getBeginY()
+            # Get the WCS information
+            imgWcs = calExp.getWcs()
+
+            # Get the object for mask plane
+            mskImg = calExp.getMaskedImage().getMask()
+
+            # Extract the NO_DATA plane
+            # TODO: NO_DATA is not a system mask, maybe should use INTRP later
+            noData = copy.deepcopy(mskImg)
+            noData &= noData.getPlaneBitMask('NO_DATA')
+            # Return the mask image array
+            noDataArr = noData.getArray()
+
+            # Pad the 2-D array by a little
+            noDataArr = np.lib.pad(noDataArr, ((1, 1), (1, 1)), 'constant',
+                                   constant_values=0)
+
+            # Try a very different approach: Using the find_contours and
+            # approximate_polygon methods from scikit-images package
+            maskShapes = []  # For all the accepted mask regions
+            maskCoords = []  # For the "corner" coordinates of these regions
+            maskAreas  = []  # The sizes of all regions
+
+            # Only find the 0-level contour
+            contoursAll = find_contours(noDataArr, 0)
             if verbose:
-                print "### No region is larger than the minimum mask sizes"
+                print "### %d contours have been detected" % len(contoursAll)
+            for maskContour in contoursAll:
+                # Approximate one extracted contour into a polygon
+                # tolerance decides the accuracy of the polygon, hence
+                # the number of coords for each polygon.
+                # Using large tolerance also means smaller number of final
+                # polygons
+                contourCoords = approximate_polygon(maskContour,
+                                                    tolerance=tolerence)
+                # Convert these coordinates into (RA, DEC) using the WCS information
+                contourSkyCoords = map(lambda x: [x[1], x[0]], contourCoords)
+                contourRaDec     = map(lambda x: getPixelRaDec(imgWcs, x[0], x[1],
+                                                              xStart=xBegin,
+                                                              yStart=yBegin),
+                                       contourSkyCoords)
+                #contourRaDec     = imgWcs.wcs_pix2world(contourSkyCoords, 1)
+                # Require that any useful region must be at least an triangular
+                if len(contourCoords) > 3:
+                    # Form a lineString using these coordinates
+                    maskLine = LineString(contourRaDec)
+                    # Check if the lineString is valid and simple, so can be used
+                    # to form a closed and simple polygon
+                    # if maskLine.is_valid and maskLine.is_simple:
+                    if maskLine.is_valid:
+                        contourPoly = Polygon(contourRaDec)
+                        # Fix the self-intersected polygon !! VERY USEFUL
+                        if not contourPoly.is_valid:
+                            contourPoly = contourPoly.buffer(0)
+                        maskShapes.append(contourPoly)
+                        maskCoords.append(contourRaDec)
+                        maskAreas.append(Polygon(contourCoords).area)
 
-        # Save all the masked regions to a .reg file
-        polySaveReg(maskShapes, noDataAllReg, listPoly=True, color='red')
-        # Also create a MultiPolygon object, and save a .wkb file
-        maskAll = cascaded_union(maskShapes)
-        cdPatch.polySaveWkb(maskAll, noDataAllWkb)
+            if verbose:
+                print "### %d regions are useful" % len(maskAreas)
 
-        if savePNG:
-            if maskBig is None:
-                showNoDataMask(noDataAllWkb, title=titlePng,
-                               pngName=noDataPng)
+            # Isolate the large ones
+            maskBigList = np.array(maskShapes)[np.where(np.array(maskAreas) >
+                                                        minArea)]
+            maskBigList = map(lambda x: x, maskBigList)
+
+            nBig = len(maskBigList)
+            if nBig > 0:
+                if verbose:
+                    print "### %d regions are larger than the minimum mask sizes" % nBig
+                # Save all the masked regions to a .reg file
+                polySaveReg(maskBigList, noDataBigReg, listPoly=True, color='blue')
+                # Also create a MultiPolygon object, and save a .wkb file
+                maskBig = cascaded_union(maskBigList)
+                cdPatch.polySaveWkb(maskBig, noDataBigWkb)
             else:
-                showNoDataMask(noDataAllWkb, large=noDataBigWkb, title=titlePng,
-                               pngName=noDataPng)
+                maskBig = None
+                if verbose:
+                    print "### No region is larger than the minimum mask sizes"
 
+            # Save all the masked regions to a .reg file
+            polySaveReg(maskShapes, noDataAllReg, listPoly=True, color='red')
+            # Also create a MultiPolygon object, and save a .wkb file
+            maskAll = cascaded_union(maskShapes)
+            cdPatch.polySaveWkb(maskAll, noDataAllWkb)
+
+            if savePNG:
+                if maskBig is None:
+                    showNoDataMask(noDataAllWkb, title=titlePng,
+                                   pngName=noDataPng)
+                else:
+                    showNoDataMask(noDataAllWkb, large=noDataBigWkb, title=titlePng,
+                                   pngName=noDataPng)
 
     else:
         if verbose:
@@ -550,6 +565,47 @@ def combineWkbFiles(listFile, output=None, check=True, local=True, listAll=False
 def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
                      saveList=True, notRun=False):
 
+    # Get the list of coadded images in the direction
+    imgList = listAllImages(rootDir, filter)
+    nImg = len(imgList)
+    print '### Will go through %d images !' % nImg
+
+    # Get the list of tract and patch for these images
+    tract = map(lambda x: int(x.split('/')[-2]), imgList)
+    patch = map(lambda x: x.split('/')[-1].split('.')[0], imgList)
+
+    # Get the uniqe tract
+    trUniq = np.unique(tract)
+    print "### There are %d unique tracts!" % len(trUniq)
+    if saveList:
+        for tr in trUniq:
+            tArr = np.asarray(tract)
+            pArr = np.asarray(patch)
+            pMatch = pArr[tArr == tr]
+            saveTractFileList(tr, pMatch, filter, prefix, suffix='nodata_all')
+            saveTractFileList(tr, pMatch, filter, prefix, suffix='nodata_big')
+
+    if not notRun:
+        """ Load the Butler """
+        butler = dafPersist.Butler(rootDir)
+        # If there are too many images, do not generate the combined region file at
+        # first
+        for tt, pp in zip(tract, patch):
+            dataId = {'tract':tt, 'patch':pp, 'filter':filter}
+            try:
+                coaddPatchNoData(rootDir, tt, pp, filter, prefix=prefix,
+                                 savePNG=False, verbose=True, tolerence=3,
+                                 minArea=10000, clobber=False, butler=butler,
+                                 dataId=dataId)
+            except Exception:
+                print "!!!!! Sorry, can not make the NO_DATA mask for: %i %s %s" % (tt,
+                        pp, filter)
+
+
+def tractNoData(rootDir, tract, filter='HSC-I', prefix='hsc_coadd',
+                saveList=True, notRun=False):
+
+    # TODO Not finished
     # Get the list of coadded images in the direction
     imgList = listAllImages(rootDir, filter)
     nImg = len(imgList)
