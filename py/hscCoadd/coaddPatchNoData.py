@@ -842,7 +842,7 @@ def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
                     showNoDataMask(outWkb, title=pngTitle, pngName=pngName)
 
 
-def tractNoDataCombine(prefix, tractID, filter='HSC-I', location='.', big=True,
+def tractNoDataCombine(prefix, tractId, filter='HSC-I', location='.', big=True,
                        showComb=True, verbose=True, check=True):
 
     """ Get the prefix and filter name """
