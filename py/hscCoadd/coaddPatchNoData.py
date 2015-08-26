@@ -651,7 +651,7 @@ def tractNoData(rootDir, tractUse, filter='HSC-I', prefix='hsc_coadd',
         if combine:
             for tt in tract:
                 tractNoDataCombine(prefix, tt, filter='HSC-I', location='.', big=True,
-                                   showComb=True, verbose=True, check=True)
+                                   showComb=True, verbose=True, check=False)
 
 
 def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
