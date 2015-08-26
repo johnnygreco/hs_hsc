@@ -260,14 +260,19 @@ def polySaveReg(poly, regName, listPoly=False, color='blue',
 
     regFile.close()
 
-def listAllImages(rootDir, filter, checkSize=True, minSize=70.0):
+def listAllImages(rootDir, filter, checkSize=True, minSize=70.0, tract=None):
 
     import glob
 
-    if rootDir[-1] is '/':
-        searchDir = rootDir + 'deepCoadd/' + filter.upper() + '/*/*.fits'
+    if tract is None:
+        tractStr = '*'
     else:
-        searchDir = rootDir + '/deepCoadd/' + filter.upper() + '/*/*.fits'
+        tractStr = str(tract).strip()
+
+    if rootDir[-1] is '/':
+        searchDir = rootDir + 'deepCoadd/' + filter.upper() + '/' + tractStr + '/*.fits'
+    else:
+        searchDir = rootDir + '/deepCoadd/' + filter.upper() + '/' + tractStr + '/*.fits'
 
     fitsList = glob.glob(searchDir)
     if checkSize:
@@ -602,12 +607,13 @@ def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
                         pp, filter)
 
 
-def tractNoData(rootDir, tract, filter='HSC-I', prefix='hsc_coadd',
-                saveList=True, notRun=False):
+def tractNoData(rootDir, tractUse, filter='HSC-I', prefix='hsc_coadd',
+                saveList=True, notRun=False, combine=True):
 
     # TODO Not finished
+    print '### Will only generate mask files for one Tract: %d ' % tractUse
     # Get the list of coadded images in the direction
-    imgList = listAllImages(rootDir, filter)
+    imgList = listAllImages(rootDir, filter, tract=tractUse)
     nImg = len(imgList)
     print '### Will go through %d images !' % nImg
 
@@ -633,10 +639,19 @@ def tractNoData(rootDir, tract, filter='HSC-I', prefix='hsc_coadd',
         # first
         for tt, pp in zip(tract, patch):
             dataId = {'tract':tt, 'patch':pp, 'filter':filter}
-            coaddPatchNoData(rootDir, tt, pp, filter, prefix=prefix,
-                             savePNG=False, verbose=True, tolerence=3,
-                             minArea=10000, clobber=False, butler=butler,
-                             dataId=dataId)
+            try:
+                coaddPatchNoData(rootDir, tt, pp, filter, prefix=prefix,
+                                 savePNG=False, verbose=True, tolerence=3,
+                                 minArea=10000, clobber=False, butler=butler,
+                                 dataId=dataId)
+            except Exception:
+                print "!!!!! Sorry, can not make the NO_DATA mask for: %i %s %s" % (tt,
+                        pp, filter)
+
+        if combine:
+            for tt in tract:
+                tractNoDataCombine(prefix, tt, filter='HSC-I', location='.', big=True,
+                                   showComb=True, verbose=True, check=True)
 
 
 def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
@@ -825,6 +840,71 @@ def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
                                '_nodata' + strComb
                     pngName = pngTitle + '.png'
                     showNoDataMask(outWkb, title=pngTitle, pngName=pngName)
+
+
+def tractNoDataCombine(prefix, tractID, filter='HSC-I', location='.', big=True,
+                       showComb=True, verbose=True, check=True):
+
+    """ Get the prefix and filter name """
+    prefix = str(prefix).strip()
+    filter = str(filter).strip()
+
+    if location[-1] is not '/':
+        location += '/'
+
+    if verbose:
+        print "### Will deal with tract: %d" % tractId
+
+    """ Get the list file names """
+    if not big:
+        """ All Region .wkb and .reg list """
+        regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
+                '_nodata_all_reg.lis'
+        wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
+                '_nodata_all_wkb.lis'
+        strComb = '_all'
+    else:
+        """ Big Region .wkb and .reg list """
+        regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
+                '_nodata_big_reg.lis'
+        wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
+                '_nodata_big_wkb.lis'
+        strComb = '_big'
+
+    if not os.path.isfile(regLis):
+        raise Exception("Can not find the regLis file: %s" % regLis)
+    else:
+        """ Combine the .reg file, it should be easy """
+        outReg = prefix + '_' + str(tractId) + '_' + filter + \
+                '_nodata' + strComb + '.reg'
+        if verbose:
+            print "### Try to combined their .reg files into %s" % outReg
+        combineRegFiles(regLis, output=outReg, check=check)
+        if not os.path.isfile(outReg):
+            raise Exception("Something is wrong with the output .reg file: \
+                            %s" % outReg)
+
+    if not os.path.isfile(wkbLis):
+        raise Exception("Can not find the wkbLis file: %s" % wkbLis)
+    else:
+        """ Combine the .wkb file """
+        outWkb = prefix + '_' + str(tractId) + '_' + filter + \
+                '_nodata' + strComb + '.wkb'
+
+        if verbose:
+            print "### Try to combined their .wkb files into %s" % outWkb
+
+        combineWkbFiles(wkbLis, output=outWkb, check=check, listAll=True)
+        if not os.path.isfile(outWkb):
+            raise Exception("Something is wrong with the output .wkb file:\
+                            %s" % outWkb)
+        else:
+            """ Show the results """
+            if showComb:
+                pngTitle = prefix + '_' + str(tractId) + '_' + filter + \
+                           '_nodata' + strComb
+                pngName = pngTitle + '.png'
+                showNoDataMask(outWkb, title=pngTitle, pngName=pngName)
 
 
 def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
