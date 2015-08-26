@@ -113,7 +113,7 @@ def plotListPoly(polyList, outPNG='polyList.png', outer=None,
         ax.add_patch(partShow)
     else:
         for poly in polyList:
-            partShow = PolygonPatch(poly, fc=numpy.random.rand(3,1),
+            partShow = PolygonPatch(poly, fc=np.random.rand(3,1),
                                     ec=GRAY, alpha=0.8, zorder=1)
             ax.add_patch(partShow)
 
