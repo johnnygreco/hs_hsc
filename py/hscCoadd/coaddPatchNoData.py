@@ -888,14 +888,13 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
     ax.set_ylabel('Decl. (deg)', fontsize=25)
 
     if tractMap is not None:
-        for tr in tractMap:
-            for patch in tr:
-                print "#### Plot Patch : ", patch.getIndex()
-                raPatch, decPatch = bboxToRaDec(patch.getInnerBBox(), tr.getWcs())
-                #ax.fill(raPatch, decPatch, fill=False, edgecolor='k', lw=1,
-                        #linestyle='dashed')
-                ax.text(percent(raPatch), percent(decPatch, 0.9), str(patch.getIndex()),
-                        fontsize=10, horizontalalignment='center', verticalalignment='top')
+        for patch in tractMap:
+            print "#### Plot Patch : ", patch.getIndex()
+            raPatch, decPatch = bboxToRaDec(patch.getInnerBBox(), tr.getWcs())
+            ax.fill(raPatch, decPatch, fill=False, edgecolor='k', lw=1,
+                    linestyle='dashed')
+            ax.text(percent(raPatch), percent(decPatch, 0.9), str(patch.getIndex()),
+                    fontsize=10, horizontalalignment='center', verticalalignment='top')
 
     fig.subplots_adjust(hspace=0.1, wspace=0.1,
                         top=0.95, right=0.95)
@@ -950,7 +949,12 @@ def tractNoData(rootDir, tractUse, filter='HSC-I', prefix='hsc_coadd',
 
         if combine:
             if showPatch:
-                tractMap = butler.get('deepCoadd_skyMap', {'tract':tractUse})
+                skyMap = butler.get('deepCoadd_skyMap', {'tract':tractUse})
+                tractMap = None
+                for tr in skyMap:
+                    if tr.getId() == tractUse:
+                        print "#### Find the tract we want : %d" % tractUse
+                        tractMap = tr
                 tractNoDataCombine(prefix, tractUse, filter='HSC-I', location='.',
                                    big=True, showComb=True, verbose=True, check=False,
                                    tractMap=tractMap)
@@ -1071,7 +1075,12 @@ def tractShape(rootDir, tractId, filter='HSC-I', prefix='hsc_coadd',
 
         if combine:
             if showPatch:
-                tractMap = butler.get('deepCoadd_skyMap', {'tract':tractId})
+                skyMap = butler.get('deepCoadd_skyMap', {'tract':tractId})
+                tractMap = None
+                for tr in skyMap:
+                    if tr.getId() == tractId:
+                        print "#### Find the tract we want : %d" % tractId
+                        tractMap = tr
                 tractShapeCombine(prefix, tractId, filter='HSC-I', location='.',
                                   showComb=True, verbose=True, check=False,
                                   tractMap=tractMap)
