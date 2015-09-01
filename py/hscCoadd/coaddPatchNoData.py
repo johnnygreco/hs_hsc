@@ -196,7 +196,7 @@ def listAllCatalog(rootDir, filter, checkSize=True, minSize=20.0, tract=None):
         catList = []
         for fits in fitsList:
             if (os.path.getsize(fits) / 1024.0 / 1024.0) >= minSize:
-                useList.append(fits)
+                catList.append(fits)
             else:
                 print "#### WARNING: %s has size %7d Kb " % (fits, os.path.getsize(fits))
     else:
