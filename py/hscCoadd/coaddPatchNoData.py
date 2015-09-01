@@ -889,12 +889,14 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
 
     if tractMap is not None:
         for tr in tractMap:
+            print "### Plot Tract : %d" % tr
             for patch in tr:
+                print "#### Plot Patch : %s" % patch
                 raPatch, decPatch = bboxToRaDec(patch.getInnerBBox(), tr.getWcs())
                 #ax.fill(raPatch, decPatch, fill=False, edgecolor='k', lw=1,
                         #linestyle='dashed')
                 ax.text(percent(raPatch), percent(decPatch, 0.9), str(patch.getIndex()),
-                        fontsize=6, horizontalalignment='center', verticalalignment='top')
+                        fontsize=10, horizontalalignment='center', verticalalignment='top')
 
     fig.subplots_adjust(hspace=0.1, wspace=0.1,
                         top=0.95, right=0.95)
