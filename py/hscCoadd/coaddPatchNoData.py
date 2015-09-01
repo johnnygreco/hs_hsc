@@ -889,7 +889,6 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
 
     if tractMap is not None:
         for tr in tractMap:
-            print "### Plot Tract : %d" % tr.getIndex()
             for patch in tr:
                 print "#### Plot Patch : %s" % patch.getIndex()
                 raPatch, decPatch = bboxToRaDec(patch.getInnerBBox(), tr.getWcs())
