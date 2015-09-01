@@ -891,8 +891,8 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
         for tr in tractMap:
             for patch in tr:
                 raPatch, decPatch = bboxToRaDec(patch.getInnerBBox(), tr.getWcs())
-                ax.fill(raPatch, decPatch, fill=False, edgecolor='k', lw=1,
-                        linestyle='dashed')
+                #ax.fill(raPatch, decPatch, fill=False, edgecolor='k', lw=1,
+                        #linestyle='dashed')
                 ax.text(percent(raPatch), percent(decPatch, 0.9), str(patch.getIndex()),
                         fontsize=6, horizontalalignment='center', verticalalignment='top')
 
