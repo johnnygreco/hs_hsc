@@ -174,6 +174,47 @@ def polySaveReg(poly, regName, listPoly=False, color='blue',
 
     regFile.close()
 
+
+def listAllCatalog(rootDir, filter, checkSize=True, minSize=20.0, tract=None):
+
+    import glob
+
+    if tract is None:
+        tractStr = '*'
+    else:
+        tractStr = str(tract).strip()
+
+    if rootDir[-1] is '/':
+        searchDir = rootDir + 'deepCoadd-results/merged/' + tractStr + '/*/ref*.fits'
+        imgDir = rootDir + 'deepCoadd/' + filter.upper() + '/'
+    else:
+        searchDir = rootDir + '/deepCoadd-results/merged/' + tractStr + '/*/ref*.fits'
+        imgDir = rootDir + '/deepCoadd/' + filter.upper() + '/'
+
+    fitsList = glob.glob(searchDir)
+    if checkSize:
+        catList = []
+        for fits in fitsList:
+            if (os.path.getsize(fits) / 1024.0 / 1024.0) >= minSize:
+                useList.append(fits)
+            else:
+                print "#### WARNING: %s has size %7d Kb " % (fits, os.path.getsize(fits))
+    else:
+        catList = fitsList
+
+    useList = []
+    for catName in catList:
+        catSeg = os.path.basename(catName).split('-')
+        trStr = catSeg[1]
+        paStr = catSeg[2].split('.')[0]
+        useList.append(imgDir + trStr + '/' + paStr + '.fits')
+
+    catArr = map(lambda x: x, catList)
+    useArr = map(lambda x: x, useList)
+
+    return useArr, catArr
+
+
 def listAllImages(rootDir, filter, checkSize=True, minSize=70.0, tract=None):
 
     import glob
@@ -476,10 +517,13 @@ def combineWkbFiles(listFile, output=None, check=True, local=True, listAll=False
 
 
 def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
-                     saveList=True, notRun=False):
+                     saveList=True, notRun=False, checkCat=False):
 
     # Get the list of coadded images in the direction
-    imgList = listAllImages(rootDir, filter)
+    if checkCat:
+        imgList, catList = listAllCatalog(rootDir, filter)
+    else:
+        imgList = listAllImages(rootDir, filter, checkSize=True)
     nImg = len(imgList)
     print '### Will go through %d images !' % nImg
 
@@ -581,7 +625,7 @@ def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
 
 
 def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
-                    saveList=True, notRun=False, minSize=110):
+                    saveList=True, notRun=False, minSize=110, checkCat=False):
     """
     Get the shape of patches in batch mode
     This is better than the method in coaddPatchShape
@@ -593,7 +637,10 @@ def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
     trUniq = cdTract.getTractList(rootDir, filter, imgType='deepCoadd', toInt=True,
                                   prefix=prefix, toFile=True)
     # Get the list of coadded images in the direction
-    imgList = listAllImages(rootDir, filter, checkSize=True, minSize=minSize)
+    if checkCat:
+        imgList, catList = listAllCatalog(rootDir, filter)
+    else:
+        imgList = listAllImages(rootDir, filter, checkSize=True, minSize=minSize)
     nImg = len(imgList)
     print '### Will go through %d images !' % nImg
 
@@ -894,7 +941,7 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
             ax.fill(raPatch, decPatch, fill=False, edgecolor='k', lw=1,
                     linestyle='dashed')
             ax.text(percent(raPatch), percent(decPatch, 0.9), str(patch.getIndex()),
-                    fontsize=10, horizontalalignment='center', verticalalignment='top')
+                    fontsize=16, horizontalalignment='center', verticalalignment='top')
 
     fig.subplots_adjust(hspace=0.1, wspace=0.1,
                         top=0.95, right=0.95)
@@ -907,12 +954,17 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
 
 
 def tractNoData(rootDir, tractUse, filter='HSC-I', prefix='hsc_coadd',
-                saveList=True, notRun=False, combine=True, showPatch=True):
+                saveList=True, notRun=False, combine=True, showPatch=True,
+                checkCat=True):
 
     # TODO Not finished
     print '### Will only generate mask files for one Tract: %d ' % tractUse
     # Get the list of coadded images in the direction
-    imgList = listAllImages(rootDir, filter, tract=tractUse)
+    if checkCat:
+        imgList, catList = listAllCatalog(rootDir, filter, tract=tractUse)
+    else:
+        imgList = listAllImages(rootDir, filter, tract=tractUse, checkSize=True,
+                                minSize=100)
     nImg = len(imgList)
     print '### Will go through %d images !' % nImg
 
@@ -1034,7 +1086,8 @@ def tractNoDataCombine(prefix, tractId, filter='HSC-I', location='.', big=True,
 
 
 def tractShape(rootDir, tractId, filter='HSC-I', prefix='hsc_coadd',
-               saveList=True, notRun=False, minSize=110, combine=True, showPatch=True):
+               saveList=True, notRun=False, minSize=110, combine=True, showPatch=True,
+               checkCat=True):
     """
     Get the shape of patches in batch mode
     This is better than the method in coaddPatchShape
@@ -1044,8 +1097,11 @@ def tractShape(rootDir, tractId, filter='HSC-I', prefix='hsc_coadd',
 
     """ Save a list of tract IDs """
     # Get the list of coadded images in the direction
-    imgList = listAllImages(rootDir, filter, checkSize=True, minSize=minSize,
-                            tract=tractId)
+    if checkCat:
+        imgList, catList = listAllCatalog(rootDir, filter, tract=tractId)
+    else:
+        imgList = listAllImages(rootDir, filter, tract=tractId, checkSize=True,
+                                minSize=minSize)
     nImg = len(imgList)
     print '### Will go through %d images !' % nImg
 
