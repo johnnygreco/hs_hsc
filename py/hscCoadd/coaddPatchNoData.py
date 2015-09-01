@@ -924,7 +924,7 @@ def tractNoData(rootDir, tractUse, filter='HSC-I', prefix='hsc_coadd',
 
         if combine:
             if showPatch:
-                tractMap = butler.get('deepCoadd_skyMap', {'tract', tractUse})
+                tractMap = butler.get('deepCoadd_skyMap', {'tract':tractUse})
                 tractNoDataCombine(prefix, tractUse, filter='HSC-I', location='.',
                                    big=True, showComb=True, verbose=True, check=False,
                                    tractMap=tractMap)
@@ -1045,7 +1045,7 @@ def tractShape(rootDir, tractId, filter='HSC-I', prefix='hsc_coadd',
 
         if combine:
             if showPatch:
-                tractMap = butler.get('deepCoadd_skyMap', {'tract', tractId})
+                tractMap = butler.get('deepCoadd_skyMap', {'tract':tractId})
                 tractShapeCombine(prefix, tractId, filter='HSC-I', location='.',
                                   showComb=True, verbose=True, check=False,
                                   skyMap=tractMap)
