@@ -36,117 +36,6 @@ from skimage.measure import find_contours, approximate_polygon
 import coaddPatchShape as cdPatch
 import coaddTractShape as cdTract
 
-def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
-                  pngName='tract_mask.png', xsize=20, ysize=18, dpi=150,
-                  saveFile=True):
-
-
-    fig = plt.figure(figsize=(xsize, ysize), dpi=dpi)
-
-    ax = fig.add_subplot(111)
-    fontsize = 20
-    ax.minorticks_on()
-
-    for tick in ax.xaxis.get_major_ticks():
-        tick.label1.set_fontsize(fontsize)
-    for tick in ax.yaxis.get_major_ticks():
-        tick.label1.set_fontsize(fontsize)
-
-    # Set title
-    ax.set_title(title, fontsize=25, fontweight='bold')
-    ax.title.set_position((0.5,1.01))
-
-    maskShow = cdPatch.polyReadWkb(wkbFile, load=True)
-    # Outline all the mask regions
-    if maskShow.type is "Polygon":
-        bounds = maskShow.boundary
-        if bounds.type is "LineString":
-            x, y = bounds.xy
-            ax.plot(x, y, c='r', lw=2.0)
-        elif bounds.type is "MultiLineString":
-            for bb in bounds:
-                x, y = bb.xy
-                ax.plot(x, y, lw=2.0, color='r')
-    elif maskShow.type is "MultiPolygon":
-        for ii, mask in enumerate(maskShow):
-            bounds = mask.boundary
-            if bounds.type is "LineString":
-                x, y = bounds.xy
-                ax.plot(x, y, c='r', lw=1.5)
-            elif bounds.type is "MultiLineString":
-                for bb in bounds:
-                    x, y = bb.xy
-                    ax.plot(x, y, lw=1.5, color='r')
-            else:
-                print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
-
-    # highlight all the large ones
-    if large is not None:
-        bigShow = cdPatch.polyReadWkb(large, load=True)
-        if bigShow.type is "Polygon":
-            bounds = bigShow.boundary
-            if bounds.type is "LineString":
-                x, y = bounds.xy
-                ax.plot(x, y, c='b', lw=2.5)
-            elif bounds.type is "MultiLineString":
-                for bb in bounds:
-                    x, y = bb.xy
-                    ax.plot(x, y, lw=2.5, color='b')
-        elif bigShow.type is "MultiPolygon":
-            for ii, mask in enumerate(bigShow):
-                bounds = mask.boundary
-                if bounds.type is "LineString":
-                    x, y = bounds.xy
-                    ax.plot(x, y, c='b', lw=2.5)
-                elif bounds.type is "MultiLineString":
-                    for bb in bounds:
-                        x, y = bb.xy
-                        ax.plot(x, y, lw=2.5, color='b')
-                else:
-                    print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
-
-    # highlight all the tract corner
-    if corner is not None:
-        cornerShow = cdPatch.polyReadWkb(corner, load=True)
-        if cornerShow.type is "Polygon":
-            bounds = cornerShow.boundary
-            if bounds.type is "LineString":
-                x, y = bounds.xy
-                ax.plot(x, y, c='g', lw=3.5)
-            elif bounds.type is "MultiLineString":
-                for bb in bounds:
-                    x, y = bb.xy
-                    ax.plot(x, y, lw=3.5, color='g')
-            else:
-                print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
-        elif cornerShow.type is "MultiPolygon":
-            for ii, mask in enumerate(cornerShow.geoms[:]):
-                bounds = mask.boundary
-                if bounds.type is "LineString":
-                    x, y = bounds.xy
-                    ax.plot(x, y, c='g', lw=3.5)
-                elif bounds.type is "MultiLineString":
-                    for bb in bounds:
-                        x, y = bb.xy
-                        ax.plot(x, y, lw=3.5, color='g')
-                else:
-                    print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
-        else:
-            print " !!! Not valid tract_corner Polygon"
-
-    ax.margins(0.02, 0.02, tight=True)
-
-    ax.set_xlabel('R.A.  (deg)', fontsize=25)
-    ax.set_ylabel('Decl. (deg)', fontsize=25)
-
-    fig.subplots_adjust(hspace=0.1, wspace=0.1,
-                        top=0.95, right=0.95)
-
-    if saveFile:
-        fig.savefig(pngName)
-        plt.close(fig)
-    else:
-        return fig
 
 
 def imgAddNoise(im, gaussian, factor):
@@ -308,12 +197,6 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
 
     # See if all the files have been generated
     fileAllExist = (fileExist1 and fileExist2)
-
-    # Just for test
-    print '#######################################################################'
-    print noDataAllWkb
-    print noDataAllReg
-    print '#######################################################################'
 
     # Only generate new one when
     #  1) Not all files are available
@@ -607,52 +490,6 @@ def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
                         pp, filter)
 
 
-def tractNoData(rootDir, tractUse, filter='HSC-I', prefix='hsc_coadd',
-                saveList=True, notRun=False, combine=True):
-
-    # TODO Not finished
-    print '### Will only generate mask files for one Tract: %d ' % tractUse
-    # Get the list of coadded images in the direction
-    imgList = listAllImages(rootDir, filter, tract=tractUse)
-    nImg = len(imgList)
-    print '### Will go through %d images !' % nImg
-
-    # Get the list of tract and patch for these images
-    tract = map(lambda x: int(x.split('/')[-2]), imgList)
-    patch = map(lambda x: x.split('/')[-1].split('.')[0], imgList)
-
-    # Get the uniqe tract
-    trUniq = np.unique(tract)
-    print "### There are %d unique tracts!" % len(trUniq)
-    if saveList:
-        for tr in trUniq:
-            tArr = np.asarray(tract)
-            pArr = np.asarray(patch)
-            pMatch = pArr[tArr == tr]
-            saveTractFileList(tr, pMatch, filter, prefix, suffix='nodata_all')
-            saveTractFileList(tr, pMatch, filter, prefix, suffix='nodata_big')
-
-    if not notRun:
-        """ Load the Butler """
-        butler = dafPersist.Butler(rootDir)
-        # If there are too many images, do not generate the combined region file at
-        # first
-        for tt, pp in zip(tract, patch):
-            dataId = {'tract':tt, 'patch':pp, 'filter':filter}
-            try:
-                coaddPatchNoData(rootDir, tt, pp, filter, prefix=prefix,
-                                 savePNG=False, verbose=True, tolerence=3,
-                                 minArea=10000, clobber=False, butler=butler,
-                                 dataId=dataId)
-            except Exception:
-                print "!!!!! Sorry, can not make the NO_DATA mask for: %i %s %s" % (tt,
-                        pp, filter)
-
-        if combine:
-            tractNoDataCombine(prefix, tractUse, filter='HSC-I', location='.', big=True,
-                               showComb=True, verbose=True, check=False)
-            tractNoDataCombine(prefix, tractUse, filter='HSC-I', location='.', big=False,
-                               showComb=True, verbose=True, check=False)
 
 
 def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
@@ -760,51 +597,6 @@ def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
                             verbose=True, clobber=False, butler=butler, dataId=dataId)
 
 
-def tractShape(rootDir, tractId, filter='HSC-I', prefix='hsc_coadd',
-               saveList=True, notRun=False, minSize=110, combine=True):
-    """
-    Get the shape of patches in batch mode
-    This is better than the method in coaddPatchShape
-
-    TODO: Merge this into coaddPatchShape later
-    """
-
-    """ Save a list of tract IDs """
-    # Get the list of coadded images in the direction
-    imgList = listAllImages(rootDir, filter, checkSize=True, minSize=minSize,
-                            tract=tractId)
-    nImg = len(imgList)
-    print '### Will go through %d images !' % nImg
-
-    # Get the list of tract and patch for these images
-    tract = map(lambda x: int(x.split('/')[-2]), imgList)
-    patch = map(lambda x: x.split('/')[-1].split('.')[0], imgList)
-
-    # Get the uniqe tract
-    trUniq = np.unique(tract)
-    print "### There are %d unique tracts!" % len(trUniq)
-    if saveList:
-        for tr in trUniq:
-            tArr = np.asarray(tract)
-            pArr = np.asarray(patch)
-            pMatch = pArr[tArr == tr]
-            saveTractFileList(tr, pMatch, filter, prefix, suffix='shape')
-
-    if not notRun:
-        """ Load the Butler """
-        butler = dafPersist.Butler(rootDir)
-        # If there are too many images, do not generate the combined
-        # region file at first
-        for tt, pp in zip(tract, patch):
-            dataId = {'tract': tt, 'patch': pp, 'filter': filter}
-            coaddPatchShape(rootDir, tt, pp, filter, prefix=prefix,
-                            verbose=True, clobber=False, butler=butler, dataId=dataId)
-
-        if combine:
-            tractShapeCombine(prefix, tractId, filter='HSC-I', location='.',
-                              showComb=True, verbose=True, check=False)
-
-
 def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
                        verbose=True, check=True):
 
@@ -888,69 +680,6 @@ def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
                     showNoDataMask(outWkb, title=pngTitle, pngName=pngName)
 
 
-def tractNoDataCombine(prefix, tractId, filter='HSC-I', location='.', big=True,
-                       showComb=True, verbose=True, check=True):
-
-    """ Get the prefix and filter name """
-    prefix = str(prefix).strip()
-    filter = str(filter).strip()
-
-    if location[-1] is not '/':
-        location += '/'
-
-    if verbose:
-        print "### Will deal with tract: %d" % tractId
-
-    """ Get the list file names """
-    if not big:
-        """ All Region .wkb and .reg list """
-        regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                '_nodata_all_reg.lis'
-        wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                '_nodata_all_wkb.lis'
-        strComb = '_all'
-    else:
-        """ Big Region .wkb and .reg list """
-        regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                '_nodata_big_reg.lis'
-        wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                '_nodata_big_wkb.lis'
-        strComb = '_big'
-
-    if not os.path.isfile(regLis):
-        raise Exception("Can not find the regLis file: %s" % regLis)
-    else:
-        """ Combine the .reg file, it should be easy """
-        outReg = prefix + '_' + str(tractId) + '_' + filter + \
-                '_nodata' + strComb + '.reg'
-        if verbose:
-            print "### Try to combined their .reg files into %s" % outReg
-        combineRegFiles(regLis, output=outReg, check=check)
-        if not os.path.isfile(outReg):
-            raise Exception("Something is wrong with the output .reg file: \
-                            %s" % outReg)
-
-    if not os.path.isfile(wkbLis):
-        raise Exception("Can not find the wkbLis file: %s" % wkbLis)
-    else:
-        """ Combine the .wkb file """
-        outWkb = prefix + '_' + str(tractId) + '_' + filter + \
-                '_nodata' + strComb + '.wkb'
-
-        if verbose:
-            print "### Try to combined their .wkb files into %s" % outWkb
-
-        combineWkbFiles(wkbLis, output=outWkb, check=check, listAll=True)
-        if not os.path.isfile(outWkb):
-            raise Exception("Something is wrong with the output .wkb file:\
-                            %s" % outWkb)
-        else:
-            """ Show the results """
-            if showComb:
-                pngTitle = prefix + '_' + str(tractId) + '_' + filter + \
-                           '_nodata' + strComb
-                pngName = pngTitle + '.png'
-                showNoDataMask(outWkb, title=pngTitle, pngName=pngName)
 
 
 def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
@@ -1030,8 +759,303 @@ def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
                     showNoDataMask(outAll, corner=outWkb, title=pngTitle, pngName=pngName)
 
 
+def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
+                  pngName='tract_mask.png', xsize=20, ysize=18, dpi=150,
+                  saveFile=True, tractMap=None):
+
+
+    fig = plt.figure(figsize=(xsize, ysize), dpi=dpi)
+
+    ax = fig.add_subplot(111)
+    fontsize = 20
+    ax.minorticks_on()
+
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label1.set_fontsize(fontsize)
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label1.set_fontsize(fontsize)
+
+    # Set title
+    ax.set_title(title, fontsize=25, fontweight='bold')
+    ax.title.set_position((0.5,1.01))
+
+    maskShow = cdPatch.polyReadWkb(wkbFile, load=True)
+    # Outline all the mask regions
+    if maskShow.type is "Polygon":
+        bounds = maskShow.boundary
+        if bounds.type is "LineString":
+            x, y = bounds.xy
+            ax.plot(x, y, c='r', lw=2.0)
+        elif bounds.type is "MultiLineString":
+            for bb in bounds:
+                x, y = bb.xy
+                ax.plot(x, y, lw=2.0, color='r')
+    elif maskShow.type is "MultiPolygon":
+        for ii, mask in enumerate(maskShow):
+            bounds = mask.boundary
+            if bounds.type is "LineString":
+                x, y = bounds.xy
+                ax.plot(x, y, c='r', lw=1.5)
+            elif bounds.type is "MultiLineString":
+                for bb in bounds:
+                    x, y = bb.xy
+                    ax.plot(x, y, lw=1.5, color='r')
+            else:
+                print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
+
+    # highlight all the large ones
+    if large is not None:
+        bigShow = cdPatch.polyReadWkb(large, load=True)
+        if bigShow.type is "Polygon":
+            bounds = bigShow.boundary
+            if bounds.type is "LineString":
+                x, y = bounds.xy
+                ax.plot(x, y, c='b', lw=2.5)
+            elif bounds.type is "MultiLineString":
+                for bb in bounds:
+                    x, y = bb.xy
+                    ax.plot(x, y, lw=2.5, color='b')
+        elif bigShow.type is "MultiPolygon":
+            for ii, mask in enumerate(bigShow):
+                bounds = mask.boundary
+                if bounds.type is "LineString":
+                    x, y = bounds.xy
+                    ax.plot(x, y, c='b', lw=2.5)
+                elif bounds.type is "MultiLineString":
+                    for bb in bounds:
+                        x, y = bb.xy
+                        ax.plot(x, y, lw=2.5, color='b')
+                else:
+                    print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
+
+    # highlight all the tract corner
+    if corner is not None:
+        cornerShow = cdPatch.polyReadWkb(corner, load=True)
+        if cornerShow.type is "Polygon":
+            bounds = cornerShow.boundary
+            if bounds.type is "LineString":
+                x, y = bounds.xy
+                ax.plot(x, y, c='g', lw=3.5)
+            elif bounds.type is "MultiLineString":
+                for bb in bounds:
+                    x, y = bb.xy
+                    ax.plot(x, y, lw=3.5, color='g')
+            else:
+                print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
+        elif cornerShow.type is "MultiPolygon":
+            for ii, mask in enumerate(cornerShow.geoms[:]):
+                bounds = mask.boundary
+                if bounds.type is "LineString":
+                    x, y = bounds.xy
+                    ax.plot(x, y, c='g', lw=3.5)
+                elif bounds.type is "MultiLineString":
+                    for bb in bounds:
+                        x, y = bb.xy
+                        ax.plot(x, y, lw=3.5, color='g')
+                else:
+                    print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
+        else:
+            print " !!! Not valid tract_corner Polygon"
+
+    ax.margins(0.04, 0.04, tight=True)
+
+    ax.set_xlabel('R.A.  (deg)', fontsize=25)
+    ax.set_ylabel('Decl. (deg)', fontsize=25)
+
+    if tractMap is not None:
+        for tr in tractMap:
+            for patch in tr:
+                raPatch, decPatch = bboxToRaDec(patch.getInnerBBox(), tr.getWcs())
+                ax.fill(raPatch, decPatch, fill=False, edgecolor='k', lw=1,
+                        linestyle='dashed')
+                ax.text(percent(raPatch), percent(decPatch, 0.9), str(patch.getIndex()),
+                        fontsize=6, horizontalalignment='center', verticalalignment='top')
+
+    fig.subplots_adjust(hspace=0.1, wspace=0.1,
+                        top=0.95, right=0.95)
+
+    if saveFile:
+        fig.savefig(pngName)
+        plt.close(fig)
+    else:
+        return fig
+
+
+def tractNoData(rootDir, tractUse, filter='HSC-I', prefix='hsc_coadd',
+                saveList=True, notRun=False, combine=True, showPatch=True):
+
+    # TODO Not finished
+    print '### Will only generate mask files for one Tract: %d ' % tractUse
+    # Get the list of coadded images in the direction
+    imgList = listAllImages(rootDir, filter, tract=tractUse)
+    nImg = len(imgList)
+    print '### Will go through %d images !' % nImg
+
+    # Get the list of tract and patch for these images
+    tract = map(lambda x: int(x.split('/')[-2]), imgList)
+    patch = map(lambda x: x.split('/')[-1].split('.')[0], imgList)
+
+    # Get the uniqe tract
+    trUniq = np.unique(tract)
+    print "### There are %d unique tracts!" % len(trUniq)
+    if saveList:
+        for tr in trUniq:
+            tArr = np.asarray(tract)
+            pArr = np.asarray(patch)
+            pMatch = pArr[tArr == tr]
+            saveTractFileList(tr, pMatch, filter, prefix, suffix='nodata_all')
+            saveTractFileList(tr, pMatch, filter, prefix, suffix='nodata_big')
+
+    if not notRun:
+        """ Load the Butler """
+        butler = dafPersist.Butler(rootDir)
+        # If there are too many images, do not generate the combined region file at
+        # first
+        for tt, pp in zip(tract, patch):
+            dataId = {'tract':tt, 'patch':pp, 'filter':filter}
+            try:
+                coaddPatchNoData(rootDir, tt, pp, filter, prefix=prefix,
+                                 savePNG=False, verbose=True, tolerence=3,
+                                 minArea=10000, clobber=False, butler=butler,
+                                 dataId=dataId)
+            except Exception:
+                print "!!!!! Sorry, can not make the NO_DATA mask for: %i %s %s" % (tt,
+                        pp, filter)
+
+        if combine:
+            if showPatch:
+                tractMap = butler.get('deepCoadd_skyMap', {'tract', tractUse})
+                tractNoDataCombine(prefix, tractUse, filter='HSC-I', location='.',
+                                   big=True, showComb=True, verbose=True, check=False,
+                                   tractMap=tractMap)
+                tractNoDataCombine(prefix, tractUse, filter='HSC-I', location='.',
+                                   big=False, showComb=True, verbose=True, check=False,
+                                   tractMap=tractMap)
+            else:
+                tractNoDataCombine(prefix, tractUse, filter='HSC-I', location='.',
+                                   big=True, showComb=True, verbose=True, check=False)
+                tractNoDataCombine(prefix, tractUse, filter='HSC-I', location='.',
+                                   big=False, showComb=True, verbose=True, check=False)
+
+
+def tractNoDataCombine(prefix, tractId, filter='HSC-I', location='.', big=True,
+                       showComb=True, verbose=True, check=True, tractMap=None):
+
+    """ Get the prefix and filter name """
+    prefix = str(prefix).strip()
+    filter = str(filter).strip()
+
+    if location[-1] is not '/':
+        location += '/'
+
+    if verbose:
+        print "### Will deal with tract: %d" % tractId
+
+    """ Get the list file names """
+    if not big:
+        """ All Region .wkb and .reg list """
+        regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
+                '_nodata_all_reg.lis'
+        wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
+                '_nodata_all_wkb.lis'
+        strComb = '_all'
+    else:
+        """ Big Region .wkb and .reg list """
+        regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
+                '_nodata_big_reg.lis'
+        wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
+                '_nodata_big_wkb.lis'
+        strComb = '_big'
+
+    if not os.path.isfile(regLis):
+        raise Exception("Can not find the regLis file: %s" % regLis)
+    else:
+        """ Combine the .reg file, it should be easy """
+        outReg = prefix + '_' + str(tractId) + '_' + filter + \
+                '_nodata' + strComb + '.reg'
+        if verbose:
+            print "### Try to combined their .reg files into %s" % outReg
+        combineRegFiles(regLis, output=outReg, check=check)
+        if not os.path.isfile(outReg):
+            raise Exception("Something is wrong with the output .reg file: \
+                            %s" % outReg)
+
+    if not os.path.isfile(wkbLis):
+        raise Exception("Can not find the wkbLis file: %s" % wkbLis)
+    else:
+        """ Combine the .wkb file """
+        outWkb = prefix + '_' + str(tractId) + '_' + filter + \
+                '_nodata' + strComb + '.wkb'
+
+        if verbose:
+            print "### Try to combined their .wkb files into %s" % outWkb
+
+        combineWkbFiles(wkbLis, output=outWkb, check=check, listAll=True)
+        if not os.path.isfile(outWkb):
+            raise Exception("Something is wrong with the output .wkb file:\
+                            %s" % outWkb)
+        else:
+            """ Show the results """
+            if showComb:
+                pngTitle = prefix + '_' + str(tractId) + '_' + filter + \
+                           '_nodata' + strComb
+                pngName = pngTitle + '.png'
+                showNoDataMask(outWkb, title=pngTitle, pngName=pngName, tractMap=tractMap)
+
+
+def tractShape(rootDir, tractId, filter='HSC-I', prefix='hsc_coadd',
+               saveList=True, notRun=False, minSize=110, combine=True, showPatch=True):
+    """
+    Get the shape of patches in batch mode
+    This is better than the method in coaddPatchShape
+
+    TODO: Merge this into coaddPatchShape later
+    """
+
+    """ Save a list of tract IDs """
+    # Get the list of coadded images in the direction
+    imgList = listAllImages(rootDir, filter, checkSize=True, minSize=minSize,
+                            tract=tractId)
+    nImg = len(imgList)
+    print '### Will go through %d images !' % nImg
+
+    # Get the list of tract and patch for these images
+    tract = map(lambda x: int(x.split('/')[-2]), imgList)
+    patch = map(lambda x: x.split('/')[-1].split('.')[0], imgList)
+
+    # Get the uniqe tract
+    trUniq = np.unique(tract)
+    print "### There are %d unique tracts!" % len(trUniq)
+    if saveList:
+        for tr in trUniq:
+            tArr = np.asarray(tract)
+            pArr = np.asarray(patch)
+            pMatch = pArr[tArr == tr]
+            saveTractFileList(tr, pMatch, filter, prefix, suffix='shape')
+
+    if not notRun:
+        """ Load the Butler """
+        butler = dafPersist.Butler(rootDir)
+        # If there are too many images, do not generate the combined
+        # region file at first
+        for tt, pp in zip(tract, patch):
+            dataId = {'tract': tt, 'patch': pp, 'filter': filter}
+            coaddPatchShape(rootDir, tt, pp, filter, prefix=prefix,
+                            verbose=True, clobber=False, butler=butler, dataId=dataId)
+
+        if combine:
+            if showPatch:
+                tractMap = butler.get('deepCoadd_skyMap', {'tract', tractId})
+                tractShapeCombine(prefix, tractId, filter='HSC-I', location='.',
+                                  showComb=True, verbose=True, check=False,
+                                  skyMap=tractMap)
+            else:
+                tractShapeCombine(prefix, tractId, filter='HSC-I', location='.',
+                                  showComb=True, verbose=True, check=False)
+
+
 def tractShapeCombine(prefix, tractId, filter='HSC-I', location='.', showComb=True,
-                      verbose=True, check=True):
+                      verbose=True, check=True, tractMap=None):
 
     """ Get the prefix and filter name """
     prefix = str(prefix).strip()
@@ -1092,7 +1116,8 @@ def tractShapeCombine(prefix, tractId, filter='HSC-I', location='.', showComb=Tr
                 pngTitle = prefix + '_' + str(tractId) + '_' + filter + \
                            '_shape' + strComb
                 pngName = pngTitle + '.png'
-                showNoDataMask(outAll, corner=outWkb, title=pngTitle, pngName=pngName)
+                showNoDataMask(outAll, corner=outWkb, title=pngTitle,
+                        pngName=pngName, tractMap=tractMap)
 
 
 if __name__ == '__main__':
