@@ -7,7 +7,7 @@ import coaddPatchNoData as cdNoData
 
 def run(rootDir, tractUse, filter, prefix):
     cdNoData.tractNoData(rootDir, tractUse, filter=filter, prefix=prefix, notRun=False,
-                         saveList=True, combine=True)
+                         saveList=True, combine=True, showPatch=True, checkCat=True)
 
 if __name__ == '__main__':
 
