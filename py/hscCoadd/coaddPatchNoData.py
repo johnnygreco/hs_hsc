@@ -37,6 +37,29 @@ import coaddPatchShape as cdPatch
 import coaddTractShape as cdTract
 
 
+def bboxToRaDec(bbox, wcs):
+    """
+    Get the corners of a BBox and convert them to lists of RA and Dec.
+    From Steve's showVisitSkyMap.py
+    """
+    corners = []
+    for corner in bbox.getCorners():
+        p = afwGeom.Point2D(corner.getX(), corner.getY())
+        coord = wcs.pixelToSky(p).toIcrs()
+        corners.append([coord.getRa().asDegrees(), coord.getDec().asDegrees()])
+    ra, dec = zip(*corners)
+    return ra, dec
+
+
+def percent(values, p=0.5):
+    """
+    Return a value a faction of the way between the min and max values in a list.
+    From Steve's showVisitSkyMap.py
+    """
+    m = min(values)
+    interval = max(values) - m
+    return m + p*interval
+
 
 def imgAddNoise(im, gaussian, factor):
 
