@@ -1048,7 +1048,7 @@ def tractShape(rootDir, tractId, filter='HSC-I', prefix='hsc_coadd',
                 tractMap = butler.get('deepCoadd_skyMap', {'tract':tractId})
                 tractShapeCombine(prefix, tractId, filter='HSC-I', location='.',
                                   showComb=True, verbose=True, check=False,
-                                  skyMap=tractMap)
+                                  tractMap=tractMap)
             else:
                 tractShapeCombine(prefix, tractId, filter='HSC-I', location='.',
                                   showComb=True, verbose=True, check=False)
