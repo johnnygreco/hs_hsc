@@ -8,8 +8,10 @@ import os
 import argparse
 import numpy as np
 
-import lsst.daf.persistence   as dafPersist
-import lsst.afw.image         as afwImage
+import lsst.daf.persistence  as dafPersist
+import lsst.afw.coord        as afwCoord
+import lsst.afw.geom         as afwGeom
+import lsst.afw.image        as afwImage
 
 # Matplotlib default settings
 import matplotlib as mpl
