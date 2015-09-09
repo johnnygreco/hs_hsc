@@ -415,14 +415,22 @@ if __name__ == '__main__':
     parser.add_argument('-info2', '--infoField2', dest='infoField2',
                         help="Column name for second extra information",
                         default=None)
-    parser.add_argument('-zc', '--zCutoutSize', action="store_true", default=False)
-    parser.add_argument('-nc', '--noColor', action="store_true", default=False)
-    parser.add_argument('-oc', '--onlyColor', action="store_true", default=False)
-    parser.add_argument('-safe', '--safe', action="store_true", default=False)
-    parser.add_argument('-src', '--src', action="store_true", default=False)
-    parser.add_argument('-clean', '--clean', action="store_true", default=False)
-    parser.add_argument('-v', '--verbose', action="store_true", default=False)
-    parser.add_argument('-makeDir', '--makeDir', action="store_true", default=False)
+    parser.add_argument('-zc', '--zCutoutSize', action="store_true", dest='zCutout',
+                        default=True)
+    parser.add_argument('-nc', '--noColor', action="store_true", dest='noColor',
+                        default=True)
+    parser.add_argument('-oc', '--onlyColor', action="store_true", dest='onlyColor',
+                        default=False)
+    parser.add_argument('-safe', '--safe', action="store_true", dest='safe',
+                        default=False)
+    parser.add_argument('-clean', '--clean', action="store_true", dest='clean',
+                        default=False)
+    parser.add_argument('-v', '--verbose', action="store_true", dest='verbose',
+                        default=False)
+    parser.add_argument('-src', '--src', action="store_true", dest='saveSrc',
+                        default=False)
+    parser.add_argument('-makeDir', '--makeDir', action="store_true", dest='makeDir',
+                        default=False)
     args = parser.parse_args()
 
     coaddBatchCutFull(args.root, args.incat, size=args.size,
