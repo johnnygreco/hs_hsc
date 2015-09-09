@@ -21,7 +21,7 @@ def run(args):
                               zCutoutSize=args.zCutout,
                               zField=args.zField,
                               onlyColor=args.onlyColor,
-                              noColor=args.onColor,
+                              noColor=args.noColor,
                               saveSrc=args.saveSrc,
                               makeDir=args.makeDir,
                               raField=args.raField,
