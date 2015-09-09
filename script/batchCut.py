@@ -12,7 +12,7 @@ def run(args):
     max = 0.5
     Q = 10
 
-    if os.path.isfile(inCat):
+    if os.path.isfile(args.incat):
 
         cbc.coaddBatchCutFull(args.root, args.incat,
                               filter=args.filter,
@@ -27,7 +27,7 @@ def run(args):
                               raField=args.raField,
                               decField=args.decField)
     else:
-        raise Exception("### Can not find the input catalog: %s" % inCat)
+        raise Exception("### Can not find the input catalog: %s" % args.incat)
 
 
 if __name__ == '__main__':
