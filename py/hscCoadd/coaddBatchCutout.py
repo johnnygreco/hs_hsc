@@ -296,7 +296,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
 
     # Test
     for i in range(nObjs):
-    #for i in range(5):
+    #for i in range(1):
 
         if verbose:
             print "### %d -- ID: %s ; " % (i+1, str(id[i])) + \
