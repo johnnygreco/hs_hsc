@@ -161,6 +161,7 @@ def getCoaddMskPlane(calExp, bitmask):
 
     return newMsk
 
+
 def getCoaddBadMsk(calExp):
 
     # Get the mask image
@@ -178,6 +179,7 @@ def getCoaddBadMsk(calExp):
     badMsk.clearMaskPlane(9)
 
     return badMsk
+
 
 def getCircleRaDec(ra, dec, size):
 
@@ -637,7 +639,8 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                     visit = input.get("visit")
                     singleBbox = input.getBBox()
                     single = butler.get("calexp_sub", visit=int(visit), ccd=ccd,
-                                    bbox=afwGeom.Box2I(afwGeom.Point2I(0,0), afwGeom.ExtentI(1,1)),
+                                    bbox=afwGeom.Box2I(afwGeom.Point2I(0,0),
+                                                       afwGeom.ExtentI(1,1)),
                                     immediate=True)
                     singleCalib = single.getCalib()
                     singleWcs   = single.getWcs()
@@ -685,7 +688,7 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                     print "### Search the source catalog...."
                     """ Sometimes the forced photometry catalog might not be available """
                     try:
-                        srcCat = butler.get('deepCoadd_forced_src', tract=tract,
+                        srcCat = butler.get('deepCoadd_meas', tract=tract,
                                             patch=patch, filter=filt,
                                             flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
                         # Get the pixel coordinates for all objects

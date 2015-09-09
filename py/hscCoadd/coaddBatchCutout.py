@@ -22,19 +22,19 @@ def decideCutoutSize(z, safe=False):
 
     if (z <= 0.15):
         if safe:
-            return 800
-        else:
             return 1000
+        else:
+            return 1200
     if (z > 0.15) and (z < 0.25):
         if safe:
-            return 500
-        else:
             return 650
+        else:
+            return 750
     if (z > 0.25) and (z < 0.35):
         if safe:
-            return 400
+            return 550
         else:
-            return 500
+            return 600
     if (z > 0.35) and (z < 0.45):
         if safe:
             return 350
@@ -250,7 +250,8 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
                       sizeField='cutout_size', zCutoutSize=False, zField=None,
                       verbose=True, noColor=False, onlyColor=False,
                       infoField1=None, infoField2=None, clean=False,
-                      min=-0.0, max=0.72, Q=15, safe=False, saveSrc=False):
+                      min=-0.0, max=0.72, Q=15, safe=False, saveSrc=False,
+                      makeDir=False):
     """
     Givin an input catalog with RA, DEC information, generate HSC
     coadd cutout images.
@@ -303,6 +304,11 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
 
         # New prefix
         newPrefix = prefix + '_' + str(id[i]).strip()
+        if makeDir:
+            dirLoc = str(id[i]).strip() + '/' + str(filter).strip() + '/'
+            if not os.path.exists(dirLoc):
+                os.makedirs(dirLoc)
+            newPrefix = dirLoc + newPrefix
 
         # Cutout Image
         if not onlyColor:
@@ -416,6 +422,7 @@ if __name__ == '__main__':
     parser.add_argument('-src', '--src', action="store_true", default=False)
     parser.add_argument('-clean', '--clean', action="store_true", default=False)
     parser.add_argument('-v', '--verbose', action="store_true", default=False)
+    parser.add_argument('-makeDir', '--makeDir', action="store_true", default=False)
     args = parser.parse_args()
 
     coaddBatchCutFull(args.root, args.incat, size=args.size,
@@ -426,5 +433,5 @@ if __name__ == '__main__':
                      zCutoutSize=args.zCutoutSize, noColor=args.noColor,
                      onlyColor=args.onlyColor, infoField1=args.infoField1,
                      infoField2=args.infoField2, safe=args.safe,
-                     verbose=args.verbose, clean=args.clean, saveSrc=args.src)
-
+                     verbose=args.verbose, clean=args.clean, saveSrc=args.src,
+                     makeDir=args.makeDir)
