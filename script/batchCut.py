@@ -61,7 +61,7 @@ if __name__ == '__main__':
                         default=True)
     parser.add_argument('-makeDir', '--makeDir', action="store_true", dest='makeDir',
                         default=True)
-    parser.add_argument('-zc', '--zCutoutSize', action="store_true", dest='zCutoutSize',
+    parser.add_argument('-zc', '--zCutoutSize', action="store_true", dest='zCutout',
                         default=True)
     parser.add_argument('-nc', '--noColor', action="store_true", dest='noColor',
                         default=True)
