@@ -20,7 +20,7 @@ def run(args):
                               prefix=args.prefix,
                               zCutoutSize=args.zCutout,
                               zField=args.zField,
-                              onlyColor=args.onlyCOlor,
+                              onlyColor=args.onlyColor,
                               noColor=args.onColor,
                               saveSrc=args.saveSrc,
                               makeDir=args.makeDir,
