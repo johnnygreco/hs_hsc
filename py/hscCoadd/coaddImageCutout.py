@@ -361,7 +361,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 
             if saveSrc is True:
 
-                # Get the source catalog
+                # Get the forced photometry source catalog
                 """ Sometimes the forced photometry catalog might not be available """
                 try:
                     srcCat = butler.get('deepCoadd_forced_src', tract=tractId,
@@ -686,10 +686,12 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                 # Get the source catalog
                 if saveSrc:
                     print "### Search the source catalog...."
+                    print "    !!!! TRY deepCoadd_meas"
+                    catType = 'meas'
                     """ Sometimes the forced photometry catalog might not be available """
                     try:
                         srcCat = butler.get('deepCoadd_meas', tract=tract,
-                                            patch=patch, filter=filt,
+                                            patch=patch, filter=filt, immediate=True,
                                             flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
                         # Get the pixel coordinates for all objects
                         srcRa  = np.array(map(
@@ -697,10 +699,17 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                         srcDec = np.array(map(
                             lambda x: x.get('coord').getDec().asDegrees(), srcCat))
                         # Simple Box match
-                        indMatch = ((srcRa > (ra - sizeDegree)) &
-                                    (srcRa < (ra + sizeDegree)) &
-                                    (srcDec > (dec - sizeDegree)) &
-                                    (srcDec < (dec + sizeDegree)))
+                        if catType == 'meas':
+                            indMatch = ((srcRa > (ra - sizeDegree)) &
+                                        (srcRa < (ra + sizeDegree)) &
+                                        (srcDec > (dec - sizeDegree)) &
+                                        (srcDec < (dec + sizeDegree)) &
+                                        (srcCat.get('detect.is-patch-inner')))
+                        else:
+                            indMatch = ((srcRa > (ra - sizeDegree)) &
+                                        (srcRa < (ra + sizeDegree)) &
+                                        (srcDec > (dec - sizeDegree)) &
+                                        (srcDec < (dec + sizeDegree)))
                         # Extract the matched subset
                         srcArr.append(srcCat.subset(indMatch))
                     except:
@@ -860,7 +869,7 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
         hduList.close()
         # If necessary, save the source catalog
         if saveSrc:
-            outSrc = outPre + '_src.fits'
+            outSrc = outPre + '_' + catType + '.fits'
             srcUse.writeFits(outSrc)
         if (nReturn > 0 and not noPsf):
             cutFound = True
