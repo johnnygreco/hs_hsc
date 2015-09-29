@@ -174,9 +174,16 @@ def getCoaddBadMsk(calExp):
     badMsk.clearMaskPlane(5)
     # Clear the "DETECTED_NEGATIVE" plane
     badMsk.clearMaskPlane(6)
-    # Clear the "CROSSTALK" plane XXX TODO: Check later to see if it is still
+
+    # Clear the "CLIPPED" plane XXX TODO: Check later to see if it is still
     # appropriate
     badMsk.clearMaskPlane(9)
+    # Clear the "CROSSTALK" plane XXX TODO: Check later to see if it is still
+    # appropriate
+    badMsk.clearMaskPlane(10)
+    # Clear the "NOT_DEBLENDED" plane XXX TODO: Check later to see if it is still
+    # appropriate
+    badMsk.clearMaskPlane(11)
 
     return badMsk
 
