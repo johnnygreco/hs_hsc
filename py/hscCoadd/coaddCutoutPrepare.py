@@ -844,9 +844,11 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     # 0. Get necessary information
     # Read the input cutout image
     imgArr, imgHead, mskArr, detArr, sigArr = readCutoutImage(prefix, root=root)
+    if (root[-1] != '/'):
+        root += '/'
     if verbose:
         print "##########################################################################"
-        print "### DEAL WITH IMAGE : %s" % (prefix + '_img.fits')
+        print "### DEAL WITH IMAGE : %s" % (root + prefix + '_img.fits')
     if detArr is None:
         detFound = False
     else:
@@ -918,7 +920,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
 
     if visual:
         # Fig.a
-        bkgPNG1 = prefix + '_' + suffix + 'bkgC.png'
+        bkgPNG1 = root + prefix + '_' + suffix + 'bkgC.png'
         showSEPImage(bkgC.back(), contrast=0.3, title='Background - Cold Run',
                      pngName=bkgPNG1)
 
@@ -943,7 +945,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
 
     if visual:
         # Fig.b
-        bkgPNG2 = prefix + '_' + suffix + 'bkgH.png'
+        bkgPNG2 = root + prefix + '_' + suffix + 'bkgH.png'
         showSEPImage(bkgH.back(), contrast=0.3, title='Background - Hot Run',
                      pngName=bkgPNG2)
 
@@ -974,7 +976,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         print "###    %d objects have been detected in the Cold Run" % objC['x'].shape[0]
 
     # Save objects list to different format of files
-    prefixC = prefix + '_' + suffix + 'objC'
+    prefixC = root + prefix + '_' + suffix + 'objC'
     saveSEPObjects(objC, prefix=prefixC, color='Blue')
 
     # Calculate the object-galaxy center distance
@@ -1064,7 +1066,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     if verbose:
         print "###    %d objects have been detected in the Hot Run" % objH['x'].shape[0]
     # Save objects list to different format of files
-    prefixH = prefix + '_' + suffix + 'objH'
+    prefixH = root + prefix + '_' + suffix + 'objH'
     saveSEPObjects(objH, prefix=prefixH, color='Red')
     # Calculate the object-galaxy center distance
     cenDistH = objDistTo(objH, galX, galY, pa=galPA, q=galQ)
@@ -1072,12 +1074,12 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     # Visualize these detections
     if visual:
         # Fig.c
-        objPNG1 = prefix + '_' + suffix + 'objC.png'
+        objPNG1 = root + prefix + '_' + suffix + 'objC.png'
         objEllC = getEll2Plot(objC, radius=(objC['a'] * growH))
         showSEPImage(imgSubC, contrast=0.06, title='Detections - Cold Run',
                      pngName=objPNG1, ellList1=objEllC, ellColor1='b')
         # Fig.d
-        objPNG2 = prefix + '_' + suffix + 'objH.png'
+        objPNG2 = root + prefix + '_' + suffix + 'objH.png'
         objEllH = getEll2Plot(objH, radius=(objH['a'] * growH))
         showSEPImage(imgSubH, contrast=0.10, title='Detections - Hot Run',
                      pngName=objPNG2, ellList1=objEllH, ellColor1='r')
@@ -1090,7 +1092,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
             rad=galR90, tol=2.0)
 
     # Also save the combined object lists
-    prefixComb = prefix + '_' + suffix + 'objComb'
+    prefixComb = root + prefix + '_' + suffix + 'objComb'
     saveSEPObjects(objComb, prefix=prefixComb, color='Green')
     # Calculate the object-galaxy center distance
     cenDistComb = objDistTo(objComb, galX, galY, pa=galPA, q=galQ)
@@ -1099,7 +1101,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         print "###    %d objects are left in the combined list" % len(objComb)
     if visual:
         # Fig.e
-        objPNG3 = prefix + '_' + suffix + 'objComb.png'
+        objPNG3 = root + prefix + '_' + suffix + 'objComb.png'
         objEllComb = getEll2Plot(objComb, radius=(objComb['a'] * growH))
         showSEPImage(imgSubC, contrast=0.06, title='Detections - Combined',
                      pngName=objPNG3, ellList1=objEllComb, ellColor1='orange')
@@ -1119,7 +1121,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     concen = (r90 / r50)
     if visual:
         # Fig.f
-        objPNG4 = prefix + '_' + suffix + 'objRad.png'
+        objPNG4 = root + prefix + '_' + suffix + 'objRad.png'
         objEllR20 = getEll2Plot(objComb, radius=r20)
         objEllR50 = getEll2Plot(objComb, radius=r50)
         objEllR90 = getEll2Plot(objComb, radius=r90)
@@ -1182,14 +1184,14 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     mskAll[indImgNaN] = 1
 
     # Save the mask to FITS
-    mskAllFile = prefix + '_' + suffix + 'mskall.fits'
+    mskAllFile = root + prefix + '_' + suffix + 'mskall.fits'
     saveFits(mskAll, mskAllFile, head=imgHead)
     # Save the Objlist using the growed size
-    prefixM = prefix + '_' + suffix + 'mskall'
+    prefixM = root + prefix + '_' + suffix + 'mskall'
     saveSEPObjects(objMskAll, prefix=prefixM, color='Blue')
     if visual:
         # Fig.f
-        mskPNG1 = prefix + '_' + suffix + 'mskall.png'
+        mskPNG1 = root + prefix + '_' + suffix + 'mskall.png'
         showSEPImage(imgSubC, contrast=0.75, title='Mask - All Objects',
                      pngName=mskPNG1, mask=mskAll)
 
@@ -1276,10 +1278,10 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         print "###  7.2. CONVERT THE SEP PARAMETERS TO INITIAL GUESSES OF 1-SERSIC MODEL"
     objSersic = objToGalfit(objComb, rad=r90, concen=concen, zp=photZP,
                             rbox=3.0, dimX=dimX, dimY=dimY)
-    sersicAll = prefix + '_' + suffix + '1ser'
+    sersicAll = root + prefix + '_' + suffix + '1ser'
     saveSEPObjects(objSersic, prefix=sersicAll, reg=False,
                    color='blue')
-    sersicFit = prefix + '_' + suffix + '1ser_fit'
+    sersicFit = root + prefix + '_' + suffix + '1ser_fit'
     saveSEPObjects(objSersic[iObjFit], prefix=sersicFit, reg=False,
                    color='blue')
 
@@ -1338,7 +1340,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         mskFinal = combMskImage(mskFinal, detArr)
     # Mask out all the NaN pixels
     mskFinal[indImgNaN] = 1
-    mskFinFile = prefix + '_' + suffix + 'mskfin.fits'
+    mskFinFile = root + prefix + '_' + suffix + 'mskfin.fits'
 
     # See if the center of the image has been masked out
     sumMskR20, dump1, dump2 = sep.sum_ellipse(np.float32(mskFinal), galCenX, galCenY,
@@ -1382,7 +1384,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
 
     # Save the Objlist
     # Replace the object size with R90
-    prefixF = prefix + '_' + suffix + 'objAll'
+    prefixF = root + prefix + '_' + suffix + 'objAll'
     objFin = copy.deepcopy(objNoCen)
     baNoCen = copy.deepcopy(objFin['b'] / objFin['a'])
     objFin['a'] = r90NoCen
@@ -1391,7 +1393,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
 
     if visual:
         # Fig.g
-        mskPNG2 = prefix + '_' + suffix + 'mskfin.png'
+        mskPNG2 = root + prefix + '_' + suffix + 'mskfin.png'
         showSEPImage(imgArr, contrast=0.75, title='Mask - Final',
                      pngName=mskPNG2, mask=mskFinal)
 
@@ -1401,7 +1403,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         print "### 9. VISULIZATION OF THE DETECTED OBJECTS"
     if visual:
         # Fig.h
-        objPNG = prefix + '_' + suffix + 'objs.png'
+        objPNG = root + prefix + '_' + suffix + 'objs.png'
         showObjects(objComb, cenDistComb, rad=r90, outPNG=objPNG,
                     cenInd=cenObjIndex, r1=galR50, r2=galR90, r3=(3.0 * galR90),
                     fluxRatio1=fluxRatio1, fluxRatio2=fluxRatio2,

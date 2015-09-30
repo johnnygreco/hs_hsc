@@ -106,6 +106,9 @@ def readInputSky(prefix, root=None, rebin='rebin6'):
     """
 
     skyFile = prefix + '_' + rebin + '_sky.dat'
+    if root is not None:
+        psfFile = os.path.join(root, psfFile)
+
     if not os.path.isfile(skyFile):
         raise Exception("### Can not find the input sky summary : %s !" % skyFile)
 
@@ -601,6 +604,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     # Read in the input image, mask, psf, and their headers
     imgFile, imgArr, imgHead, mskFile, mskArr, mskHead = readSbpInput(prefix,
             root=root)
+    if (root[-1] != '/'):
+        root += '/'
     if not imgSameSize(imgArr, mskArr):
         raise Exception("### The Image and Mask need to have EXACTLY same dimensions!")
 
@@ -660,7 +665,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     else:
         if psf:
             print "\n##   Ellipse Run on PSF "
-            psfFile = prefix + '_psf.fits'
+            psfFile = root + prefix + '_psf.fits'
             if not os.path.isfile(psfFile):
                 raise Exception("### Can not find the PSF image: %s !" % psfFile)
             psfOut = galSBP.galSBP(psfFile, iniSma=5.0, pix=pix, galQ=0.95, galPA=0.0,
@@ -715,7 +720,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
 
             if plot:
                 print "\n##   Ellipse Summary Plot "
-                sumPng = prefix + '_ellip_sum.png'
+                sumPng = root + prefix + '_ellip_sum.png'
                 if psf:
                     ellipSummary(ellOut1, ellOut2, ellOut3, imgFile, psfOut=psfOut,
                                  maxRad=maxR, mask=mskFile, radMode='rsma',

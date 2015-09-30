@@ -239,9 +239,11 @@ def coaddCutoutSky(prefix, root=None, verbose=True, skyClip=3.0,
     # 0. Get necessary information
     # Read the input cutout image
     imgArr, imgHead, mskArr = readCutout(prefix, root=root)
+    if (root[-1] != '/'):
+        root += '/'
     if verbose:
         print "##########################################################################"
-        print "### DEAL WITH IMAGE : %s" % (prefix + '_img.fits')
+        print "### DEAL WITH IMAGE : %s" % (root + prefix + '_img.fits')
     # Necessary information
     if verbose:
         print "###    The pixel scale in X/Y directions " + \
@@ -255,7 +257,7 @@ def coaddCutoutSky(prefix, root=None, verbose=True, skyClip=3.0,
     # 1. Global Background Estimation
     suffixGlob = 'rebin' + str(rebin).strip() + '_'
     getGlobalSky(imgArr, mskArr, skyClip=skyClip, zp=zp, pix=pix,
-                 rebin=rebin, prefix=prefix, suffix=suffixGlob,
+                 rebin=rebin, prefix=(root + prefix), suffix=suffixGlob,
                  visual=visual, verbose=verbose)
 
 
@@ -273,8 +275,8 @@ if __name__ == '__main__':
                        type=float, default=0.168)
     parser.add_argument('--zp', dest='zp', help='Photometric zeropoint of the image',
                        type=float, default=27.0)
-    parser.add_argument('--verbose', dest='verbose', action="store_true", default=False)
-    parser.add_argument('--visual', dest='visual', action="store_true", default=False)
+    parser.add_argument('--verbose', dest='verbose', action="store_true", default=True)
+    parser.add_argument('--visual', dest='visual', action="store_true", default=True)
 
     args = parser.parse_args()
 
