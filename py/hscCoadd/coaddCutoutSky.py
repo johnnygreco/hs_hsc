@@ -239,7 +239,7 @@ def coaddCutoutSky(prefix, root=None, verbose=True, skyClip=3.0,
     # 0. Get necessary information
     # Read the input cutout image
     imgArr, imgHead, mskArr = readCutout(prefix, root=root)
-    if (root[-1] != '/'):
+    if (root is not None) and (root[-1] != '/'):
         root += '/'
     if verbose:
         print "##########################################################################"

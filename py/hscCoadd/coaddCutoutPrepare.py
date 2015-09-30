@@ -844,7 +844,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     # 0. Get necessary information
     # Read the input cutout image
     imgArr, imgHead, mskArr, detArr, sigArr = readCutoutImage(prefix, root=root)
-    if (root[-1] != '/'):
+    if (root is not None) and (root[-1] != '/'):
         root += '/'
     if verbose:
         print "##########################################################################"

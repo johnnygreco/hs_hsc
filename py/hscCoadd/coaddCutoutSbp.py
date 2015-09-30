@@ -604,7 +604,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     # Read in the input image, mask, psf, and their headers
     imgFile, imgArr, imgHead, mskFile, mskArr, mskHead = readSbpInput(prefix,
             root=root)
-    if (root[-1] != '/'):
+    if (root is not None) and (root[-1] != '/'):
         root += '/'
     if not imgSameSize(imgArr, mskArr):
         raise Exception("### The Image and Mask need to have EXACTLY same dimensions!")
