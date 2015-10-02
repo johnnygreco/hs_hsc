@@ -5,6 +5,7 @@ from __future__ import division
 
 import os
 import copy
+import glob
 import argparse
 import numpy as np
 import scipy
@@ -790,34 +791,52 @@ def readCutoutImage(prefix, root=None, variance=False):
         imgFile = os.path.join(root, imgFile)
         mskFile = os.path.join(root, mskFile)
         detFile = os.path.join(root, detFile)
-    if not os.path.isfile(imgFile):
+        sigFile = os.path.join(root, sigFile)
+
+    # Image Data
+    if os.path.islink(imgFile):
+        imgOri = os.readlink(imgFile)
+        imgFile = imgOri
+    if os.path.isfile(imgFile):
+        imgHdu = fits.open(imgFile)
+        imgArr = imgHdu[0].data
+    else:
         raise Exception("### Can not find the Input Image File : %s !" % imgFile)
-    if not os.path.isfile(mskFile):
-        raise Exception("### Can not find the Input Mask File : %s !" % mskFile)
-    imgHdu = fits.open(imgFile)
-    imgArr = imgHdu[0].data
     # Header
     imgHead = imgHdu[0].header
+
     # TODO: Should also make this optional
     # Bad mask
-    mskHdu = fits.open(mskFile)
-    mskArr = mskHdu[0].data
+    if os.path.islink(mskFile):
+        mskOri = os.readlink(mskFile)
+        mskFile = mskOri
+    if os.path.isfile(mskFile):
+        mskHdu = fits.open(mskFile)
+        mskArr = mskHdu[0].data
+    else:
+        raise Exception("### Can not find the Input Mask File : %s !" % mskFile)
 
     # Optional detection plane
-    if not os.path.isfile(detFile):
-        print "### Can not find the coadd DetectionPlane file!"
-        detArr = None
-    else:
+    if os.path.islink(detFile):
+        detOri = os.readlink(detFile)
+        detFile = detOri
+    if os.path.isfile(detFile):
         detHdu = fits.open(detFile)
         detArr = detHdu[0].data
-
-    # Optional detection plane
-    if not os.path.isfile(sigFile):
-        print "### Can not find the sigma or variance image file!"
-        sigArr = None
     else:
+        print "### Can not find the coadd DetectionPlane file!"
+        detArr = None
+
+    # Optional sigma plane
+    if os.path.islink(sigFile):
+        sigOri = os.readlink(sigFile)
+        sigFile = sigOri
+    if os.path.isfile(sigFile):
         sigHdu = fits.open(sigFile)
         sigArr = sigHdu[0].data
+    else:
+        print "### Can not find the coadd sigectionPlane file!"
+        sigArr = None
 
     return imgArr, imgHead, mskArr, detArr, sigArr
 
@@ -830,7 +849,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
                        combBad=True, combDet=False, noBkgC=False, noBkgH=False,
                        minDetH=5.0, minDetC=5.0, debThrH=20.0, debThrC=32.0,
                        debConH=0.01, debConC=0.01, useSigArr=False,
-                       minCenDist=20.0):
+                       minCenDist=20.0, rerun=None):
     """
     The structure of the cutout has been changed.  Now the cutout procedure
     will generate separated files for Image, Bad Mask, Detection Plane, and
@@ -846,9 +865,24 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     imgArr, imgHead, mskArr, detArr, sigArr = readCutoutImage(prefix, root=root)
     if (root is not None) and (root[-1] != '/'):
         root += '/'
+    if root is None:
+        root = ''
     if verbose:
         print "##########################################################################"
         print "### DEAL WITH IMAGE : %s" % (root + prefix + '_img.fits')
+    if rerun is not None:
+        rerunDir = os.path.join(root, rerun.strip())
+        if not os.path.isdir(rerunDir):
+            os.makedirs(rerunDir)
+    else:
+        rerunDir = root
+
+    fitsList = glob.glob(root + '*.fits')
+    for fitsFile in fitsList:
+        seg = fitsFile.split('/')
+        link = os.path.join(rerunDir, seg[-1])
+        os.symlink(fitsFile, link)
+
     if detArr is None:
         detFound = False
     else:
@@ -920,7 +954,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
 
     if visual:
         # Fig.a
-        bkgPNG1 = root + prefix + '_' + suffix + 'bkgC.png'
+        bkgPNG1 = os.path.join(rerunDir, (prefix + '_' + suffix + 'bkgC.png'))
         showSEPImage(bkgC.back(), contrast=0.3, title='Background - Cold Run',
                      pngName=bkgPNG1)
 
@@ -945,7 +979,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
 
     if visual:
         # Fig.b
-        bkgPNG2 = root + prefix + '_' + suffix + 'bkgH.png'
+        bkgPNG2 = os.path.join(rerunDir, (prefix + '_' + suffix + 'bkgH.png'))
         showSEPImage(bkgH.back(), contrast=0.3, title='Background - Hot Run',
                      pngName=bkgPNG2)
 
@@ -976,7 +1010,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         print "###    %d objects have been detected in the Cold Run" % objC['x'].shape[0]
 
     # Save objects list to different format of files
-    prefixC = root + prefix + '_' + suffix + 'objC'
+    prefixC = os.path.join(rerunDir, (prefix + '_' + suffix + 'objC'))
     saveSEPObjects(objC, prefix=prefixC, color='Blue')
 
     # Calculate the object-galaxy center distance
@@ -1066,7 +1100,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     if verbose:
         print "###    %d objects have been detected in the Hot Run" % objH['x'].shape[0]
     # Save objects list to different format of files
-    prefixH = root + prefix + '_' + suffix + 'objH'
+    prefixH = os.path.join(rerunDir, (prefix + '_' + suffix + 'objH'))
     saveSEPObjects(objH, prefix=prefixH, color='Red')
     # Calculate the object-galaxy center distance
     cenDistH = objDistTo(objH, galX, galY, pa=galPA, q=galQ)
@@ -1074,12 +1108,12 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     # Visualize these detections
     if visual:
         # Fig.c
-        objPNG1 = root + prefix + '_' + suffix + 'objC.png'
+        objPNG1 = os.path.join(rerunDir, (prefix + '_' + suffix + 'objC.png'))
         objEllC = getEll2Plot(objC, radius=(objC['a'] * growH))
         showSEPImage(imgSubC, contrast=0.06, title='Detections - Cold Run',
                      pngName=objPNG1, ellList1=objEllC, ellColor1='b')
         # Fig.d
-        objPNG2 = root + prefix + '_' + suffix + 'objH.png'
+        objPNG2 = os.path.join(rerunDir, (prefix + '_' + suffix + 'objH.png'))
         objEllH = getEll2Plot(objH, radius=(objH['a'] * growH))
         showSEPImage(imgSubH, contrast=0.10, title='Detections - Hot Run',
                      pngName=objPNG2, ellList1=objEllH, ellColor1='r')
@@ -1092,7 +1126,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
             rad=galR90, tol=2.0)
 
     # Also save the combined object lists
-    prefixComb = root + prefix + '_' + suffix + 'objComb'
+    prefixComb = os.path.join(rerunDir, (prefix + '_' + suffix + 'objComb'))
     saveSEPObjects(objComb, prefix=prefixComb, color='Green')
     # Calculate the object-galaxy center distance
     cenDistComb = objDistTo(objComb, galX, galY, pa=galPA, q=galQ)
@@ -1101,7 +1135,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         print "###    %d objects are left in the combined list" % len(objComb)
     if visual:
         # Fig.e
-        objPNG3 = root + prefix + '_' + suffix + 'objComb.png'
+        objPNG3 = os.path.join(rerunDir, (prefix + '_' + suffix + 'objComb.png'))
         objEllComb = getEll2Plot(objComb, radius=(objComb['a'] * growH))
         showSEPImage(imgSubC, contrast=0.06, title='Detections - Combined',
                      pngName=objPNG3, ellList1=objEllComb, ellColor1='orange')
@@ -1121,7 +1155,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     concen = (r90 / r50)
     if visual:
         # Fig.f
-        objPNG4 = root + prefix + '_' + suffix + 'objRad.png'
+        objPNG4 = os.path.join(rerunDir, (prefix + '_' + suffix + 'objRad.png'))
         objEllR20 = getEll2Plot(objComb, radius=r20)
         objEllR50 = getEll2Plot(objComb, radius=r50)
         objEllR90 = getEll2Plot(objComb, radius=r90)
@@ -1184,14 +1218,14 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     mskAll[indImgNaN] = 1
 
     # Save the mask to FITS
-    mskAllFile = root + prefix + '_' + suffix + 'mskall.fits'
+    mskAllFile = os.path.join(rerunDir, (prefix + '_' + suffix + 'mskall.fits'))
     saveFits(mskAll, mskAllFile, head=imgHead)
     # Save the Objlist using the growed size
-    prefixM = root + prefix + '_' + suffix + 'mskall'
+    prefixM = os.path.join(rerunDir, (prefix + '_' + suffix + 'mskall'))
     saveSEPObjects(objMskAll, prefix=prefixM, color='Blue')
     if visual:
         # Fig.f
-        mskPNG1 = root + prefix + '_' + suffix + 'mskall.png'
+        mskPNG1 = os.path.join(rerunDir, (prefix + '_' + suffix + 'mskall.png'))
         showSEPImage(imgSubC, contrast=0.75, title='Mask - All Objects',
                      pngName=mskPNG1, mask=mskAll)
 
@@ -1278,10 +1312,10 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         print "###  7.2. CONVERT THE SEP PARAMETERS TO INITIAL GUESSES OF 1-SERSIC MODEL"
     objSersic = objToGalfit(objComb, rad=r90, concen=concen, zp=photZP,
                             rbox=3.0, dimX=dimX, dimY=dimY)
-    sersicAll = root + prefix + '_' + suffix + '1ser'
+    sersicAll = os.path.join(rerunDir, (prefix + '_' + suffix + 'sersic'))
     saveSEPObjects(objSersic, prefix=sersicAll, reg=False,
                    color='blue')
-    sersicFit = root + prefix + '_' + suffix + '1ser_fit'
+    sersicFit = os.path.join(rerunDir, (prefix + '_' + suffix + 'sersic_fit'))
     saveSEPObjects(objSersic[iObjFit], prefix=sersicFit, reg=False,
                    color='blue')
 
@@ -1340,7 +1374,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         mskFinal = combMskImage(mskFinal, detArr)
     # Mask out all the NaN pixels
     mskFinal[indImgNaN] = 1
-    mskFinFile = root + prefix + '_' + suffix + 'mskfin.fits'
+    mskFinFile = os.path.join(rerunDir, (prefix + '_' + suffix + 'mskfin.fits'))
 
     # See if the center of the image has been masked out
     sumMskR20, dump1, dump2 = sep.sum_ellipse(np.float32(mskFinal), galCenX, galCenY,
@@ -1384,7 +1418,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
 
     # Save the Objlist
     # Replace the object size with R90
-    prefixF = root + prefix + '_' + suffix + 'objAll'
+    prefixF = os.path.join(rerunDir, (prefix + '_' + suffix + 'objAll'))
     objFin = copy.deepcopy(objNoCen)
     baNoCen = copy.deepcopy(objFin['b'] / objFin['a'])
     objFin['a'] = r90NoCen
@@ -1393,7 +1427,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
 
     if visual:
         # Fig.g
-        mskPNG2 = root + prefix + '_' + suffix + 'mskfin.png'
+        mskPNG2 = os.path.join(rerunDir, (prefix + '_' + suffix + 'mskfin.png'))
         showSEPImage(imgArr, contrast=0.75, title='Mask - Final',
                      pngName=mskPNG2, mask=mskFinal)
 
@@ -1403,7 +1437,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         print "### 9. VISULIZATION OF THE DETECTED OBJECTS"
     if visual:
         # Fig.h
-        objPNG = root + prefix + '_' + suffix + 'objs.png'
+        objPNG = os.path.join(rerunDir, (prefix + '_' + suffix + 'objs.png'))
         showObjects(objComb, cenDistComb, rad=r90, outPNG=objPNG,
                     cenInd=cenObjIndex, r1=galR50, r2=galR90, r3=(3.0 * galR90),
                     fluxRatio1=fluxRatio1, fluxRatio2=fluxRatio2,
@@ -1415,6 +1449,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("prefix", help="Prefix of the cutout image files")
     parser.add_argument('-r', '--root', dest='root', help='Path to the image files',
+                        default=None)
+    parser.add_argument('-rerun', '--rerun', dest='rerun', help='Name of the rerun',
                         default=None)
     parser.add_argument('-k', dest='kernel', help='SExtractor detection kernel',
                        type=int, default=4, choices=range(1, 7))
@@ -1475,7 +1511,8 @@ if __name__ == '__main__':
                        minDetH=args.minDetH, minDetC=args.minDetC,
                        debThrH=args.debThrH, debThrC=args.debThrC,
                        debConH=args.debConH, debConC=args.debConC,
-                       combBad=args.combBad, combDet=args.combDet)
+                       combBad=args.combBad, combDet=args.combDet,
+                       rerun=args.rerun)
 
 #def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
                        #bSizeH=8, bSizeC=80, thrH=3.5, thrC=1.5, mask=1,
