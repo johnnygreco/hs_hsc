@@ -102,8 +102,8 @@ def maskFits2Pl(inputImage, inputMask):
     if not os.path.isfile(inputMask):
         raise Exception("Can not find the FITS mask: %s" % inputMask)
 
-    # Name of the .pl mask file for IRAF
-    outputMask = inputImage.replace('.fits', '.pl')
+    # Name of the .pl mskOri for IRAF
+    outputMask = inputImage.replace('.fits', '.fits.pl')
 
     if os.path.isfile(outputMask):
         os.remove(outputMask)
@@ -123,16 +123,25 @@ def imageMaskNaN(inputImage, inputMask):
     newImage = inputImage.replace('.fits', '_nan.fits')
     print " ## %s ---> %s " % (inputImage, newImage)
 
-    if not os.path.isfile(inputImage):
-        raise Exception("Can not find the FITS image: %s" % inputImage)
+    if os.path.islink(inputImage):
+        imgOri = os.readlink(inputImage)
     else:
-        imgArr = fits.open(inputImage)[0].data
-        imgHead = fits.open(inputImage)[0].header
+        imgOri = inputImage
+    if not os.path.isfile(imgOri):
+        raise Exception("Can not find the FITS image: %s" % imgOri)
+    else:
+        imgArr = fits.open(imgOri)[0].data
+        imgHead = fits.open(imgOri)[0].header
 
-    if not os.path.isfile(inputMask):
-        raise Exception("Can not find the FITS mask: %s" % inputMask)
+
+    if os.path.islink(inputMask):
+        mskOri = os.readlink(inputMask)
     else:
-        mskArr = fits.open(inputMask)[0].data
+        mskOri = inputMask
+    if not os.path.isfile(mskOri):
+        raise Exception("Can not find the FITS mask: %s" % mskOri)
+    else:
+        mskArr = fits.open(mskOri)[0].data
 
     imgArr[mskArr > 0] = np.nan
 
@@ -1057,28 +1066,41 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
     verStr = 'yes' if verbose else 'no'
 
     """ Check input files """
-    if not os.path.isfile(image):
-        raise Exception("### Can not find the input image: %s !" % image)
+    if os.path.islink(image):
+        imgOri = os.readlink(image)
+    else:
+        imgOri = image
+
+    if not os.path.isfile(imgOri):
+        raise Exception("### Can not find the input image: %s !" % imgOri)
+
     """ Conver the .fits mask to .pl file if necessary """
     if mask is not None:
-        if not os.path.isfile(mask):
-            raise Exception("### Can not find the input mask: %s !" % mask)
+        if os.path.islink(mask):
+            mskOri = os.readlink(mask)
+        else:
+            mskOri = mask
+
+        if not os.path.isfile(mskOri):
+            raise Exception("### Can not find the input mask: %s !" % mskOri)
+
         if plMask:
             plFile = maskFits2Pl(image, mask)
             if not os.path.isfile(plFile):
                 raise Exception("### Can not find the .pl mask: %s !" % plFile)
-            imageUse = image
+            imageUse = imgOri
         else:
             imageNew = imageMaskNaN(image, mask)
             if not os.path.isfile(imageNew):
                 raise Exception("### Can not find the NaN-Masked image: %s" % imageNew)
             imageUse = imageNew
     else:
-        imageUse = image
+        imageUse = imgOri
+        mskOri = None
 
     """ Estimate the maxSMA if none is provided """
     if (maxSma is None) or (galX is None) or (galY is None):
-        data = (fits.open(image))[0].data
+        data = (fits.open(imgOri))[0].data
         dimX, dimY = data.shape
         imgSize = dimX if (dimX >= dimY) else dimY
         imgR = (imgSize / 2.0)
@@ -1140,11 +1162,6 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
     iraf.isophote()
 
     """ Start the Ellipse Run """
-    #setupEllipse(ellipCfg)
-    #if os.path.exists(outBin):
-        #os.remove(outBin)
-    #iraf.ellipse(input=image, output=outBin, verbose=verStr)
-
     attempts = 0
     while attempts < maxTry:
         if verbose:
@@ -1238,7 +1255,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
 
         if savePng:
             outPng = image.replace('.fits', suffix + '.png')
-            ellipsePlotSummary(ellipOut, image, maxRad=None, mask=mask,
+            ellipsePlotSummary(ellipOut, imgOri, maxRad=None, mask=mskOri,
                     outPng=outPng, threshold=outerThreshold)
 
         if saveOut:
