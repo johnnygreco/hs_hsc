@@ -1341,7 +1341,8 @@ if __name__ == '__main__':
             zpPhoto=args.zpPhoto, maxTry=args.maxTry, minIt=args.minIt, maxIt=args.maxIt,
             ellipStep=args.step, uppClip=args.uppClip, lowClip=args.lowClip,
             nClip=args.nClip, fracBad=args.fracBad, intMode=args.intMode,
-            suffix=None, plMask=False, conver=0.05, recenter=True, verbose=args.verbose,
+            suffix=None, plMask=args.plmask, conver=0.05, recenter=True,
+            verbose=args.verbose,
             linearStep=args.linear, saveOut=args.save, savePng=args.plot,
             olthresh=args.olthresh, harmonics='none', outerThreshold=args.outerThreshold,
             updateIntens=args.updateIntens)
