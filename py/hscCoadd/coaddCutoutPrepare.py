@@ -882,7 +882,8 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     for fitsFile in fitsList:
         seg = fitsFile.split('/')
         link = os.path.join(rerunDir, seg[-1])
-        os.symlink(fitsFile, link)
+        if not os.path.islink(link):
+            os.symlink(fitsFile, link)
 
     if detArr is None:
         detFound = False
