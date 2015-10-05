@@ -104,11 +104,10 @@ def maskFits2Pl(inputImage, inputMask):
 
     # Name of the .pl mskOri for IRAF
     outputMask = inputImage.replace('.fits', '.fits.pl')
-
     if os.path.isfile(outputMask):
         os.remove(outputMask)
     # Convert the fits format mask into pl format.
-    #iraf.unlearn('imcopy')
+    iraf.unlearn('imcopy')
     iraf.imcopy(input=inputMask, output=outputMask, verbose=True)
 
     return outputMask
@@ -1049,7 +1048,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
            galR=20.0, galQ=0.9, galPA=0.0, pix=0.168, bkg=0.00, stage=3, minSma=0.0,
            gain=3.0, expTime=1.0, zpPhoto=27.0, maxTry=2, minIt=10, maxIt=120,
            ellipStep=0.10, uppClip=2.5, lowClip=2.5, nClip=2, fracBad=0.5,
-           intMode="median", suffix=None, plMask=False, conver=0.05, recenter=True,
+           intMode="median", suffix=None, plMask=True, conver=0.05, recenter=True,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
            olthresh=0.5, harmonics='1 2', outerThreshold=None, updateIntens=False,
            psfSma=6.0):
@@ -1327,6 +1326,8 @@ if __name__ == '__main__':
     parser.add_argument('--linear', dest='linear', action="store_true",
                        default=False)
     parser.add_argument('--save', dest='save', action="store_true",
+                       default=True)
+    parser.add_argument('--plmask', dest='plmask', action="store_true",
                        default=True)
     parser.add_argument('--updateIntens', dest='updateIntens', action="store_true",
                        default=False)
