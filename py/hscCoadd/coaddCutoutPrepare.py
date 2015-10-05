@@ -870,6 +870,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     if verbose:
         print "##########################################################################"
         print "### DEAL WITH IMAGE : %s" % (root + prefix + '_img.fits')
+
     if rerun is not None:
         rerunDir = os.path.join(root, rerun.strip())
         if not os.path.isdir(rerunDir):

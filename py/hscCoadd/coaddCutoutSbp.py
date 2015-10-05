@@ -62,17 +62,27 @@ def readSbpInput(prefix, root=None):
         imgFile = os.path.join(root, imgFile)
         mskFile = os.path.join(root, mskFile)
 
-    if not os.path.isfile(imgFile):
-        raise Exception("### Can not find the input cutout image : %s !" % imgFile)
-    if not os.path.isfile(mskFile):
-        raise Exception("### Can not find the input mask image : %s !" % mskFile)
+    if os.path.islink(imgFile):
+        imgOri = os.readlink(imgFile)
+    else:
+        imgOri = imgFile
+
+    if os.path.islink(mskFile):
+        mskOri = os.readlink(mskFile)
+    else:
+        mskOri = mskFile
+
+    if not os.path.isfile(imgOri):
+        raise Exception("### Can not find the input cutout image : %s !" % imgOri)
+    if not os.path.isfile(mskOri):
+        raise Exception("### Can not find the input mask image : %s !" % mskOri)
 
     # Image
-    imgHdu = fits.open(imgFile)
+    imgHdu = fits.open(imgOri)
     imgArr = imgHdu[0].data
     imgHead = imgHdu[0].header
     # Mask
-    mskHdu = fits.open(mskFile)
+    mskHdu = fits.open(mskOri)
     mskArr = mskHdu[0].data
     mskHead = mskHdu[0].header
 
@@ -84,16 +94,18 @@ def readPsfInput(prefix, root=None):
     doc
     """
     psfFile = prefix + '_psf.fits'
-    psfFile = os.path.join(root, psfFile)
 
     if root is not None:
         psfFile = os.path.join(root, psfFile)
 
-    if not os.path.isfile(psfFile):
-        raise Exception("### Can not find the input psf image : %s !" % psfFile)
+    if os.path.islink(psfFile):
+        psfOri = os.readlink(psfFile)
+
+    if not os.path.isfile(psfOri):
+        raise Exception("### Can not find the input psf image : %s !" % psfOri)
 
     # PSF
-    psfHdu = fits.open(psfFile)
+    psfHdu = fits.open(psfOri)
     psfArr = psfHdu[0].data
     psfDimX, psfDimY = psfArr.shape
 
@@ -107,7 +119,7 @@ def readInputSky(prefix, root=None, rebin='rebin6'):
 
     skyFile = prefix + '_' + rebin + '_sky.dat'
     if root is not None:
-        psfFile = os.path.join(root, psfFile)
+        skyFile = os.path.join(root, skyFile)
 
     if not os.path.isfile(skyFile):
         raise Exception("### Can not find the input sky summary : %s !" % skyFile)
@@ -609,6 +621,17 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     if not imgSameSize(imgArr, mskArr):
         raise Exception("### The Image and Mask need to have EXACTLY same dimensions!")
 
+    print "!! " + imgFile
+    print "!! " + mskFile
+    if os.path.islink(imgFile):
+        imgOri = os.readlink(imgFile)
+    else:
+        imgOri = imgFile
+    if os.path.islink(mskFile):
+        mskOri = os.readlink(mskFile)
+    else:
+        mskOri = mskFile
+
     """ 0a. Redshift """
     if redshift is not None:
         scale = hUtil.cosmoScale(redshift)
@@ -666,7 +689,12 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         if psf:
             print "\n##   Ellipse Run on PSF "
             psfFile = root + prefix + '_psf.fits'
-            if not os.path.isfile(psfFile):
+            if os.path.islink(psfFile):
+                psfOri = os.readlink(psfFile)
+            else:
+                psfOri = psfFile
+
+            if not os.path.isfile(psfOri):
                 raise Exception("### Can not find the PSF image: %s !" % psfFile)
             psfOut = galSBP.galSBP(psfFile, iniSma=5.0, pix=pix, galQ=0.95, galPA=0.0,
                                    stage=3, zpPhoto=zp, recenter=psfRecenter,
@@ -722,14 +750,14 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 print "\n##   Ellipse Summary Plot "
                 sumPng = root + prefix + '_ellip_sum.png'
                 if psf:
-                    ellipSummary(ellOut1, ellOut2, ellOut3, imgFile, psfOut=psfOut,
-                                 maxRad=maxR, mask=mskFile, radMode='rsma',
+                    ellipSummary(ellOut1, ellOut2, ellOut3, imgOri, psfOut=psfOut,
+                                 maxRad=maxR, mask=mskOri, radMode='rsma',
                                  outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
                                  showZoom=showZoom, exptime=exptime, bkg=bkg,
                                  outRatio=outRatio)
                 else:
-                    ellipSummary(ellOut1, ellOut2, ellOut3, imgFile, psfOut=None,
-                                 maxRad=maxR, mask=mskFile, radMode='rsma',
+                    ellipSummary(ellOut1, ellOut2, ellOut3, imgOri, psfOut=None,
+                                 maxRad=maxR, mask=mskOri, radMode='rsma',
                                  outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
                                  showZoom=showZoom, exptime=exptime, bkg=bkg,
                                  outRatio=outRatio)
@@ -745,7 +773,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("prefix", help="Prefix of the input image")
-    parser.add_argument("--root", dest='root', help="Directory for the input image",
+    parser.add_argument('-r', "--root", dest='root', help="Directory for the input image",
                        default=None)
     parser.add_argument("--intMode", dest='intMode', help="Method for integration",
                        default='median')

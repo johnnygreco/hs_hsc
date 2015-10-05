@@ -66,6 +66,14 @@ def readCutout(prefix, root=None):
     if root is not None:
         imgFile = os.path.join(root, imgFile)
         mskFile = os.path.join(root, mskFile)
+
+    if os.path.islink(imgFile):
+        imgOri = os.readlink(imgFile)
+        imgFile = imgOri
+    if os.path.islink(mskFile):
+        mskOri = os.readlink(mskFile)
+        mskFile = mskOri
+
     if (not os.path.isfile(imgFile)) or (not os.path.isfile(mskFile)):
         print imgFile
         print mskFile
@@ -80,8 +88,6 @@ def readCutout(prefix, root=None):
         mskArr = mskHdu[0].data
 
     imgArrV = imgArr.view('float32')
-    #imgArr = cdPrep.imgByteSwap(imgArr)
-    #mskArr = cdPrep.imgByteSwap(mskArr)
 
     return imgArr, imgHead, mskArr
 
