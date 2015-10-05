@@ -894,10 +894,10 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     # Sometimes NaN pixels exist for the image. Replace them, and make sure that they are
     #    masked out
     indImgNaN = np.isnan(imgArr)
+    nNaNPix = len(np.where(indImgNaN)[0])
     if verbose:
-        print "###   %6d NaN pixels have been replaced and masked out!" % len(np.where(
-            indImgNaN)[0])
-    if len(np.where(indImgNaN)[0] > 0):
+        print "###   %6d NaN pixels have been replaced and masked out!" % nNaNPix
+    if nNaNPix > 0:
         sepFlags = addFlag(sepFlags, 'NAN_PIX', True)
         imgArr[indImgNaN] = 0.0
     else:
