@@ -612,6 +612,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     """
 
     print "## Input Image: ", prefix
+    print "## Root Directory: ", root
     """ 0. Organize Input Data """
     # Read in the input image, mask, psf, and their headers
     imgFile, imgArr, imgHead, mskFile, mskArr, mskHead = readSbpInput(prefix,
