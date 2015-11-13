@@ -1,57 +1,30 @@
 from __future__ import division
 
+import re
 import copy
 import argparse
+import collections
 import numpy as np
+from distutils.version import StrictVersion
 
 # Matplotlib default settings
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
-#rcdef = plt.rcParams.copy()
-#pylab.rcParams['figure.figsize'] = 12, 10
-#pylab.rcParams['xtick.major.size'] = 8.0
-#pylab.rcParams['xtick.major.width'] = 1.5
-#pylab.rcParams['xtick.minor.size'] = 4.0
-#pylab.rcParams['xtick.minor.width'] = 1.5
-#pylab.rcParams['ytick.major.size'] = 8.0
-#pylab.rcParams['ytick.major.width'] = 1.5
-#pylab.rcParams['ytick.minor.size'] = 4.0
-#pylab.rcParams['ytick.minor.width'] = 1.5
-#rc('axes', linewidth=2)
 
-from astropy.io import fits
-from astropy import units as u
+import astropy.table
 from astropy.stats import sigma_clip
-from astropy.wcs import WCS
-
-import cubehelix  # Cubehelix color scheme from https://github.com/jradavenport/cubehelix
-
-cmap1 = cubehelix.cmap(start=0.5, rot=-0.8, gamma=1.0,
-                       minSat=1.2, maxSat=1.2,
-                       minLight=0.0, maxLight=1.0)
-cmap2 = cubehelix.cmap(start=2.0, rot=-1.0, gamma=2.5,
-                       minSat=1.2, maxSat=1.2,
-                       minLight=0.0, maxLight=1.0, reverse=True)
-cmap3 = cubehelix.cmap(start=0.5, rot=-0.8, gamma=1.2,
-                       minSat=1.2, maxSat=1.2,
-                       minLight=0.0, maxLight=1.0)
-cmap4 = cubehelix.cmap(start=0.5, rot=-0.8, gamma=0.7,
-                       minSat=1.2, maxSat=1.2,
-                       minLight=0.0, maxLight=1.0)
 
 from palettable.colorbrewer.sequential import Greys_3 as pcmap1
-cmap5 = pcmap1.mpl_colormap
-
+cmap1 = pcmap1.mpl_colormap
 from palettable.colorbrewer.diverging  import RdYlGn_11 as pcmap2
-cmap6 = pcmap2.mpl_colormap
+cmap2 = pcmap2.mpl_colormap
 
 import lsst.daf.persistence as dafPersist
 import lsst.afw.geom.ellipses
 import lsst.afw.geom
 import lsst.pex.exceptions
 from lsst.afw.table import SourceCatalog, SchemaMapper
-
-from distutils.version import StrictVersion
 
 
 def getMag(flux, fluxerr, zeropoint):
@@ -131,14 +104,13 @@ def getAstroTable(src, mags=True, zeropoint=27.0):
     return tab
 
 
-def getCalexpCat(root, tract, patch, filter):
+def getCalexpCat(root, tract, patch, filter, calexp=False):
 
     # make a butler and specify your dataId
     butler = dafPersist.Butler(root)
     dataId = {'tract': tract, 'patch':patch, 'filter':filter}
 
-    pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
-    if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
+    if calexp:
         dataType = "deepCoadd_calexp"
     else:
         dataType = "deepCoadd"
@@ -242,57 +214,106 @@ def srcMoments2Ellip(ellip):
     return r2, ell, theta
 
 
-def main(root, tract, patch, filter, zeropoint=27.0):
+def main(root, tract, patch, filter, zeropoint=27.0, calexp=False, dev=False,
+        prefix="patchCModel"):
 
     """
     Show the image of a Patch, and overplot the shape of cModels results
     """
 
-    expPatch, srcPatch = getCalexpCat(root, tract, patch, filter)
+    expPatch, srcPatch = getCalexpCat(root, tract, patch, filter, calexp=calexp)
 
     """
     Image Array
     """
-    imgPatch = expPatch.getMaskedImage().getArray()
+    imgPatch = expPatch.getMaskedImage().getImage().getArray()
     imin, imax = zscale(imgPatch, contrast=0.10, samples=500)
 
     """
     Catalog
     """
     print "# There are %d sources measured!" % (len(srcPatch))
+
+    print "# Get xUse, yUse"
     x0, y0 = expPatch.getXY0()
     xUse, yUse = (srcPatch.getX() - x0), (srcPatch.getY() - y0)
 
+    print "# Convert the source to AstroPy table"
     tabPatch = getAstroTable(srcPatch, mags=True, zeropoint=zeropoint)
+    #print tabPatch.colnames
+
+    print "# Get the cModel magnitude"
+    cmodelMag = tabPatch['cmodel.mag']
+    cmodelColor = toColorArr(cmodelMag, top=23.5, bottom=18.5)
+    print "# Get the color array for cModel magnitde: %d -- %d" % (np.nanmin(cmodelColor),
+            np.nanmax(cmodelColor))
+
+    print "# Convert the Re, q, PA into Ellipse"
+    if not dev:
+        rExp = tabPatch['cmodel.exp.ellipse_a']
+        eExp = (1.0 - tabPatch['cmodel.exp.ellipse_q'])
+        pExp = tabPatch['cmodel.exp.ellipse_theta']
+        print "# Min/Max Theta : %7.3f - %7.3f" % (np.nanmin(pExp), np.nanmax(pExp))
+        modEllip = getEll2Plot(xUse, yUse, rExp, eExp, pExp)
+        modStr = 'Exp'
+    else:
+        rDev = tabPatch['cmodel.dev.ellipse_a']
+        eDev = (1.0 - tabPatch['cmodel.dev.ellipse_q'])
+        pDev = tabPatch['cmodel.dev.ellipse_theta']
+        print "# Min/Max Theta : %7.3f - %7.3f" % (np.nanmin(pDev), np.nanmax(pDev))
+        modEllip = getEll2Plot(xUse, yUse, rDev, eDev, pDev)
+        modStr = 'Dev'
 
     """ Fig 1 """
-    fig = plt.figure(figsize=(20, 20))
+    fig = plt.figure(figsize=(30, 30))
     fig.subplots_adjust(hspace=0.0, wspace=0.0,
                         left=0.03, bottom=0.03,
                         top=0.95, right=0.99)
     ax = fig.add_subplot(1,1,1)
-    fontsize = 14
+    fontsize = 16
     ax.minorticks_on()
 
     for tick in ax.xaxis.get_major_ticks():
         tick.label1.set_fontsize(fontsize)
     for tick in ax.yaxis.get_major_ticks():
         tick.label1.set_fontsize(fontsize)
-    ax.set_title('i-band Image - cModel/Exp', fontsize=25, fontweight='bold')
-    ax.title.set_position((0.5,1.01))
+    ax.set_title('%s - %s - %s Image - cModel/%s' % (tract, patch, filter, modStr),
+            fontsize=38, fontweight='bold')
+    ax.title.set_position((0.5, 1.01))
 
     # Grey scale image
+    print "# Plot the Grey scale image"
     ax.imshow(np.arcsinh(imgPatch), interpolation="none",
            vmin=imin, vmax=imax,
-           cmap=cmap5)
+           cmap=cmap1)
+
     # Scatter points for detections
-    ax.scatter(xUse, yUse, marker='+', s=25, c='r', alpha=0.6)
+    print "# Scatter plot the detections"
+    ax.scatter(xUse, yUse, marker='+', s=22, c='r', alpha=0.3)
+
+    # Ellipses for cModel
+    print "# Overplot the ellipses for cModel"
+    for (e, c) in zip(modEllip, cmodelColor):
+        if np.isfinite(c):
+            ax.add_artist(e)
+            e.set_clip_box(ax.bbox)
+            e.set_alpha(0.8)
+            e.set_edgecolor(cmap2(int(c)))
+            e.set_facecolor('none')
+            e.set_linewidth(1.3)
+
+    # Add the color bar
+    print "# Overplot the color bar"
+    cax = fig.add_axes([0.07, 0.09, 0.18, 0.025])
+    norm = mpl.colors.Normalize(vmin=18.5, vmax=23.5)
+    cbar = mpl.colorbar.ColorbarBase(cax, cmap=cmap2, norm=norm,
+                                     orientation='horizontal')
+    cbar.set_label('cModel Magnitude (mag)', fontsize=24)
 
     ax.set_xlim(0, imgPatch.shape[1]-1)
     ax.set_ylim(0, imgPatch.shape[0]-1)
 
-
-    fig.savefig("patchCmodel_%s-%s-%s.png" % (tract, patch, filter))
+    fig.savefig("%s_%s_%s-%s-%s.png" % (prefix, modStr, tract, patch, filter))
 
 
 if __name__ == '__main__':
@@ -302,6 +323,16 @@ if __name__ == '__main__':
     parser.add_argument("tract", type=int, help="Tract to show")
     parser.add_argument("patch", help="Patch to show")
     parser.add_argument("filter", help="Filter to show")
+    parser.add_argument("-p", "--prefix", dest="prefix",
+            default='patchCModel', help="Prefix of the file name")
+    parser.add_argument("-z", "--zeropoint", type=float, default=27.0,
+            dest='zeropoint', help="Photometric zeropoint")
+    parser.add_argument("-c", "--calexp", help="Whether to use the deepCoadd_calexp",
+            dest='calexp', action='store_true', default=False)
+    parser.add_argument("-d", "--dev", help="Whether to use the cModel.dev",
+            dest='dev', action='store_true', default=False)
     args = parser.parse_args()
 
-    main(args.root, args.tract, args.patch, args.filter)
+    main(args.root, args.tract, args.patch, args.filter,
+            zeropoint=args.zeropoint, calexp=args.calexp, dev=args.dev,
+            prefix=args.prefix)
