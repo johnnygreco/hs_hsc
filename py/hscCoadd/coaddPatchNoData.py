@@ -7,6 +7,7 @@ import copy
 import os
 import argparse
 import numpy as np
+from distutils.version import StrictVersion
 
 import lsst.daf.persistence  as dafPersist
 import lsst.afw.coord        as afwCoord
@@ -248,6 +249,13 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
                      minArea=10000, clobber=False, butler=None, dataId=None,
                      workDir=''):
 
+
+    pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
+    if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
+        coaddData = "deepCoadd_calexp"
+    else:
+        coaddData = "deepCoadd"
+
     # Get the name of the wkb and deg file
     strTractPatch = (str(tract).strip() + '_' + patch + '_' + filter)
     ## For all the accepted regions
@@ -295,7 +303,7 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
         # Get the exposure from the butler
         # TODO Be careful here, some of the coadd image files on the disk are not useful
         try:
-            calExp = butler.get('deepCoadd', dataId, immediate=True)
+            calExp = butler.get(coaddData, dataId, immediate=True)
         except Exception:
             print "Oops! Can not read this image: %s !" % fitsName
         else:
@@ -564,6 +572,12 @@ def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
 def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
                     verbose=True, clobber=False, butler=None, dataId=None):
 
+    pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
+    if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
+        coaddData = "deepCoadd_calexp"
+    else:
+        coaddData = "deepCoadd"
+
     # Get the name of the wkb and deg file
     strTractPatch = (str(tract).strip() + '_' + patch + '_' + filter)
     # For all the accepted regions
@@ -600,7 +614,7 @@ def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
             print "## Reading Fits Image: %s" % fitsName
 
         # Get the exposure from the butler
-        calExp = butler.get('deepCoadd', dataId, immediate=True)
+        calExp = butler.get(coaddData, dataId, immediate=True)
         # Get the Bounding Box of the image
         bbox = calExp.getBBox(afwImage.PARENT)
         # Get the WCS information
@@ -633,8 +647,14 @@ def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
     TODO: Merge this into coaddPatchShape later
     """
 
+    pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
+    if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
+        coaddData = "deepCoadd_calexp"
+    else:
+        coaddData = "deepCoadd"
+
     """ Save a list of tract IDs """
-    trUniq = cdTract.getTractList(rootDir, filter, imgType='deepCoadd', toInt=True,
+    trUniq = cdTract.getTractList(rootDir, filter, imgType=coaddData, toInt=True,
                                   prefix=prefix, toFile=True)
     # Get the list of coadded images in the direction
     if checkCat:

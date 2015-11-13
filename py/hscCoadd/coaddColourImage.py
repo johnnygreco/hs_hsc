@@ -5,6 +5,7 @@ from __future__ import division
 import os
 import argparse
 import numpy   as np
+from distutils.version import StrictVersion
 
 import lsst.daf.persistence as dafPersist
 import lsst.afw.display.rgb as afwRgb
@@ -118,6 +119,12 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
                      min=-0.0, max=0.70, Q=10, name=None, localMax=True,
                      scaleBar=10, butler=None):
 
+    pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
+    if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
+        coaddData = "deepCoadd_calexp"
+    else:
+        coaddData = "deepCoadd"
+
     # Get the SkyMap of the database
     if butler is None:
         try:
@@ -187,7 +194,7 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
         for i in range(3):
 
             # Find the file of the coadd image
-            coadd = butler.get("deepCoadd", tract=tract, patch=patch,
+            coadd = butler.get(coaddData, tract=tract, patch=patch,
                                 filter=filtArr[i])
 
             # Get the WCS information
@@ -301,7 +308,7 @@ def getTractPatchList(matches):
     return tract, patch
 
 
-def getFitsImgName(root, tract, patch, filter, imgType='deepCoadd'):
+def getFitsImgName(root, tract, patch, filter, imgType='deepCoadd_calexp'):
 
     if root[-1] is not '/':
         root += '/'
@@ -316,6 +323,12 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
                          info1=None, info2=None, info3=None,
                          min=-0.0, max=0.70, Q=10, name=None, localMax=True,
                          scaleBar=10, butler=None, verbose=False):
+
+    pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
+    if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
+        coaddData = "deepCoadd_calexp"
+    else:
+        coaddData = "deepCoadd"
 
     # Get the SkyMap of the database
     if butler is None:
@@ -384,7 +397,7 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
         for i in range(3):
             try:
                 # Find the coadd image
-                coadd = butler.get("deepCoadd", tract=tract, patch=patch,
+                coadd = butler.get(coaddData, tract=tract, patch=patch,
                                    filter=filtArr[i], immediate=True)
                 # Get the WCS information
                 wcs = coadd.getWcs()
@@ -469,7 +482,7 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
             # Go through the three bands
             for i in range(3):
                 # Find the file of the coadd image
-                coadd = butler.get("deepCoadd", tract=tract, patch=patch,
+                coadd = butler.get(coaddData, tract=tract, patch=patch,
                                     filter=filtArr[i], immediate=True)
                 # Get the WCS information
                 wcs = coadd.getWcs()

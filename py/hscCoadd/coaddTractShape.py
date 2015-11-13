@@ -6,6 +6,8 @@ import os
 import copy
 import argparse
 import numpy as np
+from distutils.version import StrictVersion
+
 import lsst.daf.persistence   as dafPersist
 
 # Matplotlib default settings
@@ -56,7 +58,7 @@ def fourCornerRaDec(tractWcs, xDim, yDim):
 
     return corners
 
-def getTractList(rootDir, filter, imgType='deepCoadd', toInt=True,
+def getTractList(rootDir, filter, imgType='deepCoadd_calexp', toInt=True,
                  prefix='hsc_coadd', toFile=True):
     """
     Get all the tractID from certain rootDir
@@ -195,6 +197,12 @@ def coaddTractGetCorners(skyMap, tractId):
 def coaddTractShape(rootDir, filter, verbose=True, prefix='hsc_tract',
                     savePNG=True, xSize=18, ySize=16):
 
+    pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
+    if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
+        coaddData = "deepCoadd_calexp"
+    else:
+        coaddData = "deepCoadd"
+
     """ Prefix of the output file """
     preFile1 = prefix + '_' + filter + '_tract'
 
@@ -203,7 +211,7 @@ def coaddTractShape(rootDir, filter, verbose=True, prefix='hsc_tract',
     skyMap = butler.get("deepCoadd_skyMap", immediate=True)
 
     """ Get the list of tract IDs """
-    tractList = getTractList(rootDir, filter, imgType='deepCoadd',
+    tractList = getTractList(rootDir, filter, imgType=coaddData,
                              toInt=True, prefix=prefix, toFile=True)
     nTracts = len(tractList)
     if verbose:

@@ -6,6 +6,7 @@ import copy
 import argparse
 import warnings
 import numpy as np
+from distutils.version import StrictVersion
 
 # HSC Pipeline
 import lsst.daf.persistence   as dafPersist
@@ -210,6 +211,12 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                      circleMatch=True, verbose=True, extraField1=None, extraValue1=None,
                      butler=None):
 
+    pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
+    if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
+        coaddData = "deepCoadd_calexp"
+    else:
+        coaddData = "deepCoadd"
+
     # Get the SkyMap of the database
     if butler is None:
         try:
@@ -263,7 +270,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
         # Try to load the coadd Exposure; the skymap covers larger area than the
         # available data, which will cause Butler to fail sometime
         try:
-            coadd = butler.get("deepCoadd", tract=tractId,
+            coadd = butler.get(coaddData, tract=tractId,
                                patch=patchId, filter=filt,
                                immediate=True)
         except Exception, errMsg:
@@ -371,7 +378,8 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                 # Get the forced photometry source catalog
                 """ Sometimes the forced photometry catalog might not be available """
                 try:
-                    srcCat = butler.get('deepCoadd_forced_src', tract=tractId,
+                    # TODO: Maybe the measurement catalog is better
+                    srcCat = butler.get('deepCoadd_meas', tract=tractId,
                                         patch=patchId, filter=filt,
                                         immediate=True,
                                         flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
@@ -442,7 +450,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                 # Try to load the coadd Exposure; the skymap covers larger area than the
                 # available data, which will cause Butler to fail sometime
                 try:
-                    coadd = butler.get("deepCoadd", tract=tractId,
+                    coadd = butler.get(coaddData, tract=tractId,
                                        patch=patchId, filter=filt,
                                        immediate=True)
 
@@ -534,6 +542,13 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                       extraField1=None, extraValue1=None, butler=None,
                       visual=True):
 
+    # Deal with the Pipeline Version
+    pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
+    if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
+        coaddData = "deepCoadd_calexp"
+    else:
+        coaddData = "deepCoadd"
+
     # Get the SkyMap of the database
     if butler is None:
         try:
@@ -615,7 +630,7 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
         # Check if the coordinate is available in all three bands.
         try:
             # Get the coadded exposure
-            coadd = butler.get("deepCoadd", tract=tract,
+            coadd = butler.get(coaddData, tract=tract,
                                patch=patch, filter=filt,
                                immediate=True)
         except Exception, errMsg:
