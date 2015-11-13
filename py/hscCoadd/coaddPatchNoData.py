@@ -285,7 +285,9 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
 
         # Get the name of the input fits image
         if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
-            coaddImg = 'calexp-%s-%s-%s.fits' % (filter, tract, patch)
+            coaddImg = '%s/calexp-%s-%s-%s.fits' % (patch, filter, tract, patch)
+        else:
+            coaddImg = '%s.fits' % (patch)
         if rootDir[-1] is '/':
             fitsName = rootDir + 'deepCoadd/' + filter + '/' + str(tract).strip() \
                     + '/' + coaddImg
@@ -606,7 +608,9 @@ def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
 
         # Get the name of the input fits image
         if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
-            coaddImg = 'calexp-%s-%s-%s.fits' % (filter, tract, patch)
+            coaddImg = '%s/calexp-%s-%s-%s.fits' % (patch, filter, tract, patch)
+        else:
+            coaddImg = '%s.fits' % (patch)
         if rootDir[-1] is '/':
             fitsName = rootDir + 'deepCoadd/' + filter + '/' + str(tract).strip() \
                     + '/' + coaddImg
