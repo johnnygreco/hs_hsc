@@ -284,14 +284,16 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
             dataId = {'tract':tract, 'patch':patch, 'filter':filter}
 
         # Get the name of the input fits image
+        if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
+            coaddImg = 'calexp-%s-%s-%s.fits' % (filter, tract, patch)
         if rootDir[-1] is '/':
             fitsName = rootDir + 'deepCoadd/' + filter + '/' + str(tract).strip() \
-                    + '/' + patch + '.fits'
+                    + '/' + coaddImg
         else:
             fitsName = rootDir + '/deepCoadd/' + filter + '/' + str(tract).strip() \
-                    + '/' + patch + '.fits'
-            if not os.path.isfile(fitsName):
-                raise Exception('Can not find the input fits image: %s' % fitsName)
+                    + '/' + coaddImg
+        if not os.path.isfile(fitsName):
+            raise Exception('Can not find the input fits image: %s' % fitsName)
 
         # Get the name of the png file
         titlePng = prefix + strTractPatch + '_NODATA'
@@ -577,6 +579,8 @@ def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
         coaddData = "deepCoadd_calexp"
     else:
         coaddData = "deepCoadd"
+    if verbose:
+        print "# Deal with %s dataType here" % coaddData
 
     # Get the name of the wkb and deg file
     strTractPatch = (str(tract).strip() + '_' + patch + '_' + filter)
@@ -601,14 +605,16 @@ def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
             dataId = {'tract': tract, 'patch': patch, 'filter': filter}
 
         # Get the name of the input fits image
+        if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
+            coaddImg = 'calexp-%s-%s-%s.fits' % (filter, tract, patch)
         if rootDir[-1] is '/':
             fitsName = rootDir + 'deepCoadd/' + filter + '/' + str(tract).strip() \
-                    + '/' + patch + '.fits'
+                    + '/' + coaddImg
         else:
             fitsName = rootDir + '/deepCoadd/' + filter + '/' + str(tract).strip() \
-                    + '/' + patch + '.fits'
-            if not os.path.isfile(fitsName):
-                raise Exception('Can not find the input fits image: %s' % fitsName)
+                    + '/' + coaddImg
+        if not os.path.isfile(fitsName):
+            raise Exception('Can not find the input fits image: %s' % fitsName)
 
         if verbose:
             print "## Reading Fits Image: %s" % fitsName
