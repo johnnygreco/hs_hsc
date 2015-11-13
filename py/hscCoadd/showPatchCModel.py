@@ -1,22 +1,23 @@
 from __future__ import division
 
 import copy
+import argparse
 import numpy as np
 
 # Matplotlib default settings
-rcdef = plt.rcParams.copy()
-pylab.rcParams['figure.figsize'] = 12, 10
-pylab.rcParams['xtick.major.size'] = 8.0
-pylab.rcParams['xtick.major.width'] = 1.5
-pylab.rcParams['xtick.minor.size'] = 4.0
-pylab.rcParams['xtick.minor.width'] = 1.5
-pylab.rcParams['ytick.major.size'] = 8.0
-pylab.rcParams['ytick.major.width'] = 1.5
-pylab.rcParams['ytick.minor.size'] = 4.0
-pylab.rcParams['ytick.minor.width'] = 1.5
-rc('axes', linewidth=2)
-
+import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
+#rcdef = plt.rcParams.copy()
+#pylab.rcParams['figure.figsize'] = 12, 10
+#pylab.rcParams['xtick.major.size'] = 8.0
+#pylab.rcParams['xtick.major.width'] = 1.5
+#pylab.rcParams['xtick.minor.size'] = 4.0
+#pylab.rcParams['xtick.minor.width'] = 1.5
+#pylab.rcParams['ytick.major.size'] = 8.0
+#pylab.rcParams['ytick.major.width'] = 1.5
+#pylab.rcParams['ytick.minor.size'] = 4.0
+#pylab.rcParams['ytick.minor.width'] = 1.5
+#rc('axes', linewidth=2)
 
 from astropy.io import fits
 from astropy import units as u
@@ -169,15 +170,26 @@ def main(root, tract, patch, filter):
     Show the image of a Patch, and overplot the shape of cModels results
     """
 
-    imgPatch, srcPatch = getExpArray(root, tract, patch, filter)
-
+    imgPatch, srcPatch = getCalexpCat(root, tract, patch, filter)
     imin, imax = zscale(imgPatch, contrast=0.10, samples=500)
+
+    """
+    Catalog
+    """
+    print "# There are %d sources measured!" % (len(srcPatch))
+    x0, y0 = imgPatch.getXY0()
+    xUse, yUse = (srcPatch.getX() - x0), (srcPatch.getY() - y0)
+    #devEllip = srcPatch.get('cmodel.dev.ellipse')
+    #expEllip = srcPatch.get('cmodel.exp.ellipse')
+    #coord = srcPatch.get('coord')
+    #rDev, eDev, paDev = srcMoments2Ellip(devEllip)
 
     """ Fig 1 """
     fig = plt.figure(figsize=(20, 20))
-    fig.subplots_adjust(hspace=0.1, wspace=0.1,
-                        top=0.95, right=0.95)
-    ax = gca()
+    fig.subplots_adjust(hspace=0.0, wspace=0.0,
+                        left=0.03, bottom=0.03,
+                        top=0.95, right=0.99)
+    ax = fig.add_subplot(1,1,1)
     fontsize = 14
     ax.minorticks_on()
 
@@ -188,12 +200,15 @@ def main(root, tract, patch, filter):
     ax.set_title('i-band Image - cModel/Exp', fontsize=25, fontweight='bold')
     ax.title.set_position((0.5,1.01))
 
-    ax.imshow(np.arcsinh(imgData), interpolation="none",
+    # Grey scale image
+    ax.imshow(np.arcsinh(imgPatch), interpolation="none",
            vmin=imin, vmax=imax,
            cmap=cmap5)
+    # Scatter points for detections
+    ax.scatter(xUse, yUse, marker='+', s=25, c='r', alpha=0.6)
 
-    ax.set_xlim(0, imgData.shape[1]-1)
-    ax.set_ylim(0, imgData.shape[0]-1)
+    ax.set_xlim(0, imgPatch.shape[1]-1)
+    ax.set_ylim(0, imgPatch.shape[0]-1)
 
 
     fig.savefig("patchCmodel_%s-%s-%s.png" % (tract, patch, filter))
