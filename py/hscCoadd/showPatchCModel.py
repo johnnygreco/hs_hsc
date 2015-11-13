@@ -46,10 +46,89 @@ from palettable.colorbrewer.diverging  import RdYlGn_11 as pcmap2
 cmap6 = pcmap2.mpl_colormap
 
 import lsst.daf.persistence as dafPersist
-import lsst.afw.geom.ellipses as geomEllip
+import lsst.afw.geom.ellipses
+import lsst.afw.geom
+import lsst.pex.exceptions
 from lsst.afw.table import SourceCatalog, SchemaMapper
 
 from distutils.version import StrictVersion
+
+
+def getMag(flux, fluxerr, zeropoint):
+
+    """
+    return the magnitude and error
+    """
+    mag, magerr = -2.5 * np.log10(flux), 2.5/np.log(10.0)*fluxerr/flux
+    return (mag.T + zeropoint).T, magerr
+
+
+def getEllipse(quad):
+
+    """
+    returns the semi-major axis, axes ratio and PA for a given quadrupole moment
+    """
+    e = lsst.afw.geom.ellipses.Axes(quad)
+    return e.getA(), e.getB()/e.getA(), e.getTheta() * 180.0/np.pi
+
+
+def getAstroTable(src, mags=True, zeropoint=27.0):
+
+    """
+    returns an astropy table with all the src entries
+    if the entries are complex objects, it breaks them down:
+      ellipse entries are broken into
+           ellipse_a = semi-major axis
+           ellipse_q = axis ratio (always < 1)
+           ellipse_theta = rotation of semi-major axis from chip x-axis in degrees
+    if mags is True, returns the magnitudes for all the flux columns
+    """
+
+    tab = astropy.table.Table()
+    for name in src.schema.getNames():
+        #for reasons I don't understand a lookup by name is much slower than a lookup by key
+        nameKey = src.schema.find(name).getKey()
+        try:
+            tab.add_column(astropy.table.Column(name=name,
+                                                data=src.get(nameKey)))
+        except lsst.pex.exceptions.LsstException:
+            if type(src[0].get(nameKey)) is lsst.afw.geom.ellipses.ellipsesLib.Quadrupole:
+                reff, q, theta = zip(*[getEllipse(s.get(nameKey)) for s in src])
+                tab.add_column(astropy.table.Column(name=name+'_a', data=reff))
+                tab.add_column(astropy.table.Column(name=name+'_q', data=q))
+                tab.add_column(astropy.table.Column(name=name+'_theta', data=theta))
+            elif type(src[0].get(nameKey)) is lsst.afw.coord.coordLib.IcrsCoord:
+                x, y= zip(*[(s.get(nameKey).getRa().asDegrees(),
+                             s.get(nameKey).getDec().asDegrees()) for s in src])
+                tab.add_column(astropy.table.Column(name=name+'_ra', data=x))
+                tab.add_column(astropy.table.Column(name=name+'_dec', data=y))
+            else:
+                tab.add_column(astropy.table.Column(name=name,
+                                                    data=np.array([s.get(nameKey) for s in src])))
+            #report angles in degrees
+        if isinstance(src[0].get(nameKey), lsst.afw.geom.Angle):
+            tab.remove_column(name)
+            tab.add_column(astropy.table.Column(data=[s.get(nameKey).asDegrees()
+                                                      for s in src],
+                                                dtype=float, name=name))
+
+    if mags:
+        #this is a horrible hack, but I don't think we can use the slots, since
+        #not all the fluxes end up in the slots
+        for col in tab.colnames:
+            if (re.match('^flux\.[a-z]+$', col) or
+                re.match('^flux\.[a-z]+.apcorr$', col) or
+                re.match('^cmodel.+flux$', col) or
+                re.match('^cmodel.+flux.apcorr$', col)):
+                mag, magerr = getMag(tab[col], tab[col+'.err'],
+                                     zeropoint if not re.search('apcorr', col) else 0.0)
+
+                tab.add_column(astropy.table.Column(name=re.sub('flux', 'mag', col),
+                                                    data=mag))
+                tab.add_column(astropy.table.Column(name=re.sub('flux', 'mag', col+'.err'),
+                                                    data=magerr))
+
+    return tab
 
 
 def getCalexpCat(root, tract, patch, filter):
@@ -74,15 +153,11 @@ def getCalexpCat(root, tract, patch, filter):
         except:
             raise
 
-    # get the maskedImage from the exposure, and the image from the mimg
-    mimg = exposure.getMaskedImage()
-    img = mimg.getImage()
-
     # get the measurement catalog
     srcCat = butler.get('deepCoadd_meas', dataId, immediate=True)
 
     # convert to a numpy ndarray
-    return img.getArray(), srcCat
+    return exposure, srcCat
 
 
 def zscale(img, contrast=0.25, samples=500):
@@ -110,6 +185,7 @@ def zscale(img, contrast=0.25, samples=500):
 
 
 def srcToRaDec(src):
+
     """
     Return a list of (RA, DEC)
     """
@@ -121,6 +197,7 @@ def srcToRaDec(src):
 
 
 def toColorArr(data, bottom=None, top=None):
+
     """
     Convert a data array to "color array" (between 0 and 1)
     """
@@ -148,6 +225,7 @@ def getEll2Plot(x, y, re, ell, theta):
 
 
 def srcMoments2Ellip(ellip):
+
     """
     Translate The 2nd Moments into Elliptical Shape
     """
@@ -164,25 +242,28 @@ def srcMoments2Ellip(ellip):
     return r2, ell, theta
 
 
-def main(root, tract, patch, filter):
+def main(root, tract, patch, filter, zeropoint=27.0):
 
     """
     Show the image of a Patch, and overplot the shape of cModels results
     """
 
-    imgPatch, srcPatch = getCalexpCat(root, tract, patch, filter)
+    expPatch, srcPatch = getCalexpCat(root, tract, patch, filter)
+
+    """
+    Image Array
+    """
+    imgPatch = expPatch.getMaskedImage().getArray()
     imin, imax = zscale(imgPatch, contrast=0.10, samples=500)
 
     """
     Catalog
     """
     print "# There are %d sources measured!" % (len(srcPatch))
-    x0, y0 = imgPatch.getXY0()
+    x0, y0 = expPatch.getXY0()
     xUse, yUse = (srcPatch.getX() - x0), (srcPatch.getY() - y0)
-    #devEllip = srcPatch.get('cmodel.dev.ellipse')
-    #expEllip = srcPatch.get('cmodel.exp.ellipse')
-    #coord = srcPatch.get('coord')
-    #rDev, eDev, paDev = srcMoments2Ellip(devEllip)
+
+    tabPatch = getAstroTable(srcPatch, mags=True, zeropoint=zeropoint)
 
     """ Fig 1 """
     fig = plt.figure(figsize=(20, 20))
