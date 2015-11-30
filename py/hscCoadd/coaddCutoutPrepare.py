@@ -365,6 +365,8 @@ def addFlag(dictName, flagName, flagValue):
         dictName = np.array([], dtype=[('name', 'a20'), ('value', 'i1')])
     # Assign a new flag
     newFlag = (str(flagName), flagValue)
+    # XXX: This does not work for Numpy 1.8x, which is still used by the hscPipe 3.8.6
+    # Remember to use the personal installed newer version of numpy
     newDict = np.insert(dictName, 0, newFlag)
 
     return newDict
