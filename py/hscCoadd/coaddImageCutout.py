@@ -544,6 +544,7 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
 
     # Deal with the Pipeline Version
     pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
+    print "### hscPipe Version: %s" % pipeVersion
     if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
         coaddData = "deepCoadd_calexp"
     else:
@@ -654,27 +655,27 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                 totalExpTime = 0.0
                 #totalExpTime = len(visitIn)
                 # TODO: This part seems to cause problem, turn it off XXX
-                expTimeVisits = set()
-                for k in range(len(visitIn) + 1):
-                    input = ccdIn[k]
-                    ccd   = input.get("ccd")
-                    visit = input.get("visit")
-                    singleBbox = input.getBBox()
-                    single = butler.get("calexp_sub", visit=int(visit), ccd=ccd,
-                                    bbox=afwGeom.Box2I(afwGeom.Point2I(0,0),
-                                                       afwGeom.ExtentI(1,1)),
-                                    immediate=True)
-                    singleCalib = single.getCalib()
-                    singleWcs   = single.getWcs()
-                    singlePos   = singleWcs.skyToPixel(raDec)
-                    if not singleBbox.contains(afwGeom.Point2I(singlePos)):
-                        continue
-                    else:
-                        if visit not in expTimeVisits:
-                            totalExpTime += singleCalib.getExptime()
-                            expTimeVisits.add(visit)
-                if verbose:
-                    print "### The total exposure time is %5.1f" % totalExpTime
+                #expTimeVisits = set()
+                #for k in range(len(visitIn) + 1):
+                    #input = ccdIn[k]
+                    #ccd   = input.get("ccd")
+                    #visit = input.get("visit")
+                    #singleBbox = input.getBBox()
+                    #single = butler.get("calexp_sub", visit=int(visit), ccd=ccd,
+                                    #bbox=afwGeom.Box2I(afwGeom.Point2I(0,0),
+                                                       #afwGeom.ExtentI(1,1)),
+                                    #immediate=True)
+                    #singleCalib = single.getCalib()
+                    #singleWcs   = single.getWcs()
+                    #singlePos   = singleWcs.skyToPixel(raDec)
+                    #if not singleBbox.contains(afwGeom.Point2I(singlePos)):
+                        #continue
+                    #else:
+                        #if visit not in expTimeVisits:
+                            #totalExpTime += singleCalib.getExptime()
+                            #expTimeVisits.add(visit)
+                #if verbose:
+                    #print "### The total exposure time is %5.1f" % totalExpTime
             # Convert the central coordinate from Ra,Dec to pixel unit
             pixel = wcs.skyToPixel(raDec)
             pixel = afwGeom.Point2I(pixel)
