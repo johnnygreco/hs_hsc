@@ -734,9 +734,10 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                                         (srcDec < (dec + sizeDegree)))
                         # Extract the matched subset
                         srcArr.append(srcCat.subset(indMatch))
+                        srcFound = True
                     except:
                         print "### Tract: %d  Patch: %s" % (tract, patch)
-                        warnings.warn("### Can not find the forced photometry catalog !")
+                        warnings.warn("### Can not find the photometry catalog !")
                         srcArr.append(None)
                         if not os.path.isfile('no_src.lis'):
                             noSrc = open('no_src.lis', 'w')
@@ -746,6 +747,7 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                             noSrc = open('no_src.lis', 'a+')
                             noSrc.write("%d  %s \n" % (tract, patch))
                             noSrc.close()
+                        srcFound = False
                 # Save the width of the BBox
                 boxX.append(bbox.getWidth())
                 # Save the heigth of the BBox
@@ -827,7 +829,7 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
         # For detections, replace NaN with 0
         detEmpty[np.isnan(detEmpty)] = 0
         # Save the source catalog
-        if saveSrc:
+        if saveSrc and srcFound:
             srcCount = 0
             for m in range(nReturn):
                 if srcArr[m] is not None:
@@ -838,6 +840,8 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                         for item in srcArr[m]:
                             srcUse.append(item)
                         srcCount += 1
+        else:
+            print "### Can not find the useful source catalog !!"
         # Create a WCS for the combined image
         outWcs = apWcs.WCS(naxis=2)
         outWcs.wcs.crpix = [newCenX + 1, newCenY + 1]
@@ -890,7 +894,7 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
         hduList.writeto(outDet, clobber=True)
         hduList.close()
         # If necessary, save the source catalog
-        if saveSrc:
+        if saveSrc and srcFound:
             outSrc = outPre + '_' + catType + '.fits'
             srcUse.writeFits(outSrc)
         if (nReturn > 0 and not noPsf):
