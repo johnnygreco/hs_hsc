@@ -874,7 +874,8 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
                        combBad=True, combDet=False, noBkgC=False, noBkgH=False,
                        minDetH=5.0, minDetC=5.0, debThrH=20.0, debThrC=32.0,
                        debConH=0.01, debConC=0.01, useSigArr=False,
-                       minCenDist=20.0, rerun=None):
+                       minCenDist=20.0, rerun=None,
+                       mskReg=None, excludeReg=None):
     """
     The structure of the cutout has been changed.  Now the cutout procedure
     will generate separated files for Image, Bad Mask, Detection Plane, and
