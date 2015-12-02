@@ -34,6 +34,27 @@ plt.ioff()
 import matplotlib.patches as mpatches
 
 
+def saveImageArr(arr, header, name, clobber=True):
+    """
+    Just save an array to a fits file
+    """
+    hduImg = fits.PrimaryHDU(arr, header=header)
+    hduList = fits.HDUList([hduImg])
+    hduList.writeto(name, clobber=clobber)
+    hduList.close()
+
+
+def flatSrcArr(srcArr):
+
+    for (ii, cat) in enumerate(srcArr):
+        if ii == 0:
+            srcUse = cat
+        else:
+            for (jj, item) in enumerate(cat):
+                srcUse.append(item)
+    return srcUse
+
+
 def previewCoaddImage(img, msk, var, det, sizeX=16, sizeY=16,
                     prefix='hsc_cutout', outPNG=None, oriX=None, oriY=None,
                     boxW=None, boxH=None):
@@ -620,8 +641,11 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
     mskArr = []
     varArr = []
     detArr = []
-    srcArr = []
     psfArr = []
+    #
+    srcArr = []
+    refArr = []
+    forceArr = []
 
     # Go through all these images
     for j in range(nPatch):
@@ -709,10 +733,9 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                 # Get the source catalog
                 if saveSrc:
                     print "### Search the source catalog...."
-                    print "    !!!! TRY deepCoadd_meas"
-                    catType = 'meas'
-                    """ Sometimes the forced photometry catalog might not be available """
+                    """ !!! Sometimes the forced photometry catalog might not be available """
                     try:
+                        print "    !!!! TRY deepCoadd_meas"
                         srcCat = butler.get('deepCoadd_meas', tract=tract,
                                             patch=patch, filter=filt, immediate=True,
                                             flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
@@ -722,24 +745,37 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                         srcDec = np.array(map(
                             lambda x: x.get('coord').getDec().asDegrees(), srcCat))
                         # Simple Box match
-                        if catType == 'meas':
-                            indMatch = ((srcRa > (ra - sizeDegree)) &
-                                        (srcRa < (ra + sizeDegree)) &
-                                        (srcDec > (dec - sizeDegree)) &
-                                        (srcDec < (dec + sizeDegree)) &
-                                        (srcCat.get('detect.is-patch-inner')))
-                        else:
-                            indMatch = ((srcRa > (ra - sizeDegree)) &
-                                        (srcRa < (ra + sizeDegree)) &
-                                        (srcDec > (dec - sizeDegree)) &
-                                        (srcDec < (dec + sizeDegree)))
+                        indMatch = ((srcRa > (ra - sizeDegree)) &
+                                    (srcRa < (ra + sizeDegree)) &
+                                    (srcDec > (dec - sizeDegree)) &
+                                    (srcDec < (dec + sizeDegree)) &
+                                    (srcCat.get('detect.is-patch-inner')))
                         # Extract the matched subset
                         srcArr.append(srcCat.subset(indMatch))
                         srcFound = True
+
+                        # Try other catalogs
+                        # 1. Reference
+                        try:
+                            print "    !!!! TRY deepCoadd_ref"
+                            refCat   = butler.get('deepCoadd_ref', tract=tract,
+                                                 patch=patch, filter=filt, immediate=True,
+                                                 flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
+                            refArr.append(refCat.subset(indMatch))
+                        except:
+                            warnings.warn('### Can not find the reference catalog !')
+                        # 2. Forced Photometry
+                        try:
+                            print "    !!!! TRY deepCoadd_forced_src"
+                            forceCat = butler.get('deepCoadd_forced_src', tract=tract,
+                                                 patch=patch, filter=filt, immediate=True,
+                                                 flags=afwTable.SOURCE_IO_NO_FOOTPRINTS)
+                            forceArr.append(forceCat.subset(indMatch))
+                        except:
+                            warnings.warn('### Can not find the forced photometry catalog !')
                     except:
                         print "### Tract: %d  Patch: %s" % (tract, patch)
                         warnings.warn("### Can not find the photometry catalog !")
-                        srcArr.append(None)
                         if not os.path.isfile('no_src.lis'):
                             noSrc = open('no_src.lis', 'w')
                             noSrc.write("%d  %s \n" % (tract, patch))
@@ -781,6 +817,7 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
         print "### Return %d Useful Images" % nReturn
         # Sort the returned images according to the size of their BBox
         indSize = np.argsort(boxSize)
+
         # Go through the returned images, put them in the cutout region
         for n in range(nReturn):
             ind = indSize[n]
@@ -829,20 +866,6 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
         mskEmpty[np.isnan(mskEmpty)] = 999
         # For detections, replace NaN with 0
         detEmpty[np.isnan(detEmpty)] = 0
-        # Save the source catalog
-        if saveSrc and srcFound:
-            srcCount = 0
-            for m in range(nReturn):
-                if srcArr[m] is not None:
-                    if srcCount is 0:
-                        srcUse = srcArr[m]
-                        srcCount += 1
-                    else:
-                        for item in srcArr[m]:
-                            srcUse.append(item)
-                        srcCount += 1
-        else:
-            print "### Can not find the useful source catalog !!"
         # Create a WCS for the combined image
         outWcs = apWcs.WCS(naxis=2)
         outWcs.wcs.crpix = [newCenX + 1, newCenY + 1]
@@ -863,41 +886,30 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
 
         # Define the output file name
         if verbose:
-            print "### Generate outputs"
+            print "### Generate Outputs"
         # Save the image array
-        outImg = outPre + '_img.fits'
-        hduImg = fits.PrimaryHDU(imgEmpty, header=outHead)
-        hduList = fits.HDUList([hduImg])
-        hduList.writeto(outImg, clobber=True)
-        hduList.close()
+        saveImageArr(imgEmpty, outHead, outPre + '_img.fits')
         # Save the mask array
-        outMsk = outPre + '_bad.fits'
-        hduMsk = fits.PrimaryHDU(mskEmpty, header=outHead)
-        hduList = fits.HDUList([hduMsk])
-        hduList.writeto(outMsk, clobber=True)
-        hduList.close()
+        saveImageArr(mskEmpty, outHead, outPre + '_bad.fits')
         # Save the variance array
-        outVar = outPre + '_var.fits'
-        hduVar = fits.PrimaryHDU(varEmpty, header=outHead)
-        hduList = fits.HDUList([hduVar])
-        hduList.writeto(outVar, clobber=True)
-        hduList.close()
+        saveImageArr(varEmpty, outHead, outPre + '_var.fits')
         # Save the sigma array
-        outSig = outPre + '_sig.fits'
-        hduSig = fits.PrimaryHDU(sigEmpty, header=outHead)
-        hduList = fits.HDUList([hduSig])
-        hduList.writeto(outSig, clobber=True)
-        hduList.close()
+        saveImageArr(sigEmpty, outHead, outPre + '_sig.fits')
         # Save the detection mask array
-        outDet = outPre + '_det.fits'
-        hduDet = fits.PrimaryHDU(detEmpty, header=outHead)
-        hduList = fits.HDUList([hduDet])
-        hduList.writeto(outDet, clobber=True)
-        hduList.close()
+        saveImageArr(detEmpty, outHead, outPre + '_det.fits')
+
         # If necessary, save the source catalog
         if saveSrc and srcFound:
-            outSrc = outPre + '_' + catType + '.fits'
-            srcUse.writeFits(outSrc)
+            srcUse   = flatSrcArr(srcArr)
+            refUse   = flatSrcArr(refArr)
+            forceUse = flatSrcArr(forceArr)
+            # Write out the catalogs
+            srcUse.writeFits(outPre + '_meas.fits')
+            refUse.writeFits(outPre + '_ref.fits')
+            forceUse.writeFits(outPre + '_forced.fits')
+        else:
+            print "### Can not find the useful source catalog !!"
+
         if (nReturn > 0 and not noPsf):
             cutFound = True
             # Save a preview image
