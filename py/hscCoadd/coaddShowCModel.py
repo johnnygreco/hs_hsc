@@ -63,7 +63,7 @@ def showCmodel(imgData, xUse, yUse, ellipse, colorCmod, figSize=14, fontSize=14,
                 fontsize=(fontSize+13), fontweight='bold')
     ax.title.set_position((0.5, 1.01))
 
-    imin, imax = hUtil.zscale(imgData, contrast=0.10, samples=500)
+    imin, imax = hUtil.zscale(imgData, contrast=0.04, samples=500)
     ax.imshow(np.arcsinh(imgData), interpolation="none",
                vmin=imin, vmax=imax, cmap=cmap5)
 
