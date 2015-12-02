@@ -13,7 +13,6 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
-mpl.use('Agg')
 mpl.rcParams['figure.figsize'] = 12, 10
 mpl.rcParams['xtick.major.size'] = 8.0
 mpl.rcParams['xtick.major.width'] = 1.5
@@ -44,14 +43,14 @@ import hscUtils as hUtil
 
 def showCmodel(imgData, xUse, yUse, ellipse, colorCmod, figSize=14, fontSize=14,
               filter='HSC-I', ellipName='Exponential', showSource=True,
-              mag0=24.5, mag1=18.0, figName='showCmodel.png')
+              mag0=24.5, mag1=18.0, figName='showCmodel.png'):
 
     rEllip, eEllip, paEllip = srcMoments2Ellip(ellipse)
     ellipPlot = getEll2Plot(xUse, yUse, rEllip, eEllip, paEllip)
 
     fig = plt.figure(figsize=(figSize, figSize))
-    fig.subplots_adjust(hspace=0.1, wspace=0.1, left=0.1, bottom=0.1,
-                        top=0.95, right=0.95)
+    fig.subplots_adjust(hspace=0.0, wspace=0.0, left=0.03, bottom=0.03,
+                        top=0.95, right=0.995)
     ax = fig.add_subplot(1,1,1)
     fontsize = fontSize
     ax.minorticks_on()
@@ -60,10 +59,11 @@ def showCmodel(imgData, xUse, yUse, ellipse, colorCmod, figSize=14, fontSize=14,
         tick.label1.set_fontsize(fontsize)
     for tick in ax.yaxis.get_major_ticks():
         tick.label1.set_fontsize(fontsize)
-    ax.set_title('%s-band Image - %s', fontsize=(fontSize+12), fontweight='bold')
+    ax.set_title('%s-band Image - %s' % (filter, ellipName),
+                fontsize=(fontSize+13), fontweight='bold')
     ax.title.set_position((0.5, 1.01))
 
-    imin, imax = zscale(imgData, contrast=0.10, samples=500)
+    imin, imax = hUtil.zscale(imgData, contrast=0.10, samples=500)
     ax.imshow(np.arcsinh(imgData), interpolation="none",
                vmin=imin, vmax=imax, cmap=cmap5)
 
@@ -87,7 +87,7 @@ def showCmodel(imgData, xUse, yUse, ellipse, colorCmod, figSize=14, fontSize=14,
     ax.set_ylim(0, imgData.shape[0]-1)
 
     fig.savefig(figName)
-    fig.close()
+    plt.close(fig)
 
 
 def srcToRaDec(src):
@@ -161,7 +161,7 @@ def getCoaddData(prefix, galId, root=None, filter='HSC-I', ref=False,
     if not os.path.isfile(imgFile) or not os.path.isfile(catFile):
         print "## Image   : %s" % imgFile
         print "## Catalog : %s" % catFile
-        rasie Exception("### Can not find image or source catalog !")
+        raise Exception("### Can not find image or source catalog !")
         return
     else:
         imgData = fits.open(imgFile)[0].data
@@ -186,7 +186,7 @@ def catFlux2Mag(cat, flux, zeropoint=27.0):
 
 def coaddShowCModel(prefix, galId, filter='HSC-I', ref=False, root=None, noParent=False,
                     zeropoint=27.0, mag0=24.5, mag1=18.0, fontSize=14, figSize=14,
-                    showSource=True):
+                    showSource=True, verbose=True):
     """
     Visualize the cModel fitting results for given coadd image
     """
@@ -198,8 +198,11 @@ def coaddShowCModel(prefix, galId, filter='HSC-I', ref=False, root=None, noParen
     catCModel = catData[(np.isfinite(catData['cmodel_flux'])) &
                     (np.isfinite(catData['cmodel_exp_flux'])) &
                     (np.isfinite(catData['cmodel_dev_flux'])) &
+                    (catData['cmodel_flux'] > 0.0) &
                     (catData['deblend_nchild'] == 0) &
                     (catData['classification_extendedness'] >= 0.5)]
+    if verbose:
+        print "### %d objects with useful cModel information" % len(catCModel)
     # Convert (RA, DEC) into (X, Y)
     wcs = WCS(imgHead)
     raCmod, decCmod = srcToRaDec(catCModel)
@@ -213,13 +216,15 @@ def coaddShowCModel(prefix, galId, filter='HSC-I', ref=False, root=None, noParen
     ellipList = ['cmodel_exp_ellipse', 'cmodel_dev_ellipse', 'shape_sdss']
     ellipType = ['Exponential', 'de Vacouleur', 'SDSS Shape']
     for (ii, ellipName) in enumerate(ellipList):
+        if verbose:
+            print "### Start to work on %s model !" % ellipName
         ellipse = catCModel[ellipName]
         loc = os.path.join(root, galId, filter)
         pngFile = os.path.join(loc, prefix + '_' + galId + '_' + filter + \
                               '_' + ellipName + '.png')
         showCmodel(imgData, xCmod, yCmod, ellipse, colorCmod,
                   figSize=figSize, fontSize=fontSize, filter=filter,
-                  ellipName=ellipType[ii], showShource=showShource,
+                  ellipName=ellipType[ii], showSource=showSource,
                   mag0=mag0, mag1=mag1, figName=pngFile)
 
 
@@ -237,7 +242,7 @@ if __name__ == '__main__':
     parser.add_argument("--mag0", type=float, default=24.5,
             dest='mag0', help="Faint limit of cModel magnitude")
     parser.add_argument("--mag1", type=float, default=18.0,
-            dest='mag01', help="Bright limit of cModel magnitude")
+            dest='mag1', help="Bright limit of cModel magnitude")
     parser.add_argument("--fontsize", type=float, default=18.0,
             dest='fontsize', help="Font size")
     parser.add_argument("--figsize", type=float, default=14.0,
@@ -251,4 +256,4 @@ if __name__ == '__main__':
     coaddShowCModel(args.prefix, args.id, filter=args.filter, ref=args.ref,
                     root=args.root, zeropoint=args.zeropoint,
                     mag0=args.mag0, mag1=args.mag1, fontSize=args.fontsize,
-                    figSize=args.figsize, showSource=args.nosource):
+                    figSize=args.figsize, showSource=args.nosource)
