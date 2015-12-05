@@ -6,26 +6,25 @@ from __future__ import division
 import os
 import copy
 import argparse
+
 import numpy as np
 import scipy
 
 # Astropy
 from astropy.io import fits
-from astropy    import units as u
+from astropy import units as u
 from astropy.stats import sigma_clip
 # AstroML
 from astroML.plotting import hist
-
 # SEP
 import sep
-
 # Cubehelix color scheme
 import cubehelix  # Cubehelix color scheme from https://github.com/jradavenport/cubehelix
 # For high-contrast image
 cmap1 = cubehelix.cmap(start=0.5, rot=-0.8, gamma=1.0,
                        minSat=1.2, maxSat=1.2,
                        minLight=0.0, maxLight=1.0)
-cmap1.set_bad('k',1.)
+cmap1.set_bad('k', 1.)
 # For Mask
 cmap2 = cubehelix.cmap(start=2.0, rot=-1.0, gamma=2.5,
                        minSat=1.2, maxSat=1.2,
@@ -57,15 +56,19 @@ import hscUtils as hUtil
 import coaddCutoutPrepare as cdPrep
 
 
-def readCutout(prefix, root=None):
+def readCutout(prefix, root=None, exMask=None):
 
     # Get the names of necessary input images
     imgFile = prefix + '_img.fits'
-    mskFile = prefix + '_mskall.fits'
-
     if root is not None:
         imgFile = os.path.join(root, imgFile)
-        mskFile = os.path.join(root, mskFile)
+
+    if exMask is None:
+        mskFile = prefix + '_mskall.fits'
+        if root is not None:
+            mskFile = os.path.join(root, mskFile)
+    else:
+        mskFile = exMask
 
     if os.path.islink(imgFile):
         imgOri = os.readlink(imgFile)
@@ -141,14 +144,21 @@ def showSkyHist(skypix, skypix2=None, skypix3=None,
     ax.set_xlabel('Pixel Value', fontsize=20)
     ax.set_xlim(skyMed - 4.0 * skyStd, skyMed + 5.0 * skyStd)
     # Show a few information
-    ax.text(0.7, 0.9, "Min : %8.4f" % skyMin, fontsize=21, transform=ax.transAxes)
-    ax.text(0.7, 0.8, "Max : %8.4f" % skyMax, fontsize=21, transform=ax.transAxes)
-    ax.text(0.7, 0.7, "Avg : %8.4f" % skyAvg, fontsize=21, transform=ax.transAxes)
-    ax.text(0.7, 0.6, "Std : %8.4f" % skyStd, fontsize=21, transform=ax.transAxes)
-    ax.text(0.7, 0.5, "Med : %8.4f" % skyMed, fontsize=21, transform=ax.transAxes)
-    ax.text(0.7, 0.4, "Skew: %8.4f" % skySkw, fontsize=21, transform=ax.transAxes)
+    ax.text(0.7, 0.9, "Min : %8.4f" %
+            skyMin, fontsize=21, transform=ax.transAxes)
+    ax.text(0.7, 0.8, "Max : %8.4f" %
+            skyMax, fontsize=21, transform=ax.transAxes)
+    ax.text(0.7, 0.7, "Avg : %8.4f" %
+            skyAvg, fontsize=21, transform=ax.transAxes)
+    ax.text(0.7, 0.6, "Std : %8.4f" %
+            skyStd, fontsize=21, transform=ax.transAxes)
+    ax.text(0.7, 0.5, "Med : %8.4f" %
+            skyMed, fontsize=21, transform=ax.transAxes)
+    ax.text(0.7, 0.4, "Skew: %8.4f" %
+            skySkw, fontsize=21, transform=ax.transAxes)
     if sbExpt is not None:
-        ax.text(0.7, 0.3, "S.B : %8.5f" % sbExpt, fontsize=21, transform=ax.transAxes)
+        ax.text(0.7, 0.3, "S.B : %8.5f" %
+                sbExpt, fontsize=21, transform=ax.transAxes)
 
     fig.savefig(pngName)
     plt.close(fig)
@@ -160,7 +170,7 @@ def getIsophoteSky(imgArr, mskArr):
 
     """
     # TODO
-    a=1
+    a = 1
 
 
 def getRadBoxSky(imgArr, mskArr):
@@ -193,8 +203,8 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
     pixNoMsk = sigma_clip(pixels, skyClip, 3)
 
     # Rebin image
-    dimBinX = int((dimX-1) / rebin)
-    dimBinY = int((dimY-1) / rebin)
+    dimBinX = int((dimX - 1) / rebin)
+    dimBinY = int((dimY - 1) / rebin)
     print "###   REBIN IMAGE "
     imgBin = hUtil.congrid(imgArr, (dimBinX, dimBinY), method='nearest')
     print "###   REBIN MASK "
@@ -210,7 +220,7 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
     skyAvg, skyStd = np.nanmean(pixNoMskBin), np.nanstd(pixNoMskBin)
     skyMed = np.nanmedian(pixNoMskBin)
     skySkw = scipy.stats.skew(pixNoMskBin)
-    sbExpt = cdPrep.getSbpValue(3.0 * skyStd, pix*rebin, pix*rebin, zp=zp)
+    sbExpt = cdPrep.getSbpValue(3.0 * skyStd, pix * rebin, pix * rebin, zp=zp)
     if verbose:
         print "###    Median Sky: %8.5f" % skyMed
         print "###      Mean Sky: %8.5f" % skyAvg
@@ -220,8 +230,8 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
     if visual:
         skyPNG = prefix + '_' + suffix + 'skyhist.png'
         showSkyHist(pixNoMskBin, skypix2=pixNoMsk, sbExpt=sbExpt,
-                pngName=skyPNG, skyAvg=skyAvg, skyMed=skyMed, skyStd=skyStd,
-                skySkw=skySkw)
+                    pngName=skyPNG, skyAvg=skyAvg, skyMed=skyMed, skyStd=skyStd,
+                    skySkw=skySkw)
 
     # Save a txt file summary
     skyTxt = prefix + '_' + suffix + 'sky.dat'
@@ -236,15 +246,17 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
     text_file.write("SBEXPT: %10.6f \n" % sbExpt)
     text_file.close()
 
+
 def coaddCutoutSky(prefix, root=None, verbose=True, skyClip=3.0,
-                   pix=0.168, zp=27.0, rebin=6, visual=True):
+                   pix=0.168, zp=27.0, rebin=6, visual=True,
+                   exMask=None):
     """
     doc
     """
 
     # 0. Get necessary information
     # Read the input cutout image
-    imgArr, imgHead, mskArr = readCutout(prefix, root=root)
+    imgArr, imgHead, mskArr = readCutout(prefix, root=root, exMask=exMask)
     if (root is not None) and (root[-1] != '/'):
         root += '/'
     if verbose:
@@ -253,7 +265,7 @@ def coaddCutoutSky(prefix, root=None, verbose=True, skyClip=3.0,
     # Necessary information
     if verbose:
         print "###    The pixel scale in X/Y directions " + \
-                "are %7.4f / %7.4f arcsecs" % (pix, pix)
+            "are %7.4f / %7.4f arcsecs" % (pix, pix)
         print "###    The photometric zeropoint is %6.2f " % zp
         print "###    A %3d x %3d binning will be applied" % (rebin, rebin)
         print "###    A %4.1f sigma-clipping will be applied" % skyClip
@@ -273,19 +285,23 @@ if __name__ == '__main__':
     parser.add_argument("prefix", help="Prefix of the cutout image files")
     parser.add_argument('-r', '--root', dest='root', help='Path to the image files',
                         default=None)
+    parser.add_argument('-m', '--mask', help="External file for image mask",
+                        default=None)
     parser.add_argument('--skyclip', dest='skyClip', help='Sigma for pixel clipping',
-                       type=float, default=3.0)
+                        type=float, default=3.0)
     parser.add_argument('--rebin', dest='rebin', help='Rebin the image by N x N pixels',
-                       type=int, default=6)
+                        type=int, default=6)
     parser.add_argument('--pix', dest='pix', help='Pixel scale of the iamge',
-                       type=float, default=0.168)
+                        type=float, default=0.168)
     parser.add_argument('--zp', dest='zp', help='Photometric zeropoint of the image',
-                       type=float, default=27.0)
-    parser.add_argument('--verbose', dest='verbose', action="store_true", default=True)
-    parser.add_argument('--visual', dest='visual', action="store_true", default=True)
+                        type=float, default=27.0)
+    parser.add_argument('--verbose', dest='verbose',
+                        action="store_true", default=True)
+    parser.add_argument('--visual', dest='visual',
+                        action="store_true", default=True)
 
     args = parser.parse_args()
 
     coaddCutoutSky(args.prefix, root=args.root, pix=args.pix, zp=args.zp,
                    rebin=args.rebin, skyClip=args.skyClip, verbose=args.verbose,
-                   visual=args.visual)
+                   visual=args.visual, exMask=args.mask)

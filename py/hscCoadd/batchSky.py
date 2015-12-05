@@ -36,13 +36,19 @@ def run(args):
             print "################################################################\n"
 
             galRoot   = os.path.join(galID, filter, rerun)
-            print galRoot
-            galMsk    = galPrefix + '_mskfin.fits'
-
             if not os.path.isdir(galRoot):
                 raise Exception('### Can not find the root folder for the galaxy data !')
-            if not os.path.isfile(os.path.join(galRoot, galMsk)):
-                raise Exception('### Can not find the final mask of the galaxy !')
+
+            if args.mask is not None:
+                mskFilter = (args.mask).strip().upper()
+                print "### Use %s filter for mask \n" % mskFilter
+                mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
+                mskRoot   = os.path.join(galID, mskFilter, rerun)
+                galMsk    = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
+                if not os.path.isfile(galMsk):
+                    raise Exception('### Can not find the final mask of the galaxy !')
+            else:
+                galMsk    = None
 
             try:
                 ccs.coaddCutoutSky(galPrefix, root=galRoot,
@@ -51,7 +57,8 @@ def run(args):
                                    rebin=args.rebin,
                                    skyClip=args.skyClip,
                                    verbose=args.verbose,
-                                   visual=args.visual)
+                                   visual=args.visual,
+                                   exMask=galMsk)
             except Exception:
                 warnings.warn('### The sky estimate is failed for %s' % args.prefix)
                 logging.warning('### The sky estimate is failed for %s' % args.prefix)
@@ -68,6 +75,8 @@ if __name__ == '__main__':
                        default='ID')
     parser.add_argument('-f', '--filter', dest='filter', help="Filter",
                        default='HSC-I')
+    parser.add_argument('-m', '--mask', dest='mask', help="Filter for Mask",
+                       default=None)
     parser.add_argument('-r', '--rerun', dest='rerun',
                         help="Name of the rerun", default='default')
     """ Optional """
