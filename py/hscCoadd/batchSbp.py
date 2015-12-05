@@ -45,7 +45,7 @@ def run(args):
                 raise Exception('### Can not find the cutout image of the galaxy !')
 
             try:
-                cSbp.coaddCutoutSbp(args.prefix, root=args.root,
+                cSbp.coaddCutoutSbp(galPrefix, root=galRoot,
                                     verbose=args.verbose,
                                     psf=args.psf,
                                     inEllip=args.inEllip,

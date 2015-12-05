@@ -36,6 +36,7 @@ def run(args):
             print "################################################################\n"
 
             galRoot   = os.path.join(galID, filter, rerun)
+            print galRoot
             galMsk    = galPrefix + '_mskfin.fits'
 
             if not os.path.isdir(galRoot):
@@ -44,7 +45,7 @@ def run(args):
                 raise Exception('### Can not find the final mask of the galaxy !')
 
             try:
-                ccs.coaddCutoutSky(args.prefix, root=args.root,
+                ccs.coaddCutoutSky(galPrefix, root=galRoot,
                                    pix=args.pix,
                                    zp=args.zp,
                                    rebin=args.rebin,
