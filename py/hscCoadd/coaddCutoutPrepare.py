@@ -867,13 +867,13 @@ def readCutoutImage(prefix, root=None, variance=False):
 
 
 def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
-                       bSizeH=8, bSizeC=80, thrH=2.5, thrC=1.2, mask=1,
-                       growC=6.8, growW=4.0, growH=1.8, kernel=4, central=1,
+                       bSizeH=8, bSizeC=80, thrH=1.5, thrC=2.5, mask=1,
+                       growC=7.0, growW=4.0, growH=2.5, kernel=4, central=1,
                        galX=None, galY=None, galR1=None, galR2=None, galR3=None,
                        galQ=None, galPA=None, visual=True, suffix='',
                        combBad=True, combDet=False, noBkgC=False, noBkgH=False,
-                       minDetH=5.0, minDetC=5.0, debThrH=20.0, debThrC=32.0,
-                       debConH=0.01, debConC=0.01, useSigArr=False,
+                       minDetH=5.0, minDetC=8.0, debThrH=32.0, debThrC=2.0,
+                       debConH=0.004, debConC=0.0001, useSigArr=True,
                        minCenDist=20.0, rerun=None,
                        mskReg=None, excludeReg=None):
     """
@@ -1523,7 +1523,7 @@ if __name__ == '__main__':
                         type=float, default=16.0)
     parser.add_argument('--debConC', dest='debConC',
                         help='Deblending continuum level for the Cold Run',
-                        type=float, default=0.015)
+                        type=float, default=0.005)
     parser.add_argument('--debConH', dest='debConH',
                         help='Deblending continuum level for the Hot Run',
                         type=float, default=0.004)
@@ -1552,13 +1552,3 @@ if __name__ == '__main__':
                        debConH=args.debConH, debConC=args.debConC,
                        combBad=args.combBad, combDet=args.combDet,
                        rerun=args.rerun)
-
-# def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
-    # bSizeH=8, bSizeC=80, thrH=3.5, thrC=1.5, mask=1,
-    # growC=6.0, growW=3.0, growH=1.5, kernel=4, central=1,
-    # galX=None, galY=None, galR1=None, galR2=None, galR3=None,
-    # galQ=None, galPA=None, visual=True, suffix='',
-    #combBad=True, combDet=False, noBkgC=False, noBkgH=False,
-    # minDetH=5.0, minDetC=5.0, debThrH=20.0, debThrC=32.0,
-    # debConH=0.01, debConC=0.01, useSigArr=False,
-    # minCenDist=20.0):

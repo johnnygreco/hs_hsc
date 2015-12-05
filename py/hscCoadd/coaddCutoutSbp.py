@@ -689,7 +689,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     else:
         if psf:
             print "\n##   Ellipse Run on PSF "
-            psfFile = root + prefix + '_psf.fits'
+            psfFile = prefix + '_psf.fits'
+            if root is not None:
+                psfFile = os.path.join(root, psfFile)
             if os.path.islink(psfFile):
                 psfOri = os.readlink(psfFile)
             else:
@@ -802,7 +804,8 @@ if __name__ == '__main__':
                        type=int, default=10)
     parser.add_argument('--maxIt', dest='maxIt', help='Maximum number of iterations',
                        type=int, default=100)
-    parser.add_argument('--maxTry', dest='maxTry', help='Maximum number of attempts of ellipse run',
+    parser.add_argument('--maxTry', dest='maxTry',
+                       help='Maximum number of attempts of ellipse run',
                        type=int, default=3)
     parser.add_argument('--galX0', dest='galX0', help='Center X0',
                        type=float, default=None)
