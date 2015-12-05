@@ -120,8 +120,8 @@ def run(args):
 
 
             except Exception:
-                warnings.warn('### The cutout preparation is failed for %s') % galPrefix
-                logging.warning('### The cutout preparation is failed for %s') % galPrefix
+                warnings.warn('### The cutout preparation is failed for %s' % galPrefix)
+                logging.warning('### The cutout preparation is failed for %s' % galPrefix)
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 

@@ -73,8 +73,8 @@ def run(args):
                                     maxTry=args.maxTry,
                                     outRatio=args.outRatio)
             except Exception:
-                warnings.warn('### The 1-D SBP is failed for %s') % galPrefix
-                logging.warning('### The 1-D SBP is failed for %s') % galPrefix
+                warnings.warn('### The 1-D SBP is failed for %s' % galPrefix)
+                logging.warning('### The 1-D SBP is failed for %s' % galPrefix)
 
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)

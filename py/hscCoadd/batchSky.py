@@ -52,8 +52,8 @@ def run(args):
                                    verbose=args.verbose,
                                    visual=args.visual)
             except Exception:
-                warnings.warn('### The sky estimate is failed for %s') % args.prefix
-                logging.warning('### The sky estimate is failed for %s') % args.prefix
+                warnings.warn('### The sky estimate is failed for %s' % args.prefix)
+                logging.warning('### The sky estimate is failed for %s' % args.prefix)
 
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
