@@ -50,17 +50,22 @@ import hscUtils as hUtil
 import galSBP
 
 
-def readSbpInput(prefix, root=None):
+def readSbpInput(prefix, root=None, exMask=None):
     """
     doc
     """
+
     # Get the names of necessary input images
     imgFile = prefix + '_img.fits'
-    mskFile = prefix + '_mskfin.fits'
-
     if root is not None:
         imgFile = os.path.join(root, imgFile)
-        mskFile = os.path.join(root, mskFile)
+
+    if exMask is None:
+        mskFile = prefix + '_mskfin.fits'
+        if root is not None:
+            mskFile = os.path.join(root, mskFile)
+    else:
+        mskFile = exMask
 
     if os.path.islink(imgFile):
         imgOri = os.readlink(imgFile)
@@ -606,7 +611,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                    galRe=None, redshift=None, psfRecenter=True, showZoom=True,
                    checkCenter=True, updateIntens=False, olthresh=0.5,
                    intMode='median', lowClip=3.0, uppClip=2.0, nClip=2,
-                   fracBad=0.6, minIt=10, maxIt=100, outRatio=1.2):
+                   fracBad=0.6, minIt=10, maxIt=100, outRatio=1.2, exMask=None):
     """
     doc
     """
@@ -616,7 +621,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     """ 0. Organize Input Data """
     # Read in the input image, mask, psf, and their headers
     imgFile, imgArr, imgHead, mskFile, mskArr, mskHead = readSbpInput(prefix,
-            root=root)
+            root=root, exMask=exMask)
     if (root is not None) and (root[-1] != '/'):
         root += '/'
     if not imgSameSize(imgArr, mskArr):
@@ -782,6 +787,8 @@ if __name__ == '__main__':
                        default='median')
     parser.add_argument('--inEllip', dest='inEllip', help='Input Ellipse table',
                        default=None)
+    parser.add_argument('--exMask', help="External file for image mask",
+                        default=None)
     parser.add_argument('--pix', dest='pix', help='Pixel Scale',
                        type=float, default=0.168)
     parser.add_argument('--step', dest='step', help='Step size',
@@ -842,4 +849,4 @@ if __name__ == '__main__':
             pix=args.pix, plot=args.plot, redshift=args.redshift, olthresh=args.olthresh,
             fracBad=args.fracBad, lowClip=args.lowClip, uppClip=args.uppClip,
             nClip=args.nClip, intMode=args.intMode, minIt=args.minIt, maxIt=args.maxIt,
-            maxTry=args.maxTry, outRatio=args.outRatio)
+            maxTry=args.maxTry, outRatio=args.outRatio, exMask=args.exMask)

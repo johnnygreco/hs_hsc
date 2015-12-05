@@ -36,13 +36,28 @@ def run(args):
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
             print "################################################################\n"
 
-            galRoot   = os.path.join(galID, filter)
-            galImg    = galPrefix + '_img.fits'
-
+            galRoot   = os.path.join(galID, filter, rerun)
             if not os.path.isdir(galRoot):
                 raise Exception('### Can not find the root folder for the galaxy data !')
-            if not os.path.isfile(os.path.join(galRoot, galImg)):
+
+            galImg    = galPrefix + '_img.fits'
+            if (not os.path.isfile(os.path.join(galRoot, galImg))) and (not
+                    os.path.islink(os.path.join(galRoot, galImg))):
                 raise Exception('### Can not find the cutout image of the galaxy !')
+
+            if args.mask is not None:
+                mskFilter = (args.mask).strip().upper()
+                print "### Use %s filter for mask \n" % mskFilter
+                mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
+                mskRoot   = os.path.join(galID, mskFilter, rerun)
+                galMsk    = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
+                if not os.path.isfile(galMsk):
+                    raise Exception('### Can not find the final mask of the galaxy !')
+            else:
+                galMsk    = None
+
+            print galRoot + '/' + galImg
+            print galMsk
 
             try:
                 cSbp.coaddCutoutSbp(galPrefix, root=galRoot,
@@ -71,7 +86,8 @@ def run(args):
                                     minIt=args.minIt,
                                     maxIt=args.maxIt,
                                     maxTry=args.maxTry,
-                                    outRatio=args.outRatio)
+                                    outRatio=args.outRatio,
+                                    exMask=galMsk)
             except Exception:
                 warnings.warn('### The 1-D SBP is failed for %s' % galPrefix)
                 logging.warning('### The 1-D SBP is failed for %s' % galPrefix)
@@ -90,6 +106,8 @@ if __name__ == '__main__':
                        default='HSC-I')
     parser.add_argument('-r', '--rerun', dest='rerun',
                         help="Name of the rerun", default='default')
+    parser.add_argument('-m', '--mask', dest='mask', help="Filter for Mask",
+                       default=None)
     """ Optional """
     parser.add_argument("--intMode", dest='intMode', help="Method for integration",
                        default='median')
