@@ -17,7 +17,8 @@ cmap1.set_bad('k', 1.)
 from coaddCutoutPrepare import saveFits, showSEPImage
 
 
-def reg2Mask(imgFile, regFile, mskFile=None, hdu=0, show=False, save=True):
+def reg2Mask(imgFile, regFile, mskFile=None, hdu=0, show=False,
+             save=True, imgHead=None):
     """
     Mask out the regions in a DS9 region file.
 
@@ -28,11 +29,15 @@ def reg2Mask(imgFile, regFile, mskFile=None, hdu=0, show=False, save=True):
     except Exception:
         raise Exception("### Please have pyregion installed first")
 
-    if not os.path.isfile(imgFile):
-        raise Exception("### Can not find the Image: %s" % imgFile)
+    if imgHead is None:
+        if not os.path.isfile(imgFile):
+            raise Exception("### Can not find the Image: %s" % imgFile)
+        else:
+            img = fits.open(imgFile)[0].data
+            head = fits.open(imgFile)[0].header
     else:
-        img = fits.open(imgFile)[0].data
-        head = fits.open(imgFile)[0].header
+        img = imgFile
+        head = imgHead
 
     if not os.path.isfile(regFile):
         raise Exception("### Can not find the Region file: %s" % regFile)

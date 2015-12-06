@@ -1001,7 +1001,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     for fitsFile in fitsList:
         seg = fitsFile.split('/')
         link = os.path.join(rerunDir, seg[-1])
-        if not os.path.islink(link):
+        if (not os.path.islink(link)) and (not os.path.isfile(link)):
             os.symlink(fitsFile, link)
 
     """ DETECTION array is optional """
@@ -1064,11 +1064,15 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     and convert them into mask array
     """
     if (regMask is not None) and os.path.isfile(regMask):
-        extMask = reg2Mask.reg2Mask(imgArr, regMask, hdu=0, save=False)
+        print "###  Load in regMask : %s" % regMask
+        extMask = reg2Mask.reg2Mask(imgArr, regMask, hdu=0,
+                                    save=False, imgHead=imgHead)
     else:
         extMask = None
     if (regKeep is not None) and os.path.isfile(regKeep):
-        extKeep = reg2Mask.reg2Mask(imgArr, regKeep, hdu=0, save=False)
+        print "###  Load in regKeep : %s" % regKeep
+        extKeep = reg2Mask.reg2Mask(imgArr, regKeep, hdu=0,
+                                    save=False, imgHead=imgHead)
     else:
         extKeep = None
 
@@ -1306,7 +1310,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
                                  deblend_nthresh=debThrH,
                                  deblend_cont=debConH,
                                  filter_type='conv',
-                                 segmentation_map=False)
+                                 segmentation_map=True)
     if verbose:
         print "###    %d objects have been detected in the \
                 Hot Run" % objH['x'].shape[0]
@@ -1636,7 +1640,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     if extKeep is provided, free them
     """
     if extKeep is not None:
-        mskFinal[extKeep > 0] = 1
+        mskFinal[extKeep > 0] = 0
     # Mask out all the NaN pixels
     mskFinal[indImgNaN] = 1
     mskFinFile = os.path.join(
@@ -1725,7 +1729,7 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('-rerun', '--rerun', dest='rerun',
                         help='Name of the rerun',
-                        default=None)
+                        default='default')
     parser.add_argument('-k', dest='kernel',
                         help='SExtractor detection kernel',
                         type=int, default=4, choices=range(1, 7))
@@ -1743,7 +1747,7 @@ if __name__ == '__main__':
                         type=int, default=80)
     parser.add_argument('--thrH', dest='thrH',
                         help='Detection threshold for the Hot Run',
-                        type=float, default=2.5)
+                        type=float, default=2.0)
     parser.add_argument('--thrC', dest='thrC',
                         help='Detection threshold for the Cold Run',
                         type=float, default=1.2)
