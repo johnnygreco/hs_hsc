@@ -17,7 +17,7 @@ cmap1.set_bad('k', 1.)
 from coaddCutoutPrepare import saveFits, showSEPImage
 
 
-def run(imgFile, regFile, mskFile=None, hdu=0, show=False):
+def reg2Mask(imgFile, regFile, mskFile=None, hdu=0, show=False, save=True):
     """
     Mask out the regions in a DS9 region file.
 
@@ -25,38 +25,34 @@ def run(imgFile, regFile, mskFile=None, hdu=0, show=False):
     """
     try:
         import pyregion
-        # import pyregion._region_filter as regFilter
     except Exception:
         raise Exception("### Please have pyregion installed first")
 
     if not os.path.isfile(imgFile):
         raise Exception("### Can not find the Image: %s" % imgFile)
     else:
-        print imgFile
         img = fits.open(imgFile)[0].data
         head = fits.open(imgFile)[0].header
 
     if not os.path.isfile(regFile):
         raise Exception("### Can not find the Region file: %s" % regFile)
     else:
-        print "## Load in the region file : %s" % regFile
         reg = pyregion.open(regFile).as_imagecoord(head)
-
-    print "## Get the region mask"
     imgX, imgY = img.shape
     regMask = reg.get_mask(shape=(imgX, imgY))
-    print "## Convert the mask into an int array"
     intMask = regMask.astype(int)
 
-    if mskFile is None:
-        mskFile = regFile.replace('.reg', '_msk.fits')
-    print "## Save the regMask to %s" % mskFile
-    saveFits(intMask, mskFile, head=head, clobber=True)
+    if save:
+        if mskFile is None:
+            mskFile = regFile.replace('.reg', '_msk.fits')
+        saveFits(intMask, mskFile, head=head, clobber=True)
 
     if show:
         pngName = mskFile.replace('.fits', '.png')
         showSEPImage(img, pngName=pngName, mask=intMask, cmap=cmap1,
                      title=mskFile.replace('.fits', ''))
+
+    return intMask
 
 
 if __name__ == '__main__':
@@ -73,5 +69,5 @@ if __name__ == '__main__':
                         help="The HDU to be used", type=int)
     args = parser.parse_args()
 
-    run(args.imgFile, args.regFile, mskFile=args.mskFile, hdu=args.hdu,
-        show=args.show)
+    reg2Mask(args.imgFile, args.regFile, mskFile=args.mskFile, hdu=args.hdu,
+             show=args.show)
