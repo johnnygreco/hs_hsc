@@ -59,6 +59,7 @@ import scipy.ndimage as ndimage
 
 # Personal
 import hscUtils as hUtil
+import ds9Reg2Mask as reg2Mask
 
 
 def seg2Mask(seg, sigma=6.0, mskMax=1000.0, mskThr=0.01):
@@ -959,7 +960,8 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
                        minDetH=5.0, minDetC=8.0, debThrH=32.0, debThrC=2.0,
                        debConH=0.004, debConC=0.0001, useSigArr=True,
                        minCenDist=20.0, rerun=None, segment=True,
-                       mskReg=None, excludeReg=None, tol=5.0):
+                       mskReg=None, excludeReg=None, tol=5.0,
+                       regMask=None, regKeep=None):
     """
     The structure of the cutout has been changed.
 
@@ -1056,6 +1058,19 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     """ Define the suffix for the files """
     if (suffix is not '') and (suffix[-1] is not '_'):
         suffix = suffix + '_'
+
+    """
+    If external DS9 region files are provided, load them in,
+    and convert them into mask array
+    """
+    if (regMask is not None) and os.path.isfile(regMask):
+        extMask = reg2Mask.reg2Mask(imgArr, regMask, hdu=0, save=False)
+    else:
+        extMask = None
+    if (regKeep is not None) and os.path.isfile(regKeep):
+        extKeep = reg2Mask.reg2Mask(imgArr, regKeep, hdu=0, save=False)
+    else:
+        extKeep = None
 
     """
     1. Get the backgrounds
@@ -1599,6 +1614,11 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
 
     # Combine them into the final mask
     mskFinal = (mskG1 | mskG2 | mskG3 | mskHot)
+    """
+    if extMask is provided, combine them
+    """
+    if extMask is not None:
+        mskFinal = combMskImage(mskFinal, extMask)
     # Save the mask to FITS file
     # Have the option to combine with HSC BAD MASK
     if combBad:
@@ -1612,6 +1632,11 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         """ TODO: Blow the detection array a little bit"""
         detArr[np.where(mskIn > 0)] = 0
         mskFinal = combMskImage(mskFinal, detArr)
+    """
+    if extKeep is provided, free them
+    """
+    if extKeep is not None:
+        mskFinal[extKeep > 0] = 1
     # Mask out all the NaN pixels
     mskFinal[indImgNaN] = 1
     mskFinFile = os.path.join(
@@ -1759,8 +1784,10 @@ if __name__ == '__main__':
                         default=True)
     parser.add_argument('--combDet', dest='combDet', action="store_true",
                         default=True)
-    parser.add_argument('--segment', dest='segment', action="store_true",
-                        default=True)
+    parser.add_argument('--regMask', dest='regMask', default=None,
+                        help='DS9 regions to be masked')
+    parser.add_argument('--regKeep', dest='regKeep', default=None,
+                        help='DS9 regions to be kept')
 
     args = parser.parse_args()
 
@@ -1775,4 +1802,5 @@ if __name__ == '__main__':
                        debThrH=args.debThrH, debThrC=args.debThrC,
                        debConH=args.debConH, debConC=args.debConC,
                        combBad=args.combBad, combDet=args.combDet,
-                       rerun=args.rerun, segment=args.segment)
+                       rerun=args.rerun,
+                       regMask=args.regMask, regKeep=args.regKeep)
