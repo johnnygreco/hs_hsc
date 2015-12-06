@@ -54,9 +54,30 @@ mpl.rc('axes', linewidth=2)
 import matplotlib.pyplot as plt
 plt.ioff()
 from matplotlib.patches import Ellipse
+# Scipy
+import scipy.ndimage as ndimage
 
 # Personal
 import hscUtils as hUtil
+
+
+def seg2Mask(seg, sigma=6.0, mskMax=1000.0, mskThr=0.01):
+    """
+    Convert the segmentation array into an array.
+
+    Parameters:
+        sigma:  Sigma of the Gaussian Kernel
+    """
+    # Copy segmentation to mask
+    msk = copy.deepcopy(seg)
+    msk[seg > 0] = 1
+    # Convolve the mask image with a gaussian kernel
+    mskConv = ndimage.gaussian_filter((msk * mskMax), sigma=(sigma),
+                                      order=0)
+    mskBool = mskConv > (mskThr * mskMax)
+    mskInt = mskBool.astype(int)
+
+    return mskInt
 
 
 def objToGalfit(objs, rad=None, concen=None, zp=27.0, rbox=8.0,
@@ -1368,43 +1389,62 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
                      ellList2=objEllR50, ellColor2='orange',
                      ellList3=objEllR90, ellColor3='b',
                      ell1=ell1, ell2=ell2, ell3=ell3)
-
-    # 5. Mask all objects on the image
-    # growConcenIndex = 0.8  # XXX: Very, very empirical right now
-
+    """
+    5. Mask all objects on the image
+    """
     if verbose:
         print "### 5. MASKING OUT ALL OBJECTS ON THE IMAGE "
-    mskAll = np.zeros(imgSubC.shape, dtype='uint8')
     objMskAll = copy.deepcopy(objC)
+    rMajor = objMskAll['a']
+    rMinor = objMskAll['b']
+    """
+    By default, grow every object by "growC * 1.5"
+    """
+    growMsk = growC * 1.5
     if mask == 1:
-        # TODO: This is still not idea, even using flux radius, should take
-        #       the compactness (R90/R50) and (R50/R20) into account
-        # Make a ALL_OBJECT mask using the r90
-        rMajor = objMskAll['a']
-        rMinor = objMskAll['b']
-        growMsk = growC * 1.5
-        sep.mask_ellipse(mskAll, objC['x'], objC['y'],
-                         rMajor, rMinor, objC['theta'], r=growMsk)
-        # Make a new objList, and change the size
-        objMskAll['a'] = rMajor * growMsk
-        objMskAll['b'] = rMinor * growMsk
+        """
+        Convolve the segmentations into a masks
+        """
+        segMskC = seg2Mask(segC, sigma=6.0, mskThr=0.01)
+        segMskH = seg2Mask(segH, sigma=4.0, mskThr=0.01)
+        mskAll = combMskImage(segMskC, segMskH)
+        objMskAll['a'] = growMsk * rMajor
+        objMskAll['b'] = growMsk * rMinor
     elif mask == 2:
-        # Grow the cold run detections using the adaptive method
-        # Use the new size to mask out all objects
+        """
+        Grow the cold run detections using the adaptive method
+        Use the new size to mask out all objects
+        """
+        mskAll = np.zeros(imgSubC.shape, dtype='uint8')
         adGrowC = adaptiveMask(objC, a=2.2)
-        # Build a ALL_OBJECT Mask
         sep.mask_ellipse(mskAll, objC['x'], objC['y'],
                          rMajor, rMinor, objC['theta'], r=adGrowC)
-        # Make a new objList, and change the size
         objMskAll['a'] = adGrowC * rMajor
         objMskAll['b'] = adGrowC * rMinor
+    elif mask == 3:
+        """
+        TODO: This is still not idea, even using flux radius, should take
+              the compactness (R90/R50) and (R50/R20) into account
+        Make a ALL_OBJECT mask using the r90
+        """
+        mskAll = np.zeros(imgSubC.shape, dtype='uint8')
+        sep.mask_ellipse(mskAll, objC['x'], objC['y'],
+                         rMajor, rMinor, objC['theta'], r=growMsk)
+        objMskAll['a'] = growMsk * rMajor
+        objMskAll['b'] = growMsk * rMinor
     else:
         raise Exception("mask == 1 or mask == 2")
+
+    """
+    Combined the all object mask with the BAD_MASK and DET_MASK from pipeline
+    """
     if combBad:
         mskAll = combMskImage(mskAll, mskArr)
     if combDet and detFound:
         mskAll = combMskImage(mskAll, detArr)
-    # Also mask out the NaN pixels
+    """
+    Also mask out the NaN pixels
+    """
     mskAll[indImgNaN] = 1
 
     # Save the mask to FITS
