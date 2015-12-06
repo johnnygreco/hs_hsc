@@ -73,7 +73,7 @@ def previewCoaddImage(img, msk, var, det, sizeX=16, sizeY=16,
 
     ax1 = plt.subplot(2,2,1)
     ax1.imshow(np.arcsinh(img), interpolation="none",
-                   vmin=imin, vmax=imax, cmap=cmap)
+                   vmin=imin, vmax=imax, cmap=cmap, origin='lower')
     ax1.minorticks_on()
     ax1.xaxis.set_visible(False)
     ax1.yaxis.set_visible(False)
@@ -99,7 +99,7 @@ def previewCoaddImage(img, msk, var, det, sizeX=16, sizeY=16,
     ax2 = plt.subplot(2,2,2)
     ax2.imshow(np.arcsinh(var), interpolation="none",
                    vmin=smin, vmax=smax,
-                   cmap=cmap)
+                   cmap=cmap, origin='lower')
 
     ax2.minorticks_on()
     ax2.xaxis.set_visible(False)
@@ -110,7 +110,8 @@ def previewCoaddImage(img, msk, var, det, sizeX=16, sizeY=16,
 
     # Mask
     ax3 = plt.subplot(2,2,3)
-    ax3.imshow((msk * 2) + det, cmap=cubehelix.cmap(reverse=True))
+    ax3.imshow((msk * 2) + det, cmap=cubehelix.cmap(reverse=True),
+               origin='lower')
 
     ax3.minorticks_on()
     ax3.xaxis.set_visible(False)
@@ -138,7 +139,7 @@ def previewCoaddImage(img, msk, var, det, sizeX=16, sizeY=16,
     cmap.set_bad('k',1.)
     ax4 = plt.subplot(2,2,4)
     ax4.imshow(np.arcsinh(imgMsk), interpolation="none",
-          vmin=mmin, vmax=mmax, cmap=cmap)
+          vmin=mmin, vmax=mmax, cmap=cmap, origin='lower')
     ax4.minorticks_on()
     ax4.xaxis.set_visible(False)
     ax4.yaxis.set_visible(False)

@@ -7,17 +7,9 @@ import os
 import copy
 import argparse
 import numpy as np
-import scipy
 
 # Astropy
 from astropy.io import fits
-from astropy    import units as u
-from astropy.stats import sigma_clip
-# AstroML
-from astroML.plotting import hist
-
-# SEP
-import sep
 
 # Cubehelix color scheme
 import cubehelix  # Cubehelix color scheme from https://github.com/jradavenport/cubehelix
@@ -577,7 +569,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image, maxRad=None, mask=None,
 
     # Show the image
     ax8.imshow(np.arcsinh(zoomReg), interpolation="none",
-              vmin=imin, vmax=imax, cmap=cmap)
+              vmin=imin, vmax=imax, cmap=cmap, origin='lower')
     # Get the Shapes
     ellipIso = galSBP.convIso2Ell(ellipOut3, xpad=xPad, ypad=yPad)
 

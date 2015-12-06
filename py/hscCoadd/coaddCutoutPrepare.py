@@ -326,7 +326,7 @@ def showSEPImage(image, contrast=0.2, size=10, cmap=cmap1,
         imcopy[mask > 0] = np.nan
 
     ax.imshow(np.arcsinh(imcopy), interpolation="none",
-              vmin=imin, vmax=imax, cmap=cmap)
+              vmin=imin, vmax=imax, cmap=cmap, origin='lower')
 
     if ellList1 is not None:
         for e in ellList1:

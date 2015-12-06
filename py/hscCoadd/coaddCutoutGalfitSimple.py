@@ -204,7 +204,7 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
     ax1.xaxis.set_major_formatter(NullFormatter())
     ax1.yaxis.set_major_formatter(NullFormatter())
     ax1.imshow(np.arcsinh(imgOri), interpolation="none",
-               vmax=imax1, cmap=cmap, vmin=-1.0E-4)
+               vmax=imax1, cmap=cmap, vmin=-1.0E-4, origin='lower')
 
     if overComp:
         for ii in range(len(compX)):
@@ -230,7 +230,7 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
     #ax2.imshow(np.arcsinh(imgMod), interpolation="none",
                #vmin=np.nanmin(np.arcsinh(imgOri)), vmax=imax1, cmap=cmap)
     ax2.imshow(np.arcsinh(imgMod), interpolation="none",
-               vmax=imax1, cmap=cmap, vmin=-1.0E-4)
+               vmax=imax1, cmap=cmap, vmin=-1.0E-4, origin='lower')
     """ Contour """
     tam = np.size(imgMod, axis=0)
     contour_x = np.arange(tam)
@@ -274,7 +274,7 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
     ax3.xaxis.set_major_formatter(NullFormatter())
     ax3.yaxis.set_major_formatter(NullFormatter())
     ax3.imshow(np.arcsinh(imgRes), interpolation="none",
-              vmin=imin2, vmax=imax2)
+              vmin=imin2, vmax=imax2, origin='lower')
     #ax3.imshow(mskArr, interpolation="none")
     ax3.contour(contour_x, contour_y, np.arcsinh(imgMod), colors='k',
                 linewidths=1.2)
