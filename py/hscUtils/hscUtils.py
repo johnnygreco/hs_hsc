@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 """
-Collection of useful tools to deal with galaxy images from HSC and other surveys
+Collection of useful tools to deal with galaxy images from HSC and other surveys.
 
  * Cosmology related procedures
  * Galactic extinction related
