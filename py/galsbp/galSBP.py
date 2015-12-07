@@ -675,8 +675,12 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     print "###     OutRadius : ", radOuter
 
     """ Get growth curve """
-    growthCurveOri = -2.5 * np.log10(ellipOut['growth_ori']) + zp
-    growthCurveNew = -2.5 * np.log10(ellipOut['growth_cor']) + zp
+    curveOri = ellipOut['growth_ori']
+    curveOri[curveOri < 0] = np.nan
+    curveCor = ellipOut['growth_cor']
+    curveCor[curveCor < 0] = np.nan
+    growthCurveOri = -2.5 * np.log10(curveOri) + zp
+    growthCurveNew = -2.5 * np.log10(curveCor) + zp
 
     maxIsoFluxOri = np.nanmax(ellipOut['growth_ori'][indexUse])
     magFluxOri100 = -2.5 * np.log10(maxIsoFluxOri) + zp
@@ -1038,8 +1042,7 @@ def saveEllipOut(ellipOut, prefix, ellipCfg=None, verbose=True):
         hUtil.saveToPickle(ellipCfg, outCfg)
         if os.path.isfile(outCfg):
             if verbose:
-                print "###     Save Ellipse configuration to \
-                        a .cfg file: %s" % outCfg
+                print "###     Save configuration to a .cfg file: %s" % outCfg
         else:
             raise Exception("### Something is wrong with the .pkl file")
 
@@ -1051,10 +1054,10 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
            maxTry=2, minIt=10, maxIt=120,
            ellipStep=0.10, uppClip=2.5, lowClip=2.5,
            nClip=2, fracBad=0.5, intMode="median",
-           suffix=None, plMask=True, conver=0.05, recenter=True,
+           plMask=True, conver=0.05, recenter=True,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
            olthresh=0.5, harmonics='1 2', outerThreshold=None,
-           updateIntens=False, psfSma=6.0):
+           updateIntens=False, psfSma=6.0, suffix=''):
     """
     Running Ellipse to Extract 1-D profile.
 
@@ -1151,9 +1154,11 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                               lsclip=lowClip, nclip=nClip, fflag=fracBad,
                               harmonics=harmonics)
     """ Name of the output files """
-    if suffix is None:
-        suffix = 'ellip'
-    suffix = '_' + suffix + '_' + str(stage).strip()
+    if suffix == '':
+        suffix = '_'
+    else:
+        suffix = '_' + suffix + '_'
+    suffix = '_ellip' + suffix + str(stage).strip()
     outBin = image.replace('.fits', suffix + '.bin')
     outTab = image.replace('.fits', suffix + '.tab')
     outCdf = image.replace('.fits', suffix + '.cdf')
@@ -1275,6 +1280,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("image", help="Name of the input image")
+    parser.add_argument("--suffix",
+                        help="Suffix of the output files",
+                        default='')
     parser.add_argument("--mask", dest='mask',
                         help="Name of the input mask",
                         default=None)
@@ -1389,7 +1397,7 @@ if __name__ == '__main__':
            nClip=args.nClip,
            fracBad=args.fracBad,
            intMode=args.intMode,
-           suffix=None,
+           suffix=args.suffix,
            plMask=args.plmask,
            conver=0.05,
            recenter=True,
