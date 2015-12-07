@@ -42,12 +42,12 @@ def run(args):
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
 
             galRoot = os.path.join(galID, filter)
-            fitsList = glob.glob(galRoot + '*.fits')
-            if len(fitsList) <= 3:
-                raise Exception("### Missing data under %s" % galRoot)
             if not os.path.isdir(galRoot):
                 raise Exception('### Can not find the root folder' +
                                 ' for the galaxy data !')
+            fitsList = glob.glob(galRoot + '*.fits')
+            if len(fitsList) <= 3:
+                raise Exception("### Missing data under %s" % galRoot)
 
             """
             Set up a rerun
@@ -62,6 +62,9 @@ def run(args):
                 if (not os.path.islink(link)) and (not os.path.isfile(link)):
                     os.symlink(fitsFile, link)
 
+            """
+            External mask
+            """
             if args.mask is not None:
                 mskFilter = (args.mask).strip().upper()
                 print "###  Use %s filter for mask \n" % mskFilter
