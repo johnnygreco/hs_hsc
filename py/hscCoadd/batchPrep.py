@@ -41,7 +41,6 @@ def run(args):
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
             galRoot = os.path.join(galID, filter)
             galImg = galPrefix + '_img.fits'
-            print galPrefix, galRoot
 
             if not os.path.isdir(galRoot):
                 raise Exception('### Can not find the root folder for the \
@@ -50,88 +49,89 @@ def run(args):
                 raise Exception('### Can not find the cutout image of the \
                         galaxy !')
 
-            #try:
-            if rerun == 'default':
-                ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
-                                       rerun=rerun,
-                                       bSizeH=args.bSizeH,
-                                       bSizeC=args.bSizeC,
-                                       thrH=args.thrH,
-                                       thrC=args.thrC,
-                                       growH=args.growH,
-                                       growW=args.growW,
-                                       growC=args.growC,
-                                       kernel=args.kernel,
-                                       central=args.central,
-                                       maskMethod=args.mask,
-                                       growMethod=args.grow,
-                                       useSigArr=args.useSigArr,
-                                       noBkgC=args.noBkgC,
-                                       noBkgH=args.noBkgH,
-                                       minDetH=args.minDetH,
-                                       minDetC=args.minDetC,
-                                       debThrH=args.debThrH,
-                                       debThrC=args.debThrC,
-                                       debConH=args.debConH,
-                                       debConC=args.debConC,
-                                       combBad=args.combBad,
-                                       combDet=args.combDet)
-            elif rerun == 'new':
-                ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
-                                       rerun=rerun,
-                                       bSizeH=args.bSizeH,
-                                       bSizeC=args.bSizeC,
-                                       thrH=args.thrH,
-                                       thrC=args.thrC,
-                                       growH=args.growH,
-                                       growW=args.growW,
-                                       growC=args.growC,
-                                       kernel=args.kernel,
-                                       central=args.central,
-                                       maskMethod=args.mask,
-                                       growMethod=args.grow,
-                                       useSigArr=args.useSigArr,
-                                       noBkgC=args.noBkgC,
-                                       noBkgH=args.noBkgH,
-                                       minDetH=args.minDetH,
-                                       minDetC=args.minDetC,
-                                       debThrH=args.debThrH,
-                                       debThrC=args.debThrC,
-                                       debConH=args.debConH,
-                                       debConC=args.debConC,
-                                       combBad=args.combBad,
-                                       combDet=args.combDet)
-            else:
-                ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
-                                       rerun=rerun,
-                                       bSizeH=args.bSizeH,
-                                       bSizeC=args.bSizeC,
-                                       thrH=args.thrH,
-                                       thrC=args.thrC,
-                                       growH=args.growH,
-                                       growW=args.growW,
-                                       growC=args.growC,
-                                       kernel=args.kernel,
-                                       central=args.central,
-                                       maskMethod=args.mask,
-                                       growMethod=args.grow,
-                                       useSigArr=args.useSigArr,
-                                       noBkgC=args.noBkgC,
-                                       noBkgH=args.noBkgH,
-                                       minDetH=args.minDetH,
-                                       minDetC=args.minDetC,
-                                       debThrH=args.debThrH,
-                                       debThrC=args.debThrC,
-                                       debConH=args.debConH,
-                                       debConC=args.debConC,
-                                       combBad=args.combBad,
-                                       combDet=args.combDet)
-            #except Exception as ee:
-                #print ee
-                #warnings.warn('### The cutout preparation is failed for %s' %
-                              #galPrefix)
-                #logging.warning('### The cutout preparation is failed for %s' %
-                                #galPrefix)
+            try:
+                if rerun == 'default':
+                    ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
+                                           rerun=rerun,
+                                           bSizeH=args.bSizeH,
+                                           bSizeC=args.bSizeC,
+                                           thrH=args.thrH,
+                                           thrC=args.thrC,
+                                           growH=args.growH,
+                                           growW=args.growW,
+                                           growC=args.growC,
+                                           kernel=args.kernel,
+                                           central=args.central,
+                                           maskMethod=args.mask,
+                                           growMethod=args.grow,
+                                           useSigArr=args.useSigArr,
+                                           noBkgC=args.noBkgC,
+                                           noBkgH=args.noBkgH,
+                                           minDetH=args.minDetH,
+                                           minDetC=args.minDetC,
+                                           debThrH=args.debThrH,
+                                           debThrC=args.debThrC,
+                                           debConH=args.debConH,
+                                           debConC=args.debConC,
+                                           combBad=args.combBad,
+                                           combDet=args.combDet)
+                elif rerun == 'new':
+                    ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
+                                           rerun=rerun,
+                                           bSizeH=args.bSizeH,
+                                           bSizeC=args.bSizeC,
+                                           thrH=args.thrH,
+                                           thrC=args.thrC,
+                                           growH=args.growH,
+                                           growW=args.growW,
+                                           growC=args.growC,
+                                           kernel=args.kernel,
+                                           central=args.central,
+                                           maskMethod=args.mask,
+                                           growMethod=args.grow,
+                                           useSigArr=args.useSigArr,
+                                           noBkgC=args.noBkgC,
+                                           noBkgH=args.noBkgH,
+                                           minDetH=args.minDetH,
+                                           minDetC=args.minDetC,
+                                           debThrH=args.debThrH,
+                                           debThrC=args.debThrC,
+                                           debConH=args.debConH,
+                                           debConC=args.debConC,
+                                           combBad=args.combBad,
+                                           combDet=args.combDet)
+                else:
+                    ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
+                                           rerun=rerun,
+                                           bSizeH=args.bSizeH,
+                                           bSizeC=args.bSizeC,
+                                           thrH=args.thrH,
+                                           thrC=args.thrC,
+                                           growH=args.growH,
+                                           growW=args.growW,
+                                           growC=args.growC,
+                                           kernel=args.kernel,
+                                           central=args.central,
+                                           maskMethod=args.mask,
+                                           growMethod=args.grow,
+                                           useSigArr=args.useSigArr,
+                                           noBkgC=args.noBkgC,
+                                           noBkgH=args.noBkgH,
+                                           minDetH=args.minDetH,
+                                           minDetC=args.minDetC,
+                                           debThrH=args.debThrH,
+                                           debThrC=args.debThrC,
+                                           debConH=args.debConH,
+                                           debConC=args.debConC,
+                                           combBad=args.combBad,
+                                           combDet=args.combDet)
+            except Exception, errMsg:
+                print "####################################################\n"
+                print str(errMsg)
+                warnings.warn('### The cutout preparation is failed for %s' %
+                              galPrefix)
+                logging.warning('### The cutout preparation is failed for %s' %
+                                galPrefix)
             print "########################################################\n"
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)

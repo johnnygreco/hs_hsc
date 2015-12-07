@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 import os
+import glob
 import logging
 import argparse
 import warnings
@@ -21,8 +22,8 @@ def run(args):
 
         data = fits.open(args.incat)[1].data
 
-        id     = (args.id)
-        rerun  = (args.rerun).strip()
+        id = (args.id)
+        rerun = (args.rerun).strip()
         prefix = (args.prefix).strip()
         filter = (args.filter).strip().upper()
 
@@ -30,30 +31,48 @@ def run(args):
         logFile = (args.incat).replace('.fits', '_%s_sky.log' % rerun)
         logging.basicConfig(filename=logFile)
 
+        print "#########################################################"
         print "## Will deal with %d galaxies ! " % len(data)
 
         for galaxy in data:
 
             galID = str(galaxy[id]).strip()
 
-            print "################################################################\n"
+            print "#########################################################\n"
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
-            print "################################################################\n"
 
-            galRoot   = os.path.join(galID, filter, rerun)
+            galRoot = os.path.join(galID, filter)
+            fitsList = glob.glob(galRoot + '*.fits')
+            if len(fitsList) <= 3:
+                raise Exception("### Missing data under %s" % galRoot)
             if not os.path.isdir(galRoot):
-                raise Exception('### Can not find the root folder for the galaxy data !')
+                raise Exception('### Can not find the root folder' +
+                                ' for the galaxy data !')
+
+            """
+            Set up a rerun
+            """
+            galRoot = os.path.join(galRoot, rerun.strip())
+            if not os.path.isdir(galRoot):
+                os.makedirs(galRoot)
+            """ Link the necessary files to the rerun folder """
+            for fitsFile in fitsList:
+                seg = fitsFile.split('/')
+                link = os.path.join(galRoot, seg[-1])
+                if (not os.path.islink(link)) and (not os.path.isfile(link)):
+                    os.symlink(fitsFile, link)
 
             if args.mask is not None:
                 mskFilter = (args.mask).strip().upper()
-                print "### Use %s filter for mask \n" % mskFilter
+                print "###  Use %s filter for mask \n" % mskFilter
                 mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
-                mskRoot   = os.path.join(galID, mskFilter, rerun)
-                galMsk    = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
+                mskRoot = os.path.join(galID, mskFilter, rerun)
+                galMsk = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
                 if not os.path.isfile(galMsk):
-                    raise Exception('### Can not find the final mask of the galaxy !')
+                    raise Exception('### Can not find the final mask ' +
+                                    'of the galaxy !')
             else:
-                galMsk    = None
+                galMsk = None
 
             try:
                 ccs.coaddCutoutSky(galPrefix, root=galRoot,
@@ -64,9 +83,14 @@ def run(args):
                                    verbose=args.verbose,
                                    visual=args.visual,
                                    exMask=galMsk)
-            except Exception:
-                warnings.warn('### The sky estimate is failed for %s' % args.prefix)
-                logging.warning('### The sky estimate is failed for %s' % args.prefix)
+            except Exception, errMsg:
+                print "####################################################\n"
+                print str(errMsg)
+                warnings.warn('### The sky estimate is failed ' +
+                              'for %s' % args.prefix)
+                logging.warning('### The sky estimate is failed ' +
+                                'for %s' % args.prefix)
+            print "#########################################################\n"
 
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
@@ -76,24 +100,29 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("prefix", help="Prefix of the galaxy image files")
     parser.add_argument("incat", help="The input catalog for cutout")
-    parser.add_argument('-i', '--id', dest='id', help="Name of the column for galaxy ID",
-                       default='ID')
+    parser.add_argument('-i', '--id', dest='id',
+                        help="Name of the column for galaxy ID",
+                        default='ID')
     parser.add_argument('-f', '--filter', dest='filter', help="Filter",
-                       default='HSC-I')
+                        default='HSC-I')
     parser.add_argument('-m', '--mask', dest='mask', help="Filter for Mask",
-                       default=None)
+                        default=None)
     parser.add_argument('-r', '--rerun', dest='rerun',
                         help="Name of the rerun", default='default')
     parser.add_argument('--mFilter', dest='maskFilter', help="Filter for Mask",
-                       default=None)
+                        default=None)
     """ Optional """
-    parser.add_argument('--skyclip', dest='skyClip', help='Sigma for pixel clipping',
+    parser.add_argument('--skyclip', dest='skyClip',
+                        help='Sigma for pixel clipping',
                         type=float, default=3.0)
-    parser.add_argument('--rebin', dest='rebin', help='Rebin the image by N x N pixels',
+    parser.add_argument('--rebin', dest='rebin',
+                        help='Rebin the image by N x N pixels',
                         type=int, default=6)
-    parser.add_argument('--pix', dest='pix', help='Pixel scale of the iamge',
+    parser.add_argument('--pix', dest='pix',
+                        help='Pixel scale of the iamge',
                         type=float, default=0.168)
-    parser.add_argument('--zp', dest='zp', help='Photometric zeropoint of the image',
+    parser.add_argument('--zp', dest='zp',
+                        help='Photometric zeropoint of the image',
                         type=float, default=27.0)
     parser.add_argument('--verbose', dest='verbose',
                         action="store_true", default=True)
@@ -103,4 +132,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     run(args)
-

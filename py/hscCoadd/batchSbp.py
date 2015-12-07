@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 import os
+import glob
 import logging
 import warnings
 import argparse
@@ -28,38 +29,56 @@ def run(args):
         logFile = (args.incat).replace('.fits', '_%s_sbp.log' % rerun)
         logging.basicConfig(filename=logFile)
 
+        print "#########################################################"
         print "## Will deal with %d galaxies ! " % len(data)
 
         for galaxy in data:
 
             galID = str(galaxy[id]).strip()
 
-            print "################################################################\n"
+            print "#########################################################\n"
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
-            print "################################################################\n"
 
-            galRoot   = os.path.join(galID, filter, rerun)
+            galRoot = os.path.join(galID, filter)
             if not os.path.isdir(galRoot):
-                raise Exception('### Can not find the root folder for the galaxy data !')
-
-            galImg    = galPrefix + '_img.fits'
-            if (not os.path.isfile(os.path.join(galRoot, galImg))) and (not
+                raise Exception('### Can not find the root folder ' +
+                                ' for the galaxy data !')
+            fitsList = glob.glob(galRoot + '*.fits')
+            if len(fitsList) <= 3:
+                raise Exception("### Missing data under %s" % galRoot)
+            galImg = galRoot + '_img.fits'
+            if (not os.path.isfile(os.path.join(galRoot, galImg)) and not
                     os.path.islink(os.path.join(galRoot, galImg))):
-                raise Exception('### Can not find the cutout image of the galaxy !')
+                raise Exception('### Can not find the cutout image of ' +
+                                'the galaxy !')
 
+            """
+            Set up a rerun
+            """
+            galRoot = os.path.join(galRoot, rerun.strip())
+            if not os.path.isdir(galRoot):
+                os.makedirs(galRoot)
+            """ Link the necessary files to the rerun folder """
+            for fitsFile in fitsList:
+                seg = fitsFile.split('/')
+                link = os.path.join(galRoot, seg[-1])
+                if (not os.path.islink(link)) and (not os.path.isfile(link)):
+                    os.symlink(fitsFile, link)
+
+            """
+            External mask
+            """
             if args.mask is not None:
                 mskFilter = (args.mask).strip().upper()
                 print "### Use %s filter for mask \n" % mskFilter
                 mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
-                mskRoot   = os.path.join(galID, mskFilter, rerun)
-                galMsk    = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
+                mskRoot = os.path.join(galID, mskFilter, rerun)
+                galMsk = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
                 if not os.path.isfile(galMsk):
-                    raise Exception('### Can not find the final mask of the galaxy !')
+                    raise Exception('### Can not find the final mask of ' +
+                                    'the galaxy !')
             else:
-                galMsk    = None
-
-            print galRoot + '/' + galImg
-            print galMsk
+                galMsk = None
 
             try:
                 cSbp.coaddCutoutSbp(galPrefix, root=galRoot,
@@ -94,6 +113,7 @@ def run(args):
                 print ee
                 warnings.warn('### The 1-D SBP is failed for %s' % galPrefix)
                 logging.warning('### The 1-D SBP is failed for %s' % galPrefix)
+            print "#########################################################"
 
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
@@ -112,6 +132,8 @@ if __name__ == '__main__':
                         help="Name of the rerun", default='default')
     parser.add_argument('-m', '--mask', dest='mask', help="Filter for Mask",
                         default=None)
+    parser.add_argument('--mFilter', dest='maskFilter', help="Filter for Mask",
+                        default=None)
     """ Optional """
     parser.add_argument("--intMode", dest='intMode',
                         help="Method for integration",
@@ -122,52 +144,65 @@ if __name__ == '__main__':
     parser.add_argument('--pix', dest='pix', help='Pixel Scale',
                         type=float, default=0.168)
     parser.add_argument('--step', dest='step', help='Step size',
-                       type=float, default=0.10)
+                        type=float, default=0.10)
     parser.add_argument('--zp', dest='zp', help='Photometric zeropoint',
-                       type=float, default=27.0)
-    parser.add_argument('--redshift', dest='redshift', help='Photometric zeropoint',
-                       type=float, default=None)
-    parser.add_argument('--olthresh', dest='olthresh', help='Central locator threshold',
-                       type=float, default=0.30)
-    parser.add_argument('--uppClip', dest='uppClip', help='Upper limit for clipping',
-                       type=float, default=2.0)
-    parser.add_argument('--lowClip', dest='lowClip', help='Upper limit for clipping',
-                       type=float, default=3.0)
-    parser.add_argument('--nClip', dest='nClip', help='Upper limit for clipping',
-                       type=int, default=3)
-    parser.add_argument('--fracBad', dest='fracBad', help='Outer threshold',
-                       type=float, default=0.5)
-    parser.add_argument('--minIt', dest='minIt', help='Minimum number of iterations',
-                       type=int, default=10)
-    parser.add_argument('--maxIt', dest='maxIt', help='Maximum number of iterations',
-                       type=int, default=100)
-    parser.add_argument('--maxTry', dest='maxTry', help='Maximum number of attempts of ellipse run',
-                       type=int, default=3)
-    parser.add_argument('--galX0', dest='galX0', help='Center X0',
-                       type=float, default=None)
+                        type=float, default=27.0)
+    parser.add_argument('--redshift', dest='redshift',
+                        help='Photometric zeropoint',
+                        type=float, default=None)
+    parser.add_argument('--olthresh', dest='olthresh',
+                        help='Central locator threshold',
+                        type=float, default=0.30)
+    parser.add_argument('--uppClip', dest='uppClip',
+                        help='Upper limit for clipping',
+                        type=float, default=2.0)
+    parser.add_argument('--lowClip', dest='lowClip',
+                        help='Upper limit for clipping',
+                        type=float, default=3.0)
+    parser.add_argument('--nClip', dest='nClip',
+                        help='Upper limit for clipping',
+                        type=int, default=3)
+    parser.add_argument('--fracBad', dest='fracBad',
+                        help='Outer threshold',
+                        type=float, default=0.5)
+    parser.add_argument('--minIt', dest='minIt',
+                        help='Minimum number of iterations',
+                        type=int, default=10)
+    parser.add_argument('--maxIt', dest='maxIt',
+                        help='Maximum number of iterations',
+                        type=int, default=100)
+    parser.add_argument('--maxTry', dest='maxTry',
+                        help='Maximum number of attempts of ellipse run',
+                        type=int, default=3)
+    parser.add_argument('--galX0', dest='galX0',
+                        help='Center X0',
+                        type=float, default=None)
     parser.add_argument('--galY0', dest='galY0', help='Center Y0',
-                       type=float, default=None)
+                        type=float, default=None)
     parser.add_argument('--galQ0', dest='galQ0', help='Input Axis Ratio',
-                       type=float, default=None)
+                        type=float, default=None)
     parser.add_argument('--galPA0', dest='galPA0', help='Input Position Angle',
-                       type=float, default=None)
-    parser.add_argument('--galRe', dest='galRe', help='Input Effective Radius in pixel',
-                       type=float, default=None)
+                        type=float, default=None)
+    parser.add_argument('--galRe', dest='galRe',
+                        help='Input Effective Radius in pixel',
+                        type=float, default=None)
     parser.add_argument('--outRatio', dest='outRatio',
-                      help='Increase the outer boundary of SBP by this ratio',
-                       type=float, default=1.2)
+                        help='Increase the boundary of SBP by this ratio',
+                        type=float, default=1.2)
     parser.add_argument('--verbose', dest='verbose', action="store_true",
-                       default=True)
+                        default=True)
     parser.add_argument('--psf', dest='psf', action="store_true",
-                       help='Ellipse run on PSF', default=True)
+                        help='Ellipse run on PSF', default=True)
     parser.add_argument('--plot', dest='plot', action="store_true",
-                       help='Generate summary plot', default=True)
+                        help='Generate summary plot', default=True)
     parser.add_argument('--bkgCor', dest='bkgCor', action="store_true",
-                       help='Background correction', default=False)
-    parser.add_argument('--noCheckCenter', dest='noCheckCenter', action="store_false",
-                       help='Check if the center is off', default=True)
-    parser.add_argument('--updateIntens', dest='updateIntens', action="store_true",
-                       default=True)
+                        help='Background correction', default=False)
+    parser.add_argument('--noCheckCenter', dest='noCheckCenter',
+                        action="store_false",
+                        help='Check if the center is off', default=True)
+    parser.add_argument('--updateIntens', dest='updateIntens',
+                        action="store_true",
+                        default=True)
 
     args = parser.parse_args()
 
