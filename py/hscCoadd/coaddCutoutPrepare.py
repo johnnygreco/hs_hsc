@@ -893,7 +893,6 @@ def readCutoutImage(prefix, root=None, variance=False):
     # Header
     imgHead = imgHdu[0].header
 
-    # TODO: Should also make this optional
     # Bad mask
     if os.path.islink(mskFile):
         mskOri = os.readlink(mskFile)
@@ -902,8 +901,8 @@ def readCutoutImage(prefix, root=None, variance=False):
         mskHdu = fits.open(mskFile)
         mskArr = mskHdu[0].data
     else:
-        raise Exception(
-            "### Can not find the Input Mask File : %s !" % mskFile)
+        print "### Can not find the coadd BadPlane file!"
+        mskArr = None
 
     # Optional detection plane
     if os.path.islink(detFile):
@@ -931,17 +930,17 @@ def readCutoutImage(prefix, root=None, variance=False):
 
 
 def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
-                       bSizeH=8, bSizeC=80, thrH=1.5, thrC=2.5,
-                       maskMethod=1, growMethod=1,
-                       growC=7.0, growW=4.0, growH=2.5, kernel=4, central=1,
+                       bSizeH=10, bSizeC=80, thrH=2.5, thrC=1.2,
+                       maskMethod=1, growMethod=1, central=1, kernel=4,
+                       growC=6.0, growW=4.0, growH=2.0,
                        galX=None, galY=None,
                        galR1=None, galR2=None, galR3=None,
                        galQ=None, galPA=None, visual=True, suffix='',
-                       combBad=True, combDet=False, noBkgC=False, noBkgH=False,
+                       combBad=True, combDet=True, noBkgC=False, noBkgH=False,
                        minDetH=5.0, minDetC=8.0, debThrH=32.0, debThrC=2.0,
-                       debConH=0.004, debConC=0.0001, useSigArr=True,
-                       minCenDist=10.0, rerun=None, segment=True,
-                       mskReg=None, excludeReg=None, tol=5.0,
+                       debConH=0.00001, debConC=0.0001, useSigArr=True,
+                       minCenDist=10.0, rerun='default', segment=True,
+                       mskReg=None, excludeReg=None, tol=6.0,
                        regMask=None, regKeep=None):
     """
     The structure of the cutout has been changed.
@@ -970,12 +969,9 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         print "### DEAL WITH IMAGE : %s" % (root + prefix + '_img.fits')
 
     """ Set up a rerun """
-    if rerun is not None:
-        rerunDir = os.path.join(root, rerun.strip())
-        if not os.path.isdir(rerunDir):
-            os.makedirs(rerunDir)
-    else:
-        rerunDir = root
+    rerunDir = os.path.join(root, rerun.strip())
+    if not os.path.isdir(rerunDir):
+        os.makedirs(rerunDir)
 
     """ Link the necessary files to the rerun folder """
     fitsList = glob.glob(root + '*.fits')
@@ -990,6 +986,11 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         detFound = False
     else:
         detFound = True
+    """ BAD array is optional """
+    if mskArr is None:
+        badFound = False
+    else:
+        badFound = True
 
     """ Setup up an array for the flags """
     sepFlags = np.array([], dtype=[('name', 'a20'), ('value', 'i1')])
@@ -1233,19 +1234,16 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
 
     """
     Define a series of radius for masking:
-        - galR1 = galR90 * 1.5
-        - galR2 = galR90 * 2.5
-        - galR3 = galR90 * 2.5
+        - galR1 = galR90 * 2.0
+        - galR2 = galR90 * 4.0
+        - galR3 = galR90 * 6.0
         - These numbers are pretty random too..sorry
     """
     if verbose:
         print "###  2.3. ESTIMATING THE GAL_R1/R2/R3"
-    if galR1 is None:
-        galR1 = (galR90 * 2.0)
-    if galR2 is None:
-        galR2 = (galR90 * 4.0)
-    if galR3 is None:
-        galR3 = (galR90 * 6.0)
+    galR1 = (galR90 * 2.0) if galR1 is None else galR1
+    galR2 = (galR90 * 4.0) if galR2 is None else galR2
+    galR3 = (galR90 * 6.0) if galR3 is None else galR3
     if verbose:
         print "###    galR1: %7.2f" % galR1
         print "###    galR2: %7.2f" % galR2
@@ -1257,6 +1255,19 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         sepFlags = addFlag(sepFlags, 'R3_BIG', True)
     else:
         sepFlags = addFlag(sepFlags, 'R3_BIG', False)
+    """
+    Define a region that encloses the entire galaxy
+    """
+    mskGal = np.zeros(imgSubC.shape, dtype='uint8')
+    sep.mask_ellipse(mskGal, galX, galY, galR3, (galR3 * galQ),
+                     (galPA * np.pi / 180.0), r=1.1)
+    """
+    Clear up the DETECTION mask plane in this region
+    """
+    if detFound:
+        detMsk = copy.deepcopy(detArr).astype(int)
+        detMsk[mskGal > 0] = 0
+        detMsk[detMsk > 0] = 1
 
     """
     Estimate the distance to the central galaxies in the elliptical coordinates
@@ -1448,7 +1459,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     """
     Combined the all object mask with the BAD_MASK and DET_MASK from pipeline
     """
-    if combBad:
+    if combBad and badFound:
         mskAll = combMskImage(mskAll, mskArr)
     if combDet and detFound:
         mskAll = combMskImage(mskAll, detArr)
@@ -1677,10 +1688,17 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     """
     # Have the option to combine with HSC BAD MASK
     """
-    if combBad:
+    if combBad and badFound:
         if verbose:
             print "###    Combine the final mask with the HSC BAD MASK!"
         mskFinal = combMskImage(mskFinal, mskArr)
+    """
+    # Have the option to combine with HSC DETECTION MASK
+    """
+    if combDet and detFound:
+        if verbose:
+            print "###    Combine the final mask with the HSC DETECTION MASK!"
+        mskFinal = combMskImage(mskFinal, detMsk)
     """
     if extKeep is provided, free them
     """

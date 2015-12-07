@@ -41,7 +41,6 @@ def run(args):
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
             galRoot = os.path.join(galID, filter)
             galImg = galPrefix + '_img.fits'
-
             if not os.path.isdir(galRoot):
                 raise Exception('### Can not find the root folder for the \
                         galaxy data !')
@@ -162,13 +161,13 @@ if __name__ == '__main__':
                         type=int, default=1, choices=range(1, 3))
     parser.add_argument('--bkgH', dest='bSizeH',
                         help='Background size for the Hot Run',
-                        type=int, default=10)
+                        type=int, default=8)
     parser.add_argument('--bkgC', dest='bSizeC',
                         help='Background size for the Cold Run',
                         type=int, default=40)
     parser.add_argument('--thrH', dest='thrH',
                         help='Detection threshold for the Hot Run',
-                        type=float, default=2.5)
+                        type=float, default=2.2)
     parser.add_argument('--thrC', dest='thrC',
                         help='Detection threshold for the Cold Run',
                         type=float, default=1.2)
