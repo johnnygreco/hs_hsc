@@ -117,10 +117,12 @@ def run(args):
                                     outRatio=args.outRatio,
                                     exMask=galMsk,
                                     suffix=ellipSuffix)
+
+                logging.warning('### The 1-D SBP is DONE for %s' % galPrefix)
             except Exception, errMsg:
                 print str(errMsg)
                 warnings.warn('### The 1-D SBP is failed for %s' % galPrefix)
-                logging.warning('### The 1-D SBP is failed for %s' % galPrefix)
+                logging.warning('### The 1-D SBP is FAILED for %s' % galPrefix)
             print "#########################################################"
 
     else:
