@@ -130,7 +130,8 @@ def run(args):
                                     maxTry=args.maxTry,
                                     outRatio=args.outRatio,
                                     exMask=galMsk,
-                                    suffix=ellipSuffix)
+                                    suffix=ellipSuffix,
+                                    plMask=args.plmask)
 
                 logging.warning('### The 1-D SBP is DONE for %s' % galPrefix)
             except Exception, errMsg:
@@ -229,6 +230,8 @@ if __name__ == '__main__':
                         help='Check if the center is off', default=True)
     parser.add_argument('--updateIntens', dest='updateIntens',
                         action="store_true",
+                        default=True)
+    parser.add_argument('--plmask', dest='plmask', action="store_true",
                         default=True)
 
     args = parser.parse_args()
