@@ -117,7 +117,8 @@ def run(args):
                                     outRatio=args.outRatio,
                                     exMask=galMsk,
                                     suffix=ellipSuffix,
-                                    plMask=args.plmask)
+                                    plMask=args.plmask,
+                                    noMask=args.nomask)
 
                 logging.warning('### The 1-D SBP is DONE for %s' % galPrefix)
             except Exception, errMsg:
@@ -216,6 +217,8 @@ if __name__ == '__main__':
                         action="store_true",
                         default=True)
     parser.add_argument('--plmask', dest='plmask', action="store_true",
+                        default=False)
+    parser.add_argument('--nomask', dest='nomask', action="store_true",
                         default=False)
 
     args = parser.parse_args()

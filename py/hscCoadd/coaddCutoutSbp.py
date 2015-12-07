@@ -630,7 +630,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                    showZoom=True, checkCenter=True, updateIntens=False,
                    olthresh=0.5, intMode='median', lowClip=3.0, uppClip=2.0,
                    nClip=2, fracBad=0.6, minIt=10, maxIt=100, outRatio=1.2,
-                   exMask=None, suffix='', plMask=False):
+                   exMask=None, suffix='', plMask=False, noMask=False):
     """
     Generate 1-D SBP Plot.
 
@@ -648,16 +648,19 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         raise Exception("### The Image and Mask need to have EXACTLY \
                 same dimensions!")
 
-    print "!! " + imgFile
-    print "!! " + mskFile
     if os.path.islink(imgFile):
         imgOri = os.readlink(imgFile)
     else:
         imgOri = imgFile
+
     if os.path.islink(mskFile):
         mskOri = os.readlink(mskFile)
     else:
         mskOri = mskFile
+
+    if noMask:
+        mskFile = None
+        mskOri = None
 
     """ 0a. Redshift """
     if redshift is not None:
@@ -955,6 +958,8 @@ if __name__ == '__main__':
                         action="store_true", default=True)
     parser.add_argument('--plmask', dest='plmask', action="store_true",
                         default=False)
+    parser.add_argument('--nomask', dest='nomask', action="store_true",
+                        default=False)
 
     args = parser.parse_args()
 
@@ -987,4 +992,5 @@ if __name__ == '__main__':
                    maxTry=args.maxTry,
                    outRatio=args.outRatio,
                    plMask=args.plmask,
-                   exMask=args.exMask)
+                   exMask=args.exMask,
+                   noMask=args.noMask)
