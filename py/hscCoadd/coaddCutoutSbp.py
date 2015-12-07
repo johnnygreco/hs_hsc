@@ -624,11 +624,11 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
 
 
 def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
-                   zp=27.0, step=0.10, pix=0.168, exptime=1.0, bkgCor=False,
+                   zp=27.0, step=0.12, pix=0.168, exptime=1.0, bkgCor=False,
                    plot=True, galX0=None, galY0=None, galQ0=None, galPA0=None,
                    maxTry=4, galRe=None, redshift=None, psfRecenter=True,
                    showZoom=True, checkCenter=True, updateIntens=False,
-                   olthresh=0.3, intMode='mean', lowClip=3.0, uppClip=3.0,
+                   olthresh=0.5, intMode='mean', lowClip=3.0, uppClip=3.0,
                    nClip=2, fracBad=0.5, minIt=20, maxIt=150, outRatio=1.2,
                    exMask=None, suffix='', plMask=False, noMask=False):
     """
@@ -710,7 +710,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
 
     maxR = mskHead['NAXIS1'] if (mskHead['NAXIS1'] >=
                                  mskHead['NAXIS2']) else mskHead['NAXIS2']
-    maxR = (maxR/2.0) * np.sqrt(2.0)
+    maxR = (maxR / 2.0) * np.sqrt(2.0)
     if verbose:
         print " ### maxR : ", maxR
 
@@ -730,17 +730,21 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             if not os.path.isfile(psfOri):
                 raise Exception("### Can not find the \
                                 PSF image: %s !" % psfFile)
-            psfOut = galSBP.galSBP(psfFile, iniSma=5.0, pix=pix,
-                                   galQ=0.95, galPA=0.0,
-                                   stage=3, zpPhoto=zp, recenter=psfRecenter,
+            psfOut = galSBP.galSBP(psfFile, iniSma=5.0,
+                                   pix=pix,
+                                   galQ=0.95,
+                                   galPA=0.0,
+                                   stage=3,
+                                   zpPhoto=zp,
+                                   recenter=psfRecenter,
                                    outerThreshold=1e-6)
         if inEllip is None:
+            iniSma = (galR50 * 2.0)
             """ # Start with Stage 1 """
             print "---------" * 12
             print "##   Ellipse Run on Image - Stage 1 "
             print "---------" * 12
             galSBP.unlearnEllipse()
-            iniSma = (galR50*1.5)
             ellOut1 = galSBP.galSBP(imgFile,
                                     mask=mskFile,
                                     galX=galX,
@@ -767,6 +771,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     maxIt=maxIt,
                                     plMask=plMask,
                                     suffix=suffix)
+            if ellOut1 is None:
+                print "---------" * 12
+                raise Exception("!!!!! ELLIPSE RUN FAILED AT STAGE 1 !!!!")
             if (galX0 is None) or (galY0 is None):
                 galX0 = ellOut1['avg_x0'][0]
                 galY0 = ellOut1['avg_y0'][0]
@@ -807,12 +814,16 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     maxIt=maxIt,
                                     plMask=plMask,
                                     suffix=suffix)
+            if ellOut2 is None:
+                print "---------" * 12
+                raise Exception("!!!!! ELLIPSE RUN FAILED AT STAGE 2 !!!!")
+
             if (galQ0 is None) or (galPA0 is None):
-                if (ellOut1['avg_q'][0] <= 0.95):
-                    galQ0 = ellOut1['avg_q'][0]
+                if (ellOut2['avg_q'][0] <= 0.95):
+                    galQ0 = ellOut2['avg_q'][0]
                 else:
                     galQ0 = 0.95
-                galPA0 = hUtil.normAngle(ellOut1['avg_pa'][0], lower=-90.0,
+                galPA0 = hUtil.normAngle(ellOut2['avg_pa'][0], lower=-90.0,
                                          upper=90.0, b=True)
 
             """ # Start with Stage 3 """
@@ -842,6 +853,10 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     intMode=intMode,
                                     plMask=plMask,
                                     suffix=suffix)
+            if ellOut3 is None:
+                print "---------" * 12
+                raise Exception("!!!!! ELLIPSE RUN FAILED AT STAGE 3 !!!!")
+
             if plot:
                 print "---------" * 12
                 print "##   Ellipse Summary Plot "
@@ -868,19 +883,22 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             print "---------" * 12
             print "##   Ellipse Run on Image - Forced Photometry "
             print "---------" * 12
-            galSBP.galSBP(imgFile, mask=mskFile,
-                          galX=galX,
-                          galY=galY,
-                          inEllip=inEllip,
-                          pix=pix,
-                          bkg=bkg,
-                          stage=4,
-                          zpPhoto=zp,
-                          maxTry=1,
-                          updateIntens=updateIntens,
-                          intMode=intMode,
-                          plMask=plMask,
-                          suffix=suffix)
+            ellOut4 = galSBP.galSBP(imgFile, mask=mskFile,
+                                    galX=galX,
+                                    galY=galY,
+                                    inEllip=inEllip,
+                                    pix=pix,
+                                    bkg=bkg,
+                                    stage=4,
+                                    zpPhoto=zp,
+                                    maxTry=1,
+                                    updateIntens=updateIntens,
+                                    intMode=intMode,
+                                    plMask=plMask,
+                                    suffix=suffix)
+            if ellOut4 is None:
+                print "---------" * 12
+                raise Exception("!!!!! FORCED ELLIPSE RUN FAILED !!!!")
 
 if __name__ == '__main__':
 
@@ -907,7 +925,7 @@ if __name__ == '__main__':
                         type=float, default=0.168)
     parser.add_argument('--step', dest='step',
                         help='Step size',
-                        type=float, default=0.10)
+                        type=float, default=0.12)
     parser.add_argument('--zp', dest='zp',
                         help='Photometric zeropoint',
                         type=float, default=27.0)
@@ -916,7 +934,7 @@ if __name__ == '__main__':
                         type=float, default=None)
     parser.add_argument('--olthresh', dest='olthresh',
                         help='Central locator threshold',
-                        type=float, default=0.30)
+                        type=float, default=0.50)
     parser.add_argument('--uppClip', dest='uppClip',
                         help='Upper limit for clipping',
                         type=float, default=3.0)

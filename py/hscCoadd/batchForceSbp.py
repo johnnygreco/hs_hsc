@@ -94,7 +94,7 @@ def run(args):
             inEllipBin = inEllipPrefix + refModel + '.bin'
             print "###   INPUT ELLIP BIN : %s" % inEllipBin
             if not os.path.isfile(inEllipBin):
-                raise Exception('### Can not fin the input ellip ' +
+                raise Exception('### Can not find the input ellip ' +
                                 'bin : %s' % inEllipBin)
 
             """

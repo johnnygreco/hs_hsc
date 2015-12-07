@@ -306,11 +306,11 @@ def setupEllipse(ellipConfig):
         iraf.ellipse.integrmode = 'median'
     elif intMode == 'mean':
         iraf.ellipse.integrmode = 'mean'
-    elif intMode == 'mean':
-        iraf.ellipse.integrmode = 'mean'
+    elif intMode == 'bi-linear':
+        iraf.ellipse.integrmode = 'bi-linear'
     else:
         raise Exception(
-            "### Only 'mean', 'median', and 'mean' are available !")
+            "### Only 'mean', 'median', and 'bi-linear' are available !")
     iraf.ellipse.usclip = cfg['usclip']
     iraf.ellipse.lsclip = cfg['lsclip']
     iraf.ellipse.nclip = cfg['nclip']
@@ -597,33 +597,35 @@ def ellipseFixNegIntens(ellipseOut, value=1e-6):
 def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
                             median=False, threshold=None):
     """Get the outer boundary of the output 1-D profile."""
-    meanErr = np.nanmean(ellipseOut['int_err'])
-    if threshold is not None:
-        thre = threshold
-    else:
-        thre = meanErr
-    negRad = ellipseOut['rsma'][np.where(ellipseOut['intens'] <= thre)]
+    try:
+        meanErr = np.nanmean(ellipseOut['int_err'])
+        if threshold is not None:
+            thre = threshold
+        else:
+            thre = meanErr
+        negRad = ellipseOut['rsma'][np.where(ellipseOut['intens'] <= thre)]
 
-    if (negRad is np.nan) or (len(negRad) < 3):
-        try:
-            uppIntens = np.nanmax(ellipseOut['intens']) * 0.01
-            indexUse = np.where(ellipseOut['intens'] <= uppIntens)
-        except Exception:
-            uppIntens = np.nanmax(ellipseOut['intens']) * 0.03
-            indexUse = np.where(ellipseOut['intens'] <= uppIntens)
+        if (negRad is np.nan) or (len(negRad) < 3):
+            try:
+                uppIntens = np.nanmax(ellipseOut['intens']) * 0.01
+                indexUse = np.where(ellipseOut['intens'] <= uppIntens)
+            except Exception:
+                uppIntens = np.nanmax(ellipseOut['intens']) * 0.03
+                indexUse = np.where(ellipseOut['intens'] <= uppIntens)
+            intensFit = hUtil.polyFit(ellipseOut['rsma'][indexUse],
+                                      ellipseOut['intens'][indexUse],
+                                      order=polyOrder)
+            radUse = ellipseOut['rsma'][indexUse]
+            negRad = radUse[np.where(intensFit <= meanErr)]
 
-        intensFit = hUtil.polyFit(ellipseOut['rsma'][indexUse],
-                                  ellipseOut['intens'][indexUse],
-                                  order=polyOrder)
-        radUse = ellipseOut['rsma'][indexUse]
-        negRad = radUse[np.where(intensFit <= meanErr)]
-
-    if median:
-        outRsma = np.nanmedian(negRad)
-    else:
-        outRsma = np.nanmean(negRad)
-
-    return (outRsma ** 4.0) * ratio
+        if median:
+            outRsma = np.nanmedian(negRad)
+        else:
+            outRsma = np.nanmean(negRad)
+        return (outRsma ** 4.0) * ratio
+    except Exception, errMsg:
+        print str(errMsg)
+        return None
 
 
 def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
@@ -954,6 +956,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax7.plot(rad, ellipOut['intens'], '-', color='b', linewidth=3.0)
     ax7.axvline(imgR50,  linestyle='-', color='g', alpha=0.4, linewidth=2.5)
 
+    """ TODO: Could be problematic """
     indexOut = np.where(ellipOut['intens'] <= (
         0.002 * np.nanmax(ellipOut['intens'])))
 
@@ -1055,8 +1058,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
            maxSma=None, iniSma=6.0, galR=20.0, galQ=0.9, galPA=0.0,
            pix=0.168, bkg=0.00, stage=3, minSma=0.0,
            gain=3.0, expTime=1.0, zpPhoto=27.0,
-           maxTry=4, minIt=20, maxIt=150,
-           ellipStep=0.10, uppClip=3.0, lowClip=3.0,
+           maxTry=4, minIt=20, maxIt=200,
+           ellipStep=0.12, uppClip=3.0, lowClip=3.0,
            nClip=2, fracBad=0.5, intMode="mean",
            plMask=True, conver=0.05, recenter=True,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
@@ -1203,92 +1206,99 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 iraf.ellipse(input=imageUse, output=outBin, inellip=inEllip,
                              verbose=verStr)
             print "-------" * 12
-            break
+            # Check if the Ellipse run is finished
+            if not os.path.isfile(outBin):
+                raise Exception("XXX Ellipse not done !")
+            else:
+                # Remove the existed .tab and .cdf file
+                if os.path.isfile(outTab):
+                    os.remove(outTab)
+                if os.path.isfile(outCdf):
+                    os.remove(outCdf)
+
+                # Tdump the .bin table into a .tab file
+                iraf.unlearn('tdump')
+                iraf.tdump.columns = ''
+                iraf.tdump(outBin, datafil=outTab, cdfile=outCdf)
+
+                # Read in the Ellipse output tab
+                ellipOut = readEllipseOut(outTab, zp=zpPhoto, pix=pix,
+                                          exptime=expTime, bkg=bkg,
+                                          harmonics=harmonics, minSma=psfSma)
+                radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2)
+                sma = ellipOut['sma']
+                if radOuter is None:
+                    # XXX : Don't quit yet
+                    # raise Exception("### Error : Can not decide radOuter ")
+                    print " XXX radOuter is NaN, use 0.75 * max(SMA) instead !"
+                    radOuter = np.nanmax(sma) * 0.75
+
+                """ Update the intensity """
+                if updateIntens:
+                    indexBkg = np.where(ellipOut['sma'] > radOuter * 1.2)
+                    if indexBkg[0].shape[0] > 0:
+                        try:
+                            intensBkg = ellipOut['intens'][indexBkg]
+                            clipArr, clipL, clipU = sigmaclip(intensBkg,
+                                                              2.0, 2.0)
+                            avgBkg = np.nanmean(clipArr)
+                            if not np.isfinite(avgBkg):
+                                avgBkg = 0.0
+                        except Exception:
+                            avgBkg = 0.0
+                    else:
+                        avgBkg = 0.0
+                else:
+                    avgBkg = 0.0
+                print "###     Average Outer Intensity : ", avgBkg
+
+                ellipOut['intens'] -= avgBkg
+                ellipOut.add_column(Column(name='avg_bkg',
+                                    data=(sma * 0.0 + avgBkg)))
+
+                """ Update the curve of growth """
+                cog1,  mm, ff = ellipseGetGrowthCurve(ellipOut)
+                ellipOut.add_column(Column(name='growth_cor', data=(cog1)))
+
+                """ Update the outer radius """
+                radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2)
+                if not np.isfinite(radOuter):
+                    # XXX : Don't just quit
+                    # raise Exception("### Error : Can not decide radOuter ")
+                    print " XXX radOuter is NaN, use 0.80 * max(SMA) instead !"
+                    radOuter = np.nanmax(sma) * 0.80
+                ellipOut.add_column(
+                    Column(name='rad_outer', data=(sma * 0.0 + radOuter)))
+
+                """ Update the total magnitude """
+                indexUse = np.where(ellipOut['sma'] <= (radOuter * 1.2))
+                maxIsoFlux = np.nanmax(ellipOut['growth_cor'][indexUse])
+                magFlux100 = -2.5 * np.log10(maxIsoFlux) + zpPhoto
+                ellipOut.add_column(
+                    Column(name='mag_tot', data=(sma * 0.0 + magFlux100)))
+
+                if savePng:
+                    outPng = image.replace('.fits', suffix + '.png')
+                    ellipsePlotSummary(ellipOut, imgOri, maxRad=None,
+                                       mask=mskOri, outPng=outPng,
+                                       threshold=outerThreshold)
+                if saveOut:
+                    outPre = image.replace('.fits', suffix)
+                    saveEllipOut(ellipOut, outPre, ellipCfg=ellipCfg,
+                                 verbose=verbose)
+
+                break
         except Exception as error:
             attempts += 1
             print " ### Error Information : ", error
             print " ### !!! Make the Ellipse Run A Little Bit Easier !"
             ellipCfg = easierEllipse(ellipCfg)
 
-    # Check if the Ellipse run is finished
-    if not os.path.isfile(outBin):
-        ellipOut = None
-        print "-------" * 12
-        print " ###  XXX ELLIPSE RUN FAILED AFTER %3d ATTEMPTS!!!" % maxTry
-        print "-------" * 12
-    else:
-        # Remove the existed .tab and .cdf file
-        if os.path.isfile(outTab):
-            os.remove(outTab)
-        if os.path.isfile(outCdf):
-            os.remove(outCdf)
-
-        # Tdump the .bin table into a .tab file
-        iraf.unlearn('tdump')
-        iraf.tdump.columns = ''
-        iraf.tdump(outBin, datafil=outTab, cdfile=outCdf)
-
-        # Read in the Ellipse output tab
-        ellipOut = readEllipseOut(outTab, zp=zpPhoto, pix=pix, exptime=expTime,
-                                  bkg=bkg, harmonics=harmonics, minSma=psfSma)
-        radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2)
-        sma = ellipOut['sma']
-        if not np.isfinite(radOuter):
-            # XXX : Don't quit yet
-            # raise Exception("### Error : Can not decide radOuter ")
-            print " XXX radOuter is NaN, use 0.75 * max(SMA) instead !"
-            radOuter = np.nanmax(sma) * 0.75
-
-        """ Update the intensity """
-        if updateIntens:
-            indexBkg = np.where(ellipOut['sma'] > radOuter * 1.2)
-            if indexBkg[0].shape[0] > 0:
-                try:
-                    intensBkg = ellipOut['intens'][indexBkg]
-                    clipArr, clipL, clipU = sigmaclip(intensBkg, 2.0, 2.0)
-                    avgBkg = np.nanmean(clipArr)
-                    if not np.isfinite(avgBkg):
-                        avgBkg = 0.0
-                except Exception:
-                    avgBkg = 0.0
-            else:
-                avgBkg = 0.0
-        else:
-            avgBkg = 0.0
-        print "###     Average Outer Intensity : ", avgBkg
-
-        ellipOut['intens'] -= avgBkg
-        ellipOut.add_column(Column(name='avg_bkg', data=(sma * 0.0 + avgBkg)))
-
-        """ Update the curve of growth """
-        cog1,  mm, ff = ellipseGetGrowthCurve(ellipOut)
-        ellipOut.add_column(Column(name='growth_cor', data=(cog1)))
-
-        """ Update the outer radius """
-        radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2)
-        if not np.isfinite(radOuter):
-            # XXX : Don't just quit
-            # raise Exception("### Error : Can not decide radOuter ")
-            print " XXX radOuter is NaN, use 0.80 * max(SMA) instead !"
-            radOuter = np.nanmax(sma) * 0.80
-        ellipOut.add_column(
-            Column(name='rad_outer', data=(sma * 0.0 + radOuter)))
-
-        """ Update the total magnitude """
-        indexUse = np.where(ellipOut['sma'] <= (radOuter * 1.2))
-        maxIsoFlux = np.nanmax(ellipOut['growth_cor'][indexUse])
-        magFlux100 = -2.5 * np.log10(maxIsoFlux) + zpPhoto
-        ellipOut.add_column(
-            Column(name='mag_tot', data=(sma * 0.0 + magFlux100)))
-
-        if savePng:
-            outPng = image.replace('.fits', suffix + '.png')
-            ellipsePlotSummary(ellipOut, imgOri, maxRad=None, mask=mskOri,
-                               outPng=outPng, threshold=outerThreshold)
-
-        if saveOut:
-            outPre = image.replace('.fits', suffix)
-            saveEllipOut(ellipOut, outPre, ellipCfg=ellipCfg, verbose=verbose)
+        if not os.path.isfile(outBin):
+            ellipOut = None
+            print "-------" * 12
+            print "###  XXX ELLIPSE RUN FAILED AFTER %3d ATTEMPTS!!!" % maxTry
+            print "-------" * 12
 
     return ellipOut
 
@@ -1344,7 +1354,7 @@ if __name__ == '__main__':
                         type=float, default=0.0)
     parser.add_argument('--step', dest='step',
                         help='Step size',
-                        type=float, default=0.10)
+                        type=float, default=0.12)
     parser.add_argument('--uppClip', dest='uppClip',
                         help='Upper limit for clipping',
                         type=float, default=3.0)

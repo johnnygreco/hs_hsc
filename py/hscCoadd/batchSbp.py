@@ -119,7 +119,6 @@ def run(args):
                                     suffix=ellipSuffix,
                                     plMask=args.plmask,
                                     noMask=args.nomask)
-
                 logging.warning('### The 1-D SBP is DONE for %s' % galPrefix)
             except Exception, errMsg:
                 print str(errMsg)
@@ -157,7 +156,7 @@ if __name__ == '__main__':
     parser.add_argument('--pix', dest='pix', help='Pixel Scale',
                         type=float, default=0.168)
     parser.add_argument('--step', dest='step', help='Step size',
-                        type=float, default=0.10)
+                        type=float, default=0.14)
     parser.add_argument('--zp', dest='zp', help='Photometric zeropoint',
                         type=float, default=27.0)
     parser.add_argument('--redshift', dest='redshift',
@@ -174,16 +173,16 @@ if __name__ == '__main__':
                         type=float, default=3.0)
     parser.add_argument('--nClip', dest='nClip',
                         help='Upper limit for clipping',
-                        type=int, default=2)
+                        type=int, default=3)
     parser.add_argument('--fracBad', dest='fracBad',
                         help='Outer threshold',
-                        type=float, default=0.5)
+                        type=float, default=0.7)
     parser.add_argument('--minIt', dest='minIt',
                         help='Minimum number of iterations',
-                        type=int, default=20)
+                        type=int, default=25)
     parser.add_argument('--maxIt', dest='maxIt',
                         help='Maximum number of iterations',
-                        type=int, default=150)
+                        type=int, default=200)
     parser.add_argument('--maxTry', dest='maxTry',
                         help='Maximum number of attempts of ellipse run',
                         type=int, default=4)
