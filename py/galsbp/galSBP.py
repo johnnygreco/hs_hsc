@@ -1155,8 +1155,11 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                               harmonics=harmonics)
     """ Name of the output files """
     if suffix == '':
-        suffix = suffix + '_'
-    suffix = '_ellip_' + suffix + str(stage).strip()
+        suffix = '_ellip_' + suffix + str(stage).strip()
+    elif suffix[-1] != '_':
+        suffix = '_ellip_' + suffix + '_' + str(stage).strip()
+    else:
+        suffix = '_ellip_' + suffix + str(stage).strip()
     outBin = image.replace('.fits', suffix + '.bin')
     outTab = image.replace('.fits', suffix + '.tab')
     outCdf = image.replace('.fits', suffix + '.cdf')
