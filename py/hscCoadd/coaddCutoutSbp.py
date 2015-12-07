@@ -630,7 +630,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                    showZoom=True, checkCenter=True, updateIntens=False,
                    olthresh=0.5, intMode='median', lowClip=3.0, uppClip=2.0,
                    nClip=2, fracBad=0.6, minIt=10, maxIt=100, outRatio=1.2,
-                   exMask=None, suffix=''):
+                   exMask=None, suffix='', plMask=False):
     """
     Generate 1-D SBP Plot.
 
@@ -760,6 +760,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     intMode=intMode,
                                     minIt=minIt,
                                     maxIt=maxIt,
+                                    plMask=plMask,
                                     suffix=suffix)
             if (galX0 is None) or (galY0 is None):
                 galX0 = ellOut1['avg_x0'][0]
@@ -797,6 +798,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     intMode=intMode,
                                     minIt=minIt,
                                     maxIt=maxIt,
+                                    plMask=plMask,
                                     suffix=suffix)
             if (galQ0 is None) or (galPA0 is None):
                 galQ0 = ellOut1['avg_q'][0] if ellOut1['avg_q'][0] <= 0.95 else 0.95
@@ -826,6 +828,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     nClip=nClip,
                                     fracBad=fracBad,
                                     intMode=intMode,
+                                    plMask=plMask,
                                     suffix=suffix)
             if plot:
                 print "\n##   Ellipse Summary Plot "
@@ -860,6 +863,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     maxTry=1,
                                     updateIntens=updateIntens,
                                     intMode=intMode,
+                                    plMask=plMask,
                                     suffix=suffix)
 
 if __name__ == '__main__':
@@ -949,6 +953,8 @@ if __name__ == '__main__':
                         help='Check if the center is off', default=True)
     parser.add_argument('--updateIntens', dest='updateIntens',
                         action="store_true", default=True)
+    parser.add_argument('--plmask', dest='plmask', action="store_true",
+                        default=True)
 
     args = parser.parse_args()
 
@@ -980,4 +986,5 @@ if __name__ == '__main__':
                    maxIt=args.maxIt,
                    maxTry=args.maxTry,
                    outRatio=args.outRatio,
+                   plMask=args.plmask,
                    exMask=args.exMask)

@@ -1088,11 +1088,13 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             raise Exception("### Can not find the input mask: %s !" % mskOri)
 
         if plMask:
+            print "###  Will use the *.pl Mask"
             plFile = maskFits2Pl(image, mask)
             if not os.path.isfile(plFile):
                 raise Exception("### Can not find the .pl mask: %s !" % plFile)
             imageUse = imgOri
         else:
+            print "###  Will use the *nan.fits Mask"
             imageNew = imageMaskNaN(image, mask)
             if not os.path.isfile(imageNew):
                 raise Exception(
@@ -1368,7 +1370,7 @@ if __name__ == '__main__':
     parser.add_argument('--save', dest='save', action="store_true",
                         default=True)
     parser.add_argument('--plmask', dest='plmask', action="store_true",
-                        default=False)
+                        default=True)
     parser.add_argument('--updateIntens', dest='updateIntens',
                         action="store_true", default=False)
 
