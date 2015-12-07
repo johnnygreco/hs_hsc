@@ -1054,7 +1054,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
            maxTry=2, minIt=10, maxIt=120,
            ellipStep=0.10, uppClip=2.5, lowClip=2.5,
            nClip=2, fracBad=0.5, intMode="median",
-           plMask=True, conver=0.05, recenter=True,
+           plMask=False, conver=0.05, recenter=True,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
            olthresh=0.5, harmonics='1 2', outerThreshold=None,
            updateIntens=False, psfSma=6.0, suffix=''):
@@ -1370,7 +1370,7 @@ if __name__ == '__main__':
     parser.add_argument('--save', dest='save', action="store_true",
                         default=True)
     parser.add_argument('--plmask', dest='plmask', action="store_true",
-                        default=True)
+                        default=False)
     parser.add_argument('--updateIntens', dest='updateIntens',
                         action="store_true", default=False)
 

@@ -216,7 +216,7 @@ if __name__ == '__main__':
                         action="store_true",
                         default=True)
     parser.add_argument('--plmask', dest='plmask', action="store_true",
-                        default=True)
+                        default=False)
 
     args = parser.parse_args()
 
