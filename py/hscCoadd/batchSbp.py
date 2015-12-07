@@ -23,6 +23,7 @@ def run(args):
         id = (args.id)
         rerun = (args.rerun).strip()
         prefix = (args.prefix).strip()
+        suffix = (args.suffix).strip()
         filter = (args.filter).strip().upper()
 
         """ Keep a log """
@@ -43,10 +44,11 @@ def run(args):
             if not os.path.isdir(galRoot):
                 raise Exception('### Can not find the root folder ' +
                                 ' for the galaxy data !')
-            fitsList = glob.glob(galRoot + '*.fits')
+            fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
             if len(fitsList) <= 3:
                 raise Exception("### Missing data under %s" % galRoot)
-            galImg = galRoot + '_img.fits'
+
+            galImg = galPrefix + '_img.fits'
             if (not os.path.isfile(os.path.join(galRoot, galImg)) and not
                     os.path.islink(os.path.join(galRoot, galImg))):
                 raise Exception('### Can not find the cutout image of ' +
@@ -68,9 +70,9 @@ def run(args):
             """
             External mask
             """
-            if args.mask is not None:
-                mskFilter = (args.mask).strip().upper()
-                print "### Use %s filter for mask \n" % mskFilter
+            if args.maskFilter is not None:
+                mskFilter = (args.maskFilter).strip().upper()
+                print "###  Use %s filter for mask \n" % mskFilter
                 mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
                 mskRoot = os.path.join(galID, mskFilter, rerun)
                 galMsk = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
@@ -80,6 +82,7 @@ def run(args):
             else:
                 galMsk = None
 
+            ellipSuffix = rerun + '_' + suffix
             try:
                 cSbp.coaddCutoutSbp(galPrefix, root=galRoot,
                                     verbose=args.verbose,
@@ -108,9 +111,10 @@ def run(args):
                                     maxIt=args.maxIt,
                                     maxTry=args.maxTry,
                                     outRatio=args.outRatio,
-                                    exMask=galMsk)
-            except Exception as ee:
-                print ee
+                                    exMask=galMsk,
+                                    suffix=ellipSuffix)
+            except Exception, errMsg:
+                print str(errMsg)
                 warnings.warn('### The 1-D SBP is failed for %s' % galPrefix)
                 logging.warning('### The 1-D SBP is failed for %s' % galPrefix)
             print "#########################################################"
@@ -130,10 +134,13 @@ if __name__ == '__main__':
                         default='HSC-I')
     parser.add_argument('-r', '--rerun', dest='rerun',
                         help="Name of the rerun", default='default')
+    parser.add_argument("--suffix",
+                        help="Suffix of the output file",
+                        default='')
     parser.add_argument('-m', '--mask', dest='mask', help="Filter for Mask",
                         default=None)
-    parser.add_argument('--mFilter', dest='maskFilter', help="Filter for Mask",
-                        default=None)
+    parser.add_argument('-mf', '--mFilter', dest='maskFilter',
+                        help="Filter for Mask", default=None)
     """ Optional """
     parser.add_argument("--intMode", dest='intMode',
                         help="Method for integration",

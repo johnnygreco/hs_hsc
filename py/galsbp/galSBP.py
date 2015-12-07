@@ -31,19 +31,18 @@ mpl.rc('axes', linewidth=3.5)
 # Astropy related
 from astropy.io import fits
 from astropy.io import ascii
-from astropy import units as u
 from astropy.table import Table, Column
-
 from pyraf import iraf
 
 # Color table
 try:
     import cubehelix  # Cubehelix color scheme
-    cmap = cubehelix.cmap(start=0.5, rot=-1.0, minSat=1.2, maxSat=1.2,
-            minLight=0., maxLight=1., gamma=0.5)
+    cmap = cubehelix.cmap(start=0.5, rot=-1.0,
+                          minSat=1.2, maxSat=1.2,
+                          minLight=0., maxLight=1., gamma=0.5)
 except ImportError:
     cmap = 'spectral'
-cmap.set_bad('k',1.)
+cmap.set_bad('k', 1.)
 
 # Personal
 import hscUtils as hUtil
@@ -51,7 +50,9 @@ import hscUtils as hUtil
 
 def correctPositionAngle(ellipOut, paNorm=False):
     """
-    Correct the position angle for large
+    Correct the position angle for large jump.
+
+    Parameters:
     """
     if paNorm:
         posAng = ellipOut['pa_norm']
@@ -59,9 +60,9 @@ def correctPositionAngle(ellipOut, paNorm=False):
         posAng = ellipOut['pa']
 
     for i in range(1, len(posAng)):
-        if (posAng[i]-posAng[i-1]) >= 85.0:
+        if (posAng[i] - posAng[i - 1]) >= 85.0:
             posAng[i] -= 180.0
-        elif (posAng[i]-posAng[i-1] <= -85.0):
+        elif (posAng[i] - posAng[i - 1] <= -85.0):
             posAng[i] += 180.0
 
     if paNorm:
@@ -73,16 +74,16 @@ def correctPositionAngle(ellipOut, paNorm=False):
 
 
 def convIso2Ell(ellTab, xpad=0.0, ypad=0.0):
-    """TODO: Docstring for convIso2Ell
-    :returns: TODO
-
     """
+    Convert ellipse results into ellipses for visualization.
 
-    x  = ellTab['x0'] - xpad
-    y  = ellTab['y0'] - ypad
+    Parameters:
+    """
+    x = ellTab['x0'] - xpad
+    y = ellTab['y0'] - ypad
     pa = ellTab['pa']
-    a  = ellTab['sma'] * 2.0
-    b  = ellTab['sma'] * 2.0 * (1.0 - ellTab['ell'])
+    a = ellTab['sma'] * 2.0
+    b = ellTab['sma'] * 2.0 * (1.0 - ellTab['ell'])
 
     ells = [Ellipse(xy=np.array([x[i], y[i]]),
                     width=np.array(b[i]),
@@ -94,10 +95,12 @@ def convIso2Ell(ellTab, xpad=0.0, ypad=0.0):
 
 
 def maskFits2Pl(inputImage, inputMask):
+    """
+    Convert the FITS mask into the IRAF .pl file.
 
-    """TODO: Docstring for maskFits2Pl.
-    :returns: TODO
+    This is stupid....
 
+    Parameters:
     """
     if not os.path.isfile(inputMask):
         raise Exception("Can not find the FITS mask: %s" % inputMask)
@@ -114,11 +117,11 @@ def maskFits2Pl(inputImage, inputMask):
 
 
 def imageMaskNaN(inputImage, inputMask):
-
     """
-    Nan-Masked Image
-    """
+    Assigning NaN to mask region.
 
+    Under Pyraf, it seems that .pl file is not working.  This is a work around.
+    """
     newImage = inputImage.replace('.fits', '_nan.fits')
     print " ## %s ---> %s " % (inputImage, newImage)
 
@@ -131,7 +134,6 @@ def imageMaskNaN(inputImage, inputMask):
     else:
         imgArr = fits.open(imgOri)[0].data
         imgHead = fits.open(imgOri)[0].header
-
 
     if os.path.islink(inputMask):
         mskOri = os.readlink(inputMask)
@@ -152,23 +154,30 @@ def imageMaskNaN(inputImage, inputMask):
 
 
 def defaultEllipse(x0, y0, maxsma, ellip0=0.05, pa0=0.0, sma0=6.0, minsma=0.0,
-        linear=False, step=0.08, recenter=True, conver=0.05, hcenter=True,
-        hellip=True, hpa=True, minit=10, maxit=250, olthresh=1.00, mag0=27.0,
-        integrmode='median', usclip=3.0, lsclip=3.0, nclip=2, fflag=0.5,
-        harmonics='none'):
+                   linear=False, step=0.08, recenter=True, conver=0.05,
+                   hcenter=True, hellip=True, hpa=True, minit=10, maxit=250,
+                   olthresh=1.00, mag0=27.0, integrmode='median', usclip=3.0,
+                   lsclip=3.0, nclip=2, fflag=0.5, harmonics='none'):
     """
-    doc
+    The default settings for Ellipse.
+
+    Parameters:
     """
     ellipConfig = np.recarray((1,), dtype=[('x0', float), ('y0', float),
-                                   ('ellip0', float), ('pa0', float),
-                                   ('sma0', float), ('minsma', float), ('maxsma', float),
-                                   ('linear', bool), ('step', float),
-                                   ('recenter', bool), ('conver', int),
-                                   ('hcenter', bool), ('hellip', bool), ('hpa', bool),
-                                   ('minit', int), ('maxit', int), ('olthresh', float),
-                                   ('mag0', float), ('integrmode', 'a10'),
-                                   ('usclip', float), ('lsclip', float), ('nclip', int),
-                                   ('fflag', float), ('harmonics', 'a10')])
+                                           ('ellip0', float), ('pa0', float),
+                                           ('sma0', float), ('minsma', float),
+                                           ('maxsma', float), ('linear', bool),
+                                           ('step', float), ('recenter', bool),
+                                           ('conver', int), ('hcenter', bool),
+                                           ('hellip', bool), ('hpa', bool),
+                                           ('minit', int), ('maxit', int),
+                                           ('olthresh', float),
+                                           ('mag0', float),
+                                           ('integrmode', 'a10'),
+                                           ('usclip', float),
+                                           ('lsclip', float), ('nclip', int),
+                                           ('fflag', float),
+                                           ('harmonics', 'a10')])
     # Default setting for Ellipse Run
     ellipConfig['x0'] = x0
     ellipConfig['y0'] = y0
@@ -199,9 +208,7 @@ def defaultEllipse(x0, y0, maxsma, ellip0=0.05, pa0=0.0, sma0=6.0, minsma=0.0,
 
 
 def unlearnEllipse():
-    """
-    Unlearn the settings for Ellipse
-    """
+    """Unlearn the settings for Ellipse."""
     iraf.unlearn('geompar')
     iraf.unlearn('controlpar')
     iraf.unlearn('samplepar')
@@ -210,22 +217,20 @@ def unlearnEllipse():
 
 
 def easierEllipse(ellipConfig):
-    """
-    doc
-    """
+    """Make the Ellipse run easier"""
     ellipConfig['maxsma'] *= 0.9
-    ellipConfig['step']  += 0.04
+    ellipConfig['step'] += 0.03
     ellipConfig['fflag'] += 0.05
 
     return ellipConfig
 
 
 def setupEllipse(ellipConfig):
-    """TODO: Docstring for ellipseConfig
-    :returns: TODO
-
     """
+    Setup the configuration for Ellipse.
 
+    Parameters:
+    """
     cfg = ellipConfig[0]
 
     # Define parameters for the ellipse run
@@ -234,86 +239,91 @@ def setupEllipse(ellipConfig):
         iraf.ellipse.x0 = cfg['x0']
         iraf.ellipse.y0 = cfg['y0']
     else:
-        raise "Make sure that the input X0 and Y0 are meaningful !", cfg['x0'], cfg['y0']
+        raise "Make sure that the input X0 and Y0 are meaningful !", cfg[
+            'x0'], cfg['y0']
 
     # 2. Initial guess of the ellipticity and PA of the first ISOPHOTE
     if (cfg['ellip0'] >= 0.0) and (cfg['ellip0'] < 1.0):
         iraf.ellipse.ellip0 = cfg['ellip0'] if cfg['ellip0'] >= 0.05 else 0.05
     else:
-        raise "Make sure that the input Ellipticity is meaningful !", cfg['ellip0']
+        raise "Make sure that the input Ellipticity is meaningful !", cfg[
+            'ellip0']
     if (cfg['pa0'] >= -90.0) and (cfg['pa0'] <= 90.0):
         iraf.ellipse.pa0 = cfg['pa0']
     else:
-        raise "Make sure that the input Position Angle is meaningful !", cfg['pa0']
+        raise "Make sure that the input Position Angle is meaningful !", cfg[
+            'pa0']
 
     # 3. Initial radius for ellipse fitting
-    iraf.ellipse.sma0       = cfg['sma0']
+    iraf.ellipse.sma0 = cfg['sma0']
     # 4. The minimum and maximum radius for the ellipse fitting
-    iraf.ellipse.minsma     = cfg['minsma']
-    iraf.ellipse.maxsma     = cfg['maxsma']
+    iraf.ellipse.minsma = cfg['minsma']
+    iraf.ellipse.maxsma = cfg['maxsma']
     # 5. Parameters about the stepsize during the fitting.
     if cfg['linear']:
-        iraf.ellipse.linear     = 'yes'
+        iraf.ellipse.linear = 'yes'
     else:
-        iraf.ellipse.linear     = 'no'
-    iraf.ellipse.geompar.step       = cfg['step']
-    # 6. Do you want to allow the ellipse to decide the galaxy center during the
+        iraf.ellipse.linear = 'no'
+    iraf.ellipse.geompar.step = cfg['step']
+    # 6. Do you want to allow the ellipse to decide the galaxy center during
+    # the
     if cfg['recenter']:
-        iraf.ellipse.recenter   = 'yes'
+        iraf.ellipse.recenter = 'yes'
     else:
-        iraf.ellipse.recenter   = 'no'
+        iraf.ellipse.recenter = 'no'
     # 7. The next three parameters control the behavior of the fit
-    iraf.ellipse.conver  = cfg['conver']
+    iraf.ellipse.conver = cfg['conver']
     if cfg['hcenter']:
         iraf.ellipse.hcenter = 'yes'
     else:
         iraf.ellipse.hcenter = 'no'
     if cfg['hellip']:
-        iraf.ellipse.hellip  = 'yes'
+        iraf.ellipse.hellip = 'yes'
     else:
-        iraf.ellipse.hellip  = "no"
+        iraf.ellipse.hellip = "no"
     if cfg['hpa']:
-        iraf.ellipse.hpa     = 'yes'
+        iraf.ellipse.hpa = 'yes'
     else:
-        iraf.ellipse.hpa     = 'no'
+        iraf.ellipse.hpa = 'no'
     # 8. Parameters about the iterations
     # minit/maxit: minimun and maximum number of the iterations
-    iraf.ellipse.minit   = cfg['minit']
-    iraf.ellipse.maxit   = cfg['maxit']
+    iraf.ellipse.minit = cfg['minit']
+    iraf.ellipse.maxit = cfg['maxit']
     # 9. Threshold for the object locator algorithm
     iraf.ellipse.olthresh = cfg['olthresh']
     # 10. Make sure the Interactive Mode is turned off
     iraf.ellipse.interactive = 'no'
     # 11. Magnitude Zeropoint
-    iraf.ellipse.mag0         = cfg['mag0']
+    iraf.ellipse.mag0 = cfg['mag0']
     # 12. Sampler
     intMode = cfg['integrmode']
     intMode = intMode.lower().strip()
     if intMode == 'median':
-        iraf.ellipse.integrmode  = 'median'
+        iraf.ellipse.integrmode = 'median'
     elif intMode == 'mean':
-        iraf.ellipse.integrmode  = 'mean'
+        iraf.ellipse.integrmode = 'mean'
     elif intMode == 'bi-linear':
-        iraf.ellipse.integrmode  = 'bi-linear'
+        iraf.ellipse.integrmode = 'bi-linear'
     else:
-        raise Exception("### Only 'mean', 'median', and 'bi-linear' are available !")
-    iraf.ellipse.usclip      = cfg['usclip']
-    iraf.ellipse.lsclip      = cfg['lsclip']
-    iraf.ellipse.nclip       = cfg['nclip']
-    iraf.ellipse.fflag       = cfg['fflag']
+        raise Exception(
+            "### Only 'mean', 'median', and 'bi-linear' are available !")
+    iraf.ellipse.usclip = cfg['usclip']
+    iraf.ellipse.lsclip = cfg['lsclip']
+    iraf.ellipse.nclip = cfg['nclip']
+    iraf.ellipse.fflag = cfg['fflag']
     # 13. Optional Harmonics
-    iraf.ellipse.harmonics   = cfg['harmonics']
+    iraf.ellipse.harmonics = cfg['harmonics']
 
 
 def ellipRemoveIndef(outTabName, replace='NaN'):
-
-    """TODO: Docstring for ellipRemoveIndef
-    :returns: TODO
-
     """
+    Remove the Indef values from the Ellipse output.
 
+    Parameters:
+    """
     if os.path.exists(outTabName):
-        subprocess.call(['sed', '-i_back', 's/INDEF/' + replace + '/g', outTabName])
+        subprocess.call(['sed', '-i_back', 's/INDEF/' +
+                        replace + '/g', outTabName])
     else:
         raise Exception('Can not find the input catalog!')
 
@@ -322,13 +332,12 @@ def ellipRemoveIndef(outTabName, replace='NaN'):
 
 def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
                    harmonics='none', galR=None, minSma=2.0):
-
-    """TODO: Docstring for readEllipseOut
-    :returns: TODO
-
     """
-    name = ellipRemoveIndef(outTabName)
+    Read the Ellipse output into a structure.
 
+    Parameters:
+    """
+    ellipRemoveIndef(outTabName)
     ellipseOut = Table.read(outTabName, format='ascii.no_header')
 
     # Rename all the columns
@@ -386,9 +395,9 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     # Normalize the PA
     ellipseOut = correctPositionAngle(ellipseOut, paNorm=False)
     ellipseOut.add_column(Column(name='pa_norm',
-                          data=np.array([hUtil.normAngle(pa, lower=-90, upper=90.0,
-                              b=True)
-                              for pa in ellipseOut['pa']])))
+                          data=np.array([hUtil.normAngle(pa,
+                                        lower=-90, upper=90.0, b=True)
+                                        for pa in ellipseOut['pa']])))
 
     # Apply a photometric zeropoint to the magnitude
     ellipseOut['mag'] += zp
@@ -396,42 +405,33 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     ellipseOut['tmag_c'] += zp
 
     # Convert the intensity into surface brightness
-    parea = (pix**2.0)
-    # Fixed the negative intensity
-    #ellipseNew = ellipseFixNegIntens(ellipseOut)
+    parea = (pix ** 2.0)
     # Surface brightness
-    sbp = zp-2.5*np.log10((ellipseOut['intens']-bkg)/ (parea*exptime))
+    # Fixed the negative intensity
+    intensSub = (ellipseOut['intens'] - bkg)
+    intensSub[intensSub < 0] = np.nan
+    sbp = zp - 2.5 * np.log10(intensSub / (parea * exptime))
     ellipseOut.add_column(Column(name='sbp', data=sbp))
-
-    sbp_low = zp-2.5*np.log10((ellipseOut['intens']+ellipseOut['int_err']-bkg)/
-            (parea*exptime))
+    # Not so accurate estimates of surface brightness error
+    sbp_low = zp - 2.5 * np.log10((intensSub + ellipseOut['int_err']) /
+                                  (parea * exptime))
     sbp_err = (sbp - sbp_low)
     sbp_upp = (sbp + sbp_err)
-
     ellipseOut.add_column(Column(name='sbp_low', data=sbp_low))
     ellipseOut.add_column(Column(name='sbp_upp', data=sbp_upp))
-
-    rsmaUse = ellipseOut['rsma'][np.isfinite(ellipseOut['sbp'])]
-    sbpUse  = ellipseOut['sbp'][np.isfinite(ellipseOut['sbp'])]
-    #try:
-        #coefficients = np.polyfit(rsmaUse, sbpUse, 8)
-        #polynomial = np.poly1d(coefficients)
-        #sbpFit = polynomial(ellipseOut['rsma'])
-        #ellipseOut.add_column(Column(name='sbp_fit', data=sbpFit))
-    #except Exception:
-        #pass
 
     # Convert the unit of radius into arcsecs
     ellipseOut.add_column(Column(name='sma_asec',
                                  data=(ellipseOut['sma'] * pix)))
     ellipseOut.add_column(Column(name='rsma_asec',
                                  data=(ellipseOut['sma'] * pix) ** 0.25))
-
-    nIso = len(ellipseOut)
     # Get the average X0, Y0, Q, and PA
+    """
+    The choice is pretty random
+    """
     if galR is None:
         galR = np.max(ellipseOut['sma']) * 0.18
-    avgX, avgY  = ellipseGetAvgCen(ellipseOut, galR, minSma=minSma)
+    avgX, avgY = ellipseGetAvgCen(ellipseOut, galR, minSma=minSma)
     avgQ, avgPA = ellipseGetAvgGeometry(ellipseOut, galR, minSma=minSma)
 
     ellipseOut.add_column(Column(name='avg_x0',
@@ -450,13 +450,9 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
 
 
 def zscale(img, contrast=0.25, samples=500):
-
-    """TODO: Docstring for zscale
-    :returns: TODO
-
-    """
-
-    # Image scaling function form http://hsca.ipmu.jp/hscsphinx/scripts/psfMosaic.html
+    """zScale the image."""
+    # Image scaling function form
+    # http://hsca.ipmu.jp/hscsphinx/scripts/psfMosaic.html
     ravel = img.ravel()
     if len(ravel) > samples:
         imsort = np.sort(np.random.choice(ravel, size=samples))
@@ -466,64 +462,59 @@ def zscale(img, contrast=0.25, samples=500):
     n = len(imsort)
     idx = np.arange(n)
 
-    med = imsort[n/2]
+    med = imsort[n / 2]
     w = 0.25
-    i_lo, i_hi = int((0.5-w)*n), int((0.5+w)*n)
+    i_lo, i_hi = int((0.5 - w) * n), int((0.5 + w) * n)
     p = np.polyfit(idx[i_lo:i_hi], imsort[i_lo:i_hi], 1)
     slope, intercept = p
 
-    z1 = med - (slope/contrast)*(n/2-n*w)
-    z2 = med + (slope/contrast)*(n/2-n*w)
+    z1 = med - (slope / contrast) * (n / 2 - n * w)
+    z2 = med + (slope / contrast) * (n / 2 - n * w)
 
     return z1, z2
 
 
 def ellipseGetGrowthCurve(ellipOut):
-
-    """TODO: Docstring for ellipseGetGrowthCurve
-    :returns: TODO
-
     """
+    Extract growth curve from Ellipse output.
 
+    Parameters:
+    """
     # The area in unit of pixels covered by an elliptical isophote
-    ellArea = np.pi * (ellipOut['sma'] ** 2.0 * (1.0-ellipOut['ell']))
+    ellArea = np.pi * (ellipOut['sma'] ** 2.0 * (1.0 - ellipOut['ell']))
     # The area in unit covered by the "ring"
-    isoArea = np.append(ellArea[0], [ellArea[1:] - ellArea[:-1]])
+    # isoArea = np.append(ellArea[0], [ellArea[1:] - ellArea[:-1]])
     # The total flux inside the "ring"
-    isoFlux = np.append(ellArea[0], [ellArea[1:] - ellArea[:-1]]) * ellipOut['intens']
-    isoTFlux = np.asarray(map(lambda x: np.nansum(isoFlux[0:x+1]),
-        range(isoFlux.shape[0])))
-
+    isoFlux = np.append(
+        ellArea[0], [ellArea[1:] - ellArea[:-1]]) * ellipOut['intens']
+    isoTFlux = np.asarray(map(lambda x: np.nansum(isoFlux[0:x + 1]),
+                              range(isoFlux.shape[0])))
     # Get the growth curve
     growthCurveOri = np.asarray(isoTFlux)
-
     indexMax = np.argmax(growthCurveOri)
-    maxIsoSma  = ellipOut['sma'][indexMax]
+    maxIsoSma = ellipOut['sma'][indexMax]
     maxIsoFlux = isoTFlux[indexMax]
 
     return growthCurveOri, maxIsoSma, maxIsoFlux
 
 
 def ellipseGetR50(ellipseRsma, isoGrowthCurve, simple=True):
-
+    """Estimate R50 from Ellipse output."""
     if len(ellipseRsma) != len(isoGrowthCurve):
         raise "The x and y should have the same size!", (len(ellipseRsma),
-                len(isoGrowthCurve))
+                                                         len(isoGrowthCurve))
     else:
         if simple:
-            isoRsma50 = ellipseRsma[np.nanargmin(np.abs(isoGrowthCurve - 50.0))]
+            isoRsma50 = ellipseRsma[np.nanargmin(
+                np.abs(isoGrowthCurve - 50.0))]
         else:
-            isoRsma50 = (numpy.interp([50.0], isoGrowthCurve, ellipseRsma))[0]
+            isoRsma50 = (np.interp([50.0], isoGrowthCurve, ellipseRsma))[0]
 
     return isoRsma50
 
 
 def ellipseGetAvgCen(ellipseOut, outRad, minSma=2.0):
-
-    """
-    Get the Average X0/Y0
-    """
-
+    """Get the Average X0/Y0."""
     try:
         xUse = ellipseOut['x0'][(ellipseOut['sma'] <= outRad) &
                                 (np.isfinite(ellipseOut['x0_err'])) &
@@ -546,11 +537,7 @@ def ellipseGetAvgCen(ellipseOut, outRad, minSma=2.0):
 
 
 def ellipseGetAvgGeometry(ellipseOut, outRad, minSma=2.0):
-
-    """
-    Get the Average Q and PA
-    """
-
+    """Get the Average Q and PA."""
     tfluxE = ellipseOut['tflux_e']
     ringFlux = np.append(tfluxE[0], [tfluxE[1:] - tfluxE[:-1]])
 
@@ -587,32 +574,25 @@ def ellipseGetAvgGeometry(ellipseOut, outRad, minSma=2.0):
             pUse = ellipseOut['pa_norm'][(ellipseOut['sma'] <= outRad) &
                                          (ellipseOut['sma'] >= 0.5)]
             fUse = ringFlux[(ellipseOut['sma'] <= outRad) &
-                            (ellipseOut['sma'] >= 0.5) ]
+                            (ellipseOut['sma'] >= 0.5)]
 
-    avgQ  = 1.0 - hUtil.numpy_weighted_mean(eUse, weights=fUse)
+    avgQ = 1.0 - hUtil.numpy_weighted_mean(eUse, weights=fUse)
     avgPA = hUtil.numpy_weighted_mean(pUse, weights=fUse)
 
     return avgQ, avgPA
 
 
 def ellipseFixNegIntens(ellipseOut, value=1e-6):
-
-    """
-    Replace the negative value from the intensity
-    """
-
+    """Replace the negative value from the intensity."""
     ellipseNew = copy.deepcopy(ellipseOut)
-    ellipseNew['intens'][np.where(ellipseNew['intens'] < 0.0)] = value
+    ellipseNew['intens'][ellipseNew['intens'] < 0.0] = value
 
     return ellipseNew
 
 
 def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
-        median=False, threshold=None):
-
-    """
-    Get the Outer Boundary
-    """
+                            median=False, threshold=None):
+    """Get the outer boundary of the output 1-D profile."""
     meanErr = np.nanmean(ellipseOut['int_err'])
     if threshold is not None:
         thre = threshold
@@ -631,7 +611,6 @@ def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
         intensFit = hUtil.polyFit(ellipseOut['rsma'][indexUse],
                                   ellipseOut['intens'][indexUse],
                                   order=polyOrder)
-        minIntens = np.nanmin(ellipseOut['intens'][indexUse])
         radUse = ellipseOut['rsma'][indexUse]
         negRad = radUse[np.where(intensFit <= meanErr)]
 
@@ -644,12 +623,13 @@ def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
 
 
 def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
-        outPng='ellipse_summary.png', zp=27.0, threshold=None, showZoom=False):
-
+                       outPng='ellipse_summary.png', zp=27.0, threshold=None,
+                       showZoom=False):
     """
-    doc
-    """
+    Make a summary plot of the ellipse run.
 
+    Parameters:
+    """
     """ Left side: SBP """
     reg1 = [0.07, 0.05, 0.455, 0.35]
     reg2 = [0.07, 0.40, 0.455, 0.15]
@@ -685,12 +665,13 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     """ Find the proper outer boundary """
     sma = ellipOut['sma']
-    radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2, threshold=threshold)
+    radOuter = ellipseGetOuterBoundary(
+        ellipOut, ratio=1.2, threshold=threshold)
     if not np.isfinite(radOuter):
         print " XXX radOuter is NaN, use 0.80 * max(SMA) instead !"
         radOuter = np.nanmax(sma) * 0.80
 
-    indexUse = np.where(ellipOut['sma'] <= (radOuter*1.2))
+    indexUse = np.where(ellipOut['sma'] <= (radOuter * 1.2))
     print "###     OutRadius : ", radOuter
 
     """ Get growth curve """
@@ -698,12 +679,11 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     growthCurveNew = -2.5 * np.log10(ellipOut['growth_cor']) + zp
 
     maxIsoFluxOri = np.nanmax(ellipOut['growth_ori'][indexUse])
-    magFluxOri50  = -2.5 * np.log10(maxIsoFluxOri * 0.50) + zp
     magFluxOri100 = -2.5 * np.log10(maxIsoFluxOri) + zp
     print "###     MagTot OLD : ", magFluxOri100
 
     maxIsoFlux = np.nanmax(ellipOut['growth_cor'][indexUse])
-    magFlux50  = -2.5 * np.log10(maxIsoFlux * 0.50) + zp
+    magFlux50 = -2.5 * np.log10(maxIsoFlux * 0.50) + zp
     magFlux100 = -2.5 * np.log10(maxIsoFlux) + zp
     print "###     MagTot NEW : ", magFlux100
 
@@ -715,9 +695,10 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     if radMode is 'rsma':
         rad = ellipOut['rsma']
         radStr = 'RSMA (pixel$^{1/4}$)'
-        minRad = 0.41 if 0.41 >= np.nanmin(ellipOut['rsma']) else np.nanmin(ellipOut['rsma'])
-        imgR50 = (imgX/2.0)**0.25
-        radOut = (radOuter*1.2)**0.25
+        minRad = 0.41 if 0.41 >= np.nanmin(
+            ellipOut['rsma']) else np.nanmin(ellipOut['rsma'])
+        imgR50 = (imgX / 2.0) ** 0.25
+        radOut = (radOuter * 1.2) ** 0.25
         radOut = radOut if radOut <= imgR50 else imgR50
         if maxRad is None:
             maxRad = np.nanmax(rad)
@@ -728,9 +709,10 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     elif radMode is 'sma':
         rad = ellipOut['sma']
         radStr = 'SMA (pixel)'
-        minRad = 0.05 if 0.05 >= np.nanmin(ellipOut['sma']) else np.nanmin(ellipOut['sma'])
-        imgR50 = (imgX/2.0)
-        radOut = (radOuter*1.2)
+        minRad = 0.05 if 0.05 >= np.nanmin(
+            ellipOut['sma']) else np.nanmin(ellipOut['sma'])
+        imgR50 = (imgX / 2.0)
+        radOut = (radOuter * 1.2)
         radOut = radOut if radOut <= imgR50 else imgR50
         if maxRad is None:
             maxRad = maxSma = np.nanmax(rad)
@@ -739,9 +721,11 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     elif radMode is 'log':
         rad = np.log10(ellipOut['sma'])
         radStr = 'log (SMA/pixel)'
-        minRad = 0.01 if 0.01 >= np.log10(np.nanmin(ellipOut['sma'])) else np.log10(np.nanmin(ellipOut['sma']))
-        imgR50 = np.log10(imgX/2.0)
-        radOut = np.log10(radOuter*1.2)
+        minRad = 0.01 if 0.01 >= np.log10(
+            np.nanmin(ellipOut['sma'])) else np.log10(
+            np.nanmin(ellipOut['sma']))
+        imgR50 = np.log10(imgX / 2.0)
+        radOut = np.log10(radOuter * 1.2)
         radOut = radOut if radOut <= imgR50 else imgR50
         if maxRad is None:
             maxRad = np.nanmax(rad)
@@ -761,9 +745,10 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax1.set_ylabel('${\mu}$ (mag/arcsec$^2$)', fontsize=28)
 
     ax1.fill_between(rad[indexUse], ellipOut['sbp_upp'][indexUse],
-            ellipOut['sbp_low'][indexUse], facecolor='k', alpha=0.3)
+                     ellipOut['sbp_low'][indexUse], facecolor='k', alpha=0.3)
 
-    ax1.plot(rad[indexUse], ellipOut['sbp'][indexUse], '-', color='r', linewidth=3.0)
+    ax1.plot(rad[indexUse], ellipOut['sbp'][
+             indexUse], '-', color='r', linewidth=3.0)
 
     ax1.set_xlim(minRad, radOut)
     sbpBuffer = 0.5
@@ -784,20 +769,24 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax2.set_ylabel('$e$', fontsize=30)
 
     print "###     AvgEll", (1.0 - ellipOut['avg_q'][0])
-    ax2.axhline((1.0 - ellipOut['avg_q'][0]), color='k', linestyle='--', linewidth=2)
+    ax2.axhline((1.0 - ellipOut['avg_q'][0]),
+                color='k', linestyle='--', linewidth=2)
 
     ax2.fill_between(rad[indexUse],
-            ellipOut['ell'][indexUse]+ellipOut['ell_err'][indexUse],
-            ellipOut['ell'][indexUse]-ellipOut['ell_err'][indexUse],
-            facecolor='r', alpha=0.25)
-    ax2.plot(rad[indexUse], ellipOut['ell'][indexUse], '-', color='r', linewidth=2.0)
+                     ellipOut['ell'][indexUse] + ellipOut['ell_err'][indexUse],
+                     ellipOut['ell'][indexUse] - ellipOut['ell_err'][indexUse],
+                     facecolor='r', alpha=0.25)
+    ax2.plot(rad[indexUse], ellipOut['ell'][
+             indexUse], '-', color='r', linewidth=2.0)
 
     ax2.xaxis.set_major_formatter(NullFormatter())
     ax2.set_xlim(minRad, radOut)
     ellBuffer = 0.02
-    minEll = np.nanmin(ellipOut['ell'][indexUse] - ellipOut['ell_err'][indexUse])
-    maxEll = np.nanmax(ellipOut['ell'][indexUse] + ellipOut['ell_err'][indexUse])
-    ax2.set_ylim(minEll-ellBuffer, maxEll+ellBuffer)
+    minEll = np.nanmin(ellipOut['ell'][indexUse] -
+                       ellipOut['ell_err'][indexUse])
+    maxEll = np.nanmax(ellipOut['ell'][indexUse] +
+                       ellipOut['ell_err'][indexUse])
+    ax2.set_ylim(minEll - ellBuffer, maxEll + ellBuffer)
 
     """ ax3 PA """
     ax3.minorticks_on()
@@ -810,28 +799,33 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     medPA = np.nanmedian(ellipOut['pa_norm'][indexUse])
     avgPA = ellipOut['avg_pa'][0]
-    if (avgPA-medPA >= 85.0) and (avgPA <= 92.0):
+    if (avgPA - medPA >= 85.0) and (avgPA <= 92.0):
         avgPA -= 180.0
-    elif (avgPA-medPA <= -85.0) and (avgPA >= -92.0):
+    elif (avgPA - medPA <= -85.0) and (avgPA >= -92.0):
         avgPA += 180.0
 
     print "###     AvgPA", avgPA
     ax3.axhline(avgPA, color='k', linestyle='--', linewidth=3.0)
 
     ax3.fill_between(rad[indexUse],
-            ellipOut['pa_norm'][indexUse]+ellipOut['pa_err'][indexUse],
-            ellipOut['pa_norm'][indexUse]-ellipOut['pa_err'][indexUse],
-            facecolor='r', alpha=0.25)
-    ax3.plot(rad[indexUse], ellipOut['pa_norm'][indexUse], '-', color='r', linewidth=2.0)
+                     ellipOut['pa_norm'][indexUse] +
+                     ellipOut['pa_err'][indexUse],
+                     ellipOut['pa_norm'][indexUse] -
+                     ellipOut['pa_err'][indexUse],
+                     facecolor='r', alpha=0.25)
+    ax3.plot(rad[indexUse], ellipOut['pa_norm'][
+             indexUse], '-', color='r', linewidth=2.0)
 
     ax3.xaxis.set_major_formatter(NullFormatter())
     ax3.set_xlim(minRad, radOut)
     paBuffer = 4.0
-    minPA = np.nanmin(ellipOut['pa_norm'][indexUse] - ellipOut['pa_err'][indexUse])
-    maxPA = np.nanmax(ellipOut['pa_norm'][indexUse] + ellipOut['pa_err'][indexUse])
+    minPA = np.nanmin(ellipOut['pa_norm'][indexUse] -
+                      ellipOut['pa_err'][indexUse])
+    maxPA = np.nanmax(ellipOut['pa_norm'][indexUse] +
+                      ellipOut['pa_err'][indexUse])
     minPA = minPA if minPA >= -110.0 else -100.0
     maxPA = maxPA if maxPA <= 110.0 else 100.0
-    ax3.set_ylim(minPA-paBuffer, maxPA+paBuffer)
+    ax3.set_ylim(minPA - paBuffer, maxPA + paBuffer)
 
     """ ax4 X0/Y0 """
     ax4.minorticks_on()
@@ -844,21 +838,23 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     print "###     AvgX0", ellipOut['avg_x0'][0]
     print "###     AvgY0", ellipOut['avg_y0'][0]
-    ax4.axhline(ellipOut['avg_x0'][0], linestyle='--', color='r', alpha=0.6, linewidth=3.0)
+    ax4.axhline(ellipOut['avg_x0'][0], linestyle='--',
+                color='r', alpha=0.6, linewidth=3.0)
     ax4.fill_between(rad[indexUse],
-            ellipOut['x0'][indexUse]+ellipOut['x0_err'][indexUse],
-            ellipOut['x0'][indexUse]-ellipOut['x0_err'][indexUse],
-            facecolor='r', alpha=0.25)
-    ax4.plot(rad[indexUse], ellipOut['x0'][indexUse], '-', color='r', linewidth=2.0,
-             label='X0')
+                     ellipOut['x0'][indexUse] + ellipOut['x0_err'][indexUse],
+                     ellipOut['x0'][indexUse] - ellipOut['x0_err'][indexUse],
+                     facecolor='r', alpha=0.25)
+    ax4.plot(rad[indexUse], ellipOut['x0'][indexUse], '-', color='r',
+             linewidth=2.0, label='X0')
 
-    ax4.axhline(ellipOut['avg_y0'][0], linestyle='--', color='b', alpha=0.6, linewidth=3.0)
+    ax4.axhline(ellipOut['avg_y0'][0], linestyle='--',
+                color='b', alpha=0.6, linewidth=3.0)
     ax4.fill_between(rad[indexUse],
-            ellipOut['y0'][indexUse]+ellipOut['y0_err'][indexUse],
-            ellipOut['y0'][indexUse]-ellipOut['y0_err'][indexUse],
-            facecolor='b', alpha=0.25)
-    ax4.plot(rad[indexUse], ellipOut['y0'][indexUse], '-', color='b', linewidth=2.0,
-            label='Y0')
+                     ellipOut['y0'][indexUse] + ellipOut['y0_err'][indexUse],
+                     ellipOut['y0'][indexUse] - ellipOut['y0_err'][indexUse],
+                     facecolor='b', alpha=0.25)
+    ax4.plot(rad[indexUse], ellipOut['y0'][indexUse], '-', color='b',
+             linewidth=2.0, label='Y0')
 
     ax4.xaxis.set_major_formatter(NullFormatter())
     ax4.set_xlim(minRad, radOut)
@@ -869,7 +865,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     maxY0 = np.nanmax(ellipOut['y0'][indexUse])
     minCen = minX0 if minX0 <= minY0 else minY0
     maxCen = maxX0 if maxX0 >= maxY0 else maxY0
-    ax4.set_ylim(minCen-xBuffer, maxCen+xBuffer)
+    ax4.set_ylim(minCen - xBuffer, maxCen + xBuffer)
 
     """ ax5 A4/B4 """
     ax5.minorticks_on()
@@ -882,30 +878,30 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     ax5.axhline(0.0, linestyle='-', color='k', alpha=0.3)
     ax5.fill_between(rad[indexUse],
-            ellipOut['a4'][indexUse]+ellipOut['a4_err'][indexUse],
-            ellipOut['a4'][indexUse]-ellipOut['a4_err'][indexUse],
-            facecolor='r', alpha=0.25)
-    ax5.plot(rad[indexUse], ellipOut['a4'][indexUse], '-', color='r', linewidth=2.0,
-            label='A4')
+                     ellipOut['a4'][indexUse] + ellipOut['a4_err'][indexUse],
+                     ellipOut['a4'][indexUse] - ellipOut['a4_err'][indexUse],
+                     facecolor='r', alpha=0.25)
+    ax5.plot(rad[indexUse], ellipOut['a4'][indexUse], '-', color='r',
+             linewidth=2.0, label='A4')
 
     ax5.fill_between(rad[indexUse],
-            ellipOut['b4'][indexUse]+ellipOut['b4_err'][indexUse],
-            ellipOut['b4'][indexUse]-ellipOut['b4_err'][indexUse],
-            facecolor='b', alpha=0.25)
-    ax5.plot(rad[indexUse], ellipOut['b4'][indexUse], '-', color='b', linewidth=2.0,
-            label='B4')
+                     ellipOut['b4'][indexUse] + ellipOut['b4_err'][indexUse],
+                     ellipOut['b4'][indexUse] - ellipOut['b4_err'][indexUse],
+                     facecolor='b', alpha=0.25)
+    ax5.plot(rad[indexUse], ellipOut['b4'][indexUse], '-', color='b',
+             linewidth=2.0, label='B4')
 
     ax5.xaxis.set_major_formatter(NullFormatter())
     ax5.set_xlim(minRad, radOut)
 
-    abBuffer=0.02
+    abBuffer = 0.02
     minA4 = np.nanmin(ellipOut['a4'][indexUse])
     minB4 = np.nanmin(ellipOut['b4'][indexUse])
     maxA4 = np.nanmax(ellipOut['a4'][indexUse])
     maxB4 = np.nanmax(ellipOut['b4'][indexUse])
     minAB = minA4 if minA4 <= minB4 else minB4
     maxAB = maxA4 if maxA4 >= maxB4 else maxB4
-    ax5.set_ylim(minAB-abBuffer, maxAB+abBuffer)
+    ax5.set_ylim(minAB - abBuffer, maxAB + abBuffer)
 
     """ ax6 Growth Curve """
     ax6.minorticks_on()
@@ -917,12 +913,12 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax6.set_ylabel('Curve of Growth (mag)', fontsize=24)
 
     ax1.text(0.6, 0.85, 'mag$_{tot}=%5.2f$' % magFlux100, fontsize=24,
-            transform=ax1.transAxes)
+             transform=ax1.transAxes)
 
     ax6.axhline(magFlux100, linestyle='-', color='k', alpha=0.5, linewidth=2,
-               label='mag$_{100}$')
+                label='mag$_{100}$')
     ax6.axhline(magFlux50,  linestyle='--', color='k', alpha=0.5, linewidth=2,
-               label='mag$_{50}$')
+                label='mag$_{50}$')
     ax6.axvline(imgR50,  linestyle='-', color='g', alpha=0.4, linewidth=2.5)
 
     ax6.plot(rad, growthCurveOri, '--', color='g', linewidth=3.5,
@@ -944,19 +940,23 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax7.locator_params(axis='y', tight=True, nbins=4)
 
     ax7.axhline(0.0, linestyle='-', color='k', alpha=0.5, linewidth=2.5)
-    ax7.fill_between(rad, ellipOut['intens']+ellipOut['int_err'],
-            ellipOut['intens']-ellipOut['int_err'], facecolor='b', alpha=0.2)
+    ax7.fill_between(rad, ellipOut['intens'] + ellipOut['int_err'],
+                     ellipOut['intens'] - ellipOut['int_err'],
+                     facecolor='b', alpha=0.2)
     ax7.plot(rad, ellipOut['intens'], '-', color='b', linewidth=3.0)
     ax7.axvline(imgR50,  linestyle='-', color='g', alpha=0.4, linewidth=2.5)
 
-    indexOut = np.where(ellipOut['intens'] <= (0.002 * np.nanmax(ellipOut['intens'])))
+    indexOut = np.where(ellipOut['intens'] <= (
+        0.002 * np.nanmax(ellipOut['intens'])))
 
     ax7.xaxis.set_major_formatter(NullFormatter())
     ax7.set_xlim(minRad, maxRad)
-    minOut = np.nanmin(ellipOut['intens'][indexOut]-ellipOut['int_err'][indexOut])
-    maxOut = np.nanmax(ellipOut['intens'][indexOut]+ellipOut['int_err'][indexOut])
+    minOut = np.nanmin(ellipOut['intens'][indexOut] -
+                       ellipOut['int_err'][indexOut])
+    maxOut = np.nanmax(ellipOut['intens'][indexOut] +
+                       ellipOut['int_err'][indexOut])
     sepOut = (maxOut - minOut) / 10.0
-    minY = (minOut-sepOut) if (minOut-sepOut) >= 0.0 else (-1.0*sepOut)
+    minY = (minOut - sepOut) if (minOut - sepOut) >= 0.0 else (-1.0 * sepOut)
     ax7.set_ylim(minY, maxOut)
 
     ax7.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
@@ -977,8 +977,8 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     galY0 = ellipOut['avg_y0'][0]
     imgSizeX, imgSizeY = img.shape
     if (galX0 > maxSma) and (galY0 > maxSma) and showZoom:
-        zoomReg = imgMsk[np.int(galX0-maxSma):np.int(galX0+maxSma),
-                         np.int(galY0-maxSma):np.int(galY0+maxSma)]
+        zoomReg = imgMsk[np.int(galX0 - maxSma):np.int(galX0 + maxSma),
+                         np.int(galY0 - maxSma):np.int(galY0 + maxSma)]
         # Define the new center of the cropped images
         xPad = (imgSizeX / 2.0 - maxSma)
         yPad = (imgSizeY / 2.0 - maxSma)
@@ -989,7 +989,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     # Show the image
     ax8.imshow(np.arcsinh(zoomReg), interpolation="none",
-              vmin=imin, vmax=imax, cmap=cmap)
+               vmin=imin, vmax=imax, cmap=cmap, origin='lower')
     # Get the Shapes
     ellipIso = convIso2Ell(ellipOut, xpad=xPad, ypad=yPad)
 
@@ -1001,7 +1001,6 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
         e.set_edgecolor('r')
         e.set_facecolor('none')
         e.set_linewidth(1.5)
-
     """ Save Figure """
     fig.savefig(outPng)
 
@@ -1009,11 +1008,11 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
 
 def saveEllipOut(ellipOut, prefix, ellipCfg=None, verbose=True):
-
     """
-    doc
-    """
+    Save the Ellipse output to file.
 
+    Parameters:
+    """
     outPkl = prefix + '.pkl'
     outCfg = prefix + '.cfg'
     outCsv = prefix + '.csv'
@@ -1039,21 +1038,25 @@ def saveEllipOut(ellipOut, prefix, ellipCfg=None, verbose=True):
         hUtil.saveToPickle(ellipCfg, outCfg)
         if os.path.isfile(outCfg):
             if verbose:
-                print "###     Save Ellipse configuration to a .cfg file: %s" % outCfg
+                print "###     Save Ellipse configuration to \
+                        a .cfg file: %s" % outCfg
         else:
             raise Exception("### Something is wrong with the .pkl file")
 
 
-def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, iniSma=6.0,
-           galR=20.0, galQ=0.9, galPA=0.0, pix=0.168, bkg=0.00, stage=3, minSma=0.0,
-           gain=3.0, expTime=1.0, zpPhoto=27.0, maxTry=2, minIt=10, maxIt=120,
-           ellipStep=0.10, uppClip=2.5, lowClip=2.5, nClip=2, fracBad=0.5,
-           intMode="median", suffix=None, plMask=True, conver=0.05, recenter=True,
+def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
+           maxSma=None, iniSma=6.0, galR=20.0, galQ=0.9, galPA=0.0,
+           pix=0.168, bkg=0.00, stage=3, minSma=0.0,
+           gain=3.0, expTime=1.0, zpPhoto=27.0,
+           maxTry=2, minIt=10, maxIt=120,
+           ellipStep=0.10, uppClip=2.5, lowClip=2.5,
+           nClip=2, fracBad=0.5, intMode="median",
+           suffix=None, plMask=True, conver=0.05, recenter=True,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
-           olthresh=0.5, harmonics='1 2', outerThreshold=None, updateIntens=False,
-           psfSma=6.0):
-
-    """TODO: Docstring for galSbp.
+           olthresh=0.5, harmonics='1 2', outerThreshold=None,
+           updateIntens=False, psfSma=6.0):
+    """
+    Running Ellipse to Extract 1-D profile.
 
     stage  = 1: All Free
             2: Center Fixed
@@ -1061,9 +1064,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
             4: Force Photometry, must have inEllip
     :returns: TODO
     """
-
     verStr = 'yes' if verbose else 'no'
-
     """ Check input files """
     if os.path.islink(image):
         imgOri = os.readlink(image)
@@ -1091,7 +1092,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
         else:
             imageNew = imageMaskNaN(image, mask)
             if not os.path.isfile(imageNew):
-                raise Exception("### Can not find the NaN-Masked image: %s" % imageNew)
+                raise Exception(
+                    "### Can not find the NaN-Masked image: %s" % imageNew)
             imageUse = imageNew
     else:
         imageUse = imgOri
@@ -1129,8 +1131,9 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
         hcenter, hellip, hpa = True, True, True
     elif stage == 4:
         hcenter, hellip, hpa = True, True, True
-        if (inEllip is None ) or (not os.path.isfile(inEllip)):
-            raise Exception("### Can not find the input ellip file: %s !" % inEllip)
+        if (inEllip is None) or (not os.path.isfile(inEllip)):
+            raise Exception(
+                "### Can not find the input ellip file: %s !" % inEllip)
     else:
         raise Exception("### Available step: 1 , 2 , 3 , 4")
 
@@ -1139,12 +1142,14 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
         print "##   Set up the Ellipse configuration"
     galEll = (1.0 - galQ)
     ellipCfg = defaultEllipse(galX, galY, maxSma, ellip0=galEll, pa0=galPA,
-                sma0=iniSma, minsma=minSma, linear=linearStep, step=ellipStep,
-                recenter=recenter, conver=conver, hcenter=hcenter,
-                hellip=hellip, hpa=hpa, minit=minIt, maxit=maxIt, olthresh=olthresh,
-                mag0=zpPhoto, integrmode=intMode, usclip=uppClip, lsclip=lowClip,
-                nclip=nClip, fflag=fracBad, harmonics=harmonics)
-
+                              sma0=iniSma, minsma=minSma, linear=linearStep,
+                              step=ellipStep, recenter=recenter,
+                              conver=conver, hcenter=hcenter, hellip=hellip,
+                              hpa=hpa, minit=minIt, maxit=maxIt,
+                              olthresh=olthresh, mag0=zpPhoto,
+                              integrmode=intMode, usclip=uppClip,
+                              lsclip=lowClip, nclip=nClip, fflag=fracBad,
+                              harmonics=harmonics)
     """ Name of the output files """
     if suffix is None:
         suffix = 'ellip'
@@ -1164,7 +1169,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
     attempts = 0
     while attempts < maxTry:
         if verbose:
-            print "\n##   Start the Ellipse Run: Attempt ", (attempts+1)
+            print "\n##   Start the Ellipse Run: Attempt ", (attempts + 1)
         try:
             """ Config the parameters for ellipse """
             unlearnEllipse()
@@ -1179,10 +1184,10 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
                 iraf.ellipse(input=imageUse, output=outBin, verbose=verStr)
             else:
                 iraf.ellipse(input=imageUse, output=outBin, inellip=inEllip,
-                        verbose=verStr)
+                             verbose=verStr)
             break
         except Exception as error:
-            attempts +=1
+            attempts += 1
             print " ### Error Information : ", error
             print " ### !!! Make the Ellipse Run A Little Bit Easier !"
             ellipCfg = easierEllipse(ellipCfg)
@@ -1200,7 +1205,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
 
         # Tdump the .bin table into a .tab file
         iraf.unlearn('tdump')
-        iraf.tdump.columns=''
+        iraf.tdump.columns = ''
         iraf.tdump(outBin, datafil=outTab, cdfile=outCdf)
 
         # Read in the Ellipse output tab
@@ -1215,7 +1220,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
 
         """ Update the intensity """
         if updateIntens:
-            indexBkg = np.where(ellipOut['sma'] > radOuter*1.2)
+            indexBkg = np.where(ellipOut['sma'] > radOuter * 1.2)
             if indexBkg[0].shape[0] > 0:
                 try:
                     intensBkg = ellipOut['intens'][indexBkg]
@@ -1232,7 +1237,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
         print "###     Average Outer Intensity : ", avgBkg
 
         ellipOut['intens'] -= avgBkg
-        ellipOut.add_column(Column(name='avg_bkg', data=(sma*0.0+avgBkg)))
+        ellipOut.add_column(Column(name='avg_bkg', data=(sma * 0.0 + avgBkg)))
 
         """ Update the curve of growth """
         cog1,  mm, ff = ellipseGetGrowthCurve(ellipOut)
@@ -1244,23 +1249,24 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None, maxSma=None, in
             raise Exception("### Error : Can not decide radOuter ")
             print " XXX radOuter is NaN, use 0.80 * max(SMA) instead !"
             radOuter = np.nanmax(sma) * 0.80
-        ellipOut.add_column(Column(name='rad_outer', data=(sma*0.0+radOuter)))
+        ellipOut.add_column(
+            Column(name='rad_outer', data=(sma * 0.0 + radOuter)))
 
         """ Update the total magnitude """
-        indexUse = np.where(ellipOut['sma'] <= (radOuter*1.2))
+        indexUse = np.where(ellipOut['sma'] <= (radOuter * 1.2))
         maxIsoFlux = np.nanmax(ellipOut['growth_cor'][indexUse])
         magFlux100 = -2.5 * np.log10(maxIsoFlux) + zpPhoto
-        ellipOut.add_column(Column(name='mag_tot', data=(sma*0.0+magFlux100)))
+        ellipOut.add_column(
+            Column(name='mag_tot', data=(sma * 0.0 + magFlux100)))
 
         if savePng:
             outPng = image.replace('.fits', suffix + '.png')
             ellipsePlotSummary(ellipOut, imgOri, maxRad=None, mask=mskOri,
-                    outPng=outPng, threshold=outerThreshold)
+                               outPng=outPng, threshold=outerThreshold)
 
         if saveOut:
             outPre = image.replace('.fits', suffix)
             saveEllipOut(ellipOut, outPre, ellipCfg=ellipCfg, verbose=verbose)
-
 
     return ellipOut
 
@@ -1269,80 +1275,129 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("image", help="Name of the input image")
-    parser.add_argument("--mask", dest='mask', help="Name of the input mask",
-                       default=None)
-    parser.add_argument("--intMode", dest='intMode', help="Method for integration",
-                       default='median')
-    parser.add_argument('--x0', dest='galX', help='Galaxy center in X-dimension',
-                       type=float, default=None)
-    parser.add_argument('--y0', dest='galY', help='Galaxy center in Y-dimension',
-                       type=float, default=None)
-    parser.add_argument('--inEllip', dest='inEllip', help='Input Ellipse table',
-                       default=None)
-    parser.add_argument('--minSma', dest='minSma', help='Minimum radius for Ellipse Run',
-                       type=float, default=0.0)
-    parser.add_argument('--maxSma', dest='maxSma', help='Maximum radius for Ellipse Run',
-                       type=float, default=None)
-    parser.add_argument('--iniSma', dest='iniSma', help='Initial radius for Ellipse Run',
-                       type=float, default=10.0)
-    parser.add_argument('--galR', dest='galR', help='Typical size of the galaxy',
-                       type=float, default=20.0)
-    parser.add_argument('--galQ', dest='galQ', help='Typical axis ratio of the galaxy',
-                       type=float, default=0.9)
-    parser.add_argument('--galPA', dest='galPA', help='Typical PA of the galaxy',
-                       type=float, default=0.0)
-    parser.add_argument('--stage', dest='stage', help='Stage of Ellipse Run',
-                       type=int, default=3, choices=range(1, 4))
-    parser.add_argument('--pix', dest='pix', help='Pixel Scale',
-                       type=float, default=0.168)
-    parser.add_argument('--bkg', dest='bkg', help='Background level',
-                       type=float, default=0.0)
-    parser.add_argument('--step', dest='step', help='Step size',
-                       type=float, default=0.10)
-    parser.add_argument('--uppClip', dest='uppClip', help='Upper limit for clipping',
-                       type=float, default=2.0)
-    parser.add_argument('--lowClip', dest='lowClip', help='Upper limit for clipping',
-                       type=float, default=3.0)
-    parser.add_argument('--nClip', dest='nClip', help='Upper limit for clipping',
-                       type=int, default=3)
-    parser.add_argument('--olthresh', dest='olthresh', help='Central locator threshold',
-                       type=float, default=0.50)
-    parser.add_argument('--zpPhoto', dest='zpPhoto', help='Photometric zeropoint',
-                       type=float, default=27.0)
-    parser.add_argument('--outThre', dest='outerThreshold', help='Outer threshold',
-                       type=float, default=None)
-    parser.add_argument('--fracBad', dest='fracBad', help='Outer threshold',
-                       type=float, default=0.5)
-    parser.add_argument('--maxTry', dest='maxTry', help='Maximum number of ellipse run',
-                       type=int, default=3)
-    parser.add_argument('--minIt', dest='minIt', help='Minimum number of iterations',
-                       type=int, default=10)
-    parser.add_argument('--maxIt', dest='maxIt', help='Maximum number of iterations',
-                       type=int, default=100)
+    parser.add_argument("--mask", dest='mask',
+                        help="Name of the input mask",
+                        default=None)
+    parser.add_argument("--intMode", dest='intMode',
+                        help="Method for integration",
+                        default='median')
+    parser.add_argument('--x0', dest='galX',
+                        help='Galaxy center in X-dimension',
+                        type=float, default=None)
+    parser.add_argument('--y0', dest='galY',
+                        help='Galaxy center in Y-dimension',
+                        type=float, default=None)
+    parser.add_argument('--inEllip', dest='inEllip',
+                        help='Input Ellipse table',
+                        default=None)
+    parser.add_argument('--minSma', dest='minSma',
+                        help='Minimum radius for Ellipse Run',
+                        type=float, default=0.0)
+    parser.add_argument('--maxSma', dest='maxSma',
+                        help='Maximum radius for Ellipse Run',
+                        type=float, default=None)
+    parser.add_argument('--iniSma', dest='iniSma',
+                        help='Initial radius for Ellipse Run',
+                        type=float, default=10.0)
+    parser.add_argument('--galR', dest='galR',
+                        help='Typical size of the galaxy',
+                        type=float, default=20.0)
+    parser.add_argument('--galQ', dest='galQ',
+                        help='Typical axis ratio of the galaxy',
+                        type=float, default=0.9)
+    parser.add_argument('--galPA', dest='galPA',
+                        help='Typical PA of the galaxy',
+                        type=float, default=0.0)
+    parser.add_argument('--stage', dest='stage',
+                        help='Stage of Ellipse Run',
+                        type=int, default=3, choices=range(1, 4))
+    parser.add_argument('--pix', dest='pix',
+                        help='Pixel Scale',
+                        type=float, default=0.168)
+    parser.add_argument('--bkg', dest='bkg',
+                        help='Background level',
+                        type=float, default=0.0)
+    parser.add_argument('--step', dest='step',
+                        help='Step size',
+                        type=float, default=0.10)
+    parser.add_argument('--uppClip', dest='uppClip',
+                        help='Upper limit for clipping',
+                        type=float, default=2.0)
+    parser.add_argument('--lowClip', dest='lowClip',
+                        help='Upper limit for clipping',
+                        type=float, default=3.0)
+    parser.add_argument('--nClip', dest='nClip',
+                        help='Upper limit for clipping',
+                        type=int, default=3)
+    parser.add_argument('--olthresh', dest='olthresh',
+                        help='Central locator threshold',
+                        type=float, default=0.50)
+    parser.add_argument('--zpPhoto', dest='zpPhoto',
+                        help='Photometric zeropoint',
+                        type=float, default=27.0)
+    parser.add_argument('--outThre', dest='outerThreshold',
+                        help='Outer threshold',
+                        type=float, default=None)
+    parser.add_argument('--fracBad', dest='fracBad',
+                        help='Outer threshold',
+                        type=float, default=0.5)
+    parser.add_argument('--maxTry', dest='maxTry',
+                        help='Maximum number of ellipse run',
+                        type=int, default=3)
+    parser.add_argument('--minIt', dest='minIt',
+                        help='Minimum number of iterations',
+                        type=int, default=10)
+    parser.add_argument('--maxIt', dest='maxIt',
+                        help='Maximum number of iterations',
+                        type=int, default=100)
     parser.add_argument('--plot', dest='plot', action="store_true",
-                       help='Generate summary plot', default=True)
+                        help='Generate summary plot', default=True)
     parser.add_argument('--verbose', dest='verbose', action="store_true",
-                       default=True)
+                        default=True)
     parser.add_argument('--linear', dest='linear', action="store_true",
-                       default=False)
+                        default=False)
     parser.add_argument('--save', dest='save', action="store_true",
-                       default=True)
+                        default=True)
     parser.add_argument('--plmask', dest='plmask', action="store_true",
-                       default=True)
-    parser.add_argument('--updateIntens', dest='updateIntens', action="store_true",
-                       default=False)
+                        default=False)
+    parser.add_argument('--updateIntens', dest='updateIntens',
+                        action="store_true", default=False)
 
     args = parser.parse_args()
 
-    galSBP(args.image, mask=args.mask, galX=args.galX, galY=args.galY,
-            inEllip=args.inEllip, maxSma=args.maxSma, iniSma=args.iniSma, galR=args.galR,
-            galQ=args.galQ, galPA=args.galPA, pix=args.pix, bkg=args.bkg,
-            stage=args.stage, minSma=args.minSma, gain=3.0, expTime=1.0,
-            zpPhoto=args.zpPhoto, maxTry=args.maxTry, minIt=args.minIt, maxIt=args.maxIt,
-            ellipStep=args.step, uppClip=args.uppClip, lowClip=args.lowClip,
-            nClip=args.nClip, fracBad=args.fracBad, intMode=args.intMode,
-            suffix=None, plMask=args.plmask, conver=0.05, recenter=True,
-            verbose=args.verbose,
-            linearStep=args.linear, saveOut=args.save, savePng=args.plot,
-            olthresh=args.olthresh, harmonics='none', outerThreshold=args.outerThreshold,
-            updateIntens=args.updateIntens)
+    galSBP(args.image, mask=args.mask,
+           galX=args.galX, galY=args.galY,
+           inEllip=args.inEllip,
+           maxSma=args.maxSma,
+           iniSma=args.iniSma,
+           galR=args.galR,
+           galQ=args.galQ,
+           galPA=args.galPA,
+           pix=args.pix,
+           bkg=args.bkg,
+           stage=args.stage,
+           minSma=args.minSma,
+           gain=3.0,
+           expTime=1.0,
+           zpPhoto=args.zpPhoto,
+           maxTry=args.maxTry,
+           minIt=args.minIt,
+           maxIt=args.maxIt,
+           ellipStep=args.step,
+           uppClip=args.uppClip,
+           lowClip=args.lowClip,
+           nClip=args.nClip,
+           fracBad=args.fracBad,
+           intMode=args.intMode,
+           suffix=None,
+           plMask=args.plmask,
+           conver=0.05,
+           recenter=True,
+           verbose=args.verbose,
+           linearStep=args.linear,
+           saveOut=args.save,
+           savePng=args.plot,
+           olthresh=args.olthresh,
+           harmonics='none',
+           outerThreshold=args.outerThreshold,
+           updateIntens=args.updateIntens)

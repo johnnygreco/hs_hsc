@@ -76,7 +76,6 @@ def readSbpInput(prefix, root=None, exMask=None):
     if not os.path.isfile(mskOri):
         raise Exception("### Can not find the input \
                 mask image : %s !" % mskOri)
-
     # Image
     imgHdu = fits.open(imgOri)
     imgArr = imgHdu[0].data
@@ -203,9 +202,12 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     indexUse2 = np.where(ellipOut2['sma'] <= (radOuter*1.2))
     indexUse3 = np.where(ellipOut3['sma'] <= (radOuter*1.2))
     print "###     OutRadius", radOuter
-
-    growthCurveOri = -2.5 * np.log10(ellipOut3['growth_ori']) + zp
-    growthCurveNew = -2.5 * np.log10(ellipOut3['growth_cor']) + zp
+    curveOri = ellipOut3['growth_ori']
+    curveOri[curveOri < 0.0] = 0.0
+    curveCor = ellipOut3['growth_cor']
+    curveCor[curveCor < 0.0] = 0.0
+    growthCurveOri = -2.5 * np.log10(curveOri) + zp
+    growthCurveNew = -2.5 * np.log10(curveCor) + zp
 
     maxIsoFluxOri = np.nanmax(ellipOut3['growth_ori'][indexUse3])
     # TODO: magFluxOri50  = -2.5 * np.log10(maxIsoFluxOri * 0.50) + zp
@@ -561,7 +563,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     maxOut = np.nanmax(ellipOut3['intens'][indexOut] +
                        ellipOut3['int_err'][indexOut])
     sepOut = (maxOut - minOut) / 10.0
-    ax7.set_ylim(minOut-sepOut, maxOut)
+    ax7.set_ylim(minOut - sepOut, maxOut)
 
     """ ax8 IsoPlot """
 
@@ -628,7 +630,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                    showZoom=True, checkCenter=True, updateIntens=False,
                    olthresh=0.5, intMode='median', lowClip=3.0, uppClip=2.0,
                    nClip=2, fracBad=0.6, minIt=10, maxIt=100, outRatio=1.2,
-                   exMask=None):
+                   exMask=None, suffix=''):
     """
     Generate 1-D SBP Plot.
 
@@ -638,9 +640,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     print "## Root Directory: ", root
     """ 0. Organize Input Data """
     # Read in the input image, mask, psf, and their headers
-    imgFile, imgArr, imgHead, mskFile, mskArr, mskHead = readSbpInput(prefix,
-                                                                      root=root,
-                                                                      exMask=exMask)
+    sbpInput = readSbpInput(prefix, root=root, exMask=exMask)
+    imgFile, imgArr, imgHead, mskFile, mskArr, mskHead = sbpInput
     if (root is not None) and (root[-1] != '/'):
         root += '/'
     if not imgSameSize(imgArr, mskArr):
@@ -758,7 +759,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     fracBad=fracBad,
                                     intMode=intMode,
                                     minIt=minIt,
-                                    maxIt=maxIt)
+                                    maxIt=maxIt,
+                                    suffix=suffix)
             if (galX0 is None) or (galY0 is None):
                 galX0 = ellOut1['avg_x0'][0]
                 galY0 = ellOut1['avg_y0'][0]
@@ -794,7 +796,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     fracBad=fracBad,
                                     intMode=intMode,
                                     minIt=minIt,
-                                    maxIt=maxIt)
+                                    maxIt=maxIt,
+                                    suffix=suffix)
             if (galQ0 is None) or (galPA0 is None):
                 galQ0 = ellOut1['avg_q'][0] if ellOut1['avg_q'][0] <= 0.95 else 0.95
                 galPA0 = hUtil.normAngle(ellOut1['avg_pa'][0], lower=-90.0,
@@ -822,11 +825,12 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     uppClip=uppClip,
                                     nClip=nClip,
                                     fracBad=fracBad,
-                                    intMode=intMode)
-
+                                    intMode=intMode,
+                                    suffix=suffix)
             if plot:
                 print "\n##   Ellipse Summary Plot "
-                sumPng = root + prefix + '_ellip_sum.png'
+                suf = (suffix + '_') if (suffix == '') else suffix
+                sumPng = root + prefix + '_ellip_sum' + suf + '.png'
                 if psf:
                     ellipSummary(ellOut1, ellOut2, ellOut3, imgOri,
                                  psfOut=psfOut,
@@ -845,11 +849,18 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             """ # Run Ellipse in Forced Photometry Mode """
             print "\n##   Ellipse Run on Image - Forced Photometry "
             ellOut4 = galSBP.galSBP(imgFile, mask=mskFile,
-                                    galX=galX, galY=galY,
-                                    inEllip=inEllip, maxRad=maxR,
-                                    pix=pix, bkg=bkg, stage=4, zpPhoto=zp,
+                                    galX=galX,
+                                    galY=galY,
+                                    inEllip=inEllip,
+                                    maxRad=maxR,
+                                    pix=pix,
+                                    bkg=bkg,
+                                    stage=4,
+                                    zpPhoto=zp,
                                     maxTry=1,
-                                    updateIntens=updateIntens, intMode=intMode)
+                                    updateIntens=updateIntens,
+                                    intMode=intMode,
+                                    suffix=suffix)
 
 if __name__ == '__main__':
 
@@ -864,13 +875,21 @@ if __name__ == '__main__':
     parser.add_argument('--inEllip', dest='inEllip',
                         help='Input Ellipse table',
                         default=None)
-    parser.add_argument('--exMask', help="External file for image mask",
+    "" "Optional """
+    parser.add_argument("--suffix",
+                        help="Suffix of the output image",
+                        default='')
+    parser.add_argument('--exMask',
+                        help="External file for image mask",
                         default=None)
-    parser.add_argument('--pix', dest='pix', help='Pixel Scale',
+    parser.add_argument('--pix', dest='pix',
+                        help='Pixel Scale',
                         type=float, default=0.168)
-    parser.add_argument('--step', dest='step', help='Step size',
+    parser.add_argument('--step', dest='step',
+                        help='Step size',
                         type=float, default=0.10)
-    parser.add_argument('--zp', dest='zp', help='Photometric zeropoint',
+    parser.add_argument('--zp', dest='zp',
+                        help='Photometric zeropoint',
                         type=float, default=27.0)
     parser.add_argument('--redshift', dest='redshift',
                         help='Photometric zeropoint',
@@ -899,13 +918,17 @@ if __name__ == '__main__':
     parser.add_argument('--maxTry', dest='maxTry',
                         help='Maximum number of attempts of ellipse run',
                         type=int, default=3)
-    parser.add_argument('--galX0', dest='galX0', help='Center X0',
+    parser.add_argument('--galX0', dest='galX0',
+                        help='Center X0',
                         type=float, default=None)
-    parser.add_argument('--galY0', dest='galY0', help='Center Y0',
+    parser.add_argument('--galY0', dest='galY0',
+                        help='Center Y0',
                         type=float, default=None)
-    parser.add_argument('--galQ0', dest='galQ0', help='Input Axis Ratio',
+    parser.add_argument('--galQ0', dest='galQ0',
+                        help='Input Axis Ratio',
                         type=float, default=None)
-    parser.add_argument('--galPA0', dest='galPA0', help='Input Position Angle',
+    parser.add_argument('--galPA0', dest='galPA0',
+                        help='Input Position Angle',
                         type=float, default=None)
     parser.add_argument('--galRe', dest='galRe',
                         help='Input Effective Radius in pixel',
@@ -930,18 +953,31 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     coaddCutoutSbp(args.prefix, root=args.root,
-                   verbose=args.verbose, psf=args.psf,
-                   inEllip=args.inEllip, bkgCor=args.bkgCor,
-                   zp=args.zp, step=args.step,
-                   galX0=args.galX0, galY0=args.galY0,
-                   galQ0=args.galQ0, galPA0=args.galPA0,
-                   galRe=args.galRe, checkCenter=args.noCheckCenter,
+                   verbose=args.verbose,
+                   suffix=args.suffix,
+                   psf=args.psf,
+                   inEllip=args.inEllip,
+                   bkgCor=args.bkgCor,
+                   zp=args.zp,
+                   step=args.step,
+                   galX0=args.galX0,
+                   galY0=args.galY0,
+                   galQ0=args.galQ0,
+                   galPA0=args.galPA0,
+                   galRe=args.galRe,
+                   checkCenter=args.noCheckCenter,
                    updateIntens=args.updateIntens,
-                   pix=args.pix, plot=args.plot,
-                   redshift=args.redshift, olthresh=args.olthresh,
+                   pix=args.pix,
+                   plot=args.plot,
+                   redshift=args.redshift,
+                   olthresh=args.olthresh,
                    fracBad=args.fracBad,
-                   lowClip=args.lowClip, uppClip=args.uppClip,
-                   nClip=args.nClip, intMode=args.intMode,
-                   minIt=args.minIt, maxIt=args.maxIt,
-                   maxTry=args.maxTry, outRatio=args.outRatio,
+                   lowClip=args.lowClip,
+                   uppClip=args.uppClip,
+                   nClip=args.nClip,
+                   intMode=args.intMode,
+                   minIt=args.minIt,
+                   maxIt=args.maxIt,
+                   maxTry=args.maxTry,
+                   outRatio=args.outRatio,
                    exMask=args.exMask)
