@@ -12,13 +12,15 @@ import coaddCutoutSbp as cSbp
 
 
 def run(args):
+    """
+    Run coaddCutoutSbp in batch mode.
 
+    Parameters:
+    """
     if os.path.isfile(args.incat):
-
         data = fits.open(args.incat)[1].data
-
-        id     = (args.id)
-        rerun  = (args.rerun).strip()
+        id = (args.id)
+        rerun = (args.rerun).strip()
         prefix = (args.prefix).strip()
         filter = (args.filter).strip().upper()
 
@@ -88,7 +90,8 @@ def run(args):
                                     maxTry=args.maxTry,
                                     outRatio=args.outRatio,
                                     exMask=galMsk)
-            except Exception:
+            except Exception as ee:
+                print ee
                 warnings.warn('### The 1-D SBP is failed for %s' % galPrefix)
                 logging.warning('### The 1-D SBP is failed for %s' % galPrefix)
 
@@ -100,21 +103,24 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("prefix", help="Prefix of the galaxy image files")
     parser.add_argument("incat", help="The input catalog for cutout")
-    parser.add_argument('-i', '--id', dest='id', help="Name of the column for galaxy ID",
-                       default='ID')
+    parser.add_argument('-i', '--id', dest='id',
+                        help="Name of the column for galaxy ID",
+                        default='ID')
     parser.add_argument('-f', '--filter', dest='filter', help="Filter",
-                       default='HSC-I')
+                        default='HSC-I')
     parser.add_argument('-r', '--rerun', dest='rerun',
                         help="Name of the rerun", default='default')
     parser.add_argument('-m', '--mask', dest='mask', help="Filter for Mask",
-                       default=None)
+                        default=None)
     """ Optional """
-    parser.add_argument("--intMode", dest='intMode', help="Method for integration",
-                       default='median')
-    parser.add_argument('--inEllip', dest='inEllip', help='Input Ellipse table',
-                       default=None)
+    parser.add_argument("--intMode", dest='intMode',
+                        help="Method for integration",
+                        default='median')
+    parser.add_argument('--inEllip', dest='inEllip',
+                        help='Input Ellipse table',
+                        default=None)
     parser.add_argument('--pix', dest='pix', help='Pixel Scale',
-                       type=float, default=0.168)
+                        type=float, default=0.168)
     parser.add_argument('--step', dest='step', help='Step size',
                        type=float, default=0.10)
     parser.add_argument('--zp', dest='zp', help='Photometric zeropoint',
@@ -166,4 +172,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     run(args)
-

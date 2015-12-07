@@ -30,6 +30,7 @@ def run(args):
         logFile = (args.incat).replace('.fits', '_%s_prep.log' % rerun)
         logging.basicConfig(filename=logFile)
 
+        print "########################################################"
         print "## Will deal with %d galaxies ! " % len(data)
 
         for galaxy in data:
@@ -38,10 +39,9 @@ def run(args):
 
             print "########################################################\n"
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
-            print "########################################################\n"
-
             galRoot = os.path.join(galID, filter)
             galImg = galPrefix + '_img.fits'
+            print galPrefix, galRoot
 
             if not os.path.isdir(galRoot):
                 raise Exception('### Can not find the root folder for the \
@@ -50,87 +50,89 @@ def run(args):
                 raise Exception('### Can not find the cutout image of the \
                         galaxy !')
 
-            try:
-                if rerun == 'default':
-                    ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
-                                           rerun=rerun,
-                                           bSizeH=args.bSizeH,
-                                           bSizeC=args.bSizeC,
-                                           thrH=args.thrH,
-                                           thrC=args.thrC,
-                                           growH=args.growH,
-                                           growW=args.growW,
-                                           growC=args.growC,
-                                           kernel=args.kernel,
-                                           central=args.central,
-                                           maskMethod=args.mask,
-                                           growMethod=args.grow,
-                                           useSigArr=args.useSigArr,
-                                           noBkgC=args.noBkgC,
-                                           noBkgH=args.noBkgH,
-                                           minDetH=args.minDetH,
-                                           minDetC=args.minDetC,
-                                           debThrH=args.debThrH,
-                                           debThrC=args.debThrC,
-                                           debConH=args.debConH,
-                                           debConC=args.debConC,
-                                           combBad=args.combBad,
-                                           combDet=args.combDet)
-                elif rerun == 'new':
-                    ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
-                                           rerun=rerun,
-                                           bSizeH=args.bSizeH,
-                                           bSizeC=args.bSizeC,
-                                           thrH=args.thrH,
-                                           thrC=args.thrC,
-                                           growH=args.growH,
-                                           growW=args.growW,
-                                           growC=args.growC,
-                                           kernel=args.kernel,
-                                           central=args.central,
-                                           maskMethod=args.mask,
-                                           growMethod=args.grow,
-                                           useSigArr=args.useSigArr,
-                                           noBkgC=args.noBkgC,
-                                           noBkgH=args.noBkgH,
-                                           minDetH=args.minDetH,
-                                           minDetC=args.minDetC,
-                                           debThrH=args.debThrH,
-                                           debThrC=args.debThrC,
-                                           debConH=args.debConH,
-                                           debConC=args.debConC,
-                                           combBad=args.combBad,
-                                           combDet=args.combDet)
-                else:
-                    ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
-                                           rerun=rerun,
-                                           bSizeH=args.bSizeH,
-                                           bSizeC=args.bSizeC,
-                                           thrH=args.thrH,
-                                           thrC=args.thrC,
-                                           growH=args.growH,
-                                           growW=args.growW,
-                                           growC=args.growC,
-                                           kernel=args.kernel,
-                                           central=args.central,
-                                           maskMethod=args.mask,
-                                           growMethod=args.grow,
-                                           useSigArr=args.useSigArr,
-                                           noBkgC=args.noBkgC,
-                                           noBkgH=args.noBkgH,
-                                           minDetH=args.minDetH,
-                                           minDetC=args.minDetC,
-                                           debThrH=args.debThrH,
-                                           debThrC=args.debThrC,
-                                           debConH=args.debConH,
-                                           debConC=args.debConC,
-                                           combBad=args.combBad,
-                                           combDet=args.combDet)
-            except Exception:
-                warnings.warn('### The cutout preparation is failed \
-                        for %s' % galPrefix)
-                logging.warning('### The cutout preparation is failed \
-                        for %s' % galPrefix)
+            #try:
+            if rerun == 'default':
+                ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
+                                       rerun=rerun,
+                                       bSizeH=args.bSizeH,
+                                       bSizeC=args.bSizeC,
+                                       thrH=args.thrH,
+                                       thrC=args.thrC,
+                                       growH=args.growH,
+                                       growW=args.growW,
+                                       growC=args.growC,
+                                       kernel=args.kernel,
+                                       central=args.central,
+                                       maskMethod=args.mask,
+                                       growMethod=args.grow,
+                                       useSigArr=args.useSigArr,
+                                       noBkgC=args.noBkgC,
+                                       noBkgH=args.noBkgH,
+                                       minDetH=args.minDetH,
+                                       minDetC=args.minDetC,
+                                       debThrH=args.debThrH,
+                                       debThrC=args.debThrC,
+                                       debConH=args.debConH,
+                                       debConC=args.debConC,
+                                       combBad=args.combBad,
+                                       combDet=args.combDet)
+            elif rerun == 'new':
+                ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
+                                       rerun=rerun,
+                                       bSizeH=args.bSizeH,
+                                       bSizeC=args.bSizeC,
+                                       thrH=args.thrH,
+                                       thrC=args.thrC,
+                                       growH=args.growH,
+                                       growW=args.growW,
+                                       growC=args.growC,
+                                       kernel=args.kernel,
+                                       central=args.central,
+                                       maskMethod=args.mask,
+                                       growMethod=args.grow,
+                                       useSigArr=args.useSigArr,
+                                       noBkgC=args.noBkgC,
+                                       noBkgH=args.noBkgH,
+                                       minDetH=args.minDetH,
+                                       minDetC=args.minDetC,
+                                       debThrH=args.debThrH,
+                                       debThrC=args.debThrC,
+                                       debConH=args.debConH,
+                                       debConC=args.debConC,
+                                       combBad=args.combBad,
+                                       combDet=args.combDet)
+            else:
+                ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
+                                       rerun=rerun,
+                                       bSizeH=args.bSizeH,
+                                       bSizeC=args.bSizeC,
+                                       thrH=args.thrH,
+                                       thrC=args.thrC,
+                                       growH=args.growH,
+                                       growW=args.growW,
+                                       growC=args.growC,
+                                       kernel=args.kernel,
+                                       central=args.central,
+                                       maskMethod=args.mask,
+                                       growMethod=args.grow,
+                                       useSigArr=args.useSigArr,
+                                       noBkgC=args.noBkgC,
+                                       noBkgH=args.noBkgH,
+                                       minDetH=args.minDetH,
+                                       minDetC=args.minDetC,
+                                       debThrH=args.debThrH,
+                                       debThrC=args.debThrC,
+                                       debConH=args.debConH,
+                                       debConC=args.debConC,
+                                       combBad=args.combBad,
+                                       combDet=args.combDet)
+            #except Exception as ee:
+                #print ee
+                #warnings.warn('### The cutout preparation is failed for %s' %
+                              #galPrefix)
+                #logging.warning('### The cutout preparation is failed for %s' %
+                                #galPrefix)
+            print "########################################################\n"
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 
@@ -148,22 +150,22 @@ if __name__ == '__main__':
     """ Optional """
     parser.add_argument('-k', dest='kernel',
                         help='SExtractor detection kernel',
-                        type=int, default=4, choices=range(1, 7))
+                        type=int, default=4, choices=range(1, 8))
     parser.add_argument('-c', dest='central',
                         help='Method to clean the central region',
-                        type=int, default=1, choices=range(1, 3))
+                        type=int, default=1, choices=range(1, 4))
     parser.add_argument('-m', dest='mask',
                         help='Method to grow the All object mask',
-                        type=int, default=1, choices=range(1, 3))
+                        type=int, default=1, choices=range(1, 4))
     parser.add_argument('-g', dest='grow',
                         help='Method to grow the Final object mask',
-                        type=int, default=1, choices=range(1, 2))
+                        type=int, default=1, choices=range(1, 3))
     parser.add_argument('--bkgH', dest='bSizeH',
                         help='Background size for the Hot Run',
                         type=int, default=10)
     parser.add_argument('--bkgC', dest='bSizeC',
                         help='Background size for the Cold Run',
-                        type=int, default=80)
+                        type=int, default=40)
     parser.add_argument('--thrH', dest='thrH',
                         help='Detection threshold for the Hot Run',
                         type=float, default=2.5)
@@ -172,13 +174,13 @@ if __name__ == '__main__':
                         type=float, default=1.2)
     parser.add_argument('--growC', dest='growC',
                         help='Ratio of Growth for the Cold Objects',
-                        type=float, default=4.0)
+                        type=float, default=6.0)
     parser.add_argument('--growW', dest='growW',
                         help='Ratio of Growth for the Warm Objects',
-                        type=float, default=3.0)
+                        type=float, default=4.0)
     parser.add_argument('--growH', dest='growH',
                         help='Ratio of Growth for the Hot Objects',
-                        type=float, default=1.5)
+                        type=float, default=2.0)
     parser.add_argument('--minDetC', dest='minDetC',
                         help='Minimum pixels for Cold Detections',
                         type=float, default=8.0)

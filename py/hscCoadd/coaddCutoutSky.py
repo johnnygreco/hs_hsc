@@ -4,7 +4,6 @@
 from __future__ import division
 
 import os
-import copy
 import argparse
 
 import numpy as np
@@ -12,14 +11,12 @@ import scipy
 
 # Astropy
 from astropy.io import fits
-from astropy import units as u
 from astropy.stats import sigma_clip
 # AstroML
 from astroML.plotting import hist
-# SEP
-import sep
-# Cubehelix color scheme
-import cubehelix  # Cubehelix color scheme from https://github.com/jradavenport/cubehelix
+
+# Cubehelix color scheme from https://github.com/jradavenport/cubehelixscheme
+import cubehelix
 # For high-contrast image
 cmap1 = cubehelix.cmap(start=0.5, rot=-0.8, gamma=1.0,
                        minSat=1.2, maxSat=1.2,
@@ -49,7 +46,6 @@ mpl.rcParams['ytick.minor.width'] = 1.5
 mpl.rc('axes', linewidth=2)
 import matplotlib.pyplot as plt
 plt.ioff()
-from matplotlib.patches import Ellipse
 
 # Personal
 import hscUtils as hUtil
@@ -57,7 +53,11 @@ import coaddCutoutPrepare as cdPrep
 
 
 def readCutout(prefix, root=None, exMask=None):
+    """
+    Read Cutout Image.
 
+    Parameters:
+    """
     # Get the names of necessary input images
     imgFile = prefix + '_img.fits'
     if root is not None:
@@ -89,9 +89,6 @@ def readCutout(prefix, root=None, exMask=None):
         # All objects mask
         mskHdu = fits.open(mskFile)
         mskArr = mskHdu[0].data
-
-    imgArrV = imgArr.view('float32')
-
     return imgArr, imgHead, mskArr
 
 
@@ -99,8 +96,9 @@ def showSkyHist(skypix, skypix2=None, skypix3=None,
                 sbExpt=None, pngName='skyhist.png', skyAvg=None, skyStd=None,
                 skyMed=None, skySkw=None):
     """
-    Plot the distribution of sky pixels
+    Plot the distribution of sky pixels.
 
+    Parameters:
     """
     fig = plt.figure(figsize=(10, 6))
     ax = fig.add_subplot(111)
@@ -115,15 +113,17 @@ def showSkyHist(skypix, skypix2=None, skypix3=None,
         tick.label1.set_fontsize(fontsize)
 
     counts1, bins1, patches1 = hist(skypix, bins='knuth', ax=ax, alpha=0.4,
-                                    color='cyan', histtype='stepfilled', normed=True)
+                                    color='cyan', histtype='stepfilled',
+                                    normed=True)
     if skypix2 is not None:
-        counts2, bins2, patches2 = hist(skypix2, bins='knuth', ax=ax, alpha=0.9,
-                                        color='k', histtype='step', normed=True,
-                                        linewidth=2)
+        counts2, bins2, patches2 = hist(skypix2, bins='knuth', ax=ax,
+                                        alpha=0.9, color='k', histtype='step',
+                                        normed=True, linewidth=2)
     if skypix3 is not None:
-        counts3, bins3, patches3 = hist(skypix3, bins='knuth', ax=ax, alpha=0.8,
-                                        color='k', histtype='step', normed=True,
-                                        linewidth=2, linestyle='dashed')
+        counts3, bins3, patches3 = hist(skypix3, bins='knuth', ax=ax,
+                                        alpha=0.8, color='k', histtype='step',
+                                        normed=True, linewidth=2,
+                                        linestyle='dashed')
     # Horizontal line
     ax.axvline(0.0, linestyle='-', color='k', linewidth=1.5)
 
@@ -166,27 +166,30 @@ def showSkyHist(skypix, skypix2=None, skypix3=None,
 
 def getIsophoteSky(imgArr, mskArr):
     """
-    Estimating the background value within isophotes around the galaxy
+    Estimating the background value within isophotes around the galaxy.
 
+    Parameters:
     """
     # TODO
-    a = 1
+    pass
 
 
 def getRadBoxSky(imgArr, mskArr):
     """
-    Estimating the background by thowing random boxes or apertures on the
-    image
+    Estimating the background by thowing random boxes on the image.
 
     This could also be used to estimate the detection limit of the image
-
     """
+    # TODO
+    pass
 
 
 def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
                  rebin=4, prefix='coadd_sky', suffix=None,
                  verbose=True, visual=True):
     """
+    Estimate the Global Sky.
+
     Estimating the global sky background level by using the mean
     of a rebined image
 
@@ -196,7 +199,8 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
     """
     # Estimate the global background level
     if verbose:
-        print "### ESTIMATING THE GLOBAL BACKGROUND AND SURFACE BRIGHTNESS LIMIT"
+        print "### ESTIMATING THE GLOBAL BACKGROUND AND SURFACE \
+                BRIGHTNESS LIMIT"
     dimX, dimY = imgArr.shape
     # Pixel values of all pixels that are not masked out (before rebinned)
     pixels = imgArr[mskAll == 0].flatten()
@@ -230,8 +234,8 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
     if visual:
         skyPNG = prefix + '_' + suffix + 'skyhist.png'
         showSkyHist(pixNoMskBin, skypix2=pixNoMsk, sbExpt=sbExpt,
-                    pngName=skyPNG, skyAvg=skyAvg, skyMed=skyMed, skyStd=skyStd,
-                    skySkw=skySkw)
+                    pngName=skyPNG, skyAvg=skyAvg, skyMed=skyMed,
+                    skyStd=skyStd, skySkw=skySkw)
 
     # Save a txt file summary
     skyTxt = prefix + '_' + suffix + 'sky.dat'
@@ -251,16 +255,17 @@ def coaddCutoutSky(prefix, root=None, verbose=True, skyClip=3.0,
                    pix=0.168, zp=27.0, rebin=6, visual=True,
                    exMask=None):
     """
-    doc
-    """
+    Estimate the Sky Background for Coadd Image.
 
+    Parameters:
+    """
     # 0. Get necessary information
     # Read the input cutout image
     imgArr, imgHead, mskArr = readCutout(prefix, root=root, exMask=exMask)
     if (root is not None) and (root[-1] != '/'):
         root += '/'
     if verbose:
-        print "##########################################################################"
+        print "##############################################################"
         print "### DEAL WITH IMAGE : %s" % (root + prefix + '_img.fits')
     # Necessary information
     if verbose:
@@ -283,17 +288,20 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("prefix", help="Prefix of the cutout image files")
-    parser.add_argument('-r', '--root', dest='root', help='Path to the image files',
-                        default=None)
+    parser.add_argument('-r', '--root', dest='root',
+                        help='Path to the image files', default=None)
     parser.add_argument('-m', '--mask', help="External file for image mask",
                         default=None)
-    parser.add_argument('--skyclip', dest='skyClip', help='Sigma for pixel clipping',
+    parser.add_argument('--skyclip', dest='skyClip',
+                        help='Sigma for pixel clipping',
                         type=float, default=3.0)
-    parser.add_argument('--rebin', dest='rebin', help='Rebin the image by N x N pixels',
+    parser.add_argument('--rebin', dest='rebin',
+                        help='Rebin the image by N x N pixels',
                         type=int, default=6)
     parser.add_argument('--pix', dest='pix', help='Pixel scale of the iamge',
                         type=float, default=0.168)
-    parser.add_argument('--zp', dest='zp', help='Photometric zeropoint of the image',
+    parser.add_argument('--zp', dest='zp',
+                        help='Photometric zeropoint of the image',
                         type=float, default=27.0)
     parser.add_argument('--verbose', dest='verbose',
                         action="store_true", default=True)
@@ -303,5 +311,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     coaddCutoutSky(args.prefix, root=args.root, pix=args.pix, zp=args.zp,
-                   rebin=args.rebin, skyClip=args.skyClip, verbose=args.verbose,
-                   visual=args.visual, exMask=args.mask)
+                   rebin=args.rebin, skyClip=args.skyClip,
+                   verbose=args.verbose, visual=args.visual,
+                   exMask=args.mask)

@@ -10,8 +10,13 @@ from astropy.io import fits
 
 import coaddCutoutSky as ccs
 
-def run(args):
 
+def run(args):
+    """
+    Run coaddCutoutPrepare in batch mode.
+
+    Parameters:
+    """
     if os.path.isfile(args.incat):
 
         data = fits.open(args.incat)[1].data
@@ -79,6 +84,8 @@ if __name__ == '__main__':
                        default=None)
     parser.add_argument('-r', '--rerun', dest='rerun',
                         help="Name of the rerun", default='default')
+    parser.add_argument('--mFilter', dest='maskFilter', help="Filter for Mask",
+                       default=None)
     """ Optional """
     parser.add_argument('--skyclip', dest='skyClip', help='Sigma for pixel clipping',
                         type=float, default=3.0)

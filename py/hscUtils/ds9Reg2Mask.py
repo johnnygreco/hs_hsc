@@ -14,7 +14,19 @@ cmap1 = cubehelix.cmap(start=0.5, rot=-0.8, gamma=1.0,
                        minLight=0.0, maxLight=1.0)
 cmap1.set_bad('k', 1.)
 
-from coaddCutoutPrepare import saveFits, showSEPImage
+import coaddCutoutPrepare as ccp
+
+
+def saveFits(img, fitsName, head=None, clobber=True):
+    """
+    Save an image to FITS file.
+
+    Parameters:
+    """
+    imgHdu = fits.PrimaryHDU(img)
+    if head is not None:
+        imgHdu.header = head
+    imgHdu.writeto(fitsName, clobber=clobber)
 
 
 def reg2Mask(imgFile, regFile, mskFile=None, hdu=0, show=False,
@@ -54,8 +66,8 @@ def reg2Mask(imgFile, regFile, mskFile=None, hdu=0, show=False,
 
     if show:
         pngName = mskFile.replace('.fits', '.png')
-        showSEPImage(img, pngName=pngName, mask=intMask, cmap=cmap1,
-                     title=mskFile.replace('.fits', ''))
+        ccp.showSEPImage(img, pngName=pngName, mask=intMask, cmap=cmap1,
+                         title=mskFile.replace('.fits', ''))
 
     return intMask
 
