@@ -27,7 +27,7 @@ def run(args):
         filter = (args.filter).strip().upper()
 
         """ Keep a log """
-        logFile = (args.incat).replace('.fits', '_%s_sbp.log' % rerun)
+        logFile = (args.incat).replace('.fits', '_%s_forcesbp.log' % rerun)
         logging.basicConfig(filename=logFile)
 
         print "#########################################################"
@@ -45,8 +45,6 @@ def run(args):
                 raise Exception('### Can not find the root folder ' +
                                 ' for the galaxy data !')
             fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
-            if len(fitsList) <= 3:
-                raise Exception("### Missing data under %s" % galRoot)
 
             galImg = galPrefix + '_img.fits'
             if (not os.path.isfile(os.path.join(galRoot, galImg)) and not
@@ -82,15 +80,35 @@ def run(args):
             else:
                 galMsk = None
 
+            """
+            Input Ellip Binary File
+            """
+            """ The reference filter """
+            refFilter = (args.refFilter).strip().upper()
+            galRefRoot = os.path.join(galID, refFilter, rerun)
+            galRefPrefix = (prefix + '_' + galID + '_' + refFilter +
+                            '_full_img_ellip_')
+            """ The reference model """
+            inEllipPrefix = os.path.join(galRefRoot, galRefPrefix)
+            refModel = (args.refModel).strip()
+            inEllipBin = inEllipPrefix + refModel + '.bin'
+            print "###   INPUT ELLIP BIN : %s" % inEllipBin
+            if not os.path.isfile(inEllipBin):
+                raise Exception('### Can not fin the input ellip ' +
+                                'bin : %s' % inEllipBin)
+
+            """
+            Suffix of the output file
+            """
             ellipSuffix = rerun + '_' + suffix
             try:
                 cSbp.coaddCutoutSbp(galPrefix, root=galRoot,
                                     verbose=args.verbose,
                                     psf=args.psf,
-                                    inEllip=args.inEllip,
+                                    inEllip=inEllipBin,
                                     bkgCor=args.bkgCor,
                                     zp=args.zp,
-                                    step=args.step,
+                                    step=4,
                                     galX0=args.galX0,
                                     galY0=args.galY0,
                                     galQ0=args.galQ0,
@@ -113,10 +131,12 @@ def run(args):
                                     outRatio=args.outRatio,
                                     exMask=galMsk,
                                     suffix=ellipSuffix)
+
+                logging.warning('### The 1-D SBP is DONE for %s' % galPrefix)
             except Exception, errMsg:
                 print str(errMsg)
                 warnings.warn('### The 1-D SBP is failed for %s' % galPrefix)
-                logging.warning('### The 1-D SBP is failed for %s' % galPrefix)
+                logging.warning('### The 1-D SBP is FAILED for %s' % galPrefix)
             print "#########################################################"
 
     else:
@@ -127,27 +147,27 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("prefix", help="Prefix of the galaxy image files")
     parser.add_argument("incat", help="The input catalog for cutout")
+    parser.add_argument("filter", help="Filter to analysis")
     parser.add_argument('-i', '--id', dest='id',
                         help="Name of the column for galaxy ID",
                         default='ID')
-    parser.add_argument('-f', '--filter', dest='filter', help="Filter",
+    parser.add_argument('-mf', '--mFilter', dest='maskFilter',
+                        help="Filter for Mask", default=None)
+    parser.add_argument('-rf', '--rFilter', dest='refFilter',
+                        help="Reference filter for Ellipse run",
                         default='HSC-I')
+    parser.add_argument('-ref', '--rModel', dest='refModel',
+                        help="Reference ellipse binary output",
+                        default='default_3')
     parser.add_argument('-r', '--rerun', dest='rerun',
                         help="Name of the rerun", default='default')
     parser.add_argument("--suffix",
                         help="Suffix of the output file",
                         default='')
-    parser.add_argument('-m', '--mask', dest='mask', help="Filter for Mask",
-                        default=None)
-    parser.add_argument('-mf', '--mFilter', dest='maskFilter',
-                        help="Filter for Mask", default=None)
     """ Optional """
     parser.add_argument("--intMode", dest='intMode',
                         help="Method for integration",
                         default='median')
-    parser.add_argument('--inEllip', dest='inEllip',
-                        help='Input Ellipse table',
-                        default=None)
     parser.add_argument('--pix', dest='pix', help='Pixel Scale',
                         type=float, default=0.168)
     parser.add_argument('--step', dest='step', help='Step size',
