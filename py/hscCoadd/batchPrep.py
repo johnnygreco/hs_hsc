@@ -120,7 +120,7 @@ def run(args):
                                            galR1=3.0,
                                            galR2=5.0,
                                            galR3=7.0,
-                                           sigma=4.0,
+                                           sigma=6.0,
                                            kernel=4,
                                            central=1,
                                            maskMethod=1,

@@ -1264,8 +1264,8 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Define a region that encloses the entire galaxy
     """
     mskGal = np.zeros(imgSubC.shape, dtype='uint8')
-    sep.mask_ellipse(mskGal, galX, galY, (galR3*1.5),
-                     (galR3 * 1.5 * galQ),
+    sep.mask_ellipse(mskGal, galX, galY, (galR3 * 1.2),
+                     (galR3 * 1.2 * galQ),
                      (galPA * np.pi / 180.0), r=1.1)
     """
     Clear up the DETECTION mask plane in this region
