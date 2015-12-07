@@ -442,6 +442,8 @@ def saveFits(img, fitsName, head=None, clobber=True):
     imgHdu = fits.PrimaryHDU(img)
     if head is not None:
         imgHdu.header = head
+    if os.path.islink(fitsName):
+        os.unlink(fitsName)
     imgHdu.writeto(fitsName, clobber=clobber)
 
 
@@ -533,11 +535,11 @@ def combMskImage(msk1, msk2):
     return mskComb
 
 
-def combObjCat(objCold, objHot, tol=5.0, cenDistC=None, rad=80.0, keepH=True):
+def combObjCat(objCold, objHot, tol=6.0, cenDistC=None, rad=80.0, keepH=True):
     """
     Merge the object lists from cold and hot run.
 
-    tol = 5.0  : Tolerance of central difference in unit of pixel
+    tol = 6.0  : Tolerance of central difference in unit of pixel
     """
     # Make a copy of the objects array
     objC = copy.deepcopy(objCold)
@@ -929,19 +931,19 @@ def readCutoutImage(prefix, root=None, variance=False):
     return imgArr, imgHead, mskArr, detArr, sigArr
 
 
-def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
-                       bSizeH=10, bSizeC=80, thrH=2.5, thrC=1.2,
+def coaddCutoutPrepare(prefix, root=None, verbose=True,
+                       bSizeH=8, bSizeC=40, thrH=2.2, thrC=1.2,
                        maskMethod=1, growMethod=1, central=1, kernel=4,
                        growC=6.0, growW=4.0, growH=2.0,
                        galX=None, galY=None,
                        galR1=None, galR2=None, galR3=None,
                        galQ=None, galPA=None, visual=True, suffix='',
                        combBad=True, combDet=True, noBkgC=False, noBkgH=False,
-                       minDetH=5.0, minDetC=8.0, debThrH=32.0, debThrC=2.0,
+                       minDetH=5.0, minDetC=8.0, debThrH=16.0, debThrC=32.0,
                        debConH=0.00001, debConC=0.0001, useSigArr=True,
                        minCenDist=10.0, rerun='default', segment=True,
-                       mskReg=None, excludeReg=None, tol=6.0,
-                       regMask=None, regKeep=None):
+                       mskReg=None, excludeReg=None, tol=10.0,
+                       regMask=None, regKeep=None, sigma=6.0):
     """
     The structure of the cutout has been changed.
 
@@ -1137,6 +1139,8 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     Cold Detection Run
     """
     if useSigArr and (sigArr is not None):
+        if verbose:
+            print "###     Using an external sigma array!"
         errArr = imgByteSwap(sigArr)
         detThrC = thrC
         objC, segC = sep.extract(imgSubC, detThrC, minarea=minDetC,
@@ -1147,12 +1151,13 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
                                  filter_type='matched',
                                  segmentation_map=True)
     else:
+        print rmsC, minDetC, debThrC, debConC
         detThrC = rmsC * thrC
         objC, segC = sep.extract(imgSubC, detThrC, minarea=minDetC,
                                  filter_kernel=convKerC,
                                  deblend_nthresh=debThrC,
                                  deblend_cont=debConC,
-                                 filter_type='matched',
+                                 filter_type='conv',
                                  segmentation_map=True)
     if verbose:
         print "###    %d objects have been detected in the \
@@ -1241,9 +1246,9 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     """
     if verbose:
         print "###  2.3. ESTIMATING THE GAL_R1/R2/R3"
-    galR1 = (galR90 * 2.0) if galR1 is None else galR1
-    galR2 = (galR90 * 4.0) if galR2 is None else galR2
-    galR3 = (galR90 * 6.0) if galR3 is None else galR3
+    galR1 = (galR90 * 2.0) if galR1 is None else (galR1 * galR90)
+    galR2 = (galR90 * 4.0) if galR2 is None else (galR2 * galR90)
+    galR3 = (galR90 * 6.0) if galR3 is None else (galR3 * galR90)
     if verbose:
         print "###    galR1: %7.2f" % galR1
         print "###    galR2: %7.2f" % galR2
@@ -1259,7 +1264,8 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     Define a region that encloses the entire galaxy
     """
     mskGal = np.zeros(imgSubC.shape, dtype='uint8')
-    sep.mask_ellipse(mskGal, galX, galY, galR3, (galR3 * galQ),
+    sep.mask_ellipse(mskGal, galX, galY, (galR3*1.5),
+                     (galR3 * 1.5 * galQ),
                      (galPA * np.pi / 180.0), r=1.1)
     """
     Clear up the DETECTION mask plane in this region
@@ -1268,6 +1274,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         detMsk = copy.deepcopy(detArr).astype(int)
         detMsk[mskGal > 0] = 0
         detMsk[detMsk > 0] = 1
+        detMskConv = seg2Mask(detMsk, sigma=4.0, mskThr=0.02)
 
     """
     Estimate the distance to the central galaxies in the elliptical coordinates
@@ -1285,6 +1292,8 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     Hot Detection Run
     """
     if useSigArr and (sigArr is not None):
+        if verbose:
+            print "###     Using an external sigma array!"
         detThrH = thrH
         objH, segH = sep.extract(imgSubH, detThrH,
                                  minarea=minDetH,
@@ -1312,6 +1321,10 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     """
     prefixH = os.path.join(rerunDir, (prefix + '_' + suffix + 'objH'))
     saveSEPObjects(objH, prefix=prefixH, color='Red')
+    """
+    Estimate the distance to the central galaxies in the elliptical coordinates
+    """
+    cenDistH = objDistTo(objH, galX, galY, pa=galPA, q=galQ)
 
     """
     Visualize these detections
@@ -1427,7 +1440,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
         Convolve the segmentations into a masks
         """
         segMskC = seg2Mask(segC, sigma=8.0, mskThr=0.01)
-        segMskH = seg2Mask(segH, sigma=6.0, mskThr=0.01)
+        segMskH = seg2Mask(segH, sigma=sigma, mskThr=0.01)
         mskAll = combMskImage(segMskC, segMskH)
         objMskAll['a'] = growMsk * rMajor
         objMskAll['b'] = growMsk * rMinor
@@ -1670,11 +1683,11 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     objMask = np.concatenate((objG1, objG2, objG3))
     saveSEPObjects(objMask, prefix=prefixF, color='Green')
 
-    segOut = copy.deepcopy(segC)
-    objExclude = (np.where(cenDistC <= galR3)[0] + 1)
+    segOut = copy.deepcopy(segH)
+    objExclude = (np.where(cenDistH <= galR2)[0] + 1)
     for index in objExclude:
-        segOut[segC == index] = 0
-    segMsk = seg2Mask(segOut, sigma=6.0, mskThr=0.01)
+        segOut[segH == index] = 0
+    segMsk = seg2Mask(segOut, sigma=sigma, mskThr=0.025)
 
     """
     Combine them into the final mask
@@ -1698,7 +1711,7 @@ def coaddCutoutPrepare(prefix, root=None, srcCat=None, verbose=True,
     if combDet and detFound:
         if verbose:
             print "###    Combine the final mask with the HSC DETECTION MASK!"
-        mskFinal = combMskImage(mskFinal, detMsk)
+        mskFinal = combMskImage(mskFinal, detMskConv)
     """
     if extKeep is provided, free them
     """
@@ -1847,6 +1860,18 @@ if __name__ == '__main__':
     parser.add_argument('--debConH', dest='debConH',
                         help='Deblending continuum level for the Hot Run',
                         type=float, default=0.0001)
+    parser.add_argument('--galR1', dest='galR1',
+                        help='galR1 = galR1 * galR90',
+                        type=float, default=2.0)
+    parser.add_argument('--galR2', dest='galR2',
+                        help='galR2 = galR2 * galR90',
+                        type=float, default=4.0)
+    parser.add_argument('--galR3', dest='galR3',
+                        help='galR3 = galR3 * galR90',
+                        type=float, default=6.0)
+    parser.add_argument('--sigma', dest='sigma',
+                        help='Sigma to Gaussian smooth the segmentation image',
+                        type=float, default=6.0)
     parser.add_argument('--noBkgC', dest='noBkgC',
                         action="store_true", default=False)
     parser.add_argument('--noBkgH', dest='noBkgH',
@@ -1875,5 +1900,6 @@ if __name__ == '__main__':
                        debThrH=args.debThrH, debThrC=args.debThrC,
                        debConH=args.debConH, debConC=args.debConC,
                        combBad=args.combBad, combDet=args.combDet,
-                       rerun=args.rerun,
+                       rerun=args.rerun, sigma=args.sigma,
+                       galR1=args.galR1, galR2=args.galR2, galR3=args.galR3,
                        regMask=args.regMask, regKeep=args.regKeep)

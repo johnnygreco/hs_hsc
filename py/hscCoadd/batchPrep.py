@@ -51,54 +51,91 @@ def run(args):
             try:
                 if rerun == 'default':
                     ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
-                                           rerun=rerun,
-                                           bSizeH=args.bSizeH,
-                                           bSizeC=args.bSizeC,
-                                           thrH=args.thrH,
-                                           thrC=args.thrC,
-                                           growH=args.growH,
-                                           growW=args.growW,
-                                           growC=args.growC,
-                                           kernel=args.kernel,
-                                           central=args.central,
-                                           maskMethod=args.mask,
-                                           growMethod=args.grow,
-                                           useSigArr=args.useSigArr,
-                                           noBkgC=args.noBkgC,
-                                           noBkgH=args.noBkgH,
-                                           minDetH=args.minDetH,
-                                           minDetC=args.minDetC,
-                                           debThrH=args.debThrH,
-                                           debThrC=args.debThrC,
-                                           debConH=args.debConH,
-                                           debConC=args.debConC,
-                                           combBad=args.combBad,
-                                           combDet=args.combDet)
-                elif rerun == 'new':
+                                           rerun='default',
+                                           bSizeH=10.0,
+                                           bSizeC=40.0,
+                                           thrH=2.5,
+                                           thrC=1.1,
+                                           growH=2.0,
+                                           growW=3.5,
+                                           growC=4.5,
+                                           galR1=1.5,
+                                           galR2=4.0,
+                                           galR3=6.0,
+                                           sigma=6.0,
+                                           kernel=4,
+                                           central=1,
+                                           maskMethod=1,
+                                           growMethod=1,
+                                           useSigArr=False,
+                                           noBkgC=False,
+                                           noBkgH=False,
+                                           minDetH=5,
+                                           minDetC=8,
+                                           debThrH=16,
+                                           debThrC=32,
+                                           debConH=0.001,
+                                           debConC=0.0025,
+                                           combBad=True,
+                                           combDet=True)
+                elif rerun == 'smallR1':
                     ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
-                                           rerun=rerun,
-                                           bSizeH=args.bSizeH,
-                                           bSizeC=args.bSizeC,
-                                           thrH=args.thrH,
-                                           thrC=args.thrC,
-                                           growH=args.growH,
-                                           growW=args.growW,
-                                           growC=args.growC,
-                                           kernel=args.kernel,
-                                           central=args.central,
-                                           maskMethod=args.mask,
-                                           growMethod=args.grow,
-                                           useSigArr=args.useSigArr,
-                                           noBkgC=args.noBkgC,
-                                           noBkgH=args.noBkgH,
-                                           minDetH=args.minDetH,
-                                           minDetC=args.minDetC,
-                                           debThrH=args.debThrH,
-                                           debThrC=args.debThrC,
-                                           debConH=args.debConH,
-                                           debConC=args.debConC,
-                                           combBad=args.combBad,
-                                           combDet=args.combDet)
+                                           rerun='smallR1',
+                                           bSizeH=10.0,
+                                           bSizeC=40.0,
+                                           thrH=2.5,
+                                           thrC=1.1,
+                                           growH=2.5,
+                                           growW=4.5,
+                                           growC=6.0,
+                                           galR1=1.4,
+                                           galR2=2.5,
+                                           galR3=4.0,
+                                           sigma=8.0,
+                                           kernel=4,
+                                           central=1,
+                                           maskMethod=1,
+                                           growMethod=1,
+                                           useSigArr=False,
+                                           noBkgC=False,
+                                           noBkgH=False,
+                                           minDetH=5,
+                                           minDetC=8,
+                                           debThrH=16,
+                                           debThrC=32,
+                                           debConH=0.001,
+                                           debConC=0.0025,
+                                           combBad=True,
+                                           combDet=True)
+                elif rerun == 'largeR1':
+                    ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
+                                           rerun='largeR1',
+                                           bSizeH=10.0,
+                                           bSizeC=40.0,
+                                           thrH=3.0,
+                                           thrC=1.5,
+                                           growH=1.5,
+                                           growW=3.0,
+                                           growC=4.0,
+                                           galR1=3.0,
+                                           galR2=5.0,
+                                           galR3=7.0,
+                                           sigma=4.0,
+                                           kernel=4,
+                                           central=1,
+                                           maskMethod=1,
+                                           growMethod=1,
+                                           useSigArr=False,
+                                           noBkgC=False,
+                                           noBkgH=False,
+                                           minDetH=5,
+                                           minDetC=8,
+                                           debThrH=16,
+                                           debThrC=32,
+                                           debConH=0.001,
+                                           debConC=0.0025,
+                                           combBad=True,
+                                           combDet=True)
                 else:
                     ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
                                            rerun=rerun,
@@ -125,13 +162,13 @@ def run(args):
                                            combBad=args.combBad,
                                            combDet=args.combDet)
             except Exception, errMsg:
-                print "####################################################\n"
+                print "####################################################"
                 print str(errMsg)
                 warnings.warn('### The cutout preparation is failed for %s' %
                               galPrefix)
                 logging.warning('### The cutout preparation is failed for %s' %
                                 galPrefix)
-            print "########################################################\n"
+            print "########################################################"
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 
@@ -198,6 +235,18 @@ if __name__ == '__main__':
     parser.add_argument('--debConH', dest='debConH',
                         help='Deblending continuum level for the Hot Run',
                         type=float, default=0.0001)
+    parser.add_argument('--galR1', dest='galR1',
+                        help='galR1 = galR1 * galR90',
+                        type=float, default=2.0)
+    parser.add_argument('--galR2', dest='galR2',
+                        help='galR2 = galR2 * galR90',
+                        type=float, default=4.0)
+    parser.add_argument('--galR3', dest='galR3',
+                        help='galR3 = galR3 * galR90',
+                        type=float, default=6.0)
+    parser.add_argument('--sigma', dest='sigma',
+                        help='Sigma to Gaussian smooth the segmentation image',
+                        type=float, default=6.0)
     parser.add_argument('--noBkgC', dest='noBkgC',
                         action="store_true", default=False)
     parser.add_argument('--noBkgH', dest='noBkgH',
