@@ -132,15 +132,13 @@ if __name__ == '__main__':
                         default='ID')
     parser.add_argument('-f', '--filter', dest='filter', help="Filter",
                         default='HSC-I')
+    parser.add_argument('-mf', '--mFilter', dest='maskFilter',
+                        help="Filter for Mask", default=None)
     parser.add_argument('-r', '--rerun', dest='rerun',
                         help="Name of the rerun", default='default')
     parser.add_argument("--suffix",
                         help="Suffix of the output file",
                         default='')
-    parser.add_argument('-m', '--mask', dest='mask', help="Filter for Mask",
-                        default=None)
-    parser.add_argument('-mf', '--mFilter', dest='maskFilter',
-                        help="Filter for Mask", default=None)
     """ Optional """
     parser.add_argument("--intMode", dest='intMode',
                         help="Method for integration",
