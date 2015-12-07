@@ -208,7 +208,8 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
 
     if overComp:
         for ii in range(len(compX)):
-            x0, y0, r0, q0, pa0 = compX[ii], compY[ii], compR[ii], compQ[ii], compPA[ii]
+            x0, y0, r0 = compX[ii], compY[ii], compR[ii]
+            q0, pa0 = compQ[ii], compPA[ii]
             ellRe = Ellipse(xy=(x0, y0), width=(r0*q0*2.0), height=(r0*2.0),
                             angle=pa0)
             ax1.add_artist(ellRe)

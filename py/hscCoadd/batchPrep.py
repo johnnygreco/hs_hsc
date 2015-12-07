@@ -12,13 +12,17 @@ import coaddCutoutPrepare as ccp
 
 
 def run(args):
+    """
+    Run coaddCutoutPrepare in batch mode.
 
+    Parameters:
+    """
     if os.path.isfile(args.incat):
 
         data = fits.open(args.incat)[1].data
 
-        id     = (args.id)
-        rerun  = (args.rerun).strip()
+        id = (args.id)
+        rerun = (args.rerun).strip()
         prefix = (args.prefix).strip()
         filter = (args.filter).strip().upper()
 
@@ -32,17 +36,19 @@ def run(args):
 
             galID = str(galaxy[id]).strip()
 
-            print "################################################################\n"
+            print "########################################################\n"
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
-            print "################################################################\n"
+            print "########################################################\n"
 
-            galRoot   = os.path.join(galID, filter)
-            galImg    = galPrefix + '_img.fits'
+            galRoot = os.path.join(galID, filter)
+            galImg = galPrefix + '_img.fits'
 
             if not os.path.isdir(galRoot):
-                raise Exception('### Can not find the root folder for the galaxy data !')
+                raise Exception('### Can not find the root folder for the \
+                        galaxy data !')
             if not os.path.isfile(os.path.join(galRoot, galImg)):
-                raise Exception('### Can not find the cutout image of the galaxy !')
+                raise Exception('### Can not find the cutout image of the \
+                        galaxy !')
 
             try:
                 if rerun == 'default':
@@ -57,7 +63,8 @@ def run(args):
                                            growC=args.growC,
                                            kernel=args.kernel,
                                            central=args.central,
-                                           mask=args.mask,
+                                           maskMethod=args.mask,
+                                           growMethod=args.grow,
                                            useSigArr=args.useSigArr,
                                            noBkgC=args.noBkgC,
                                            noBkgH=args.noBkgH,
@@ -81,7 +88,8 @@ def run(args):
                                            growC=args.growC,
                                            kernel=args.kernel,
                                            central=args.central,
-                                           mask=args.mask,
+                                           maskMethod=args.mask,
+                                           growMethod=args.grow,
                                            useSigArr=args.useSigArr,
                                            noBkgC=args.noBkgC,
                                            noBkgH=args.noBkgH,
@@ -105,7 +113,8 @@ def run(args):
                                            growC=args.growC,
                                            kernel=args.kernel,
                                            central=args.central,
-                                           mask=args.mask,
+                                           maskMethod=args.mask,
+                                           growMethod=args.grow,
                                            useSigArr=args.useSigArr,
                                            noBkgC=args.noBkgC,
                                            noBkgH=args.noBkgH,
@@ -117,11 +126,11 @@ def run(args):
                                            debConC=args.debConC,
                                            combBad=args.combBad,
                                            combDet=args.combDet)
-
-
             except Exception:
-                warnings.warn('### The cutout preparation is failed for %s' % galPrefix)
-                logging.warning('### The cutout preparation is failed for %s' % galPrefix)
+                warnings.warn('### The cutout preparation is failed \
+                        for %s' % galPrefix)
+                logging.warning('### The cutout preparation is failed \
+                        for %s' % galPrefix)
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 
@@ -130,22 +139,30 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("prefix", help="Prefix of the galaxy image files")
     parser.add_argument("incat", help="The input catalog for cutout")
-    parser.add_argument('-i', '--id', dest='id', help="Name of the column for galaxy ID",
-                       default='ID')
+    parser.add_argument('-i', '--id', dest='id',
+                        help="Name of the column for galaxy ID", default='ID')
     parser.add_argument('-f', '--filter', dest='filter', help="Filter",
-                       default='HSC-I')
+                        default='HSC-I')
     parser.add_argument('-r', '--rerun', dest='rerun',
                         help="Name of the rerun", default='default')
     """ Optional """
-    parser.add_argument('-k', dest='kernel', help='SExtractor detection kernel',
+    parser.add_argument('-k', dest='kernel',
+                        help='SExtractor detection kernel',
                         type=int, default=4, choices=range(1, 7))
-    parser.add_argument('-c', dest='central', help='Method to clean the central region',
+    parser.add_argument('-c', dest='central',
+                        help='Method to clean the central region',
                         type=int, default=1, choices=range(1, 3))
-    parser.add_argument('-m', dest='mask', help='Method to grow the object mask',
+    parser.add_argument('-m', dest='mask',
+                        help='Method to grow the All object mask',
                         type=int, default=1, choices=range(1, 3))
-    parser.add_argument('--bkgH', dest='bSizeH', help='Background size for the Hot Run',
+    parser.add_argument('-g', dest='grow',
+                        help='Method to grow the Final object mask',
+                        type=int, default=1, choices=range(1, 2))
+    parser.add_argument('--bkgH', dest='bSizeH',
+                        help='Background size for the Hot Run',
                         type=int, default=10)
-    parser.add_argument('--bkgC', dest='bSizeC', help='Background size for the Cold Run',
+    parser.add_argument('--bkgC', dest='bSizeC',
+                        help='Background size for the Cold Run',
                         type=int, default=80)
     parser.add_argument('--thrH', dest='thrH',
                         help='Detection threshold for the Hot Run',
@@ -155,10 +172,10 @@ if __name__ == '__main__':
                         type=float, default=1.2)
     parser.add_argument('--growC', dest='growC',
                         help='Ratio of Growth for the Cold Objects',
-                        type=float, default=6.8)
+                        type=float, default=4.0)
     parser.add_argument('--growW', dest='growW',
                         help='Ratio of Growth for the Warm Objects',
-                        type=float, default=4.0)
+                        type=float, default=3.0)
     parser.add_argument('--growH', dest='growH',
                         help='Ratio of Growth for the Hot Objects',
                         type=float, default=1.5)
@@ -176,10 +193,10 @@ if __name__ == '__main__':
                         type=float, default=16.0)
     parser.add_argument('--debConC', dest='debConC',
                         help='Deblending continuum level for the Cold Run',
-                        type=float, default=0.005)
+                        type=float, default=0.001)
     parser.add_argument('--debConH', dest='debConH',
                         help='Deblending continuum level for the Hot Run',
-                        type=float, default=0.004)
+                        type=float, default=0.0001)
     parser.add_argument('--noBkgC', dest='noBkgC',
                         action="store_true", default=False)
     parser.add_argument('--noBkgH', dest='noBkgH',
@@ -190,8 +207,6 @@ if __name__ == '__main__':
                         default=True)
     parser.add_argument('--combDet', dest='combDet', action="store_true",
                         default=True)
-
     args = parser.parse_args()
 
     run(args)
-
