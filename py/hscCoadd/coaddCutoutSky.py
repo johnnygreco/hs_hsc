@@ -204,7 +204,7 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
     dimX, dimY = imgArr.shape
     # Pixel values of all pixels that are not masked out (before rebinned)
     pixels = imgArr[mskAll == 0].flatten()
-    pixNoMsk = sigma_clip(pixels, skyClip, 3)
+    pixNoMsk = sigma_clip(pixels, sigma=skyClip, iters=3)
 
     # Rebin image
     dimBinX = int((dimX - 1) / rebin)
@@ -215,7 +215,7 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
     mskBin = hUtil.congrid(mskAll, (dimBinX, dimBinY), method='neighbour')
     # Get all the pixels that are not masked out
     pixels = imgBin[mskBin == 0].flatten()
-    pixNoMskBin = sigma_clip(pixels, skyClip, 3)
+    pixNoMskBin = sigma_clip(pixels, sigma=skyClip, iters=3)
     numSkyPix = pixNoMskBin.shape[0]
     if verbose:
         print "### Global Background After Rebin the Image "

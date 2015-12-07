@@ -45,7 +45,7 @@ def run(args):
             if not os.path.isdir(galRoot):
                 raise Exception('### Can not find the root folder' +
                                 ' for the galaxy data !')
-            fitsList = glob.glob(galRoot + '*.fits')
+            fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
             if len(fitsList) <= 3:
                 raise Exception("### Missing data under %s" % galRoot)
 
@@ -65,8 +65,8 @@ def run(args):
             """
             External mask
             """
-            if args.mask is not None:
-                mskFilter = (args.mask).strip().upper()
+            if args.maskFilter is not None:
+                mskFilter = (args.maskFilter).strip().upper()
                 print "###  Use %s filter for mask \n" % mskFilter
                 mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
                 mskRoot = os.path.join(galID, mskFilter, rerun)
@@ -112,8 +112,8 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument('-r', '--rerun', dest='rerun',
                         help="Name of the rerun", default='default')
-    parser.add_argument('--mFilter', dest='maskFilter', help="Filter for Mask",
-                        default=None)
+    parser.add_argument('-mf', '--mFilter', dest='maskFilter',
+                        help="Filter for Mask", default=None)
     """ Optional """
     parser.add_argument('--skyclip', dest='skyClip',
                         help='Sigma for pixel clipping',
