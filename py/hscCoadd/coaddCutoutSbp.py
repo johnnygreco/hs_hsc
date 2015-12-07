@@ -829,8 +829,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     suffix=suffix)
             if plot:
                 print "\n##   Ellipse Summary Plot "
-                suf = (suffix + '_') if (suffix == '') else suffix
-                sumPng = root + prefix + '_ellip_sum' + suf + '.png'
+                if suffix[-1] != '_':
+                    suffix = suffix + '_'
+                sumPng = root + prefix + '_ellip_' + suffix + 'sum.png'
                 if psf:
                     ellipSummary(ellOut1, ellOut2, ellOut3, imgOri,
                                  psfOut=psfOut,
