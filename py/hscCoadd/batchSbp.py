@@ -82,7 +82,11 @@ def run(args):
             else:
                 galMsk = None
 
-            ellipSuffix = rerun + '_' + suffix
+            if suffix == '':
+                ellipSuffix = rerun
+            else:
+                ellipSuffix = rerun + '_' + suffix
+
             try:
                 cSbp.coaddCutoutSbp(galPrefix, root=galRoot,
                                     verbose=args.verbose,
