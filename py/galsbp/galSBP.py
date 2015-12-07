@@ -104,14 +104,18 @@ def maskFits2Pl(inputImage, inputMask):
     """
     if not os.path.isfile(inputMask):
         raise Exception("Can not find the FITS mask: %s" % inputMask)
-
     # Name of the .pl mskOri for IRAF
+    """
+    Why the hell the .pl mask is not working under
+    """
     outputMask = inputImage.replace('.fits', '.fits.pl')
     if os.path.isfile(outputMask):
         os.remove(outputMask)
     # Convert the fits format mask into pl format.
+    print "-------" * 12
     iraf.unlearn('imcopy')
     iraf.imcopy(input=inputMask, output=outputMask, verbose=True)
+    print "-------" * 12
 
     return outputMask
 
@@ -217,7 +221,7 @@ def unlearnEllipse():
 
 
 def easierEllipse(ellipConfig):
-    """Make the Ellipse run easier"""
+    """Make the Ellipse run easier."""
     ellipConfig['maxsma'] *= 0.9
     ellipConfig['step'] += 0.03
     ellipConfig['fflag'] += 0.05
@@ -302,11 +306,11 @@ def setupEllipse(ellipConfig):
         iraf.ellipse.integrmode = 'median'
     elif intMode == 'mean':
         iraf.ellipse.integrmode = 'mean'
-    elif intMode == 'bi-linear':
-        iraf.ellipse.integrmode = 'bi-linear'
+    elif intMode == 'mean':
+        iraf.ellipse.integrmode = 'mean'
     else:
         raise Exception(
-            "### Only 'mean', 'median', and 'bi-linear' are available !")
+            "### Only 'mean', 'median', and 'mean' are available !")
     iraf.ellipse.usclip = cfg['usclip']
     iraf.ellipse.lsclip = cfg['lsclip']
     iraf.ellipse.nclip = cfg['nclip']
@@ -1051,9 +1055,9 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
            maxSma=None, iniSma=6.0, galR=20.0, galQ=0.9, galPA=0.0,
            pix=0.168, bkg=0.00, stage=3, minSma=0.0,
            gain=3.0, expTime=1.0, zpPhoto=27.0,
-           maxTry=2, minIt=10, maxIt=120,
-           ellipStep=0.10, uppClip=2.5, lowClip=2.5,
-           nClip=2, fracBad=0.5, intMode="median",
+           maxTry=4, minIt=20, maxIt=150,
+           ellipStep=0.10, uppClip=3.0, lowClip=3.0,
+           nClip=2, fracBad=0.5, intMode="mean",
            plMask=True, conver=0.05, recenter=True,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
            olthresh=0.5, harmonics='1 2', outerThreshold=None,
@@ -1089,13 +1093,13 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
 
         if plMask:
             print "###  Will use the *.pl Mask"
-            plFile = maskFits2Pl(image, mask)
+            plFile = maskFits2Pl(imgOri, mask)
             if not os.path.isfile(plFile):
                 raise Exception("### Can not find the .pl mask: %s !" % plFile)
             imageUse = imgOri
         else:
             print "###  Will use the *nan.fits Mask"
-            imageNew = imageMaskNaN(image, mask)
+            imageNew = imageMaskNaN(imgOri, mask)
             if not os.path.isfile(imageNew):
                 raise Exception(
                     "### Can not find the NaN-Masked image: %s" % imageNew)
@@ -1188,11 +1192,17 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             if os.path.exists(outBin):
                 os.remove(outBin)
             # Start the Ellipse fitting
+            print "-------" * 12
+            print "###  Input Image   : %s" % imageUse
+            print "###  Output Binary : %s" % outBin
+            print "-------" * 12
             if stage != 4:
                 iraf.ellipse(input=imageUse, output=outBin, verbose=verStr)
             else:
+                print " ###  Input Binary  : %s" % inEllip
                 iraf.ellipse(input=imageUse, output=outBin, inellip=inEllip,
                              verbose=verStr)
+            print "-------" * 12
             break
         except Exception as error:
             attempts += 1
@@ -1203,7 +1213,9 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
     # Check if the Ellipse run is finished
     if not os.path.isfile(outBin):
         ellipOut = None
+        print "-------" * 12
         print " ###  XXX ELLIPSE RUN FAILED AFTER %3d ATTEMPTS!!!" % maxTry
+        print "-------" * 12
     else:
         # Remove the existed .tab and .cdf file
         if os.path.isfile(outTab):
@@ -1222,7 +1234,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
         radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2)
         sma = ellipOut['sma']
         if not np.isfinite(radOuter):
-            raise Exception("### Error : Can not decide radOuter ")
+            # XXX : Don't quit yet
+            # raise Exception("### Error : Can not decide radOuter ")
             print " XXX radOuter is NaN, use 0.75 * max(SMA) instead !"
             radOuter = np.nanmax(sma) * 0.75
 
@@ -1254,7 +1267,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
         """ Update the outer radius """
         radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2)
         if not np.isfinite(radOuter):
-            raise Exception("### Error : Can not decide radOuter ")
+            # XXX : Don't just quit
+            # raise Exception("### Error : Can not decide radOuter ")
             print " XXX radOuter is NaN, use 0.80 * max(SMA) instead !"
             radOuter = np.nanmax(sma) * 0.80
         ellipOut.add_column(
@@ -1291,7 +1305,7 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument("--intMode", dest='intMode',
                         help="Method for integration",
-                        default='median')
+                        default='mean')
     parser.add_argument('--x0', dest='galX',
                         help='Galaxy center in X-dimension',
                         type=float, default=None)
@@ -1333,16 +1347,16 @@ if __name__ == '__main__':
                         type=float, default=0.10)
     parser.add_argument('--uppClip', dest='uppClip',
                         help='Upper limit for clipping',
-                        type=float, default=2.0)
+                        type=float, default=3.0)
     parser.add_argument('--lowClip', dest='lowClip',
                         help='Upper limit for clipping',
                         type=float, default=3.0)
     parser.add_argument('--nClip', dest='nClip',
                         help='Upper limit for clipping',
-                        type=int, default=3)
+                        type=int, default=2)
     parser.add_argument('--olthresh', dest='olthresh',
                         help='Central locator threshold',
-                        type=float, default=0.50)
+                        type=float, default=0.30)
     parser.add_argument('--zpPhoto', dest='zpPhoto',
                         help='Photometric zeropoint',
                         type=float, default=27.0)
@@ -1354,13 +1368,13 @@ if __name__ == '__main__':
                         type=float, default=0.5)
     parser.add_argument('--maxTry', dest='maxTry',
                         help='Maximum number of ellipse run',
-                        type=int, default=3)
+                        type=int, default=4)
     parser.add_argument('--minIt', dest='minIt',
                         help='Minimum number of iterations',
-                        type=int, default=10)
+                        type=int, default=20)
     parser.add_argument('--maxIt', dest='maxIt',
                         help='Maximum number of iterations',
-                        type=int, default=100)
+                        type=int, default=150)
     parser.add_argument('--plot', dest='plot', action="store_true",
                         help='Generate summary plot', default=True)
     parser.add_argument('--verbose', dest='verbose', action="store_true",
@@ -1370,9 +1384,9 @@ if __name__ == '__main__':
     parser.add_argument('--save', dest='save', action="store_true",
                         default=True)
     parser.add_argument('--plmask', dest='plmask', action="store_true",
-                        default=False)
+                        default=True)
     parser.add_argument('--updateIntens', dest='updateIntens',
-                        action="store_true", default=False)
+                        action="store_true", default=True)
 
     args = parser.parse_args()
 

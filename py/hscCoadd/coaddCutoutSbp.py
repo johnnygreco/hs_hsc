@@ -624,12 +624,12 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
 
 
 def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
-                   zp=27.0, step=0.12, pix=0.168, exptime=1.0, bkgCor=False,
+                   zp=27.0, step=0.10, pix=0.168, exptime=1.0, bkgCor=False,
                    plot=True, galX0=None, galY0=None, galQ0=None, galPA0=None,
-                   maxTry=3, galRe=None, redshift=None, psfRecenter=True,
+                   maxTry=4, galRe=None, redshift=None, psfRecenter=True,
                    showZoom=True, checkCenter=True, updateIntens=False,
-                   olthresh=0.5, intMode='median', lowClip=3.0, uppClip=2.0,
-                   nClip=2, fracBad=0.6, minIt=10, maxIt=100, outRatio=1.2,
+                   olthresh=0.3, intMode='mean', lowClip=3.0, uppClip=3.0,
+                   nClip=2, fracBad=0.5, minIt=20, maxIt=150, outRatio=1.2,
                    exMask=None, suffix='', plMask=False, noMask=False):
     """
     Generate 1-D SBP Plot.
@@ -736,7 +736,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                    outerThreshold=1e-6)
         if inEllip is None:
             """ # Start with Stage 1 """
-            print "\n##   Ellipse Run on Image - Stage 1 "
+            print "---------" * 12
+            print "##   Ellipse Run on Image - Stage 1 "
+            print "---------" * 12
             galSBP.unlearnEllipse()
             iniSma = (galR50*1.5)
             ellOut1 = galSBP.galSBP(imgFile,
@@ -777,7 +779,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                     raise Exception("The Center is Off !")
 
             """ # Start with Stage 2 """
-            print "\n##   Ellipse Run on Image - Stage 2 "
+            print "---------" * 12
+            print "##   Ellipse Run on Image - Stage 2 "
+            print "---------" * 12
             ellOut2 = galSBP.galSBP(imgFile, mask=mskFile,
                                     galX=galX0,
                                     galY=galY0,
@@ -804,12 +808,17 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     plMask=plMask,
                                     suffix=suffix)
             if (galQ0 is None) or (galPA0 is None):
-                galQ0 = ellOut1['avg_q'][0] if ellOut1['avg_q'][0] <= 0.95 else 0.95
+                if (ellOut1['avg_q'][0] <= 0.95):
+                    galQ0 = ellOut1['avg_q'][0]
+                else:
+                    galQ0 = 0.95
                 galPA0 = hUtil.normAngle(ellOut1['avg_pa'][0], lower=-90.0,
                                          upper=90.0, b=True)
 
             """ # Start with Stage 3 """
-            print "\n##   Ellipse Run on Image - Stage 3 "
+            print "---------" * 12
+            print "##   Ellipse Run on Image - Stage 3 "
+            print "---------" * 12
             ellOut3 = galSBP.galSBP(imgFile, mask=mskFile,
                                     galX=galX0,
                                     galY=galY0,
@@ -834,7 +843,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     plMask=plMask,
                                     suffix=suffix)
             if plot:
-                print "\n##   Ellipse Summary Plot "
+                print "---------" * 12
+                print "##   Ellipse Summary Plot "
+                print "---------" * 12
                 if suffix[-1] != '_':
                     suffix = suffix + '_'
                 sumPng = root + prefix + '_ellip_' + suffix + 'sum.png'
@@ -854,20 +865,22 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                  outRatio=outRatio)
         else:
             """ # Run Ellipse in Forced Photometry Mode """
-            print "\n##   Ellipse Run on Image - Forced Photometry "
-            ellOut4 = galSBP.galSBP(imgFile, mask=mskFile,
-                                    galX=galX,
-                                    galY=galY,
-                                    inEllip=inEllip,
-                                    pix=pix,
-                                    bkg=bkg,
-                                    stage=4,
-                                    zpPhoto=zp,
-                                    maxTry=1,
-                                    updateIntens=updateIntens,
-                                    intMode=intMode,
-                                    plMask=plMask,
-                                    suffix=suffix)
+            print "---------" * 12
+            print "##   Ellipse Run on Image - Forced Photometry "
+            print "---------" * 12
+            galSBP.galSBP(imgFile, mask=mskFile,
+                          galX=galX,
+                          galY=galY,
+                          inEllip=inEllip,
+                          pix=pix,
+                          bkg=bkg,
+                          stage=4,
+                          zpPhoto=zp,
+                          maxTry=1,
+                          updateIntens=updateIntens,
+                          intMode=intMode,
+                          plMask=plMask,
+                          suffix=suffix)
 
 if __name__ == '__main__':
 
@@ -878,7 +891,7 @@ if __name__ == '__main__':
                         default=None)
     parser.add_argument("--intMode", dest='intMode',
                         help="Method for integration",
-                        default='median')
+                        default='mean')
     parser.add_argument('--inEllip', dest='inEllip',
                         help='Input Ellipse table',
                         default=None)
@@ -906,25 +919,25 @@ if __name__ == '__main__':
                         type=float, default=0.30)
     parser.add_argument('--uppClip', dest='uppClip',
                         help='Upper limit for clipping',
-                        type=float, default=2.0)
+                        type=float, default=3.0)
     parser.add_argument('--lowClip', dest='lowClip',
                         help='Upper limit for clipping',
                         type=float, default=3.0)
     parser.add_argument('--nClip', dest='nClip',
                         help='Upper limit for clipping',
-                        type=int, default=3)
+                        type=int, default=2)
     parser.add_argument('--fracBad', dest='fracBad',
                         help='Outer threshold',
                         type=float, default=0.5)
     parser.add_argument('--minIt', dest='minIt',
                         help='Minimum number of iterations',
-                        type=int, default=10)
+                        type=int, default=20)
     parser.add_argument('--maxIt', dest='maxIt',
                         help='Maximum number of iterations',
-                        type=int, default=100)
+                        type=int, default=150)
     parser.add_argument('--maxTry', dest='maxTry',
                         help='Maximum number of attempts of ellipse run',
-                        type=int, default=3)
+                        type=int, default=4)
     parser.add_argument('--galX0', dest='galX0',
                         help='Center X0',
                         type=float, default=None)
@@ -957,7 +970,7 @@ if __name__ == '__main__':
     parser.add_argument('--updateIntens', dest='updateIntens',
                         action="store_true", default=True)
     parser.add_argument('--plmask', dest='plmask', action="store_true",
-                        default=False)
+                        default=True)
     parser.add_argument('--nomask', dest='nomask', action="store_true",
                         default=False)
 

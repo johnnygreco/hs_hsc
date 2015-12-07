@@ -150,7 +150,7 @@ if __name__ == '__main__':
     """ Optional """
     parser.add_argument("--intMode", dest='intMode',
                         help="Method for integration",
-                        default='median')
+                        default='mean')
     parser.add_argument('--inEllip', dest='inEllip',
                         help='Input Ellipse table',
                         default=None)
@@ -168,25 +168,25 @@ if __name__ == '__main__':
                         type=float, default=0.30)
     parser.add_argument('--uppClip', dest='uppClip',
                         help='Upper limit for clipping',
-                        type=float, default=2.0)
+                        type=float, default=2.5)
     parser.add_argument('--lowClip', dest='lowClip',
                         help='Upper limit for clipping',
                         type=float, default=3.0)
     parser.add_argument('--nClip', dest='nClip',
                         help='Upper limit for clipping',
-                        type=int, default=3)
+                        type=int, default=2)
     parser.add_argument('--fracBad', dest='fracBad',
                         help='Outer threshold',
                         type=float, default=0.5)
     parser.add_argument('--minIt', dest='minIt',
                         help='Minimum number of iterations',
-                        type=int, default=10)
+                        type=int, default=20)
     parser.add_argument('--maxIt', dest='maxIt',
                         help='Maximum number of iterations',
-                        type=int, default=100)
+                        type=int, default=150)
     parser.add_argument('--maxTry', dest='maxTry',
                         help='Maximum number of attempts of ellipse run',
-                        type=int, default=3)
+                        type=int, default=4)
     parser.add_argument('--galX0', dest='galX0',
                         help='Center X0',
                         type=float, default=None)
@@ -217,7 +217,7 @@ if __name__ == '__main__':
                         action="store_true",
                         default=True)
     parser.add_argument('--plmask', dest='plmask', action="store_true",
-                        default=False)
+                        default=True)
     parser.add_argument('--nomask', dest='nomask', action="store_true",
                         default=False)
 
