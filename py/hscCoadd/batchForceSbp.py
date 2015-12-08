@@ -51,16 +51,17 @@ def run(args):
                                                          len(data))
             print COM
             if not os.path.isdir(galRoot):
-                raise Exception('### Can not find the root folder ' +
-                                ' for the galaxy data !')
+                logging.warning('### Can not find ' +
+                                'ROOT folder for %s' % galPrefix)
+                continue
             fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
 
             galImg = galPrefix + '_img.fits'
             if (not os.path.isfile(os.path.join(galRoot, galImg)) and not
                     os.path.islink(os.path.join(galRoot, galImg))):
-                raise Exception('### Can not find the cutout image of ' +
-                                'the galaxy !')
-
+                logging.warning('### Can not find ' +
+                                'CUTOUT IMAGE for %s' % galPrefix)
+                continue
             """
             Set up a rerun
             """
@@ -84,8 +85,9 @@ def run(args):
                 mskRoot = os.path.join(galID, mskFilter, rerun)
                 galMsk = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
                 if not os.path.isfile(galMsk):
-                    raise Exception('### Can not find the final mask of ' +
-                                    'the galaxy !')
+                    logging.warning('### Can not find ' +
+                                    'MASK for  %s ' % galPrefix)
+                    continue
             else:
                 galMsk = None
 
@@ -94,22 +96,38 @@ def run(args):
             """
             """ The reference filter """
             refFilter = (args.refFilter).strip().upper()
-            galRefRoot = os.path.join(galID, refFilter, rerun)
+            """ The reference rerun """
+            if args.refRerun is not None:
+                refRerun = (args.refRerun).strip()
+            else:
+                refRerun = rerun
+            """ Location and Prefix """
+            galRefRoot = os.path.join(galID, refFilter, refRerun)
             galRefPrefix = (prefix + '_' + galID + '_' + refFilter +
-                            '_full_img_ellip_')
+                            '_full_img_ellip_' + refRerun + '_')
             """ The reference model """
             inEllipPrefix = os.path.join(galRefRoot, galRefPrefix)
+            """  """
             refModel = (args.refModel).strip()
             inEllipBin = inEllipPrefix + refModel + '.bin'
+            print SEP
             print "###   INPUT ELLIP BIN : %s" % inEllipBin
+            print SEP
             if not os.path.isfile(inEllipBin):
-                raise Exception('### Can not find the input ellip ' +
-                                'bin : %s' % inEllipBin)
-
+                logging.warning('### Can not find ' +
+                                'INPUT BINARY for : %s' % galPrefix)
+                logging.warning('###  File Name : %s' % inEllipBin)
+                continue
             """
             Suffix of the output file
             """
-            ellipSuffix = rerun + '_' + suffix
+            if len(refModel) > 1:
+                suffix = refModel[:-1]
+                if suffix[-1] == '_':
+                    suffix = suffix[:-1]
+                ellipSuffix = rerun + '_' + suffix
+            else:
+                ellipSuffix = rerun
 
             print '\n' + SEP
             try:
@@ -162,6 +180,8 @@ if __name__ == '__main__':
     parser.add_argument("prefix", help="Prefix of the galaxy image files")
     parser.add_argument("incat", help="The input catalog for cutout")
     parser.add_argument("filter", help="Filter to analysis")
+    parser.add_argument('-r', '--rerun', dest='rerun',
+                        help="Name of the rerun", default='default')
     parser.add_argument('-i', '--id', dest='id',
                         help="Name of the column for galaxy ID",
                         default='ID')
@@ -172,12 +192,10 @@ if __name__ == '__main__':
                         default='HSC-I')
     parser.add_argument('-rr', '--rRerun', dest='refRerun',
                         help="Reference rerun for Ellipse run",
-                        default='HSC-I')
-    parser.add_argument('-ref', '--rModel', dest='refModel',
+                        default=None)
+    parser.add_argument('-rm', '--rModel', dest='refModel',
                         help="Reference ellipse binary output",
-                        default='default_3')
-    parser.add_argument('-r', '--rerun', dest='rerun',
-                        help="Name of the rerun", default='default')
+                        default='3')
     parser.add_argument("--suffix",
                         help="Suffix of the output file",
                         default='')
