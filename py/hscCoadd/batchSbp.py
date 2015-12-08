@@ -151,9 +151,10 @@ def run(args):
 
             print COM
             if psutilOk:
-                gc.collect()
                 mem1 = proc.memory_info().rss
-                print "@@@ Collect: %0.2f%%" % (100.0 * (mem1 - mem0) / mem0)
+                gc.collect()
+                mem2 = proc.memory_info().rss
+                print "@@@ Collect: %0.2f%%" % (100.0 * (mem2 - mem1) / mem0)
             else:
                 gc.collect()
             print COM

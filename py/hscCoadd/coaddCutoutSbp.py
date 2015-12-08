@@ -632,6 +632,9 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
 
     """ Save Figure """
     fig.savefig(outPng)
+    plt.close(fig)
+
+    return
 
 
 def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
@@ -647,9 +650,12 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
 
     Parameters:
     """
-    print '--------' * 12
-    print "## Input Image: ", prefix
-    print "## Root Directory: ", root
+    if verbose:
+        print SEP
+        print "#  CoaddCutoutSbp Start "
+        print "##       Input Image: ", prefix
+        print "##       Root Directory: ", root
+    print SEP
     if psutilOk:
         proc = psutil.Process(os.getpid())
         gc.collect()
@@ -657,7 +663,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         print "@@@ Initial: %i" % mem0
     else:
         gc.collect()
-    print '--------' * 12
+    print SEP
     """ 0. Organize Input Data """
     # Read in the input image, mask, psf, and their headers
     sbpInput = readSbpInput(prefix, root=root, exMask=exMask)
@@ -667,6 +673,11 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     if not imgSameSize(imgArr, mskArr):
         raise Exception("### The Image and Mask need to have EXACTLY \
                 same dimensions!")
+    """
+    Delete image and mask array
+    """
+    del imgArr
+    del mskArr
 
     if os.path.islink(imgFile):
         imgOri = os.readlink(imgFile)
@@ -687,8 +698,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         scale = hUtil.cosmoScale(redshift)
         useKpc = scale
         if verbose:
-            print " ### Input Redshift : ", redshift
-            print " ### Physical Scale : ", scale, " (kpc/arcsec)"
+            print "###      Input Redshift : ", redshift
+            print "###      Physical Scale : ", scale, " (kpc/arcsec)"
     else:
         useKpc = None
 
@@ -698,9 +709,11 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             skyMed, skyAvg, skyStd = readInputSky(prefix, root=root)
             bkg = skyAvg
             if verbose:
-                print " ### Average Background : ", bkg
+                print "###      Average Background : ", bkg
         except Exception:
-            print " XXX CAN NOT FIND THE BACKGROUND DATA !"
+            print WAR
+            print "XXX   CAN NOT FIND THE BACKGROUND DATA !"
+            print WAR
             bkg = 0.00
     else:
         bkg = 0.00
@@ -721,31 +734,37 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     else:
         galR50 = galRe
     if verbose:
-        print " ### Image : ", imgFile
-        print " ### Mask  : ", mskFile
-        print " ### galX, galY : ", galX, galY
-        print " ### galQ, galPA : ", galQ, galPA
-        print " ### galR50 : ", galR50
-        print " ### intMode : ", intMode
+        print "###      Image : ", imgFile
+        print "###      Mask  : ", mskFile
+        print "###      galX, galY : ", galX, galY
+        print "###      galQ, galPA : ", galQ, galPA
+        print "###      galR50 : ", galR50
+        print "###      intMode : ", intMode
 
     maxR = mskHead['NAXIS1'] if (mskHead['NAXIS1'] >=
                                  mskHead['NAXIS2']) else mskHead['NAXIS2']
     maxR = (maxR / 2.0) * np.sqrt(2.0)
     if verbose:
-        print " ### maxR : ", maxR
+        print "###      maxR : ", maxR
 
     """
     Actually start to run
     """
     if psutilOk:
+        print SEP
         mem1 = proc.memory_info().rss
         print "@@@ Increase: %0.2f%%" % (100.0 * (mem1 - mem0) / mem0)
+        print SEP
 
     if checkCenter and mskHead['MSK_R20'] == 1:
+        print WAR
         print "### The central region is masked out"
+        print WAR
     else:
         if psf:
+            print SEP
             print "\n##   Ellipse Run on PSF "
+            print SEP
             psfFile = prefix + '_psf.fits'
             if root is not None:
                 psfFile = os.path.join(root, psfFile)
@@ -767,10 +786,10 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                    outerThreshold=1e-6)
         if inEllip is None:
             iniSma = (galR50 * 2.0)
-            """ # Start with Stage 1 """
-            print "---------" * 12
-            print "##   Ellipse Run on Image - Stage 1 "
-            print "---------" * 12
+            """#        Start with Stage 1 """
+            print SEP
+            print "##       Ellipse Run on Image %s- Stage 1 " % imgFile
+            print SEP
             galSBP.unlearnEllipse()
             ellOut1 = galSBP.galSBP(imgFile,
                                     mask=mskFile,
@@ -799,8 +818,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     plMask=plMask,
                                     suffix=suffix)
             if ellOut1 is None:
-                print "---------" * 12
+                print WAR
                 raise Exception("!!!!! ELLIPSE RUN FAILED AT STAGE 1 !!!!")
+                print WAR
             if (galX0 is None) or (galY0 is None):
                 galX0 = ellOut1['avg_x0'][0]
                 galY0 = ellOut1['avg_y0'][0]
@@ -813,9 +833,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                     raise Exception("The Center is Off !")
 
             """ # Start with Stage 2 """
-            print "---------" * 12
-            print "##   Ellipse Run on Image - Stage 2 "
-            print "---------" * 12
+            print SEP
+            print "##       Ellipse Run on Image %s- Stage 2 " % imgFile
+            print SEP
             ellOut2 = galSBP.galSBP(imgFile, mask=mskFile,
                                     galX=galX0,
                                     galY=galY0,
@@ -842,8 +862,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     plMask=plMask,
                                     suffix=suffix)
             if ellOut2 is None:
-                print "---------" * 12
+                print WAR
                 raise Exception("!!!!! ELLIPSE RUN FAILED AT STAGE 2 !!!!")
+                print WAR
 
             if (galQ0 is None) or (galPA0 is None):
                 if (ellOut2['avg_q'][0] <= 0.95):
@@ -854,9 +875,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                          upper=90.0, b=True)
 
             """ # Start with Stage 3 """
-            print "---------" * 12
-            print "##   Ellipse Run on Image - Stage 3 "
-            print "---------" * 12
+            print SEP
+            print "##       Ellipse Run on Image %s- Stage 3 " % imgFile
+            print SEP
             ellOut3 = galSBP.galSBP(imgFile, mask=mskFile,
                                     galX=galX0,
                                     galY=galY0,
@@ -881,13 +902,14 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     plMask=plMask,
                                     suffix=suffix)
             if ellOut3 is None:
-                print "---------" * 12
+                print WAR
                 raise Exception("!!!!! ELLIPSE RUN FAILED AT STAGE 3 !!!!")
+                print WAR
 
             if plot:
-                print "---------" * 12
-                print "##   Ellipse Summary Plot "
-                print "---------" * 12
+                print SEP
+                print "##       Ellipse Summary Plot "
+                print SEP
                 if suffix[-1] != '_':
                     suffix = suffix + '_'
                 sumPng = root + prefix + '_ellip_' + suffix + 'sum.png'
@@ -907,9 +929,10 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                  outRatio=outRatio)
         else:
             """ # Run Ellipse in Forced Photometry Mode """
-            print "---------" * 12
-            print "##   Ellipse Run on Image - Forced Photometry "
-            print "---------" * 12
+            print SEP
+            print "##       Ellipse Run on ' +
+                  "Image %s - Forced Photometry " % imgFile
+            print SEP
             ellOut4 = galSBP.galSBP(imgFile, mask=mskFile,
                                     galX=galX,
                                     galY=galY,
@@ -924,17 +947,19 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     plMask=plMask,
                                     suffix=suffix)
             if ellOut4 is None:
-                print "---------" * 12
+                print WAR
                 raise Exception("!!!!! FORCED ELLIPSE RUN FAILED !!!!")
+                print WAR
 
-            print "#########################################################"
+            print SEP
             if psutilOk:
+                mem1 = proc.memory_info().rss
                 gc.collect()
-                mem1 = proc.get_memory_info().rss
+                mem2 = proc.memory_info().rss
                 print "@@@ Collect: %0.2f%%" % (100.0 * (mem2 - mem1) / mem0)
             else:
                 gc.collect()
-            print "#########################################################"
+            print SEP
 
 if __name__ == '__main__':
 
