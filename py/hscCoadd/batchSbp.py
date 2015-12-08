@@ -18,9 +18,9 @@ from astropy.io import fits
 
 import coaddCutoutSbp as cSbp
 
-COM = '#' * 40
-SEP = '-' * 40
-WAR = '!' * 40
+COM = '#' * 100
+SEP = '-' * 100
+WAR = '!' * 100
 
 def run(args):
     """

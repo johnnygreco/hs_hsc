@@ -48,9 +48,9 @@ from matplotlib.ticker import MaxNLocator
 import hscUtils as hUtil
 import galSBP
 
-COM = '#' * 40
-SEP = '-' * 40
-WAR = '!' * 40
+COM = '#' * 100
+SEP = '-' * 100
+WAR = '!' * 100
 
 
 def readSbpInput(prefix, root=None, exMask=None):
@@ -675,9 +675,19 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 same dimensions!")
     """
     Delete image and mask array
+
+    TODO Test
     """
+    if psutilOk:
+        print WAR
+        memB = proc.memory_info().rss
     del imgArr
     del mskArr
+    if psutilOk:
+        memA = proc.memory_info().rss
+        print "@@@ Reduce : %5.2f" % ((memA - memB) / memB)
+        print WAR
+    """"""
 
     if os.path.islink(imgFile):
         imgOri = os.readlink(imgFile)
@@ -930,7 +940,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         else:
             """ # Run Ellipse in Forced Photometry Mode """
             print SEP
-            print "##       Ellipse Run on ' +
+            print "##       Ellipse Run on " + \
                   "Image %s - Forced Photometry " % imgFile
             print SEP
             ellOut4 = galSBP.galSBP(imgFile, mask=mskFile,

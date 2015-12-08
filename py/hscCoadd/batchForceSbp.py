@@ -12,9 +12,9 @@ from astropy.io import fits
 
 import coaddCutoutSbp as cSbp
 
-COM = '#' * 40
-SEP = '-' * 40
-WAR = '!' * 40
+COM = '#' * 100
+SEP = '-' * 100
+WAR = '!' * 100
 
 
 def run(args):
@@ -169,6 +169,9 @@ if __name__ == '__main__':
                         help="Filter for Mask", default=None)
     parser.add_argument('-rf', '--rFilter', dest='refFilter',
                         help="Reference filter for Ellipse run",
+                        default='HSC-I')
+    parser.add_argument('-rr', '--rRerun', dest='refRerun',
+                        help="Reference rerun for Ellipse run",
                         default='HSC-I')
     parser.add_argument('-ref', '--rModel', dest='refModel',
                         help="Reference ellipse binary output",

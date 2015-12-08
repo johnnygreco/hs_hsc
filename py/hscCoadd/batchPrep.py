@@ -10,6 +10,10 @@ from astropy.io import fits
 
 import coaddCutoutPrepare as ccp
 
+COM = '#' * 100
+SEP = '-' * 100
+WAR = '!' * 100
+
 
 def run(args):
     """

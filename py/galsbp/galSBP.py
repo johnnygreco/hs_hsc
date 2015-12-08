@@ -48,9 +48,9 @@ cmap.set_bad('k', 1.)
 # Personal
 import hscUtils as hUtil
 
-COM = '#' * 40
-SEP = '-' * 40
-WAR = '!' * 40
+COM = '#' * 100
+SEP = '-' * 100
+WAR = '!' * 100
 
 
 def correctPositionAngle(ellipOut, paNorm=False):
@@ -117,10 +117,10 @@ def maskFits2Pl(inputImage, inputMask):
     if os.path.isfile(outputMask):
         os.remove(outputMask)
     # Convert the fits format mask into pl format.
-    print "-------" * 12
+    print SEP
     iraf.unlearn('imcopy')
     iraf.imcopy(input=inputMask, output=outputMask, verbose=True)
-    print "-------" * 12
+    print SEP
 
     return outputMask
 
@@ -160,6 +160,9 @@ def imageMaskNaN(inputImage, inputMask):
     newHdu = fits.PrimaryHDU(imgArr, header=imgHead)
     hduList = fits.HDUList([newHdu])
     hduList.writeto(newImage, clobber=True)
+
+    del imgArr
+    del mskArr
 
     return newImage
 
