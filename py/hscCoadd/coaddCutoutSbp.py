@@ -793,7 +793,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                    stage=3,
                                    zpPhoto=zp,
                                    recenter=psfRecenter,
-                                   outerThreshold=1e-6)
+                                   outerThreshold=1e-6,
+                                   useZscale=False)
         if inEllip is None:
             iniSma = (galR50 * 2.0)
             """#        Start with Stage 1 """

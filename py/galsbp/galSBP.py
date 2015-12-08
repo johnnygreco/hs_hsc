@@ -653,7 +653,7 @@ def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
 
 def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
                        outPng='ellipse_summary.png', zp=27.0, threshold=None,
-                       showZoom=False):
+                       showZoom=False, useZscale=True):
     """
     Make a summary plot of the ellipse run.
 
@@ -687,7 +687,10 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     img = fits.open(image)[0].data
     imgX, imgY = img.shape
     imgMsk = copy.deepcopy(img)
-    imin, imax = zscale(imgMsk, contrast=0.6, samples=500)
+    if useZscale:
+        imin, imax = zscale(imgMsk, contrast=0.6, samples=500)
+    else:
+        imin, imax = np.nanmin(imgMsk), np.nanmax(imgMsk)
     if mask is not None:
         msk = fits.open(mask)[0].data
         imgMsk[msk > 0] = np.nan
@@ -1097,7 +1100,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
            plMask=True, conver=0.05, recenter=True,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
            olthresh=0.5, harmonics='1 2', outerThreshold=None,
-           updateIntens=False, psfSma=6.0, suffix=''):
+           updateIntens=False, psfSma=6.0, suffix='', useZscale=True):
     """
     Running Ellipse to Extract 1-D profile.
 
@@ -1328,7 +1331,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     outPng = image.replace('.fits', suffix + '.png')
                     ellipsePlotSummary(ellipOut, imgOri, maxRad=None,
                                        mask=mskOri, outPng=outPng,
-                                       threshold=outerThreshold)
+                                       threshold=outerThreshold,
+                                       useZscale=useZscale)
                 if saveOut:
                     outPre = image.replace('.fits', suffix)
                     saveEllipOut(ellipOut, outPre, ellipCfg=ellipCfg,
