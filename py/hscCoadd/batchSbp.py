@@ -2,15 +2,25 @@
 # encoding: utf-8
 
 import os
+import gc
 import glob
 import logging
 import warnings
 import argparse
 
+try:
+    import psutil
+    psutilOk = True
+except Exception:
+    psutilOk =False
+
 from astropy.io import fits
 
 import coaddCutoutSbp as cSbp
 
+COM = '#' * 40
+SEP = '-' * 40
+WAR = '!' * 40
 
 def run(args):
     """
@@ -18,6 +28,16 @@ def run(args):
 
     Parameters:
     """
+    if psutilOk:
+        proc = psutil.Process(os.getpid())
+        gc.collect()
+        mem0 = proc.memory_info().rss
+        print SEP
+        print "@@@ Initial: %i" % mem0
+        print SEP
+    else:
+        gc.collect()
+
     if os.path.isfile(args.incat):
         data = fits.open(args.incat)[1].data
         id = (args.id)
@@ -30,17 +50,18 @@ def run(args):
         logFile = (args.incat).replace('.fits', '_%s_sbp.log' % rerun)
         logging.basicConfig(filename=logFile)
 
-        print "#########################################################"
+        print COM
         print "## Will deal with %d galaxies ! " % len(data)
 
-        for galaxy in data:
-
+        for index, galaxy in enumerate(data):
+            print COM
             galID = str(galaxy[id]).strip()
-
-            print "#########################################################\n"
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
-
             galRoot = os.path.join(galID, filter)
+            print "## Will Deal with %s now : %i / %i" %(galID,
+                                                         (index + 1),
+                                                         len(data))
+            print COM
             if not os.path.isdir(galRoot):
                 raise Exception('### Can not find the root folder ' +
                                 ' for the galaxy data !')
@@ -53,7 +74,6 @@ def run(args):
                     os.path.islink(os.path.join(galRoot, galImg))):
                 raise Exception('### Can not find the cutout image of ' +
                                 'the galaxy !')
-
             """
             Set up a rerun
             """
@@ -77,7 +97,7 @@ def run(args):
                 mskRoot = os.path.join(galID, mskFilter, rerun)
                 galMsk = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
                 if not os.path.isfile(galMsk):
-                    raise Exception('### Can not find the final mask of ' +
+                    raise Exception('###  Can not find the final mask of ' +
                                     'the galaxy !')
             else:
                 galMsk = None
@@ -87,6 +107,7 @@ def run(args):
             else:
                 ellipSuffix = rerun + '_' + suffix
 
+            print '\n' + SEP
             try:
                 cSbp.coaddCutoutSbp(galPrefix, root=galRoot,
                                     verbose=args.verbose,
@@ -119,12 +140,23 @@ def run(args):
                                     suffix=ellipSuffix,
                                     plMask=args.plmask,
                                     noMask=args.nomask)
+
                 logging.warning('### The 1-D SBP is DONE for %s' % galPrefix)
+                print SEP
             except Exception, errMsg:
                 print str(errMsg)
                 warnings.warn('### The 1-D SBP is failed for %s' % galPrefix)
                 logging.warning('### The 1-D SBP is FAILED for %s' % galPrefix)
-            print "#########################################################"
+                print SEP + '\n'
+
+            print COM
+            if psutilOk:
+                gc.collect()
+                mem1 = proc.memory_info().rss
+                print "@@@ Collect: %0.2f%%" % (100.0 * (mem1 - mem0) / mem0)
+            else:
+                gc.collect()
+            print COM
 
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)

@@ -4,6 +4,7 @@
 from __future__ import division
 
 import os
+import gc
 import copy
 import argparse
 import subprocess
@@ -46,6 +47,10 @@ cmap.set_bad('k', 1.)
 
 # Personal
 import hscUtils as hUtil
+
+COM = '#' * 40
+SEP = '-' * 40
+WAR = '!' * 40
 
 
 def correctPositionAngle(ellipOut, paNorm=False):
@@ -1074,6 +1079,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             4: Force Photometry, must have inEllip
     :returns: TODO
     """
+    gc.collect()
     verStr = 'yes' if verbose else 'no'
     """ Check input files """
     if os.path.islink(image):
@@ -1287,6 +1293,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     saveEllipOut(ellipOut, outPre, ellipCfg=ellipCfg,
                                  verbose=verbose)
 
+                gc.collect()
                 break
         except Exception as error:
             attempts += 1
@@ -1299,6 +1306,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             print "-------" * 12
             print "###  XXX ELLIPSE RUN FAILED AFTER %3d ATTEMPTS!!!" % maxTry
             print "-------" * 12
+
+        gc.collect()
 
     return ellipOut
 

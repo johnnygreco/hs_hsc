@@ -4,10 +4,17 @@
 from __future__ import division
 
 import os
+import gc
 import copy
 import argparse
-import numpy as np
 
+try:
+    import psutil
+    psutilOk = True
+except Exception:
+    psutilOk =False
+
+import numpy as np
 # Astropy
 from astropy.io import fits
 
@@ -40,6 +47,10 @@ from matplotlib.ticker import MaxNLocator
 # Personal
 import hscUtils as hUtil
 import galSBP
+
+COM = '#' * 40
+SEP = '-' * 40
+WAR = '!' * 40
 
 
 def readSbpInput(prefix, root=None, exMask=None):
@@ -636,8 +647,17 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
 
     Parameters:
     """
+    print '--------' * 12
     print "## Input Image: ", prefix
     print "## Root Directory: ", root
+    if psutilOk:
+        proc = psutil.Process(os.getpid())
+        gc.collect()
+        mem0 = proc.memory_info().rss
+        print "@@@ Initial: %i" % mem0
+    else:
+        gc.collect()
+    print '--------' * 12
     """ 0. Organize Input Data """
     # Read in the input image, mask, psf, and their headers
     sbpInput = readSbpInput(prefix, root=root, exMask=exMask)
@@ -713,6 +733,13 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     maxR = (maxR / 2.0) * np.sqrt(2.0)
     if verbose:
         print " ### maxR : ", maxR
+
+    """
+    Actually start to run
+    """
+    if psutilOk:
+        mem1 = proc.memory_info().rss
+        print "@@@ Increase: %0.2f%%" % (100.0 * (mem1 - mem0) / mem0)
 
     if checkCenter and mskHead['MSK_R20'] == 1:
         print "### The central region is masked out"
@@ -899,6 +926,15 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             if ellOut4 is None:
                 print "---------" * 12
                 raise Exception("!!!!! FORCED ELLIPSE RUN FAILED !!!!")
+
+            print "#########################################################"
+            if psutilOk:
+                gc.collect()
+                mem1 = proc.get_memory_info().rss
+                print "@@@ Collect: %0.2f%%" % (100.0 * (mem2 - mem1) / mem0)
+            else:
+                gc.collect()
+            print "#########################################################"
 
 if __name__ == '__main__':
 

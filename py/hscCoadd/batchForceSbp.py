@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 import os
+import gc
 import glob
 import logging
 import warnings
@@ -11,6 +12,10 @@ from astropy.io import fits
 
 import coaddCutoutSbp as cSbp
 
+COM = '#' * 40
+SEP = '-' * 40
+WAR = '!' * 40
+
 
 def run(args):
     """
@@ -18,6 +23,7 @@ def run(args):
 
     Parameters:
     """
+    gc.collect()
     if os.path.isfile(args.incat):
         data = fits.open(args.incat)[1].data
         id = (args.id)
@@ -30,17 +36,20 @@ def run(args):
         logFile = (args.incat).replace('.fits', '_%s_forcesbp.log' % rerun)
         logging.basicConfig(filename=logFile)
 
-        print "#########################################################"
+        print COM
         print "## Will deal with %d galaxies ! " % len(data)
 
-        for galaxy in data:
+        for index, galaxy in enumerate(data):
+            print COM
 
+            print COM
             galID = str(galaxy[id]).strip()
-
-            print "#########################################################\n"
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
-
             galRoot = os.path.join(galID, filter)
+            print "## Will Deal with %s now : %i / %i" %(galID,
+                                                         (index + 1),
+                                                         len(data))
+            print COM
             if not os.path.isdir(galRoot):
                 raise Exception('### Can not find the root folder ' +
                                 ' for the galaxy data !')
@@ -101,6 +110,8 @@ def run(args):
             Suffix of the output file
             """
             ellipSuffix = rerun + '_' + suffix
+
+            print '\n' + SEP
             try:
                 cSbp.coaddCutoutSbp(galPrefix, root=galRoot,
                                     verbose=args.verbose,
@@ -134,11 +145,13 @@ def run(args):
                                     plMask=args.plmask)
 
                 logging.warning('### The 1-D SBP is DONE for %s' % galPrefix)
+                gc.collect()
             except Exception, errMsg:
                 print str(errMsg)
                 warnings.warn('### The 1-D SBP is failed for %s' % galPrefix)
                 logging.warning('### The 1-D SBP is FAILED for %s' % galPrefix)
-            print "#########################################################"
+                gc.collect()
+            print SEP
 
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)

@@ -796,7 +796,6 @@ def polyFit(x, y, order=4):
 
     if len(x) != len(y):
         raise Exception("### X and Y should have the same size")
-
     coefficients = np.polyfit(x, y, order)
     polynomial = np.poly1d(coefficients)
     fit = polynomial(x)
@@ -880,4 +879,3 @@ def check_random_state(seed):
         return seed
     raise ValueError('%r cannot be used to seed a numpy.random.RandomState'
                      ' instance' % seed)
-

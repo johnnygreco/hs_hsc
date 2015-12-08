@@ -33,14 +33,18 @@ def run(args):
         print "########################################################"
         print "## Will deal with %d galaxies ! " % len(data)
 
-        for galaxy in data:
+        for index, galaxy in enumerate(data):
 
+            print "\n########################################################"
             galID = str(galaxy[id]).strip()
-
-            print "########################################################\n"
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
             galRoot = os.path.join(galID, filter)
             galImg = galPrefix + '_img.fits'
+            print "## Will Deal with %s now : %i / %i" %(galID,
+                                                         (index + 1),
+                                                         len(data))
+            print "########################################################"
+
             if not os.path.isdir(galRoot):
                 raise Exception('### Can not find the root folder for the \
                         galaxy data !')
