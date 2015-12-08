@@ -63,17 +63,20 @@ def run(args):
                                                          len(data))
             print COM
             if not os.path.isdir(galRoot):
-                raise Exception('### Can not find the root folder ' +
-                                ' for the galaxy data !')
+                logging.warning('### Can not find ' +
+                                'ROOT folder for %s' % galRoot)
+                continue
             fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
-            if len(fitsList) <= 3:
-                raise Exception("### Missing data under %s" % galRoot)
+            if len(fitsList) < 2:
+                logging.warning('### MISSING DAta in %s' % galRoot)
+                continue
 
             galImg = galPrefix + '_img.fits'
             if (not os.path.isfile(os.path.join(galRoot, galImg)) and not
                     os.path.islink(os.path.join(galRoot, galImg))):
-                raise Exception('### Can not find the cutout image of ' +
-                                'the galaxy !')
+                logging.warning('### Can not find ' +
+                                'CUTOUT IMAGE for %s' % galPrefix)
+                continue
             """
             Set up a rerun
             """
@@ -97,8 +100,9 @@ def run(args):
                 mskRoot = os.path.join(galID, mskFilter, rerun)
                 galMsk = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
                 if not os.path.isfile(galMsk):
-                    raise Exception('###  Can not find the final mask of ' +
-                                    'the galaxy !')
+                    logging.warning('### Can not find ' +
+                                    'MASK for  %s ' % galPrefix)
+                    continue
             else:
                 galMsk = None
 

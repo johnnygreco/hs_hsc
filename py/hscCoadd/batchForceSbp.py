@@ -52,7 +52,7 @@ def run(args):
             print COM
             if not os.path.isdir(galRoot):
                 logging.warning('### Can not find ' +
-                                'ROOT folder for %s' % galPrefix)
+                                'ROOT folder for %s' % galRoot)
                 continue
             fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
 
