@@ -32,7 +32,8 @@ def run(args):
         filter = (args.filter).strip().upper()
 
         """ Keep a log """
-        logFile = (args.incat).replace('.fits', '_%s_sky.log' % rerun)
+        logSuffix = '_%s_%s_sky.log' % (filter, rerun)
+        logFile = (args.incat).replace('.fits', logSuffix)
         logging.basicConfig(filename=logFile)
 
         print "#########################################################"
