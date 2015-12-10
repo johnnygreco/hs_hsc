@@ -703,6 +703,45 @@ Galactic Extinction Related
 """
 
 
+def getExtinction(ra, dec, a_lambda=None):
+    """
+    Estimate the Galactic extinction for HSC filters.
+
+    Parameters:
+        ra, dec : The input coordinates can be arrays
+    """
+    # First try mwdust from Jo Bovy
+    try:
+        import mwdust
+        sfd = mwdust.SFD(sf10=True)
+
+        from astropy.coordinates import SkyCoord
+        coords = SkyCoord(ra, dec, frame='icrs', unit='deg')
+        galactic = coords.galactic
+        l, b = galactic.l, galactic.b
+        ebv = sfd(l, b, 0)
+    except ImportError:
+        try:
+            # Then try sncosmo
+            from sncosmo import SFD98Map
+            dustDir = os.environ.get('DUST_DIR')
+            if (not os.path.isfile(os.path.join(dustDir,
+                                   'SFD_dust_4096_ngp.fits'))) or (
+                not os.path.isfile(os.path.join(dustDir,
+                                   'SFD_dust_4096_sgp.fits'))):
+                print('# DUST_DIR : %s' % dustDir)
+                raise Exception("# Can not find the SFD dust map!")
+            else:
+                sfd = SFD98Map(dustDir)
+                ebv = sfd.get_ebv((ra, dec))
+        except ImportError:
+            raise Exception("# Both mwdust and sncosmo are not available")
+    if a_lambda is not None:
+        return (ebv * a_lambda)
+    else:
+        return ebv
+
+
 """
 Geometry Related
 """
