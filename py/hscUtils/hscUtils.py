@@ -282,8 +282,12 @@ def zscale(img, contrast=0.25, samples=500):
     med = imsort[n/2]
     w = 0.25
     i_lo, i_hi = int((0.5-w)*n), int((0.5+w)*n)
-    p = np.polyfit(idx[i_lo:i_hi], imsort[i_lo:i_hi], 1)
-    slope, intercept = p
+    # BUG: Sometimes the polyfit could fail
+    try:
+        p = np.polyfit(idx[i_lo:i_hi], imsort[i_lo:i_hi], 1)
+        slope, intercept = p
+    except Exception:
+        slope = 1.0
 
     z1 = med - (slope/contrast)*(n/2-n*w)
     z2 = med + (slope/contrast)*(n/2-n*w)
