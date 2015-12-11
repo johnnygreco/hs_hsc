@@ -44,9 +44,9 @@ def run(args):
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
             galRoot = os.path.join(galID, filter)
             galImg = galPrefix + '_img.fits'
-            print "## Will Deal with %s now : %i / %i" %(galID,
-                                                         (index + 1),
-                                                         len(data))
+            print "## Will Deal with %s now : %i / %i" % (galID,
+                                                          (index + 1),
+                                                          len(data))
             print "########################################################"
 
             if not os.path.isdir(galRoot):

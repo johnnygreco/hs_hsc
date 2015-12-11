@@ -12,7 +12,7 @@ try:
     import psutil
     psutilOk = True
 except Exception:
-    psutilOk =False
+    psutilOk = False
 
 import numpy as np
 # Astropy

@@ -6,20 +6,24 @@ import argparse
 import warnings
 
 from astropy.io import fits
+# HSC Pipeline
+import lsst.daf.persistence as dafPersist
 
 import coaddImageCutout as cdCutout
 import coaddColourImage as cdColor
 
-# HSC Pipeline
-import lsst.daf.persistence  as dafPersist
+COM = '#' * 100
+SEP = '-' * 100
+WAR = '!' * 100
 
 
 def decideCutoutSize(z, safe=False):
-
     """
-    Decide the typical cutout size for certain redshift
-    """
+    Decide the typical cutout size for certain redshift.
 
+    Parameters:
+        safe  : True will make the cutout smaller
+    """
     if (z <= 0.15):
         if safe:
             return 1000
@@ -53,10 +57,14 @@ def decideCutoutSize(z, safe=False):
 
 
 def parseInputCatalog(list, sizeDefault=300, idField='id',
-                     raField='ra', decField='dec', sizeField='cutout_size',
-                     zField=None, zCutoutSize=False, infoField1=None,
-                     infoField2=None, safe=False):
+                      raField='ra', decField='dec', sizeField='cutout_size',
+                      zField=None, zCutoutSize=False, infoField1=None,
+                      infoField2=None, safe=False):
+    """
+    Parse the input catalog.
 
+    Parameters:
+    """
     # Read in the catalog
     hduList = fits.open(list)
     cat = hduList[1].data
@@ -90,6 +98,7 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
         try:
             info2 = cat.field(infoField1)
         except KeyError:
+            print WAR
             print "### Can not find field: %s in the catalog !" % infoField1
             info2 = None
         else:
@@ -103,6 +112,7 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
         try:
             info3 = cat.field(infoField2)
         except KeyError:
+            print WAR
             print "### Can not find field: %s in the catalog !" % infoField2
             info3 = None
         else:
@@ -126,33 +136,31 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
     return id, ra, dec, size, redshift, info2, info3
 
 
-def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout',
-                     idField='id', raField='ra', decField='dec', colorFilters='gri',
-                     sizeField='cutout_size', zCutoutSize=False, zField=None,
-                     verbose=True, noColor=False, onlyColor=False,
-                     infoField1=None, infoField2=None, clean=False,
-                     min=-0.0, max=0.72, Q=15, stitch=False):
+def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
+                     prefix='coadd_cutout', idField='id',
+                     raField='ra', decField='dec', colorFilters='gri',
+                     sizeField='cutout_size', zCutoutSize=False,
+                     zField=None, verbose=True, noColor=False,
+                     onlyColor=False, infoField1=None, infoField2=None,
+                     clean=False, min=-0.0, max=0.72, Q=15, stitch=False):
     """
-    Givin an input catalog with RA, DEC information, generate HSC
-    coadd cutout images.
+    Generate HSC coadd cutout images in batch mode.
 
     Also have the option to generate (or just generate) a 3-band
     color image
     """
-
     if not os.path.isdir(root):
         raise Exception("Wrong root directory for data! %s" % root)
 
     if os.path.exists(inCat):
-        id, ra, dec, size, z, extr1, extr2  = parseInputCatalog(inCat, sizeDefault=size,
-                                                 idField=idField, raField=raField,
-                                                 decField=decField, zField=zField,
-                                                 zCutoutSize=zCutoutSize,
-                                                 infoField1=infoField1,
-                                                 infoField2=infoField2)
+        result = parseInputCatalog(inCat, sizeDefault=size, idField=idField,
+                                   raField=raField, decField=decField,
+                                   zField=zField, zCutoutSize=zCutoutSize,
+                                   infoField1=infoField1,
+                                   infoField2=infoField2)
+        id, ra, dec, size, z, extr1, extr2 = result
     else:
         raise Exception("### Can not find the input catalog: %s" % inCat)
-
 
     if not onlyColor:
         logFile = prefix + '_match_status.lis'
@@ -160,24 +168,25 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
 
     nObjs = len(id)
     if verbose:
+        print SEP
         print "### Will try to get cutout image for %d objects" % nObjs
+        print SEP
 
     for i in range(nObjs):
 
         if verbose:
             print "### %d -- ID: %s ; " % (i+1, str(id[i])) + \
-                    "RA: %10.5f DEC %10.5f ; Size: %d" % (ra[i], dec[i], size[i])
+                  "RA: %10.5f DEC %10.5f ; Size: %d" % (ra[i], dec[i], size[i])
 
         # New prefix
         newPrefix = prefix + '_' + str(id[i]).strip()
 
         # Cutout Image
         if not onlyColor:
-            coaddFound, noData, partialCut = cdCutout.coaddImageCutout(root, ra[i], dec[i],
-                                                                       size[i],
-                                                                       saveMsk=True,
-                                                                       filt=filter,
-                                                                       prefix=newPrefix)
+            tempOut = cdCutout.coaddImageCutout(root, ra[i], dec[i], size[i],
+                                                saveMsk=True, filt=filter,
+                                                prefix=newPrefix)
+            coaddFound, noData, partialCut = tempOut
             if coaddFound:
                 if not noData:
                     if not partialCut:
@@ -211,16 +220,20 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
             if stitch:
                 if not clean:
                     cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
-                                                filt=colorFilters, scaleBar=10,
-                                                prefix=newPrefix, name=name,
-                                                info1=info1, info2=info2, info3=info3,
-                                                min=min, max=max, Q=Q, butler=butler)
+                                                 filt=colorFilters,
+                                                 scaleBar=10,
+                                                 prefix=newPrefix, name=name,
+                                                 info1=info1, info2=info2,
+                                                 info3=info3, min=min, max=max,
+                                                 Q=Q)
                 else:
                     cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
-                                                filt=colorFilters, scaleBar=10,
-                                                prefix=newPrefix, name=None,
-                                                info1=None, info2=None, info3=None,
-                                                min=min, max=max, Q=Q, butler=butler)
+                                                 filt=colorFilters,
+                                                 scaleBar=10,
+                                                 prefix=newPrefix, name=None,
+                                                 info1=None, info2=None,
+                                                 info3=None, min=min, max=max,
+                                                 Q=Q)
             else:
                 cdColor.coaddColourImage(root, ra[i], dec[i], size[i],
                                          filt=colorFilters,
@@ -231,10 +244,11 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
             name = str(id[i])
             if stitch:
                 cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
-                                            filt=colorFilters,
-                                            prefix=newPrefix, name=name,
-                                            info1=info1, info2=info2, info3=info3,
-                                            min=min, max=max, Q=Q, butler=butler)
+                                             filt=colorFilters,
+                                             prefix=newPrefix, name=name,
+                                             info1=info1, info2=info2,
+                                             info3=info3, min=min, max=max,
+                                             Q=Q)
             else:
                 cdColor.coaddColourImage(root, ra[i], dec[i], size[i],
                                          filt=colorFilters,
@@ -245,21 +259,20 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout
         logMatch.close()
 
 
-def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutout',
-                      idField='id', raField='ra', decField='dec', colorFilters='gri',
+def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
+                      prefix='coadd_cutout', idField='id',
+                      raField='ra', decField='dec', colorFilters='gri',
                       sizeField='cutout_size', zCutoutSize=False, zField=None,
                       verbose=True, noColor=False, onlyColor=False,
                       infoField1=None, infoField2=None, clean=False,
                       min=-0.0, max=0.72, Q=15, safe=False, saveSrc=False,
                       makeDir=False):
     """
-    Givin an input catalog with RA, DEC information, generate HSC
-    coadd cutout images.
+    Generate HSC coadd cutout images.
 
     Also have the option to generate (or just generate) a 3-band
     color image
     """
-
     if not os.path.isdir(root):
         raise Exception("Wrong root directory for data! %s" % root)
     else:
@@ -272,19 +285,17 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
 
     if os.path.exists(inCat):
         if verbose:
-            print "######################################################"
+            print COM
             print "              PARSE THE INPUT CATALOG                 "
-            print "######################################################"
-        id, ra, dec, size, z, extr1, extr2  = parseInputCatalog(inCat, sizeDefault=size,
-                                                 idField=idField, raField=raField,
-                                                 decField=decField, zField=zField,
-                                                 zCutoutSize=zCutoutSize,
-                                                 infoField1=infoField1,
-                                                 infoField2=infoField2,
-                                                 safe=safe)
+            print COM
+        tempOut = parseInputCatalog(inCat, sizeDefault=size, idField=idField,
+                                    raField=raField, decField=decField,
+                                    zField=zField, zCutoutSize=zCutoutSize,
+                                    infoField1=infoField1,
+                                    infoField2=infoField2, safe=safe)
+        id, ra, dec, size, z, extr1, extr2 = tempOut
     else:
         raise Exception("### Can not find the input catalog: %s" % inCat)
-
 
     if not onlyColor:
         logFile = prefix + '_match_status.lis'
@@ -292,16 +303,14 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
 
     nObjs = len(id)
     if verbose:
+        print SEP
         print "### Will try to get cutout image for %d objects" % nObjs
+        print SEP
 
-    # Test
     for i in range(nObjs):
-    #for i in range(1):
-
         if verbose:
             print "### %d -- ID: %s ; " % (i+1, str(id[i])) + \
-                    "RA: %10.5f DEC %10.5f ; Size: %d" % (ra[i], dec[i], size[i])
-
+                  "RA: %10.5f DEC %10.5f ; Size: %d" % (ra[i], dec[i], size[i])
         # New prefix
         newPrefix = prefix + '_' + str(id[i]).strip()
         if makeDir:
@@ -315,17 +324,22 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
             if verbose:
                 print "### Make the Cutout Fits Files!  "
             if saveSrc:
-                found, full, npatch = cdCutout.coaddImageCutFull(root, ra[i], dec[i], size[i],
-                                                                 savePsf=True, saveSrc=True,
-                                                                 visual=True, filt=filter,
-                                                                 prefix=newPrefix,
-                                                                 butler=butler)
+                tempOut = cdCutout.coaddImageCutFull(root, ra[i], dec[i],
+                                                     size[i], savePsf=True,
+                                                     saveSrc=True, visual=True,
+                                                     filt=filter,
+                                                     prefix=newPrefix,
+                                                     butler=butler)
+                found, full, npatch = tempOut
             else:
-                found, full, npatch = cdCutout.coaddImageCutFull(root, ra[i], dec[i], size[i],
-                                                                 savePsf=True, saveSrc=False,
-                                                                 visual=True, filt=filter,
-                                                                 prefix=newPrefix,
-                                                                 butler=butler)
+                tempOut = cdCutout.coaddImageCutFull(root, ra[i], dec[i],
+                                                     size[i], savePsf=True,
+                                                     saveSrc=False,
+                                                     visual=True,
+                                                     filt=filter,
+                                                     prefix=newPrefix,
+                                                     butler=butler)
+                found, full, npatch = tempOut
             if found:
                 matchStatus = 'Found'
                 if full:
@@ -336,8 +350,8 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
                 matchStatus = 'NoData'
                 full = 'None'
 
-            logMatch.write(str(id[i]) + '   ' + matchStatus +  '   ' + full + '   ' + \
-                    str(npatch) + '\n')
+            logMatch.write(str(id[i]) + '   ' + matchStatus +
+                           '   ' + full + '   ' + str(npatch) + '\n')
 
         # Color Image
         # Whether put redshift on the image
@@ -363,14 +377,18 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
                 cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
                                              filt=colorFilters,
                                              prefix=newPrefix, name=None,
-                                             info1=None, info2=None, info3=None,
-                                             min=min, max=max, Q=Q, butler=butler)
+                                             info1=None, info2=None,
+                                             info3=None,
+                                             min=min, max=max, Q=Q,
+                                             butler=butler)
             else:
                 cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
                                              filt=colorFilters,
                                              prefix=newPrefix, name=name,
-                                             info1=info1, info2=info2, info3=info3,
-                                             min=min, max=max, Q=Q, butler=butler)
+                                             info1=info1, info2=info2,
+                                             info3=info3,
+                                             min=min, max=max, Q=Q,
+                                             butler=butler)
         elif (matchStatus is 'Found' and not noColor):
             name = str(id[i])
             if verbose:
@@ -380,7 +398,6 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I', prefix='coadd_cutou
                                          prefix=newPrefix, name=name,
                                          info1=info1, info2=info2, info3=info3,
                                          min=min, max=max, Q=Q, butler=butler)
-
     if not onlyColor:
         logMatch.close()
 
@@ -393,34 +410,39 @@ if __name__ == '__main__':
     parser.add_argument("-s", '--size', dest='size', type=int,
                         help="Half size of the cutout box", default=200)
     parser.add_argument('-f', '--filter', dest='filt', help="Filter",
-                       default='HSC-I')
+                        default='HSC-I')
     parser.add_argument('-p', '--prefix', dest='prefix',
                         help='Prefix of the output file',
                         default='hsc_coadd_cutout')
-    parser.add_argument('-id', '--id', dest='idField', help="Column name for ID",
-                       default='id')
-    parser.add_argument('-ra', '--ra', dest='raField', help="Column name for RA",
-                       default='ra')
-    parser.add_argument('-dec', '--dec', dest='decField', help="Column name for DEC",
-                       default='dec')
-    parser.add_argument('-z', '--redshift', dest='zField', help="Column name for z",
-                       default=None)
+    parser.add_argument('-id', '--id', dest='idField',
+                        help="Column name for ID", default='id')
+    parser.add_argument('-ra', '--ra', dest='raField',
+                        help="Column name for RA",
+                        default='ra')
+    parser.add_argument('-dec', '--dec', dest='decField',
+                        help="Column name for DEC",
+                        default='dec')
+    parser.add_argument('-z', '--redshift', dest='zField',
+                        help="Column name for z",
+                        default=None)
     parser.add_argument('-cf', '--color-filters', dest='colorFilters',
-                        help="Choice of filters for color images", default='riz')
+                        help="Choice of filters for color images",
+                        default='riz')
     parser.add_argument('-sf', '--size-field', dest='sizeField',
-                        help="Column name for cutout size", default='cutout_size')
+                        help="Column name for cutout size",
+                        default='cutout_size')
     parser.add_argument('-info1', '--infoField1', dest='infoField1',
                         help="Column name for first extra information",
                         default=None)
     parser.add_argument('-info2', '--infoField2', dest='infoField2',
                         help="Column name for second extra information",
                         default=None)
-    parser.add_argument('-zc', '--zCutoutSize', action="store_true", dest='zCutout',
-                        default=True)
-    parser.add_argument('-nc', '--noColor', action="store_true", dest='noColor',
-                        default=True)
-    parser.add_argument('-oc', '--onlyColor', action="store_true", dest='onlyColor',
-                        default=False)
+    parser.add_argument('-zc', '--zCutoutSize', action="store_true",
+                        dest='zCutout', default=True)
+    parser.add_argument('-nc', '--noColor', action="store_true",
+                        dest='noColor', default=True)
+    parser.add_argument('-oc', '--onlyColor', action="store_true",
+                        dest='onlyColor', default=False)
     parser.add_argument('-safe', '--safe', action="store_true", dest='safe',
                         default=False)
     parser.add_argument('-clean', '--clean', action="store_true", dest='clean',
@@ -429,17 +451,17 @@ if __name__ == '__main__':
                         default=False)
     parser.add_argument('-src', '--src', action="store_true", dest='saveSrc',
                         default=False)
-    parser.add_argument('-makeDir', '--makeDir', action="store_true", dest='makeDir',
-                        default=False)
+    parser.add_argument('-makeDir', '--makeDir', action="store_true",
+                        dest='makeDir', default=False)
     args = parser.parse_args()
 
     coaddBatchCutFull(args.root, args.incat, size=args.size,
-                     filter=args.filt, prefix=args.prefix,
-                     idField=args.idField, raField=args.raField,
-                     decField=args.decField, sizeField=args.sizeField,
-                     colorFilters=args.colorFilters, zField=args.zField,
-                     zCutoutSize=args.zCutoutSize, noColor=args.noColor,
-                     onlyColor=args.onlyColor, infoField1=args.infoField1,
-                     infoField2=args.infoField2, safe=args.safe,
-                     verbose=args.verbose, clean=args.clean, saveSrc=args.src,
-                     makeDir=args.makeDir)
+                      filter=args.filt, prefix=args.prefix,
+                      idField=args.idField, raField=args.raField,
+                      decField=args.decField, sizeField=args.sizeField,
+                      colorFilters=args.colorFilters, zField=args.zField,
+                      zCutoutSize=args.zCutoutSize, noColor=args.noColor,
+                      onlyColor=args.onlyColor, infoField1=args.infoField1,
+                      infoField2=args.infoField2, safe=args.safe,
+                      verbose=args.verbose, clean=args.clean, saveSrc=args.src,
+                      makeDir=args.makeDir)
