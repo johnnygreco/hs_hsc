@@ -2,7 +2,7 @@
 # encoding: utf-8
 
 """
-Collection of useful tools to deal with galaxy images from HSC and other surveys.
+Collection of useful tools .
 
  * Cosmology related procedures
  * Galactic extinction related
@@ -13,6 +13,7 @@ Collection of useful tools to deal with galaxy images from HSC and other surveys
 from __future__ import (absolute_import, division,
                         unicode_literals)
 import os
+import sys
 import numbers
 import numpy as np
 
@@ -24,9 +25,9 @@ from astropy.utils.misc import isiterable
 from astropy.coordinates import SkyCoord
 
 """ Path of the package"""
-__path__     = os.path.realpath(__file__)
+__path__ = os.path.realpath(__file__)
 """ Path of the data directory"""
-__dataDir__  = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
+__dataDir__ = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
 if not os.path.exists(__dataDir__):
     raise Exception("Can not find the data directory: %s" % __dataDir__)
 
@@ -45,22 +46,24 @@ def rad2deg(rad):
 
 
 def deg2rad(deg):
-    """ Convert degrees into radians"""
+    """Convert degrees into radians."""
     return (deg * np.pi / 180.0)
 
 
 def hr2deg(deg):
-    """ Convert degrees into hours"""
-    return (deg *(24.0 / 360.0))
+    """Convert degrees into hours."""
+    return (deg * (24.0 / 360.0))
 
 
 def deg2hr(hr):
-    """ Convert hours into degrees"""
+    """Convert hours into degrees."""
     return (hr * 15.0)
 
 
 def normAngle(num, lower=0, upper=360, b=False):
-    """Normalize number to range [lower, upper) or [lower, upper].
+    """
+    Normalize number to range [lower, upper) or [lower, upper].
+
     Parameters
     ----------
     num : float
@@ -172,10 +175,10 @@ Coordinate related shortcuts
     * Conversion between ICRS and FK5
 """
 
-def radec2lb(ra, dec, radian=False, FK5=False):
 
+def radec2lb(ra, dec, radian=False, FK5=False):
     """
-    Convert (ra, dec) into Galactic coordinate (l, b)
+    Convert (ra, dec) into Galactic coordinate (l, b).
 
     Parameters
     ----------
@@ -189,7 +192,6 @@ def radec2lb(ra, dec, radian=False, FK5=False):
     l : float or list or array
     b : float or list or array
     """
-
     """ See if the input is number or array"""
     if not (isiterable(ra) or isiterable(dec)):
         returnScalar = True
@@ -231,8 +233,7 @@ def radec2lb(ra, dec, radian=False, FK5=False):
 
 
 def icrs2fk5(ra, dec, radian=False):
-
-    """ Convert coordinates from ICRS to FK5 frame """
+    """Convert coordinates from ICRS to FK5 frame."""
     if not radian:
         raDec = SkyCoord(ra, dec, frame='icrs', unit='deg')
     else:
@@ -245,9 +246,9 @@ def icrs2fk5(ra, dec, radian=False):
     else:
         return raDecFK5.ra.radian, raDecFK5.dec.radian
 
-def fk52icrs(ra, dec, radian=False):
 
-    """ Convert coordinates from FK5 to ICRS frame """
+def fk52icrs(ra, dec, radian=False):
+    """Convert coordinates from FK5 to ICRS frame."""
     if not radian:
         raDec = SkyCoord(ra, dec, frame='fk5', unit='deg')
     else:
@@ -260,16 +261,19 @@ def fk52icrs(ra, dec, radian=False):
     else:
         return raDecFK5.ra.radian, raDecFK5.dec.radian
 
-
 """
 Image Visualization Related
 
     * zScale of image
 """
 
-def zscale(img, contrast=0.25, samples=500):
 
-    # Image scaling function form http://hsca.ipmu.jp/hscsphinx/scripts/psfMosaic.html
+def zscale(img, contrast=0.25, samples=500):
+    """
+    Image scaling function.
+
+    form http://hsca.ipmu.jp/hscsphinx/scripts/psfMosaic.html
+    """
     ravel = img.ravel()
     if len(ravel) > samples:
         imsort = np.sort(np.random.choice(ravel, size=samples))
@@ -302,9 +306,12 @@ Image Manipulation
     * Image rotation
     * Image shift (sub-pixel accurarcy)
 """
+
+
 def congrid(a, newdims, method='linear', centre=False, minusone=False):
-    '''
-    From: http://wiki.scipy.org/Cookbook/Rebinning
+    """
+    From: http://wiki.scipy.org/Cookbook/Rebinning.
+
     Arbitrary resampling of source array to new dimension sizes.
     Currently only supports maintaining the same number of dimensions.
     To use 1-D arrays, first promote them to shape (x,1).
@@ -329,75 +336,72 @@ def congrid(a, newdims, method='linear', centre=False, minusone=False):
     False - inarray is resampled by factors of (i/x) * (j/y)
     True - inarray is resampled by(i-1)/(x-1) * (j-1)/(y-1)
     This prevents extrapolation one element beyond bounds of input array.
-    '''
-    if not a.dtype in [np.float64, np.float32]:
+    """
+    if a.dtype not in [np.float64, np.float32]:
         a = np.cast[float](a)
 
     m1 = np.cast[int](minusone)
     ofs = np.cast[int](centre) * 0.5
-    old = np.array( a.shape )
-    ndims = len( a.shape )
-    if len( newdims ) != ndims:
+    old = np.array(a.shape)
+    ndims = len(a.shape)
+    if len(newdims) != ndims:
         print "[congrid] dimensions error. " \
               "This routine currently only support " \
               "rebinning to the same number of dimensions."
         return None
-    newdims = np.asarray( newdims, dtype=float )
+    newdims = np.asarray(newdims, dtype=float)
     dimlist = []
 
     if method == 'neighbour':
-        for i in range( ndims ):
+        for i in range(ndims):
             base = np.indices(newdims)[i]
-            dimlist.append( (old[i] - m1) / (newdims[i] - m1) \
-                            * (base + ofs) - ofs )
-        cd = np.array( dimlist ).round().astype(int)
-        newa = a[list( cd )]
+            dimlist.append((old[i] - m1) / (newdims[i] - m1) * (
+                           base + ofs) - ofs)
+        cd = np.array(dimlist).round().astype(int)
+        newa = a[list(cd)]
         return newa
 
-    elif method in ['nearest','linear']:
+    elif method in ['nearest', 'linear']:
         # calculate new dims
-        for i in range( ndims ):
-            base = np.arange( newdims[i] )
-            dimlist.append( (old[i] - m1) / (newdims[i] - m1) \
-                            * (base + ofs) - ofs )
+        for i in range(ndims):
+            base = np.arange(newdims[i])
+            dimlist.append((old[i] - m1) / (newdims[i] - m1) * (
+                           base + ofs) - ofs)
         # specify old dims
-        olddims = [np.arange(i, dtype = np.float) for i in list( a.shape )]
+        olddims = [np.arange(i, dtype=np.float) for i in list(a.shape)]
 
         # first interpolation - for ndims = any
-        mint = scipy.interpolate.interp1d( olddims[-1], a, kind=method )
-        newa = mint( dimlist[-1] )
+        mint = scipy.interpolate.interp1d(olddims[-1], a, kind=method)
+        newa = mint(dimlist[-1])
 
-        trorder = [ndims - 1] + range( ndims - 1 )
-        for i in range( ndims - 2, -1, -1 ):
-            newa = newa.transpose( trorder )
+        trorder = [ndims - 1] + range(ndims - 1)
+        for i in range(ndims - 2, -1, -1):
+            newa = newa.transpose(trorder)
 
-            mint = scipy.interpolate.interp1d( olddims[i], newa, kind=method )
-            newa = mint( dimlist[i] )
+            mint = scipy.interpolate.interp1d(olddims[i], newa, kind=method)
+            newa = mint(dimlist[i])
 
         if ndims > 1:
             # need one more transpose to return to original dimensions
-            newa = newa.transpose( trorder )
+            newa = newa.transpose(trorder)
 
         return newa
     elif method in ['spline']:
-        oslices = [ slice(0,j) for j in old ]
-        oldcoords = np.ogrid[oslices]
-        nslices = [ slice(0,j) for j in list(newdims) ]
+        # oslices = [slice(0, j) for j in old]
+        # oldcoords = np.ogrid[oslices]
+        nslices = [slice(0, j) for j in list(newdims)]
         newcoords = np.mgrid[nslices]
 
         newcoords_dims = range(np.rank(newcoords))
-        #make first index last
+        # make first index last
         newcoords_dims.append(newcoords_dims.pop(0))
         newcoords_tr = newcoords.transpose(newcoords_dims)
         # makes a view that affects newcoords
 
         newcoords_tr += ofs
-
         deltas = (np.asarray(old) - m1) / (newdims - m1)
         newcoords_tr *= deltas
-
         newcoords_tr -= ofs
-
         newa = scipy.ndimage.map_coordinates(a, newcoords)
         return newa
     else:
@@ -414,41 +418,39 @@ File Manipulation
     * Save numpy array to hickle/HDF5 format
     * Save numpy array to csv file format
 """
-def saveToPickle(array, name):
-    """
-    Save a numpy array to a cPickle/Pickle format binary file
-    """
-    try:
-       import cPickle as pickle
-    except:
-       import pickle
 
-    output= open(name, 'w')
+
+def saveToPickle(array, name):
+    """Save a numpy array to a cPickle/Pickle format binary file."""
+    try:
+        import cPickle as pickle
+    except:
+        import pickle
+
+    output = open(name, 'w')
     pickle.dump(array, output, protocol=2)
     output.close()
 
 
 def saveToHickle(array, name):
-    """
-    Save a numpy array to a hickle/HDF5 format binary file
-    """
+    """Save a numpy array to a hickle/HDF5 format binary file."""
     try:
-       import hickle
+        import hickle
     except:
         raise Exception("### The Hickle package is required!")
 
-    output= open(name, 'w')
+    output = open(name, 'w')
     hickle.dump(array, output, protocol=2)
     output.close()
 
 
 def saveToCSV(array, name):
     """
-    Save a numpy array to a CSV file
+    Save a numpy array to a CSV file.
 
     Use the dtype.name as column name if possible
     """
-    output= open(name, 'w')
+    output = open(name, 'w')
     colNames = array.dtype.names
     output.write("#" + ', '.join(colNames) + '\n')
     for item in array:
@@ -460,9 +462,12 @@ def saveToCSV(array, name):
         output.write(line)
     output.close()
 
+
 def parseRegEllipse(regName):
     """
-    Parse a DS9 .reg files, convert the Ellipse or Circle regions
+    Parse a DS9 .reg files.
+
+    convert the Ellipse or Circle regions
     into arrays of parameters for ellipse:
     x, y, a, b, theta
     """
@@ -518,10 +523,11 @@ Cosmology Related
 
 """
 
+
 def cosmoDL(redshift, WMAP9=True, H0=69.3, Om0=0.287,
-             Planck15=True, kpc=False):
+            Planck15=True, kpc=False):
     """
-    Get the Luminosity Distance at redshift=z
+    Get the Luminosity Distance at redshift=z.
 
     This is simply a wrapper of astropy.cosmology
     The input redsfhit can be an array
@@ -543,9 +549,9 @@ def cosmoDL(redshift, WMAP9=True, H0=69.3, Om0=0.287,
 
 
 def cosmoDA(redshift, WMAP9=True, H0=69.3, Om0=0.287,
-             Planck15=True, kpc=False):
+            Planck15=True, kpc=False):
     """
-    Get the Angular Diameter Distance at redshift=z
+    Get the Angular Diameter Distance at redshift=z.
 
     This is simply a wrapper of astropy.cosmology
     The input redsfhit can be an array
@@ -567,9 +573,9 @@ def cosmoDA(redshift, WMAP9=True, H0=69.3, Om0=0.287,
 
 
 def cosmoScale(redshift, WMAP9=True, H0=69.3, Om0=0.287,
-                Planck15=True):
+               Planck15=True):
     """
-    Get the Angular Scale (kpc/") at redshift=z
+    Get the Angular Scale (kpc/") at redshift=z.
 
     This is simply a wrapper of astropy.cosmology
     The input redsfhit can be an array
@@ -588,9 +594,9 @@ def cosmoScale(redshift, WMAP9=True, H0=69.3, Om0=0.287,
 
 
 def cosmoDistMod(redshift, WMAP9=True, H0=69.3, Om0=0.287,
-                  Planck15=True):
+                 Planck15=True):
     """
-    Get the Distance Module at redshift=z
+    Get the Distance Module at redshift=z.
 
     This is simply a wrapper of astropy.cosmology
     The input redsfhit can be an array
@@ -609,9 +615,9 @@ def cosmoDistMod(redshift, WMAP9=True, H0=69.3, Om0=0.287,
 
 
 def cosmoComVol(redshift, WMAP9=True, H0=69.3, Om0=0.287,
-                 Planck15=True, Gpc=False):
+                Planck15=True, Gpc=False):
     """
-    Get the Comoving Volume at redshift=z
+    Get the Comoving Volume at redshift=z.
 
     This is simply a wrapper of astropy.cosmology
     The input redsfhit can be an array
@@ -635,7 +641,7 @@ def cosmoComVol(redshift, WMAP9=True, H0=69.3, Om0=0.287,
 def cosmodVol(redshift, WMAP9=True, H0=69.3, Om0=0.287,
               Planck15=True):
     """
-    Get the Differential Comoving Volume at redshift=z
+    Get the Differential Comoving Volume at redshift=z.
 
     This is simply a wrapper of astropy.cosmology
     The input redsfhit can be an array
@@ -656,7 +662,7 @@ def cosmodVol(redshift, WMAP9=True, H0=69.3, Om0=0.287,
 def cosmoAge(redshift, WMAP9=True, H0=69.3, Om0=0.287,
              Planck15=True, Myr=False):
     """
-    Get the Age of the Universe at redshift=z
+    Get the Age of the Universe at redshift=z.
 
     This is simply a wrapper of astropy.cosmology
     The input redsfhit can be an array
@@ -678,9 +684,9 @@ def cosmoAge(redshift, WMAP9=True, H0=69.3, Om0=0.287,
 
 
 def cosmoLookBack(redshift, WMAP9=True, H0=69.3, Om0=0.287,
-                 Planck15=True, Myr=False):
+                  Planck15=True, Myr=False):
     """
-    Get the Look-back Time at redshift=z
+    Get the Look-back Time at redshift=z.
 
     This is simply a wrapper of astropy.cosmology
     The input redsfhit can be an array
@@ -750,10 +756,9 @@ def getExtinction(ra, dec, a_lambda=None):
 Geometry Related
 """
 
+
 def ellipDist(x, y, x0, y0, pa=0.0, q=0.9):
-    """
-    doc
-    """
+    """Distance to center in elliptical coordinate."""
     theta = (pa * np.pi / 180.0)
 
     distA = ((x - x0) * np.cos(theta) + (y - y0) * np.sin(theta)) ** 2.0
@@ -761,18 +766,18 @@ def ellipDist(x, y, x0, y0, pa=0.0, q=0.9):
 
     return np.sqrt(distA + distB)
 
+
 """
 Weighted mean and median
 
 Based on https://github.com/tinybike/weightedstats
 """
 
+
 def weighted_mean(data, weights=None):
-    """
-    Calculate the weighted mean of a list.
-    """
+    """Calculate the weighted mean of a list."""
     if weights is None:
-        return mean(data)
+        return np.mean(data)
     total_weight = float(sum(weights))
     weights = [weight / total_weight for weight in weights]
     w_mean = 0
@@ -780,19 +785,17 @@ def weighted_mean(data, weights=None):
         w_mean += weight * data[i]
     return w_mean
 
+
 def numpy_weighted_mean(data, weights=None):
-    """
-    Calculate the weighted mean of an array/list using numpy.
-    """
+    """Calculate the weighted mean of an array/list using numpy."""
     weights = np.array(weights).flatten() / float(sum(weights))
     return np.dot(np.array(data), weights)
 
+
 def weighted_median(data, weights=None):
-    """
-    Calculate the weighted median of a list
-    """
+    """Calculate the weighted median of a list."""
     if weights is None:
-        return median(data)
+        return np.median(data)
     midpoint = 0.5 * sum(weights)
     if any([j > midpoint for j in weights]):
         return data[weights.index(max(weights))]
@@ -809,34 +812,34 @@ def weighted_median(data, weights=None):
             return sum(bounds) / float(len(bounds))
         return sorted_data[below_midpoint_index-1]
 
+
 def numpy_weighted_median(data, weights=None):
-    """
-    Calculate the weighted median of an array/list using numpy.
-    """
+    """Calculate the weighted median of an array/list using numpy."""
     if weights is None:
         return np.median(np.array(data).flatten())
     data, weights = np.array(data).flatten(), np.array(weights).flatten()
     if any(weights > 0):
-        sorted_data, sorted_weights = map(np.array, zip(*sorted(zip(data, weights))))
+        sorted_data, sorted_weights = map(np.array,
+                                          zip(*sorted(zip(data, weights))))
         midpoint = 0.5 * sum(sorted_weights)
         if any(weights > midpoint):
             return (data[weights == np.max(weights)])[0]
         cumulative_weight = np.cumsum(sorted_weights)
         below_midpoint_index = np.where(cumulative_weight <= midpoint)[0][-1]
-        if cumulative_weight[below_midpoint_index] - midpoint < sys.float_info.epsilon:
-            return np.mean(sorted_data[below_midpoint_index:below_midpoint_index+2])
+        if (cumulative_weight[below_midpoint_index] -
+                midpoint) < sys.float_info.epsilon:
+            return np.mean(sorted_data[below_midpoint_index:
+                                       below_midpoint_index+2])
         return sorted_data[below_midpoint_index+1]
+
 
 """
 PolyNomial Fitting
 """
 
+
 def polyFit(x, y, order=4):
-
-    """
-    doc
-    """
-
+    """Fit polynomial."""
     if len(x) != len(y):
         raise Exception("### X and Y should have the same size")
     coefficients = np.polyfit(x, y, order)
@@ -849,9 +852,12 @@ def polyFit(x, y, order=4):
 """
 Random color map from Photoutils
 """
+
+
 def random_cmap(ncolors=256, background_color='black', random_state=None):
     """
     Generate a matplotlib colormap consisting of random (muted) colors.
+
     A random colormap is very useful for plotting segmentation images.
     Parameters
     ----------
@@ -872,7 +878,6 @@ def random_cmap(ncolors=256, background_color='black', random_state=None):
     cmap : `matplotlib.colors.Colormap`
         The matplotlib colormap with random colors.
     """
-
     from matplotlib import colors
 
     prng = check_random_state(random_state)

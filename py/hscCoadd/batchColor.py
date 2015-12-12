@@ -8,10 +8,6 @@ import coaddBatchCutout as cbc
 
 def run(args):
     """Run color picture generation in batch mode."""
-    min = -0.0
-    max = 0.5
-    Q = 10
-
     if os.path.isfile(args.incat):
         cbc.coaddBatchCutFull(args.root, args.incat,
                               filter=args.filter,
@@ -37,7 +33,7 @@ if __name__ == '__main__':
     parser.add_argument("-s", '--size', dest='size', type=int,
                         help="Half size of the cutout box", default=200)
     parser.add_argument('-f', '--filter', dest='filter', help="Filter",
-                       default='HSC-I')
+                        default='HSC-I')
     parser.add_argument('-cf', '--color-filters', dest='colorFilters',
                         help="Choice of filters for color images",
                         default='gri')

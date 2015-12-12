@@ -244,7 +244,6 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
         coaddData = "deepCoadd_calexp"
     else:
         coaddData = "deepCoadd"
-
     # Get the SkyMap of the database
     if butler is None:
         try:
