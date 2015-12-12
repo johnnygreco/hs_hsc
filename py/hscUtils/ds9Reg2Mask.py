@@ -4,6 +4,7 @@
 from __future__ import division
 
 import os
+import numpy as np
 import argparse
 
 from astropy.io import fits
@@ -30,7 +31,7 @@ def saveFits(img, fitsName, head=None, clobber=True):
 
 
 def reg2Mask(imgFile, regFile, mskFile=None, hdu=0, show=False,
-             save=True, imgHead=None):
+             save=True, imgHead=None, reverse=False):
     """
     Mask out the regions in a DS9 region file.
 
@@ -57,11 +58,17 @@ def reg2Mask(imgFile, regFile, mskFile=None, hdu=0, show=False,
         reg = pyregion.open(regFile).as_imagecoord(head)
     imgX, imgY = img.shape
     regMask = reg.get_mask(shape=(imgX, imgY))
-    intMask = regMask.astype(int)
+    if not reverse:
+        intMask = regMask.astype(int)
+    else:
+        intMask = np.invert(regMask).astype(int)
 
     if save:
         if mskFile is None:
-            mskFile = regFile.replace('.reg', '_msk.fits')
+            if not reverse:
+                mskFile = regFile.replace('.reg', '_msk.fits')
+            else:
+                mskFile = regFile.replace('.reg', '_invmsk.fits')
         saveFits(intMask, mskFile, head=head, clobber=True)
 
     if show:
@@ -84,7 +91,10 @@ if __name__ == '__main__':
                         help="Whether to show the mask in PNG figure")
     parser.add_argument("--hdu", dest='hdu', default=0,
                         help="The HDU to be used", type=int)
+    parser.add_argument("-r", "--reverse", dest='reverse',
+                        action="store_true", default=False,
+                        help="Reverse the mask")
     args = parser.parse_args()
 
     reg2Mask(args.imgFile, args.regFile, mskFile=args.mskFile, hdu=args.hdu,
-             show=args.show)
+             show=args.show, reverse=args.reverse)
