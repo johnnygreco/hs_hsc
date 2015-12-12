@@ -86,7 +86,8 @@ def run(args):
                                            debConH=0.001,
                                            debConC=0.0025,
                                            combBad=True,
-                                           combDet=True)
+                                           combDet=True,
+                                           multiMask=args.multiMask)
                 elif rerun == 'smallR1':
                     ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
                                            rerun='smallR1',
@@ -116,7 +117,8 @@ def run(args):
                                            debConH=0.001,
                                            debConC=0.0025,
                                            combBad=True,
-                                           combDet=True)
+                                           combDet=True,
+                                           multiMask=False)
                 elif rerun == 'largeR1':
                     ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
                                            rerun='largeR1',
@@ -146,7 +148,8 @@ def run(args):
                                            debConH=0.001,
                                            debConC=0.0025,
                                            combBad=True,
-                                           combDet=True)
+                                           combDet=True,
+                                           multiMask=False)
                 else:
                     ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
                                            rerun=rerun,
@@ -171,7 +174,8 @@ def run(args):
                                            debConH=args.debConH,
                                            debConC=args.debConC,
                                            combBad=args.combBad,
-                                           combDet=args.combDet)
+                                           combDet=args.combDet,
+                                           multiMask=args.multiMask)
             except Exception, errMsg:
                 print "####################################################"
                 print str(errMsg)
@@ -258,6 +262,8 @@ if __name__ == '__main__':
     parser.add_argument('--sigma', dest='sigma',
                         help='Sigma to Gaussian smooth the segmentation image',
                         type=float, default=6.0)
+    parser.add_argument('--multiMask', dest='multiMask',
+                        action="store_true", default=False)
     parser.add_argument('--noBkgC', dest='noBkgC',
                         action="store_true", default=False)
     parser.add_argument('--noBkgH', dest='noBkgH',

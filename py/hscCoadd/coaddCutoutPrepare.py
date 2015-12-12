@@ -1300,7 +1300,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         detMsk = copy.deepcopy(detArr).astype(int)
         detMsk[mskGal > 0] = 0
         detMsk[detMsk > 0] = 1
-        detMskConv = seg2Mask(detMsk, sigma=4.0, mskThr=0.02)
+        detMskConv = seg2Mask(detMsk, sigma=6.0, mskThr=0.02)
 
     """
     Estimate the distance to the central galaxies in the elliptical coordinates
@@ -1730,6 +1730,10 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     MultiMask Mode
     """
     if multiMask:
+        print SEP
+        print "##  MultiMask = True : Will generate mskSmall and mskLarge"
+        print SEP
+
         # Tight one
         objLG1 = objNoCen[indG1]
         objLG2 = objNoCen[indG2]
@@ -1738,17 +1742,21 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         mskLG2 = np.zeros(imgArr.shape, dtype='uint8')
         mskLG3 = np.zeros(imgArr.shape, dtype='uint8')
         sep.mask_ellipse(mskLG1, objLG1['x'], objLG1['y'], objLG1['a'],
-                         objLG1['b'], objLG1['theta'], r=1.5)
+                         objLG1['b'], objLG1['theta'], r=2.5)
         sep.mask_ellipse(mskLG2, objLG2['x'], objLG2['y'], objLG2['a'],
-                         objLG2['b'], objLG2['theta'], r=3.0)
+                         objLG2['b'], objLG2['theta'], r=5.0)
         sep.mask_ellipse(mskLG3, objLG3['x'], objLG3['y'], objLG3['a'],
-                         objLG3['b'], objLG3['theta'], r=4.5)
+                         objLG3['b'], objLG3['theta'], r=7.0)
         segLOut = copy.deepcopy(segH)
         objExclude = (np.where(cenDistH <= galR2)[0] + 1)
         for index in objExclude:
             segLOut[segH == index] = 0
-        segLMsk = seg2Mask(segLOut, sigma=7.0, mskThr=sigthr)
-
+        segLMsk = seg2Mask(segLOut, sigma=9.0, mskThr=0.012)
+        if detFound:
+            detLMsk = copy.deepcopy(detArr).astype(int)
+            detLMsk[mskGal > 0] = 0
+            detLMsk[detLMsk > 0] = 1
+            detLMskConv = seg2Mask(detLMsk, sigma=8.0, mskThr=0.02)
         # Loose one
         objSG1 = objNoCen[indG1]
         objSG2 = objNoCen[indG2]
@@ -1761,22 +1769,33 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         sep.mask_ellipse(mskSG2, objSG2['x'], objSG2['y'], objSG2['a'],
                          objSG2['b'], objSG2['theta'], r=3.0)
         sep.mask_ellipse(mskSG3, objSG3['x'], objSG3['y'], objSG3['a'],
-                         objSG3['b'], objSG3['theta'], r=4.5)
+                         objSG3['b'], objSG3['theta'], r=5.0)
         segSOut = copy.deepcopy(segH)
         objExclude = (np.where(cenDistH <= galR2)[0] + 1)
         for index in objExclude:
             segSOut[segH == index] = 0
-        segSMsk = seg2Mask(segSOut, sigma=9.0, mskThr=0.025)
-
+        segSMsk = seg2Mask(segSOut, sigma=6.0, mskThr=0.020)
+        if detFound:
+            detSMsk = copy.deepcopy(detArr).astype(int)
+            detSMsk[mskGal > 0] = 0
+            detSMsk[detSMsk > 0] = 1
+            detSMskConv = seg2Mask(detSMsk, sigma=5.0, mskThr=0.02)
     """
     Combine them into the final mask
     """
     mskFinal = (mskG1 | mskG2 | mskG3 | segMsk)
+    if multiMask:
+        mskSmall = (mskSG1 | mskSG2 | mskSG3 | segSMsk)
+        mskLarge = (mskLG1 | mskLG2 | mskLG3 | segLMsk)
+
     """
     if extMask is provided, combine them
     """
     if extMask is not None:
         mskFinal = combMskImage(mskFinal, extMask)
+        if multiMask:
+            mskSmall = combMskImage(mskSmall, extMask)
+            mskLarge = combMskImage(mskLarge, extMask)
     """
     # Have the option to combine with HSC BAD MASK
     """
@@ -1785,6 +1804,9 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
             print SEP
             print "###    Combine the final mask with the HSC BAD MASK!"
         mskFinal = combMskImage(mskFinal, mskArr)
+        if multiMask:
+            mskSmall = combMskImage(mskSmall, mskArr)
+            mskLarge = combMskImage(mskLarge, mskArr)
     """
     # Have the option to combine with HSC DETECTION MASK
     """
@@ -1793,18 +1815,28 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
             print SEP
             print "###    Combine the final mask with the HSC DETECTION MASK!"
         mskFinal = combMskImage(mskFinal, detMskConv)
+        if multiMask:
+            mskSmall = combMskImage(mskSmall, detSMskConv)
+            mskLarge = combMskImage(mskLarge, detLMskConv)
     """
     if extKeep is provided, free them
     """
     if extKeep is not None:
         mskFinal[extKeep > 0] = 0
+        if multiMask:
+            mskSmall[extKeep > 0] = 0
+            mskLarge[extKeep > 0] = 0
     """
     Mask out all the NaN pixels
     """
     mskFinal[indImgNaN] = 1
     mskFinFile = os.path.join(
         rerunDir, (prefix + '_' + suffix + 'mskfin.fits'))
-
+    if multiMask:
+        mskSmall[indImgNaN] = 1
+        mskLarge[indImgNaN] = 1
+        mskSmallFile = mskFinFile.replace('mskfin', 'msksmall')
+        mskLargeFile = mskFinFile.replace('mskfin', 'msklarge')
     """
     See if the center of the image has been masked out
     """
@@ -1859,14 +1891,22 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Save the final mask to FITS
     """
     saveFits(mskFinal, mskFinFile, head=mskHead)
-
+    if multiMask:
+        saveFits(mskSmall, mskSmallFile, head=mskHead)
+        saveFits(mskLarge, mskLargeFile, head=mskHead)
     if visual:
         """ Fig.g """
         mskPNG2 = os.path.join(
             rerunDir, (prefix + '_' + suffix + 'mskfin.png'))
         showSEPImage(imgArr, contrast=0.75, title='Mask - Final',
                      pngName=mskPNG2, mask=mskFinal)
-
+        if multiMask:
+            mskPNG3 = mskPNG2.replace('mskfin', 'msksmall')
+            mskPNG4 = mskPNG2.replace('mskfin', 'msklarge')
+            showSEPImage(imgArr, contrast=0.75, title='Mask - Small',
+                         pngName=mskPNG3, mask=mskSmall)
+            showSEPImage(imgArr, contrast=0.75, title='Mask - Large',
+                         pngName=mskPNG4, mask=mskLarge)
     """
     9. Visualize the detected objects, and find the ones need to be fit
     Make a few plots
