@@ -1052,7 +1052,8 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     return
 
 
-def saveEllipOut(ellipOut, prefix, ellipCfg=None, verbose=True):
+def saveEllipOut(ellipOut, prefix, ellipCfg=None, verbose=True,
+                 pkl=True, cfg=False, csv=False):
     """
     Save the Ellipse output to file.
 
@@ -1063,31 +1064,37 @@ def saveEllipOut(ellipOut, prefix, ellipCfg=None, verbose=True):
     outCsv = prefix + '.csv'
 
     """ Save a Pickle file """
-    hUtil.saveToPickle(ellipOut, outPkl)
-    if os.path.isfile(outPkl):
-        if verbose:
-            print SEP
-            print "###     Save Ellipse output to .pkl file: %s" % outPkl
-    else:
-        raise Exception("### Something is wrong with the .pkl file")
+    if pkl:
+        hUtil.saveToPickle(ellipOut, outPkl)
+        if os.path.isfile(outPkl):
+            if verbose:
+                print SEP
+                print "###  Save Ellipse output to .pkl file: %s" % outPkl
+        else:
+            print WAR
+            raise Exception("### Something is wrong with the .pkl file")
 
     """ Save a .CSV file """
-    ascii.write(ellipOut, outCsv, format='csv')
-    if os.path.isfile(outCsv):
-        if verbose:
-            print "###     Save Ellipse output to .csv file: %s" % outCsv
-    else:
-        raise Exception("### Something is wrong with the .csv file")
+    if csv:
+        ascii.write(ellipOut, outCsv, format='csv')
+        if os.path.isfile(outCsv):
+            if verbose:
+                print "###  Save Ellipse output to .csv file: %s" % outCsv
+        else:
+            print WAR
+            raise Exception("### Something is wrong with the .csv file")
 
     """ Save the current configuration to a .pkl file """
-    if ellipCfg is not None:
-        hUtil.saveToPickle(ellipCfg, outCfg)
-        if os.path.isfile(outCfg):
-            if verbose:
-                print "###     Save configuration to a .cfg file: %s" % outCfg
-                print SEP
-        else:
-            raise Exception("### Something is wrong with the .pkl file")
+    if cfg:
+        if ellipCfg is not None:
+            hUtil.saveToPickle(ellipCfg, outCfg)
+            if os.path.isfile(outCfg):
+                if verbose:
+                    print "###  Save configuration to .cfg file: %s" % outCfg
+                    print SEP
+            else:
+                print WAR
+                raise Exception("### Something is wrong with the .pkl file")
 
 
 def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
