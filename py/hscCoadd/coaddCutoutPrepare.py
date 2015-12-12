@@ -1191,8 +1191,9 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Save objects list to different format of files
     """
     prefixC = os.path.join(rerunDir, (prefix + '_' + suffix + 'objC'))
-    saveSEPObjects(objC, prefix=prefixC, color='Blue', csv=False,
-                   pkl=False, reg=True)
+    if showAll:
+        saveSEPObjects(objC, prefix=prefixC, color='Blue', csv=False,
+                       pkl=False, reg=True)
     """
     Calculate the object-galaxy center distance
     """
@@ -1345,8 +1346,9 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Save objects list to different format of files
     """
     prefixH = os.path.join(rerunDir, (prefix + '_' + suffix + 'objH'))
-    saveSEPObjects(objH, prefix=prefixH, color='Red', csv=False,
-                   pkl=False, reg=True)
+    if showAll:
+        saveSEPObjects(objH, prefix=prefixH, color='Red', csv=False,
+                       pkl=False, reg=True)
     """
     Estimate the distance to the central galaxies in the elliptical coordinates
     """
