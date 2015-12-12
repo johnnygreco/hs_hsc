@@ -958,8 +958,8 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
                        debConH=0.00001, debConC=0.0001, useSigArr=True,
                        minCenDist=10.0, rerun='default', segment=True,
                        mskReg=None, excludeReg=None, tol=10.0,
-                       regMask=None, regKeep=None, sigma=6.0,
-                       showAll=False):
+                       regMask=None, regKeep=None, sigma=6.0, sigthr=0.02,
+                       showAll=False, multiMask=False):
     """
     The structure of the cutout has been changed.
 
@@ -1471,7 +1471,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         """
         Convolve the segmentations into a masks
         """
-        segMskC = seg2Mask(segC, sigma=8.0, mskThr=0.01)
+        segMskC = seg2Mask(segC, sigma=9.0, mskThr=0.01)
         segMskH = seg2Mask(segH, sigma=sigma, mskThr=0.01)
         mskAll = combMskImage(segMskC, segMskH)
         objMskAll['a'] = growMsk * rMajor
@@ -1654,6 +1654,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     objG1 = objNoCen[indG1]
     objG2 = objNoCen[indG2]
     objG3 = objNoCen[indG3]
+
     """
     Generating final mask by growing the size of objects using the
     correponding ratios:
@@ -1716,14 +1717,56 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     """
     prefixF = os.path.join(rerunDir, (prefix + '_' + suffix + 'objFin'))
     objMask = np.concatenate((objG1, objG2, objG3))
-    saveSEPObjects(objMask, prefix=prefixF, color='Green', csv=False, pkl=False,
-                   reg=True)
+    saveSEPObjects(objMask, prefix=prefixF, color='Green', csv=False,
+                   pkl=False, reg=True)
 
     segOut = copy.deepcopy(segH)
     objExclude = (np.where(cenDistH <= galR2)[0] + 1)
     for index in objExclude:
         segOut[segH == index] = 0
-    segMsk = seg2Mask(segOut, sigma=sigma, mskThr=0.025)
+    segMsk = seg2Mask(segOut, sigma=sigma, mskThr=sigthr)
+
+    """
+    MultiMask Mode
+    """
+    if multiMask:
+        # Tight one
+        objLG1 = objNoCen[indG1]
+        objLG2 = objNoCen[indG2]
+        objLG3 = objNoCen[indG3]
+        mskLG1 = np.zeros(imgArr.shape, dtype='uint8')
+        mskLG2 = np.zeros(imgArr.shape, dtype='uint8')
+        mskLG3 = np.zeros(imgArr.shape, dtype='uint8')
+        sep.mask_ellipse(mskLG1, objLG1['x'], objLG1['y'], objLG1['a'],
+                         objLG1['b'], objLG1['theta'], r=1.5)
+        sep.mask_ellipse(mskLG2, objLG2['x'], objLG2['y'], objLG2['a'],
+                         objLG2['b'], objLG2['theta'], r=3.0)
+        sep.mask_ellipse(mskLG3, objLG3['x'], objLG3['y'], objLG3['a'],
+                         objLG3['b'], objLG3['theta'], r=4.5)
+        segLOut = copy.deepcopy(segH)
+        objExclude = (np.where(cenDistH <= galR2)[0] + 1)
+        for index in objExclude:
+            segLOut[segH == index] = 0
+        segLMsk = seg2Mask(segLOut, sigma=7.0, mskThr=sigthr)
+
+        # Loose one
+        objSG1 = objNoCen[indG1]
+        objSG2 = objNoCen[indG2]
+        objSG3 = objNoCen[indG3]
+        mskSG1 = np.zeros(imgArr.shape, dtype='uint8')
+        mskSG2 = np.zeros(imgArr.shape, dtype='uint8')
+        mskSG3 = np.zeros(imgArr.shape, dtype='uint8')
+        sep.mask_ellipse(mskSG1, objSG1['x'], objSG1['y'], objSG1['a'],
+                         objSG1['b'], objSG1['theta'], r=1.5)
+        sep.mask_ellipse(mskSG2, objSG2['x'], objSG2['y'], objSG2['a'],
+                         objSG2['b'], objSG2['theta'], r=3.0)
+        sep.mask_ellipse(mskSG3, objSG3['x'], objSG3['y'], objSG3['a'],
+                         objSG3['b'], objSG3['theta'], r=4.5)
+        segSOut = copy.deepcopy(segH)
+        objExclude = (np.where(cenDistH <= galR2)[0] + 1)
+        for index in objExclude:
+            segSOut[segH == index] = 0
+        segSMsk = seg2Mask(segSOut, sigma=9.0, mskThr=0.025)
 
     """
     Combine them into the final mask
@@ -1913,6 +1956,11 @@ if __name__ == '__main__':
     parser.add_argument('--sigma', dest='sigma',
                         help='Sigma to Gaussian smooth the segmentation image',
                         type=float, default=6.0)
+    parser.add_argument('--sigthr', dest='sigthr',
+                        help='Threshold for constraing the convolution mask',
+                        type=float, default=0.02)
+    parser.add_argument('--multiMask', dest='multiMask',
+                        action="store_true", default=False)
     parser.add_argument('--noBkgC', dest='noBkgC',
                         action="store_true", default=False)
     parser.add_argument('--noBkgH', dest='noBkgH',
@@ -1943,7 +1991,7 @@ if __name__ == '__main__':
                        debThrH=args.debThrH, debThrC=args.debThrC,
                        debConH=args.debConH, debConC=args.debConC,
                        combBad=args.combBad, combDet=args.combDet,
-                       rerun=args.rerun, sigma=args.sigma,
+                       rerun=args.rerun, sigma=args.sigma, sigthr=args.sigthr,
                        galR1=args.galR1, galR2=args.galR2, galR3=args.galR3,
                        regMask=args.regMask, regKeep=args.regKeep,
-                       showAll=args.showAll)
+                       showAll=args.showAll, multiMask=args.multiMask)
