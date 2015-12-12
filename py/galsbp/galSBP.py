@@ -108,6 +108,7 @@ def maskFits2Pl(inputImage, inputMask):
     Parameters:
     """
     if not os.path.isfile(inputMask):
+        print WAR
         raise Exception("Can not find the FITS mask: %s" % inputMask)
     # Name of the .pl mskOri for IRAF
     """
@@ -141,6 +142,7 @@ def imageMaskNaN(inputImage, inputMask):
     else:
         imgOri = inputImage
     if not os.path.isfile(imgOri):
+        print WAR
         raise Exception("Can not find the FITS image: %s" % imgOri)
     else:
         imgArr = fits.open(imgOri)[0].data
@@ -151,6 +153,7 @@ def imageMaskNaN(inputImage, inputMask):
     else:
         mskOri = inputMask
     if not os.path.isfile(mskOri):
+        print WAR
         raise Exception("Can not find the FITS mask: %s" % mskOri)
     else:
         mskArr = fits.open(mskOri)[0].data
@@ -332,6 +335,7 @@ def setupEllipse(ellipConfig):
     elif intMode == 'bi-linear':
         iraf.ellipse.integrmode = 'bi-linear'
     else:
+        print WAR
         raise Exception(
             "### Only 'mean', 'median', and 'bi-linear' are available !")
     iraf.ellipse.usclip = cfg['usclip']
@@ -352,6 +356,7 @@ def ellipRemoveIndef(outTabName, replace='NaN'):
         subprocess.call(['sed', '-i_back', 's/INDEF/' +
                         replace + '/g', outTabName])
     else:
+        print WAR
         raise Exception('Can not find the input catalog!')
 
     return outTabName
@@ -647,6 +652,7 @@ def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
             outRsma = np.nanmean(negRad)
         return (outRsma ** 4.0) * ratio
     except Exception, errMsg:
+        print WAR
         print str(errMsg)
         return None
 
@@ -774,6 +780,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
             maxSma = maxRad
             maxRad = np.log10(maxRad)
     else:
+        print WAR
         raise Exception('### Wrong type of Radius: sma, rsma, log')
 
     """ ax1 SBP """
@@ -1044,9 +1051,8 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
         e.set_facecolor('none')
         e.set_linewidth(1.5)
     """ Save Figure """
-    fig.savefig(outPng)
+    fig.savefig(outPng, dpi=80)
     plt.close(fig)
-
     print SEP
 
     return

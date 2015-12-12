@@ -631,8 +631,9 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ellOuter.set_linewidth(3.5)
 
     """ Save Figure """
-    fig.savefig(outPng)
+    fig.savefig(outPng, dpi=80)
     plt.close(fig)
+    print SEP
 
     return
 
