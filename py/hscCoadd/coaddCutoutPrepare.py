@@ -18,8 +18,7 @@ from distutils.version import StrictVersion
 sepVersion = sep.__version__
 if StrictVersion(sepVersion) < StrictVersion('0.5.0'):
     raise Exception(
-        'XXX SEP Version should be higher than 0.5.0;\n     Please Update!!')
-
+        'XXX SEP Version should be higher than 0.5.0; \n Please Update!!')
 # Cubehelix color scheme from https://github.com/jradavenport/cubehelixscheme
 import cubehelix
 # For high-contrast image
@@ -35,7 +34,6 @@ cmap2 = cubehelix.cmap(start=2.0, rot=-1.0, gamma=2.5,
 cmap3 = cubehelix.cmap(start=0.5, rot=-0.8, gamma=1.2,
                        minSat=1.2, maxSat=1.2,
                        minLight=0.0, maxLight=1.0)
-
 # Matplotlib related
 import matplotlib as mpl
 mpl.use('Agg')
@@ -58,6 +56,10 @@ import scipy.ndimage as ndimage
 # Personal
 import hscUtils as hUtil
 import ds9Reg2Mask as reg2Mask
+
+COM = '#' * 100
+SEP = '-' * 100
+WAR = '!' * 100
 
 
 def seg2Mask(seg, sigma=6.0, mskMax=1000.0, mskThr=0.01):
@@ -447,8 +449,9 @@ def saveFits(img, fitsName, head=None, clobber=True):
     imgHdu.writeto(fitsName, clobber=clobber)
 
 
-def saveSEPObjects(objs, prefix='sep_objects', csv=True,
-                   reg=True, verbose=True, color='red'):
+def saveSEPObjects(objs, prefix='sep_objects', csv=False,
+                   reg=True, verbose=True, color='red',
+                   pkl=False):
     """
     Name: saveSEPObjects.
 
@@ -458,13 +461,15 @@ def saveSEPObjects(objs, prefix='sep_objects', csv=True,
     Parameters:
     """
     # 1. Save a .pkl file
-    pklFile = prefix + '.pkl'
-    hUtil.saveToPickle(objs, pklFile)
-    if os.path.isfile(pklFile):
-        if verbose:
-            print "###     Save object list to .pkl file: %s" % pklFile
-    else:
-        raise Exception("### Something is wrong with the .pkl file")
+    if pkl:
+        pklFile = prefix + '.pkl'
+        hUtil.saveToPickle(objs, pklFile)
+        if os.path.isfile(pklFile):
+            if verbose:
+                print "###     Save object list to .pkl file: %s" % pklFile
+        else:
+            print WAR
+            raise Exception("### Something is wrong with the .pkl file")
     # 2. Save a .csv file
     if csv:
         csvFile = prefix + '.csv'
@@ -473,6 +478,7 @@ def saveSEPObjects(objs, prefix='sep_objects', csv=True,
             if verbose:
                 print "###     Save object list to .csv file: %s" % csvFile
         else:
+            print WAR
             raise Exception("### Something is wrong with the .csv file")
     # 3. Save a .reg file
     if reg:
@@ -480,8 +486,10 @@ def saveSEPObjects(objs, prefix='sep_objects', csv=True,
         objList2Reg(objs, regName=regFile, color=color)
         if os.path.isfile(regFile):
             if verbose:
+                print SEP
                 print "###     Save object list to .reg file: %s" % regFile
         else:
+            print WAR
             raise Exception("### Something is wrong with the .reg file")
 
 
@@ -805,6 +813,7 @@ def readCutoutHeader(imgHead, pixDefault=0.168,
     try:
         pixScaleX = pixScaleY = imgHead['PIXEL']
     except:
+        print WAR
         print "### Pixel scale keyword is not available in the header"
         print "### Default %6.3f arcsec/pixel value is adopted" % pixDefault
         pixScaleX = pixScaleY = pixDefault
@@ -815,6 +824,7 @@ def readCutoutHeader(imgHead, pixDefault=0.168,
     try:
         photZP = imgHead['PHOTZP']
     except:
+        print WAR
         print "### PHOZP keyword is not available in the header"
         print "### Default value of %5.2f is adopted!" % zpDefault
         photZP = zpDefault
@@ -822,6 +832,7 @@ def readCutoutHeader(imgHead, pixDefault=0.168,
     try:
         expTot = imgHead['TOTEXPT']
     except:
+        print WAR
         print "### TOTEXPT keyword is not available in the header"
         print "### Use 1.0 sec instead"
         expTot = 1.0
@@ -890,6 +901,7 @@ def readCutoutImage(prefix, root=None, variance=False):
         imgHdu = fits.open(imgFile)
         imgArr = imgHdu[0].data
     else:
+        print WAR
         raise Exception(
             "### Can not find the Input Image File : %s !" % imgFile)
     # Header
@@ -903,6 +915,7 @@ def readCutoutImage(prefix, root=None, variance=False):
         mskHdu = fits.open(mskFile)
         mskArr = mskHdu[0].data
     else:
+        print WAR
         print "### Can not find the coadd BadPlane file!"
         mskArr = None
 
@@ -914,6 +927,7 @@ def readCutoutImage(prefix, root=None, variance=False):
         detHdu = fits.open(detFile)
         detArr = detHdu[0].data
     else:
+        print WAR
         print "### Can not find the coadd DetectionPlane file!"
         detArr = None
 
@@ -925,6 +939,7 @@ def readCutoutImage(prefix, root=None, variance=False):
         sigHdu = fits.open(sigFile)
         sigArr = sigHdu[0].data
     else:
+        print WAR
         print "### Can not find the coadd sigectionPlane file!"
         sigArr = None
 
@@ -943,7 +958,8 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
                        debConH=0.00001, debConC=0.0001, useSigArr=True,
                        minCenDist=10.0, rerun='default', segment=True,
                        mskReg=None, excludeReg=None, tol=10.0,
-                       regMask=None, regKeep=None, sigma=6.0):
+                       regMask=None, regKeep=None, sigma=6.0,
+                       showAll=False):
     """
     The structure of the cutout has been changed.
 
@@ -967,8 +983,9 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     if root is None:
         root = ''
     if verbose:
-        print "###############################################################"
+        print COM
         print "### DEAL WITH IMAGE : %s" % (root + prefix + '_img.fits')
+        print COM
 
     """ Set up a rerun """
     rerunDir = os.path.join(root, rerun.strip())
@@ -1004,6 +1021,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     indImgNaN = np.isnan(imgArr)
     nNaNPix = len(np.where(indImgNaN)[0])
     if verbose:
+        print WAR
         print "###   %6d NaN pixels have been \
                 replaced and masked out!" % nNaNPix
     if nNaNPix > 0:
@@ -1019,6 +1037,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     """
     pixX, pixY, dimX, dimY, photZP, expTot = readCutoutHeader(imgHead)
     if verbose:
+        print SEP
         print "###    The pixel scale in X/Y directions " + \
             "are %7.4f / %7.4f arcsecs" % (pixX, pixY)
         print "###    The image size in X/Y directions " + \
@@ -1036,6 +1055,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     if galY is None:
         galY = (dimY / 2.0)
     if verbose:
+        print SEP
         print "###    The Galaxy Center is assumed at \
                 %6.1f, %6.1f" % (galX, galY)
 
@@ -1048,12 +1068,14 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     and convert them into mask array
     """
     if (regMask is not None) and os.path.isfile(regMask):
+        print SEP
         print "###  Load in regMask : %s" % regMask
         extMask = reg2Mask.reg2Mask(imgArr, regMask, hdu=0,
                                     save=False, imgHead=imgHead)
     else:
         extMask = None
     if (regKeep is not None) and os.path.isfile(regKeep):
+        print SEP
         print "###  Load in regKeep : %s" % regKeep
         extKeep = reg2Mask.reg2Mask(imgArr, regKeep, hdu=0,
                                     save=False, imgHead=imgHead)
@@ -1071,6 +1093,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         Hot:  very local background; median-detection threshold
     """
     if verbose:
+        print COM
         print "### 1a. BACKGROUND SUBTRACTION USING SEP -- COLD RUN"
     """
     Cold Background Run
@@ -1090,7 +1113,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     else:
         sepFlags = addFlag(sepFlags, 'NO_CBKG', False)
 
-    if visual:
+    if visual and showAll:
         # Fig.a
         bkgPNG1 = os.path.join(rerunDir, (prefix + '_' + suffix + 'bkgC.png'))
         showSEPImage(bkgC.back(), contrast=0.3, title='Background - Cold Run',
@@ -1117,7 +1140,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     else:
         sepFlags = addFlag(sepFlags, 'NO_HBKG', False)
 
-    if visual:
+    if visual and showAll:
         # Fig.b
         bkgPNG2 = os.path.join(rerunDir, (prefix + '_' + suffix + 'bkgH.png'))
         showSEPImage(bkgH.back(), contrast=0.3, title='Background - Hot Run',
@@ -1129,6 +1152,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Use SEP to extract information of detected objects
     """
     if verbose:
+        print COM
         print "### 2. DETECT OBJECTS USING SEP"
     """ The threshold and the convolution kernel for cold run """
     if verbose:
@@ -1151,7 +1175,6 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
                                  filter_type='matched',
                                  segmentation_map=True)
     else:
-        print rmsC, minDetC, debThrC, debConC
         detThrC = rmsC * thrC
         objC, segC = sep.extract(imgSubC, detThrC, minarea=minDetC,
                                  filter_kernel=convKerC,
@@ -1160,6 +1183,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
                                  filter_type='conv',
                                  segmentation_map=True)
     if verbose:
+        print SEP
         print "###    %d objects have been detected in the \
                 Cold Run" % objC['x'].shape[0]
 
@@ -1167,7 +1191,8 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Save objects list to different format of files
     """
     prefixC = os.path.join(rerunDir, (prefix + '_' + suffix + 'objC'))
-    saveSEPObjects(objC, prefix=prefixC, color='Blue')
+    saveSEPObjects(objC, prefix=prefixC, color='Blue', csv=False,
+                   pkl=False, reg=True)
     """
     Calculate the object-galaxy center distance
     """
@@ -1320,7 +1345,8 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Save objects list to different format of files
     """
     prefixH = os.path.join(rerunDir, (prefix + '_' + suffix + 'objH'))
-    saveSEPObjects(objH, prefix=prefixH, color='Red')
+    saveSEPObjects(objH, prefix=prefixH, color='Red', csv=False,
+                   pkl=False, reg=True)
     """
     Estimate the distance to the central galaxies in the elliptical coordinates
     """
@@ -1329,7 +1355,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     """
     Visualize these detections
     """
-    if visual:
+    if visual and showAll:
         """ Fig.c """
         objPNG1 = os.path.join(rerunDir, (prefix + '_' + suffix + 'objC.png'))
         objEllC = getEll2Plot(objC, radius=(objC['a'] * growH))
@@ -1345,6 +1371,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     3. Merge the objects from Cold and Hot runs together
     """
     if verbose:
+        print COM
         print "### 3. COMBINE OBJECTS FROM COLD AND HOT RUN "
     objComb, objHnew, objCnew = combObjCat(objC, objH, keepH=True,
                                            cenDistC=cenDistC,
@@ -1354,7 +1381,8 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Also save the combined object lists
     """
     prefixComb = os.path.join(rerunDir, (prefix + '_' + suffix + 'objComb'))
-    saveSEPObjects(objComb, prefix=prefixComb, color='Green')
+    saveSEPObjects(objComb, prefix=prefixComb, color='Green', csv=False,
+                   pkl=False, reg=True)
 
     """
     Calculate the object-galaxy center distance...Again
@@ -1363,7 +1391,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     cenObjIndex = np.argmin(cenDistComb)
     if verbose:
         print "###    %d objects are left in the combined list" % len(objComb)
-    if visual:
+    if visual and showAll:
         """ Fig.e """
         objPNG3 = os.path.join(
             rerunDir, (prefix + '_' + suffix + 'objComb.png'))
@@ -1375,6 +1403,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     4. Extract Different Flux Radius: R20, R50, R90 for every objects
     """
     if verbose:
+        print COM
         print "### 4. EXTRACTING R20, R50, R90 OF EACH OBJECTS "
     """
     Which image to use is a question:
@@ -1427,6 +1456,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     5. Mask all objects on the image
     """
     if verbose:
+        print COM
         print "### 5. MASKING OUT ALL OBJECTS ON THE IMAGE "
     objMskAll = copy.deepcopy(objC)
     rMajor = objMskAll['a']
@@ -1480,7 +1510,6 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Also mask out the NaN pixels
     """
     mskAll[indImgNaN] = 1
-
     """
     Save the all object mask to FITS
     """
@@ -1491,7 +1520,8 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Save the Objlist using the growed size
     """
     prefixM = os.path.join(rerunDir, (prefix + '_' + suffix + 'mskall'))
-    saveSEPObjects(objMskAll, prefix=prefixM, color='Blue')
+    saveSEPObjects(objMskAll, prefix=prefixM, color='Blue', csv=False,
+                   pkl=False, reg=True)
     if visual:
         # Fig.f
         mskPNG1 = os.path.join(
@@ -1505,6 +1535,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
        different growth ratio
     """
     if verbose:
+        print COM
         print "### 6. CLEAR THE CENTRAL REGION AROUND THE GALAXY"
         print "###  6.2. CLEAR A REGION AROUND CENTRAL GALAXY"
     objNoCen = copy.deepcopy(objComb)
@@ -1543,6 +1574,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         GALFIT model
     """
     if verbose:
+        print COM
         print "### 7. INITIAL GUESS OF PARAMETERS FOR \
                 1-SERSIC MODEL OF GALAXIES"
         print "###  7.1. SELECTING OBJECTS NEED TO BE FIT"
@@ -1598,16 +1630,17 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
                             rbox=4.0, dimX=dimX, dimY=dimY)
     sersicAll = os.path.join(rerunDir, (prefix + '_' + suffix + 'sersic'))
     saveSEPObjects(objSersic, prefix=sersicAll, reg=False,
-                   color='blue')
+                   color='blue', pkl=True, csv=False)
     sersicFit = os.path.join(rerunDir, (prefix + '_' + suffix + 'sersic_fit'))
     saveSEPObjects(objSersic[iObjFit], prefix=sersicFit, reg=False,
-                   color='blue')
+                   color='blue', pkl=True, csv=False)
 
     """
     8. Separate the rest objects into different groups according to
        their distance to the central galaxy
     """
     if verbose:
+        print COM
         print "### 8. GENERATING THE FINAL MASK"
     """
     Isolate objects into different group
@@ -1681,7 +1714,8 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     """
     prefixF = os.path.join(rerunDir, (prefix + '_' + suffix + 'objFin'))
     objMask = np.concatenate((objG1, objG2, objG3))
-    saveSEPObjects(objMask, prefix=prefixF, color='Green')
+    saveSEPObjects(objMask, prefix=prefixF, color='Green', csv=False, pkl=False,
+                   reg=True)
 
     segOut = copy.deepcopy(segH)
     objExclude = (np.where(cenDistH <= galR2)[0] + 1)
@@ -1703,6 +1737,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     """
     if combBad and badFound:
         if verbose:
+            print SEP
             print "###    Combine the final mask with the HSC BAD MASK!"
         mskFinal = combMskImage(mskFinal, mskArr)
     """
@@ -1710,6 +1745,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     """
     if combDet and detFound:
         if verbose:
+            print SEP
             print "###    Combine the final mask with the HSC DETECTION MASK!"
         mskFinal = combMskImage(mskFinal, detMskConv)
     """
@@ -1733,6 +1769,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
                                               (galPA * np.pi / 180.0), r=1.0)
     if sumMskR20 > 0:
         sepFlags = addFlag(sepFlags, 'MSK_R20', True)
+        print SEP
         print "###    %d pixels within R20 have been masked out" % sumMskR20
     else:
         sepFlags = addFlag(sepFlags, 'MSK_R20', False)
@@ -1742,6 +1779,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
                                               (galPA * np.pi / 180.0), r=1.0)
     if sumMskR50 > 0:
         sepFlags = addFlag(sepFlags, 'MSK_R50', True)
+        print SEP
         print "###    %d pixels within R50 have been masked out" % sumMskR50
     else:
         sepFlags = addFlag(sepFlags, 'MSK_R50', False)
@@ -1789,6 +1827,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Make a few plots
     """
     if verbose:
+        print COM
         print "### 9. VISULIZATION OF THE DETECTED OBJECTS"
     if visual:
         """ Fig.h """
@@ -1882,6 +1921,8 @@ if __name__ == '__main__':
                         default=True)
     parser.add_argument('--combDet', dest='combDet', action="store_true",
                         default=True)
+    parser.add_argument('--showAll', dest='showAll', action="store_true",
+                        default=False)
     parser.add_argument('--regMask', dest='regMask', default=None,
                         help='DS9 regions to be masked')
     parser.add_argument('--regKeep', dest='regKeep', default=None,
@@ -1902,4 +1943,5 @@ if __name__ == '__main__':
                        combBad=args.combBad, combDet=args.combDet,
                        rerun=args.rerun, sigma=args.sigma,
                        galR1=args.galR1, galR2=args.galR2, galR3=args.galR3,
-                       regMask=args.regMask, regKeep=args.regKeep)
+                       regMask=args.regMask, regKeep=args.regKeep,
+                       showAll=args.showAll)
