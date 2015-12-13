@@ -12,8 +12,7 @@ try:
     import psutil
     psutilOk = True
 except Exception:
-    psutilOk =False
-
+    psutilOk = False
 from astropy.io import fits
 
 import coaddCutoutSbp as cSbp
@@ -21,6 +20,7 @@ import coaddCutoutSbp as cSbp
 COM = '#' * 100
 SEP = '-' * 100
 WAR = '!' * 100
+
 
 def run(args):
     """
@@ -59,9 +59,9 @@ def run(args):
             galID = str(galaxy[id]).strip()
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
             galRoot = os.path.join(galID, filter)
-            print "## Will Deal with %s now : %i / %i" %(galID,
-                                                         (index + 1),
-                                                         len(data))
+            print "## Deal with %s now : %i / %i" % (galID,
+                                                     (index + 1),
+                                                     len(data))
             print COM
             if not os.path.isdir(galRoot):
                 logging.warning('### Can not find ' +
@@ -90,7 +90,6 @@ def run(args):
                 link = os.path.join(galRoot, seg[-1])
                 if (not os.path.islink(link)) and (not os.path.isfile(link)):
                     os.symlink(fitsFile, link)
-
             """
             External mask
             """
@@ -257,7 +256,6 @@ if __name__ == '__main__':
                         default=True)
     parser.add_argument('--nomask', dest='nomask', action="store_true",
                         default=False)
-
     args = parser.parse_args()
 
     run(args)

@@ -490,10 +490,8 @@ def zscale(img, contrast=0.25, samples=500):
         imsort = np.sort(np.random.choice(ravel, size=samples))
     else:
         imsort = np.sort(ravel)
-
     n = len(imsort)
     idx = np.arange(n)
-
     med = np.nanmedian(imsort)
     w = 0.25
     i_lo, i_hi = int((0.5 - w) * n), int((0.5 + w) * n)
@@ -501,7 +499,7 @@ def zscale(img, contrast=0.25, samples=500):
         p = np.polyfit(idx[i_lo:i_hi], imsort[i_lo:i_hi], 1)
         slope, intercept = p
     except Exception:
-        slope = 1.0
+        slope = 2.5
     z1 = med - (slope / contrast) * (n / 2 - n * w)
     z2 = med + (slope / contrast) * (n / 2 - n * w)
 
@@ -661,25 +659,25 @@ def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
 
 def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
                        outPng='ellipse_summary.png', zp=27.0, threshold=None,
-                       showZoom=False, useZscale=True):
+                       showZoom=False, useZscale=True, pngSize=16):
     """
     Make a summary plot of the ellipse run.
 
     Parameters:
     """
     """ Left side: SBP """
-    reg1 = [0.07, 0.05, 0.455, 0.35]
-    reg2 = [0.07, 0.40, 0.455, 0.15]
-    reg3 = [0.07, 0.55, 0.455, 0.15]
-    reg4 = [0.07, 0.70, 0.455, 0.15]
-    reg5 = [0.07, 0.85, 0.455, 0.14]
+    reg1 = [0.075, 0.05, 0.455, 0.35]
+    reg2 = [0.075, 0.40, 0.455, 0.15]
+    reg3 = [0.075, 0.55, 0.455, 0.15]
+    reg4 = [0.075, 0.70, 0.455, 0.15]
+    reg5 = [0.075, 0.85, 0.455, 0.14]
 
     """ Right side: Curve of growth & IsoMap """
     reg6 = [0.59, 0.05, 0.39, 0.30]
     reg7 = [0.59, 0.35, 0.39, 0.16]
     reg8 = [0.59, 0.55, 0.39, 0.39]
 
-    fig = plt.figure(figsize=(20, 20))
+    fig = plt.figure(figsize=(pngSize, pngSize))
     """ Left """
     ax1 = fig.add_axes(reg1)
     ax2 = fig.add_axes(reg2)
@@ -696,9 +694,13 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     imgX, imgY = img.shape
     imgMsk = copy.deepcopy(img)
     if useZscale:
-        imin, imax = zscale(imgMsk, contrast=0.6, samples=500)
+        try:
+            imin, imax = zscale(imgMsk, contrast=0.6, samples=500)
+        except Exception:
+            imin, imax = np.nanmin(imgMsk), np.nanmax(imgMsk)
     else:
-        imin, imax = np.nanmin(imgMsk), np.nanmax(imgMsk)
+        imin = np.percentile(np.ravel(imgMsk), 0.01)
+        imax = np.percentile(np.ravel(imgMsk), 0.95)
     if mask is not None:
         msk = fits.open(mask)[0].data
         imgMsk[msk > 0] = np.nan

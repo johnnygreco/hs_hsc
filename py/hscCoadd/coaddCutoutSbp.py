@@ -61,30 +61,32 @@ def readSbpInput(prefix, root=None, exMask=None):
     """
     # Get the names of necessary input images
     imgFile = prefix + '_img.fits'
+    """ Root DIR """
     if root is not None:
         imgFile = os.path.join(root, imgFile)
-
+    """ External mask"""
     if exMask is None:
-        mskFile = prefix + '_mskfin.fits'
         if root is not None:
+            mskFile = prefix + '_mskfin.fits'
             mskFile = os.path.join(root, mskFile)
     else:
         mskFile = exMask
-
+    """ Input Image """
     if os.path.islink(imgFile):
         imgOri = os.readlink(imgFile)
     else:
         imgOri = imgFile
-
+    """ Mask Image """
     if os.path.islink(mskFile):
         mskOri = os.readlink(mskFile)
     else:
         mskOri = mskFile
-
     if not os.path.isfile(imgOri):
+        print WAR
         raise Exception("### Can not find the input \
                 cutout image : %s !" % imgOri)
     if not os.path.isfile(mskOri):
+        print WAR
         raise Exception("### Can not find the input \
                 mask image : %s !" % mskOri)
     # Image
@@ -160,7 +162,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                  maxRad=None, mask=None, radMode='rsma',
                  outPng='ellipse_summary.png', zp=27.0, threshold=None,
                  psfOut=None, useKpc=None, pix=0.168,
-                 showZoom=True, exptime=1.0, bkg=0.0, outRatio=1.2):
+                 showZoom=True, exptime=1.0, bkg=0.0, outRatio=1.2,
+                 pngSize=16):
     """
     Make a summary plot for the ellipse run.
 
@@ -178,7 +181,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     reg7 = [0.59, 0.35, 0.39, 0.16]
     reg8 = [0.59, 0.55, 0.39, 0.39]
 
-    fig = plt.figure(figsize=(20, 20))
+    fig = plt.figure(figsize=(pngSize, pngSize))
     """ Left """
     ax1 = fig.add_axes(reg1)
     ax2 = fig.add_axes(reg2)
@@ -796,6 +799,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 psfOri = psfFile
 
             if not os.path.isfile(psfOri):
+                print WAR
                 raise Exception("### Can not find the \
                                 PSF image: %s !" % psfFile)
             psfOut = galSBP.galSBP(psfFile, iniSma=5.0,
@@ -806,7 +810,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                    zpPhoto=zp,
                                    recenter=psfRecenter,
                                    outerThreshold=1e-6,
-                                   useZscale=False)
+                                   useZscale=False,
+                                   savePng=False)
         if inEllip is None:
             iniSma = (galR50 * 2.0)
             """#        Start with Stage 1 """
