@@ -170,11 +170,11 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     Parameters:
     """
     """ Left side: SBP """
-    reg1 = [0.075, 0.05, 0.455, 0.35]
-    reg2 = [0.075, 0.40, 0.455, 0.15]
-    reg3 = [0.075, 0.55, 0.455, 0.15]
-    reg4 = [0.075, 0.70, 0.455, 0.15]
-    reg5 = [0.075, 0.85, 0.455, 0.14]
+    reg1 = [0.075, 0.05, 0.452, 0.35]
+    reg2 = [0.075, 0.40, 0.452, 0.15]
+    reg3 = [0.075, 0.55, 0.452, 0.15]
+    reg4 = [0.075, 0.70, 0.452, 0.15]
+    reg5 = [0.075, 0.85, 0.452, 0.14]
     """ Right side: Curve of growth & IsoMap """
     reg6 = [0.59, 0.05, 0.39, 0.30]
     reg7 = [0.59, 0.35, 0.39, 0.16]
@@ -220,11 +220,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     indexUse3 = np.where(ellipOut3['sma'] <= (radOuter*1.2))
 
     curveOri = ellipOut3['growth_ori']
-    curveOri[curveOri <= 0.0] = 0.0
     curveSub = ellipOut3['growth_sub']
-    curveSub[curveSub <= 0.0] = 0.0
     curveCor = ellipOut3['growth_cor']
-    curveCor[curveCor <= 0.0] = 0.0
     growthCurveOri = -2.5 * np.log10(curveOri) + zp
     growthCurveSub = -2.5 * np.log10(curveSub) + zp
     growthCurveCor = -2.5 * np.log10(curveCor) + zp
@@ -238,14 +235,14 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     maxIsoFluxSub = np.nanmax(curveSub[indexUse3])
     magFluxSub100 = -2.5 * np.log10(maxIsoFluxSub) + zp
     print "###     MagTot SUB : ", magFluxSub100
-    ax1.text(0.55, 0.85, 'mag$_{tot,sub}=%5.2f$' % magFluxSub100, fontsize=24,
+    ax1.text(0.55, 0.78, 'mag$_{tot,sub}=%5.2f$' % magFluxSub100, fontsize=24,
              transform=ax1.transAxes)
 
     maxIsoFluxCor = np.nanmax(curveCor[indexUse3])
     magFlux50 = -2.5 * np.log10(maxIsoFluxCor * 0.50) + zp
     magFlux100 = -2.5 * np.log10(maxIsoFluxCor) + zp
     print "###     MagTot COR : ", magFlux100
-    ax1.text(0.55, 0.78, 'mag$_{tot,cor}=%5.2f$' % magFlux100, fontsize=24,
+    ax1.text(0.55, 0.71, 'mag$_{tot,cor}=%5.2f$' % magFlux100, fontsize=24,
              transform=ax1.transAxes)
 
     indMaxFlux = np.nanargmax(curveSub[indexUse3])
@@ -543,7 +540,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax6.yaxis.set_major_locator(MaxNLocator(prune='upper'))
 
     ax6.set_xlabel(radStr, fontsize=23)
-    ax6.set_ylabel('Curve of Growth (mag)', fontsize=24)
+    ax6.set_ylabel('Curve of Growth (mag)', fontsize=17)
 
     ax6.axhline(magFlux100, linestyle='-', color='k',
                 alpha=0.6, linewidth=3.0, label='mag$_{100}$')
@@ -559,8 +556,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
              label='curve$_{sub}$')
     ax6.plot(rad3, growthCurveCor, '-', color='r', linewidth=4.0,
              label='curve$_{cor}$')
-
-    ax6.legend(loc=[0.34, 0.57], fontsize=23)
+    ax6.legend(loc=[0.34, 0.51], fontsize=22)
 
     ax6.set_xlim(minRad, maxRad)
 
@@ -572,6 +568,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax7.locator_params(axis='y', tight=True, nbins=4)
 
     ax7.axhline(0.0, linestyle='-', color='k', alpha=0.6, linewidth=3.0)
+    ax7.axhline(bkg, linestyle='-.', color='c', alpha=0.6, linewidth=2.5)
+
     ax7.plot(rad3, ellipOut3['intens'], '--', color='g',
              linewidth=2.5)
     ax7.fill_between(rad3,
@@ -596,7 +594,6 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax7.set_ylim(minOut - sepOut, maxOut)
 
     """ ax8 IsoPlot """
-
     imgFile = os.path.basename(image)
     imgTitle = imgFile.replace('.fits', '')
     imgTitle = imgTitle.replace('_img', '')
@@ -659,7 +656,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                    zp=27.0, step=0.12, pix=0.168, exptime=1.0, bkgCor=True,
                    plot=True, galX0=None, galY0=None, galQ0=None, galPA0=None,
                    maxTry=4, galRe=None, redshift=None, psfRecenter=True,
-                   showZoom=True, checkCenter=True, updateIntens=False,
+                   showZoom=True, checkCenter=True, updateIntens=True,
                    olthresh=0.5, intMode='mean', lowClip=3.0, uppClip=3.0,
                    nClip=2, fracBad=0.5, minIt=20, maxIt=150, outRatio=1.2,
                    exMask=None, suffix='', plMask=False, noMask=False):
@@ -824,6 +821,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         if inEllip is None:
             iniSma = (galR50 * 2.0)
             """#        Start with Stage 1 """
+            print "XXXXX BKG %9.6f" % bkg
             print SEP
             print "##       Ellipse Run on Image %s- Stage 1 " % imgFile
             print SEP

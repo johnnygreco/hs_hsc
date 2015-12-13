@@ -485,7 +485,8 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     # Curve of Growth
     cogOri, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut)
     ellipseOut.add_column(Column(name='growth_ori', data=(cogOri)))
-    cogSub, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut, bkgCor=True)
+    cogSub, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut,
+                                                    bkgCor=True)
     ellipseOut.add_column(Column(name='growth_sub', data=(cogSub)))
 
     return ellipseOut
@@ -690,11 +691,11 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     Parameters:
     """
     """ Left side: SBP """
-    reg1 = [0.075, 0.05, 0.455, 0.35]
-    reg2 = [0.075, 0.40, 0.455, 0.15]
-    reg3 = [0.075, 0.55, 0.455, 0.15]
-    reg4 = [0.075, 0.70, 0.455, 0.15]
-    reg5 = [0.075, 0.85, 0.455, 0.14]
+    reg1 = [0.075, 0.05, 0.452, 0.35]
+    reg2 = [0.075, 0.40, 0.452, 0.15]
+    reg3 = [0.075, 0.55, 0.452, 0.15]
+    reg4 = [0.075, 0.70, 0.452, 0.15]
+    reg5 = [0.075, 0.85, 0.452, 0.14]
     """ Right side: Curve of growth & IsoMap """
     reg6 = [0.59, 0.05, 0.39, 0.30]
     reg7 = [0.59, 0.35, 0.39, 0.16]
@@ -992,7 +993,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax6.yaxis.set_major_locator(MaxNLocator(prune='upper'))
 
     ax6.set_xlabel(radStr, fontsize=23)
-    ax6.set_ylabel('Curve of Growth (mag)', fontsize=24)
+    ax6.set_ylabel('Curve of Growth (mag)', fontsize=16)
 
     ax1.text(0.6, 0.85, 'mag$_{tot}=%5.2f$' % magFlux100, fontsize=24,
              transform=ax1.transAxes)
@@ -1011,7 +1012,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
              label='curve$_{cor}$')
     ax6.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
 
-    ax6.legend(loc=[0.35, 0.44], fontsize=23)
+    ax6.legend(loc=[0.35, 0.40], fontsize=23)
     ax6.set_xlim(minRad, maxRad)
 
     """ ax7 Intensity Curve """
@@ -1387,12 +1388,15 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 maxIsoFluxO = np.nanmax(ellipOut['growth_ori'][indexUse])
                 maxIsoFluxS = np.nanmax(ellipOut['growth_sub'][indexUse])
                 maxIsoFluxC = np.nanmax(ellipOut['growth_cor'][indexUse])
+
                 magFluxTotC = -2.5 * np.log10(maxIsoFluxC) + zpPhoto
                 ellipOut.add_column(
                     Column(name='mag_tot', data=(sma*0.0 + magFluxTotC)))
+
                 magFluxTotO = -2.5 * np.log10(maxIsoFluxO) + zpPhoto
                 ellipOut.add_column(
                     Column(name='mag_tot_ori', data=(sma*0.0 + magFluxTotO)))
+
                 magFluxTotS = -2.5 * np.log10(maxIsoFluxS) + zpPhoto
                 ellipOut.add_column(
                     Column(name='mag_tot_sub', data=(sma*0.0 + magFluxTotS)))
