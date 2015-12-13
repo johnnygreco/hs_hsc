@@ -63,13 +63,11 @@ def correctPositionAngle(ellipOut, paNorm=False):
         posAng = ellipOut['pa_norm']
     else:
         posAng = ellipOut['pa']
-
     for i in range(1, len(posAng)):
-        if (posAng[i] - posAng[i - 1]) >= 85.0:
+        if (posAng[i] - posAng[i - 1]) >= 75.0:
             posAng[i] -= 180.0
-        elif (posAng[i] - posAng[i - 1] <= -85.0):
+        elif (posAng[i] - posAng[i - 1] <= -75.0):
             posAng[i] += 180.0
-
     if paNorm:
         ellipOut['pa_norm'] = posAng
     else:
@@ -430,28 +428,32 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
                           data=np.array([hUtil.normAngle(pa,
                                         lower=-90, upper=90.0, b=True)
                                         for pa in ellipseOut['pa']])))
-
     # Apply a photometric zeropoint to the magnitude
     ellipseOut['mag'] += zp
     ellipseOut['tmag_e'] += zp
     ellipseOut['tmag_c'] += zp
-
     # Convert the intensity into surface brightness
     parea = (pix ** 2.0)
     # Surface brightness
     # Fixed the negative intensity
+    intensOri = (ellipseOut['intens'])
     intensSub = (ellipseOut['intens'] - bkg)
+    intensOri[intensOri <= 0] = np.nan
     intensSub[intensSub <= 0] = np.nan
-    sbp = zp - 2.5 * np.log10(intensSub / (parea * exptime))
-    ellipseOut.add_column(Column(name='sbp', data=sbp))
+    sbpOri = zp - 2.5 * np.log10(intensOri / (parea * exptime))
+    sbpCor = zp - 2.5 * np.log10(intensSub / (parea * exptime))
+    ellipseOut.add_column(Column(name='sbp', data=sbpCor))
+    ellipseOut.add_column(Column(name='sbp_ori', data=sbpOri))
+    ellipseOut.add_column(Column(name='intens_bkg', data=(
+                          ellipseOut['sma'] * 0.0 + bkg)))
     # Not so accurate estimates of surface brightness error
     sbp_low = zp - 2.5 * np.log10((intensSub + ellipseOut['int_err']) /
                                   (parea * exptime))
-    sbp_err = (sbp - sbp_low)
-    sbp_upp = (sbp + sbp_err)
+    sbp_err = (sbpCor - sbp_low)
+    sbp_upp = (sbpCor + sbp_err)
+    ellipseOut.add_column(Column(name='sbp_err', data=sbp_err))
     ellipseOut.add_column(Column(name='sbp_low', data=sbp_low))
     ellipseOut.add_column(Column(name='sbp_upp', data=sbp_upp))
-
     # Convert the unit of radius into arcsecs
     ellipseOut.add_column(Column(name='sma_asec',
                                  data=(ellipseOut['sma'] * pix)))
@@ -474,7 +476,7 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
                                  data=(ellipseOut['sma'] * 0.0 + avgQ)))
     ellipseOut.add_column(Column(name='avg_pa',
                                  data=(ellipseOut['sma'] * 0.0 + avgPA)))
-
+    # Curve of Growth
     cogOri, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut)
     ellipseOut.add_column(Column(name='growth_ori', data=(cogOri)))
 
@@ -645,7 +647,6 @@ def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
                                       order=polyOrder)
             radUse = ellipseOut['rsma'][indexUse]
             negRad = radUse[np.where(intensFit <= meanErr)]
-
         if median:
             outRsma = np.nanmedian(negRad)
         else:
@@ -978,9 +979,8 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     """ XXXX """
     ax6.plot(rad, growthCurveNew, '-', color='r', linewidth=3.5,
              label='curve$_{new}$')
-
     ax6.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
-    ax6.legend(loc=[0.35, 0.50], fontsize=24)
+    ax6.legend(loc=[0.35, 0.49], fontsize=24)
 
     ax6.set_xlim(minRad, maxRad)
 
@@ -1319,14 +1319,13 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 print "###     Average Outer Intensity : ", avgBkg
                 print SEP
 
-                ellipOut['intens'] -= avgBkg
+                """ Do not correct this ? """
+                ellipOut['intens'] -= bkg
                 ellipOut.add_column(Column(name='avg_bkg',
                                     data=(sma * 0.0 + avgBkg)))
-
                 """ Update the curve of growth """
-                cog1,  mm, ff = ellipseGetGrowthCurve(ellipOut)
+                cog1, mm, ff = ellipseGetGrowthCurve(ellipOut)
                 ellipOut.add_column(Column(name='growth_cor', data=(cog1)))
-
                 """ Update the outer radius """
                 radOuter = ellipseGetOuterBoundary(ellipOut, ratio=1.2)
                 if not np.isfinite(radOuter):

@@ -346,17 +346,19 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax1.set_xlabel(radStr, fontsize=23)
     ax1.set_ylabel('${\mu}$ (mag/arcsec$^2$)', fontsize=28)
 
-    ax1.plot(rad3[indexUse3], ellipOut3['sbp'][indexUse3], '--', color='k',
+    ax1.plot(rad3[indexUse3], ellipOut3['sbp_ori'][indexUse3], '--', color='k',
              linewidth=4.0)
-
-    parea = (pix ** 2.0)
-    intensBkgSub = (ellipOut3['intens'] - bkg)
-    intensBkgSub[intensBkgSub <= 0.0] = np.nan
-    sbp = zp - 2.5 * np.log10(intensBkgSub / (parea * exptime))
-    sbp_low = zp - 2.5 * np.log10((intensBkgSub +
-                                  ellipOut3['int_err']) / (parea * exptime))
-    sbp_err = (sbp - sbp_low)
-    sbp_upp = (sbp + sbp_err)
+    # parea = (pix ** 2.0)
+    # intensBkgSub = (ellipOut3['intens'] - bkg)
+    # intensBkgSub[intensBkgSub <= 0.0] = np.nan
+    # sbp = zp - 2.5 * np.log10(intensBkgSub / (parea * exptime))
+    # sbp_low = zp - 2.5 * np.log10((intensBkgSub +
+    #                               ellipOut3['int_err']) / (parea * exptime))
+    # sbp_err = (sbp - sbp_low)
+    # sbp_upp = (sbp + sbp_err)
+    sbp = ellipOut3['sbp']
+    sbp_low = ellipOut3['sbp_low']
+    sbp_upp = ellipOut3['sbp_upp']
 
     ax1.fill_between(rad3[indexUse3], sbp_upp[indexUse3], sbp_low[indexUse3],
                      facecolor='r', alpha=0.2)
@@ -557,7 +559,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax6.plot(rad3, growthCurveNew, '-', color='r', linewidth=3.5,
              label='curve$_{new}$')
 
-    ax6.legend(loc=[0.34, 0.59], fontsize=24)
+    ax6.legend(loc=[0.34, 0.58], fontsize=24)
 
     ax6.set_xlim(minRad, maxRad)
 
@@ -569,7 +571,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax7.locator_params(axis='y', tight=True, nbins=4)
 
     ax7.axhline(0.0, linestyle='-', color='k', alpha=0.6, linewidth=3.0)
-    ax7.plot(rad3, ellipOut3['intens']+ellipOut3['avg_bkg'], '--', color='g',
+    ax7.plot(rad3, ellipOut3['intens'] - bkg, '--', color='g',
              linewidth=2.5)
     ax7.fill_between(rad3, ellipOut3['intens']+ellipOut3['int_err'],
                      ellipOut3['intens']-ellipOut3['int_err'],
@@ -616,13 +618,11 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
         zoomReg = imgMsk
         xPad = 0
         yPad = 0
-
     # Show the image
     ax8.imshow(np.arcsinh(zoomReg), interpolation="none",
                vmin=imin, vmax=imax, cmap=cmap, origin='lower')
     # Get the Shapes
     ellipIso = galSBP.convIso2Ell(ellipOut3, xpad=xPad, ypad=yPad)
-
     # Overlay the ellipses on the image
     for e in ellipIso:
         ax8.add_artist(e)
@@ -653,7 +653,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
 
 
 def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
-                   zp=27.0, step=0.12, pix=0.168, exptime=1.0, bkgCor=False,
+                   zp=27.0, step=0.12, pix=0.168, exptime=1.0, bkgCor=True,
                    plot=True, galX0=None, galY0=None, galQ0=None, galPA0=None,
                    maxTry=4, galRe=None, redshift=None, psfRecenter=True,
                    showZoom=True, checkCenter=True, updateIntens=False,
@@ -731,6 +731,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     """ 0b. Background """
     if bkgCor:
         try:
+            print SEP
+            print "###   CORREECT FOR SKY BACKGROUND "
             skyMed, skyAvg, skyStd = readInputSky(prefix, root=root)
             bkg = skyAvg
             if verbose:
@@ -1070,7 +1072,7 @@ if __name__ == '__main__':
     parser.add_argument('--plot', dest='plot', action="store_true",
                         help='Generate summary plot', default=True)
     parser.add_argument('--bkgCor', dest='bkgCor', action="store_true",
-                        help='Background correction', default=False)
+                        help='Background correction', default=True)
     parser.add_argument('--noCheckCenter', dest='noCheckCenter',
                         action="store_false",
                         help='Check if the center is off', default=True)
