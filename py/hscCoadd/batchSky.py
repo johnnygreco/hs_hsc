@@ -36,22 +36,25 @@ def run(args):
         logFile = (args.incat).replace('.fits', logSuffix)
         logging.basicConfig(filename=logFile)
 
-        print "#########################################################"
+        print COM
         print "## Will deal with %d galaxies ! " % len(data)
+        print COM
 
         for galaxy in data:
 
             galID = str(galaxy[id]).strip()
 
-            print "#########################################################\n"
+            print SEP
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
 
             galRoot = os.path.join(galID, filter)
             if not os.path.isdir(galRoot):
+                print WAR
                 raise Exception('### Can not find the root folder' +
                                 ' for the galaxy data !')
             fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
             if len(fitsList) <= 3:
+                print WAR
                 raise Exception("### Missing data under %s" % galRoot)
 
             """
@@ -92,14 +95,13 @@ def run(args):
                                    visual=args.visual,
                                    exMask=galMsk)
             except Exception, errMsg:
-                print "####################################################\n"
+                print WAR
                 print str(errMsg)
                 warnings.warn('### The sky estimate is failed ' +
                               'for %s' % args.prefix)
                 logging.warning('### The sky estimate is failed ' +
                                 'for %s' % args.prefix)
-            print "#########################################################\n"
-
+            print COM
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 

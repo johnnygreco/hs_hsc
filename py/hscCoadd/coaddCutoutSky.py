@@ -51,6 +51,10 @@ plt.ioff()
 import hscUtils as hUtil
 import coaddCutoutPrepare as cdPrep
 
+COM = '#' * 100
+SEP = '-' * 100
+WAR = '!' * 100
+
 
 def readCutout(prefix, root=None, exMask=None):
     """
@@ -62,7 +66,6 @@ def readCutout(prefix, root=None, exMask=None):
     imgFile = prefix + '_img.fits'
     if root is not None:
         imgFile = os.path.join(root, imgFile)
-
     if exMask is None:
         mskFile = prefix + '_mskall.fits'
         if root is not None:
@@ -160,7 +163,7 @@ def showSkyHist(skypix, skypix2=None, skypix3=None,
         ax.text(0.7, 0.3, "S.B : %8.5f" %
                 sbExpt, fontsize=21, transform=ax.transAxes)
 
-    fig.savefig(pngName)
+    fig.savefig(pngName, dpi=70)
     plt.close(fig)
 
 
@@ -199,6 +202,7 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
     """
     # Estimate the global background level
     if verbose:
+        print SEP
         print "### ESTIMATING THE GLOBAL BACKGROUND AND SURFACE \
                 BRIGHTNESS LIMIT"
     dimX, dimY = imgArr.shape
@@ -209,17 +213,17 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
     # Rebin image
     dimBinX = int((dimX - 1) / rebin)
     dimBinY = int((dimY - 1) / rebin)
-    print "###   REBIN IMAGE "
     imgBin = hUtil.congrid(imgArr, (dimBinX, dimBinY), method='nearest')
-    print "###   REBIN MASK "
     mskBin = hUtil.congrid(mskAll, (dimBinX, dimBinY), method='neighbour')
     # Get all the pixels that are not masked out
     pixels = imgBin[mskBin == 0].flatten()
     pixNoMskBin = sigma_clip(pixels, sigma=skyClip, iters=3)
     numSkyPix = pixNoMskBin.shape[0]
     if verbose:
-        print "### Global Background After Rebin the Image "
-        print "###     N Pixels: %10d" % numSkyPix
+        print "###   REBIN MASK "
+        print "###   REBIN IMAGE "
+        print "###   Global Background After Rebin the Image "
+        print "###          N Pixels: %10d" % numSkyPix
     # Get the basic statistics of the global sky
     skyAvg, skyStd = np.nanmean(pixNoMskBin), np.nanstd(pixNoMskBin)
     skyMed = np.nanmedian(pixNoMskBin)
@@ -236,7 +240,6 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
         showSkyHist(pixNoMskBin, skypix2=pixNoMsk, sbExpt=sbExpt,
                     pngName=skyPNG, skyAvg=skyAvg, skyMed=skyMed,
                     skyStd=skyStd, skySkw=skySkw)
-
     # Save a txt file summary
     skyTxt = prefix + '_' + suffix + 'sky.dat'
     text_file = open(skyTxt, "w")
@@ -265,8 +268,9 @@ def coaddCutoutSky(prefix, root=None, verbose=True, skyClip=3.0,
     if (root is not None) and (root[-1] != '/'):
         root += '/'
     if verbose:
-        print "##############################################################"
+        print COM
         print "### DEAL WITH IMAGE : %s" % (root + prefix + '_img.fits')
+        print COM
     # Necessary information
     if verbose:
         print "###    The pixel scale in X/Y directions " + \
