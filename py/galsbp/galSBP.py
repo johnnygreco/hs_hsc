@@ -441,7 +441,7 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     # Surface brightness
     # Fixed the negative intensity
     intensSub = (ellipseOut['intens'] - bkg)
-    intensSub[intensSub < 0] = np.nan
+    intensSub[intensSub <= 0] = np.nan
     sbp = zp - 2.5 * np.log10(intensSub / (parea * exptime))
     ellipseOut.add_column(Column(name='sbp', data=sbp))
     # Not so accurate estimates of surface brightness error
@@ -719,21 +719,19 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     """ Get growth curve """
     curveOri = ellipOut['growth_ori']
-    curveOri[curveOri < 0] = np.nan
+    curveOri[curveOri <= 0] = np.nan
     curveCor = ellipOut['growth_cor']
-    curveCor[curveCor < 0] = np.nan
+    curveCor[curveCor <= 0] = np.nan
     growthCurveOri = -2.5 * np.log10(curveOri) + zp
     growthCurveNew = -2.5 * np.log10(curveCor) + zp
 
     maxIsoFluxOri = np.nanmax(ellipOut['growth_ori'][indexUse])
     magFluxOri100 = -2.5 * np.log10(maxIsoFluxOri) + zp
     print "###     MagTot OLD : ", magFluxOri100
-
     maxIsoFlux = np.nanmax(ellipOut['growth_cor'][indexUse])
     magFlux50 = -2.5 * np.log10(maxIsoFlux * 0.50) + zp
     magFlux100 = -2.5 * np.log10(maxIsoFlux) + zp
     print "###     MagTot NEW : ", magFlux100
-
     indMaxFlux = np.nanargmax(ellipOut['growth_cor'][indexUse])
     maxIsoSbp = ellipOut['sbp_upp'][indMaxFlux]
     print "###     MaxIsoSbp : ", maxIsoSbp
@@ -767,7 +765,9 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
         else:
             maxSma = maxRad
     elif radMode is 'log':
-        rad = np.log10(ellipOut['sma'])
+        rad = ellipOut['sma']
+        rad[rad <= 0] = np.nan
+        rad = np.log10(rad)
         radStr = 'log (SMA/pixel)'
         minRad = 0.01 if 0.01 >= np.log10(
             np.nanmin(ellipOut['sma'])) else np.log10(

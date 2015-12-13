@@ -194,7 +194,11 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     img = fits.open(image)[0].data
     imgX, imgY = img.shape
     imgMsk = copy.deepcopy(img)
-    imin, imax = hUtil.zscale(imgMsk, contrast=0.6, samples=500)
+    try:
+        imin, imax = hUtil.zscale(imgMsk, contrast=0.6, samples=500)
+    except Exception:
+        imin = np.percentile(np.ravel(imgMsk), 0.05)
+        imax = np.percentile(np.ravel(imgMsk), 0.95)
     if mask is not None:
         msk = fits.open(mask)[0].data
         imgMsk[msk > 0] = np.nan
@@ -214,14 +218,13 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     indexUse3 = np.where(ellipOut3['sma'] <= (radOuter*1.2))
     print "###     OutRadius", radOuter
     curveOri = ellipOut3['growth_ori']
-    curveOri[curveOri < 0.0] = 0.0
+    curveOri[curveOri <= 0.0] = 0.0
     curveCor = ellipOut3['growth_cor']
-    curveCor[curveCor < 0.0] = 0.0
+    curveCor[curveCor <= 0.0] = 0.0
     growthCurveOri = -2.5 * np.log10(curveOri) + zp
     growthCurveNew = -2.5 * np.log10(curveCor) + zp
 
     maxIsoFluxOri = np.nanmax(ellipOut3['growth_ori'][indexUse3])
-    # TODO: magFluxOri50  = -2.5 * np.log10(maxIsoFluxOri * 0.50) + zp
     magFluxOri100 = -2.5 * np.log10(maxIsoFluxOri) + zp
     print "###     MagTot OLD : ", magFluxOri100
     ax1.text(0.6, 0.85, 'mag$_{tot,old}=%5.2f$' % magFluxOri100, fontsize=24,
@@ -296,16 +299,22 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
             else:
                 maxRad = maxRad * pix * useKpc
     elif radMode is 'log':
+        sma1 = ellipOut1['sma_asec']
+        sma2 = ellipOut2['sma_asec']
+        sma3 = ellipOut3['sma_asec']
+        sma1[sma1 <= 0] = np.nan
+        sma2[sma2 <= 0] = np.nan
+        sma3[sma3 <= 0] = np.nan
         if useKpc is None:
             radStr = 'log (SMA/arcsec)'
-            rad1 = np.log10(ellipOut1['sma_asec'])
-            rad2 = np.log10(ellipOut2['sma_asec'])
-            rad3 = np.log10(ellipOut3['sma_asec'])
+            rad1 = np.log10(sma1)
+            rad2 = np.log10(sma2)
+            rad3 = np.log10(sma3)
         else:
             radStr = 'log (SMA/kpc)'
-            rad1 = np.log10(ellipOut1['sma_asec']*useKpc)
-            rad2 = np.log10(ellipOut2['sma_asec']*useKpc)
-            rad3 = np.log10(ellipOut3['sma_asec']*useKpc)
+            rad1 = np.log10(sma1 * useKpc)
+            rad2 = np.log10(sma2 * useKpc)
+            rad3 = np.log10(sma3 * useKpc)
 
         minRad = -1.2 if -1.2 >= np.nanmin(rad3) else np.nanmin(rad3)
         if useKpc is None:
@@ -338,11 +347,11 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
              linewidth=4.0)
 
     parea = (pix ** 2.0)
-    sbp = zp - 2.5 * np.log10((ellipOut3['intens'] -
-                              bkg) / (parea * exptime))
-    sbp_low = zp - 2.5 * np.log10((ellipOut3['intens'] +
-                                  ellipOut3['int_err'] - bkg) /
-                                  (parea * exptime))
+    intensBkgSub = (ellipOut3['intens'] - bkg)
+    intensBkgSub[intensBkgSub <= 0.0] = np.nan
+    sbp = zp - 2.5 * np.log10(intensBkgSub / (parea * exptime))
+    sbp_low = zp - 2.5 * np.log10((intensBkgSub +
+                                  ellipOut3['int_err']) / (parea * exptime))
     sbp_err = (sbp - sbp_low)
     sbp_upp = (sbp + sbp_err)
 
@@ -363,6 +372,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
         elif radMode is 'sma':
             psfRad = psfOut['sma_asec']
         elif radMode is 'log':
+            psfRad = psfOut['sma_asec']
+            psfRad[psfRad <= 0] = np.nan
             psfRad = np.log10(psfOut['sma_asec'])
         else:
             raise Exception('### Wrong type of Radius: sma, rsma, log')
