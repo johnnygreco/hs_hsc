@@ -170,12 +170,11 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     Parameters:
     """
     """ Left side: SBP """
-    reg1 = [0.07, 0.05, 0.455, 0.35]
-    reg2 = [0.07, 0.40, 0.455, 0.15]
-    reg3 = [0.07, 0.55, 0.455, 0.15]
-    reg4 = [0.07, 0.70, 0.455, 0.15]
-    reg5 = [0.07, 0.85, 0.455, 0.14]
-
+    reg1 = [0.075, 0.05, 0.455, 0.35]
+    reg2 = [0.075, 0.40, 0.455, 0.15]
+    reg3 = [0.075, 0.55, 0.455, 0.15]
+    reg4 = [0.075, 0.70, 0.455, 0.15]
+    reg5 = [0.075, 0.85, 0.455, 0.14]
     """ Right side: Curve of growth & IsoMap """
     reg6 = [0.59, 0.05, 0.39, 0.30]
     reg7 = [0.59, 0.35, 0.39, 0.16]
@@ -211,36 +210,45 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     radOuter = galSBP.ellipseGetOuterBoundary(ellipOut3, ratio=outRatio,
                                               threshold=threshold,
                                               polyOrder=12)
-
     if not np.isfinite(radOuter):
-        print " XXX radOuter is NaN, use 0.80 * max(SMA) instead !"
+        print "XXX radOuter is NaN, use 0.80 * max(SMA) instead !"
         radOuter = np.nanmax(sma) * 0.80
-
+    else:
+        print "###  OutRadius", radOuter
     indexUse1 = np.where(ellipOut1['sma'] <= (radOuter*1.2))
     indexUse2 = np.where(ellipOut2['sma'] <= (radOuter*1.2))
     indexUse3 = np.where(ellipOut3['sma'] <= (radOuter*1.2))
-    print "###     OutRadius", radOuter
+
     curveOri = ellipOut3['growth_ori']
     curveOri[curveOri <= 0.0] = 0.0
+    curveSub = ellipOut3['growth_sub']
+    curveSub[curveSub <= 0.0] = 0.0
     curveCor = ellipOut3['growth_cor']
     curveCor[curveCor <= 0.0] = 0.0
     growthCurveOri = -2.5 * np.log10(curveOri) + zp
-    growthCurveNew = -2.5 * np.log10(curveCor) + zp
+    growthCurveSub = -2.5 * np.log10(curveSub) + zp
+    growthCurveCor = -2.5 * np.log10(curveCor) + zp
 
-    maxIsoFluxOri = np.nanmax(ellipOut3['growth_ori'][indexUse3])
+    maxIsoFluxOri = np.nanmax(curveOri[indexUse3])
     magFluxOri100 = -2.5 * np.log10(maxIsoFluxOri) + zp
-    print "###     MagTot OLD : ", magFluxOri100
-    ax1.text(0.6, 0.85, 'mag$_{tot,old}=%5.2f$' % magFluxOri100, fontsize=24,
+    print "###     MagTot ORI : ", magFluxOri100
+    ax1.text(0.55, 0.85, 'mag$_{tot,ori}=%5.2f$' % magFluxOri100, fontsize=24,
              transform=ax1.transAxes)
 
-    maxIsoFlux = np.nanmax(ellipOut3['growth_cor'][indexUse3])
-    magFlux50 = -2.5 * np.log10(maxIsoFlux * 0.50) + zp
-    magFlux100 = -2.5 * np.log10(maxIsoFlux) + zp
-    print "###     MagTot NEW : ", magFlux100
-    ax1.text(0.6, 0.78, 'mag$_{tot,new}=%5.2f$' % magFlux100, fontsize=24,
+    maxIsoFluxSub = np.nanmax(curveSub[indexUse3])
+    magFluxSub100 = -2.5 * np.log10(maxIsoFluxSub) + zp
+    print "###     MagTot SUB : ", magFluxSub100
+    ax1.text(0.55, 0.85, 'mag$_{tot,sub}=%5.2f$' % magFluxSub100, fontsize=24,
              transform=ax1.transAxes)
 
-    indMaxFlux = np.nanargmax(ellipOut3['growth_cor'][indexUse3])
+    maxIsoFluxCor = np.nanmax(curveCor[indexUse3])
+    magFlux50 = -2.5 * np.log10(maxIsoFluxCor * 0.50) + zp
+    magFlux100 = -2.5 * np.log10(maxIsoFluxCor) + zp
+    print "###     MagTot COR : ", magFlux100
+    ax1.text(0.55, 0.78, 'mag$_{tot,cor}=%5.2f$' % magFlux100, fontsize=24,
+             transform=ax1.transAxes)
+
+    indMaxFlux = np.nanargmax(curveSub[indexUse3])
     maxIsoSbp = ellipOut3['sbp_upp'][indMaxFlux]
     print "###     MaxIsoSbp : ", maxIsoSbp
 
@@ -305,9 +313,6 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
         sma1 = ellipOut1['sma_asec']
         sma2 = ellipOut2['sma_asec']
         sma3 = ellipOut3['sma_asec']
-        sma1[sma1 <= 0] = np.nan
-        sma2[sma2 <= 0] = np.nan
-        sma3[sma3 <= 0] = np.nan
         if useKpc is None:
             radStr = 'log (SMA/arcsec)'
             rad1 = np.log10(sma1)
@@ -346,23 +351,17 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax1.set_xlabel(radStr, fontsize=23)
     ax1.set_ylabel('${\mu}$ (mag/arcsec$^2$)', fontsize=28)
 
-    ax1.plot(rad3[indexUse3], ellipOut3['sbp_ori'][indexUse3], '--', color='k',
-             linewidth=4.0)
-    # parea = (pix ** 2.0)
-    # intensBkgSub = (ellipOut3['intens'] - bkg)
-    # intensBkgSub[intensBkgSub <= 0.0] = np.nan
-    # sbp = zp - 2.5 * np.log10(intensBkgSub / (parea * exptime))
-    # sbp_low = zp - 2.5 * np.log10((intensBkgSub +
-    #                               ellipOut3['int_err']) / (parea * exptime))
-    # sbp_err = (sbp - sbp_low)
-    # sbp_upp = (sbp + sbp_err)
-    sbp = ellipOut3['sbp']
+    sbp_sub = ellipOut3['sbp_sub']
+    sbp_ori = ellipOut3['sbp_ori']
     sbp_low = ellipOut3['sbp_low']
     sbp_upp = ellipOut3['sbp_upp']
 
     ax1.fill_between(rad3[indexUse3], sbp_upp[indexUse3], sbp_low[indexUse3],
                      facecolor='r', alpha=0.2)
-    ax1.plot(rad3[indexUse3], sbp[indexUse3], '-', color='r', linewidth=3.5)
+    ax1.plot(rad3[indexUse3], sbp_ori[indexUse3], '--', color='k',
+             linewidth=3.5)
+    ax1.plot(rad3[indexUse3], sbp_sub[indexUse3], '-', color='r',
+             linewidth=4.0)
 
     ax1.set_xlim(minRad, radOut)
     sbpBuffer = 0.5
@@ -378,7 +377,6 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
             psfRad = psfOut['sma_asec']
         elif radMode is 'log':
             psfRad = psfOut['sma_asec']
-            psfRad[psfRad <= 0] = np.nan
             psfRad = np.log10(psfOut['sma_asec'])
         else:
             raise Exception('### Wrong type of Radius: sma, rsma, log')
@@ -551,15 +549,18 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                 alpha=0.6, linewidth=3.0, label='mag$_{100}$')
     ax6.axhline(magFlux50,  linestyle='--', color='k',
                 alpha=0.6, linewidth=3.0, label='mag$_{50}$')
+
     ax6.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
     ax6.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
 
     ax6.plot(rad3, growthCurveOri, '--', color='g', linewidth=3.5,
-             label='curve$_{old}$')
-    ax6.plot(rad3, growthCurveNew, '-', color='r', linewidth=3.5,
-             label='curve$_{new}$')
+             label='curve$_{ori}$')
+    ax6.plot(rad3, growthCurveSub, '-.', color='b', linewidth=3.5,
+             label='curve$_{sub}$')
+    ax6.plot(rad3, growthCurveCor, '-', color='r', linewidth=4.0,
+             label='curve$_{cor}$')
 
-    ax6.legend(loc=[0.34, 0.58], fontsize=24)
+    ax6.legend(loc=[0.34, 0.57], fontsize=23)
 
     ax6.set_xlim(minRad, maxRad)
 
@@ -571,12 +572,14 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax7.locator_params(axis='y', tight=True, nbins=4)
 
     ax7.axhline(0.0, linestyle='-', color='k', alpha=0.6, linewidth=3.0)
-    ax7.plot(rad3, ellipOut3['intens'] - bkg, '--', color='g',
+    ax7.plot(rad3, ellipOut3['intens'], '--', color='g',
              linewidth=2.5)
-    ax7.fill_between(rad3, ellipOut3['intens']+ellipOut3['int_err'],
-                     ellipOut3['intens']-ellipOut3['int_err'],
+    ax7.fill_between(rad3,
+                     (ellipOut3['intens_sub'] + ellipOut3['int_err']),
+                     (ellipOut3['intens_sub'] - ellipOut3['int_err']),
                      facecolor='r', alpha=0.3)
-    ax7.plot(rad3, ellipOut3['intens'], '-', color='r', linewidth=3.0)
+    ax7.plot(rad3, ellipOut3['intens_sub'], '-', color='r', linewidth=3.5)
+
     ax7.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
     ax7.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
 
@@ -679,6 +682,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     else:
         gc.collect()
     print SEP
+
     """ 0. Organize Input Data """
     # Read in the input image, mask, psf, and their headers
     sbpInput = readSbpInput(prefix, root=root, exMask=exMask)
@@ -690,7 +694,6 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 same dimensions!")
     """
     Delete image and mask array
-
     TODO Test
     """
     if psutilOk:
@@ -788,6 +791,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         print "### The central region is masked out"
         print WAR
     else:
+        """ Ellipse run for the PSF """
         if psf:
             print SEP
             print "\n##   Ellipse Run on PSF "
@@ -814,6 +818,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                    outerThreshold=1e-6,
                                    useZscale=False,
                                    savePng=False)
+        else:
+            psfOut = None
+        """ Ellipse run for the galaxy """
         if inEllip is None:
             iniSma = (galR50 * 2.0)
             """#        Start with Stage 1 """
@@ -943,20 +950,12 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 if suffix[-1] != '_':
                     suffix = suffix + '_'
                 sumPng = root + prefix + '_ellip_' + suffix + 'sum.png'
-                if psf:
-                    ellipSummary(ellOut1, ellOut2, ellOut3, imgOri,
-                                 psfOut=psfOut,
-                                 maxRad=maxR, mask=mskOri, radMode='rsma',
-                                 outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
-                                 showZoom=showZoom, exptime=exptime, bkg=bkg,
-                                 outRatio=outRatio)
-                else:
-                    ellipSummary(ellOut1, ellOut2, ellOut3, imgOri,
-                                 psfOut=None,
-                                 maxRad=maxR, mask=mskOri, radMode='rsma',
-                                 outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
-                                 showZoom=showZoom, exptime=exptime, bkg=bkg,
-                                 outRatio=outRatio)
+                ellipSummary(ellOut1, ellOut2, ellOut3, imgOri,
+                             psfOut=psfOut,
+                             maxRad=maxR, mask=mskOri, radMode='rsma',
+                             outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
+                             showZoom=showZoom, exptime=exptime, bkg=bkg,
+                             outRatio=outRatio)
         else:
             """ # Run Ellipse in Forced Photometry Mode """
             print SEP
