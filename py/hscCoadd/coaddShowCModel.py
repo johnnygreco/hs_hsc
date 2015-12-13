@@ -4,7 +4,6 @@
 from __future__ import division
 
 import os
-import copy
 import argparse
 
 import numpy as np
@@ -27,31 +26,34 @@ plt.ioff()
 
 # Astropy
 from astropy.io import fits
-from astropy import units as u
-from astropy.stats import sigma_clip
 from astropy.wcs import WCS
 
 # Colormap
 from palettable.colorbrewer.sequential import Greys_3 as pcmap1
 cmap5 = pcmap1.mpl_colormap
-from palettable.colorbrewer.diverging  import RdYlGn_11 as pcmap2
+from palettable.colorbrewer.diverging import RdYlGn_11 as pcmap2
 cmap6 = pcmap2.mpl_colormap
 
 # Personal
 import hscUtils as hUtil
 
 
-def showCmodel(imgData, xUse, yUse, ellipse, colorCmod, figSize=14, fontSize=14,
-              filter='HSC-I', ellipName='Exponential', showSource=True,
-              mag0=24.5, mag1=18.0, figName='showCmodel.png'):
+def showCmodel(imgData, xUse, yUse, ellipse, colorCmod, figSize=14,
+               fontSize=14, filter='HSC-I', ellipName='Exponential',
+               showSource=True, mag0=24.5, mag1=18.0,
+               figName='showCmodel.png'):
+    """
+    Visualize cModel results to a PNG figure.
 
+    Parameters:
+    """
     rEllip, eEllip, paEllip = srcMoments2Ellip(ellipse)
     ellipPlot = getEll2Plot(xUse, yUse, rEllip, eEllip, paEllip)
 
     fig = plt.figure(figsize=(figSize, figSize))
     fig.subplots_adjust(hspace=0.0, wspace=0.0, left=0.03, bottom=0.03,
                         top=0.95, right=0.995)
-    ax = fig.add_subplot(1,1,1)
+    ax = fig.add_subplot(1, 1, 1)
     fontsize = fontSize
     ax.minorticks_on()
 
@@ -60,12 +62,12 @@ def showCmodel(imgData, xUse, yUse, ellipse, colorCmod, figSize=14, fontSize=14,
     for tick in ax.yaxis.get_major_ticks():
         tick.label1.set_fontsize(fontsize)
     ax.set_title('%s-band Image - %s' % (filter, ellipName),
-                fontsize=(fontSize+13), fontweight='bold')
+                 fontsize=(fontSize+13), fontweight='bold')
     ax.title.set_position((0.5, 1.01))
 
     imin, imax = hUtil.zscale(imgData, contrast=0.04, samples=500)
     ax.imshow(np.arcsinh(imgData), interpolation="none",
-               vmin=imin, vmax=imax, cmap=cmap5)
+              vmin=imin, vmax=imax, cmap=cmap5)
 
     if showSource:
         ax.scatter(xUse, yUse, marker='+', s=25, c='r')
@@ -80,7 +82,9 @@ def showCmodel(imgData, xUse, yUse, ellipse, colorCmod, figSize=14, fontSize=14,
 
     cax = fig.add_axes([0.14, 0.18, 0.21, 0.02])
     norm = mpl.colors.Normalize(vmin=mag1, vmax=mag0)
-    cbar = mpl.colorbar.ColorbarBase(cax, cmap=cmap6, norm=norm, orientation='horizontal')
+    cbar = mpl.colorbar.ColorbarBase(cax, cmap=cmap6,
+                                     norm=norm,
+                                     orientation='horizontal')
     cbar.set_label('cModel Magnitude (mag)', fontsize=(fontSize+3))
 
     ax.set_xlim(0, imgData.shape[1]-1)
@@ -91,29 +95,26 @@ def showCmodel(imgData, xUse, yUse, ellipse, colorCmod, figSize=14, fontSize=14,
 
 
 def srcToRaDec(src):
-    """
-    Return a list of (RA, DEC)
-    """
-    raArr  = np.asarray([coord[0] * 180.0 / np.pi for coord in src['coord']])
+    """Return a list of (RA, DEC)."""
+    raArr = np.asarray([coord[0] * 180.0 / np.pi for coord in src['coord']])
     decArr = np.asarray([coord[1] * 180.0 / np.pi for coord in src['coord']])
 
     return raArr, decArr
 
 
 def toColorArr(data, bottom=None, top=None):
-    """
-    Convert a data array to "color array" (between 0 and 1)
-    """
+    """Convert a data array to "color array" (between 0 and 1)."""
     if top is not None:
-        data[data >= top]    = top
+        data[data >= top] = top
     if bottom is not None:
         data[data <= bottom] = bottom
 
-    return ((data - np.nanmin(data)) / (np.nanmax(data) - np.nanmin(data))) * 255.0
+    return ((data - np.nanmin(data)) / (np.nanmax(data) -
+            np.nanmin(data))) * 255.0
 
 
 def getEll2Plot(x, y, re, ell, theta):
-
+    """Convert parameters to Matplotlib Ellipse patch."""
     a = (re * 2.0)
     b = (re * (1.0 - ell) * 2.0)
     pa = (theta + 90.0)
@@ -128,11 +129,8 @@ def getEll2Plot(x, y, re, ell, theta):
 
 
 def srcMoments2Ellip(ellip):
-    """
-    Translate The 2nd Moments into Elliptical Shape
-    """
-
-    Ixx, Iyy, Ixy = ellip[:,0], ellip[:,1], ellip[:,2]
+    """Translate The 2nd Moments into Elliptical Shape."""
+    Ixx, Iyy, Ixy = ellip[:, 0], ellip[:, 1], ellip[:, 2]
 
     e1 = (Ixx - Iyy) / (Ixx + Iyy)
     e2 = (2.0 * Ixy / (Ixx + Iyy))
@@ -146,18 +144,18 @@ def srcMoments2Ellip(ellip):
 
 def getCoaddData(prefix, galId, root=None, filter='HSC-I', ref=False,
                  noParent=False):
-    """
-    Return the coadd image and source catalog
-    """
-
+    """Return the coadd image and source catalog."""
     if root is None:
         root = ''
     loc = os.path.join(root, galId, filter)
-    imgFile = os.path.join(loc, prefix + '_' + galId + '_' + filter + '_full_img.fits')
+    imgFile = os.path.join(loc, prefix + '_' + galId + '_' +
+                           filter + '_full_img.fits')
     if not ref:
-        catFile = os.path.join(loc, prefix + '_' + galId + '_' + filter + '_full_meas.fits')
+        catFile = os.path.join(loc, prefix + '_' +
+                               galId + '_' + filter + '_full_meas.fits')
     else:
-        catFile = os.path.join(loc, prefix + '_' + galId + '_' + filter + '_full_ref.fits')
+        catFile = os.path.join(loc, prefix + '_' +
+                               galId + '_' + filter + '_full_ref.fits')
     if not os.path.isfile(imgFile) or not os.path.isfile(catFile):
         print "## Image   : %s" % imgFile
         print "## Catalog : %s" % catFile
@@ -178,36 +176,35 @@ def getCoaddData(prefix, galId, root=None, filter='HSC-I', ref=False,
 
 
 def catFlux2Mag(cat, flux, zeropoint=27.0):
-    """
-    Conver flux into magnitude
-    """
+    """Conver flux into magnitude."""
     return (-2.5 * np.log10(cat[flux]) + zeropoint)
 
 
-def coaddShowCModel(prefix, galId, filter='HSC-I', ref=False, root=None, noParent=False,
-                    zeropoint=27.0, mag0=24.5, mag1=18.0, fontSize=14, figSize=14,
-                    showSource=True, verbose=True):
-    """
-    Visualize the cModel fitting results for given coadd image
-    """
+def coaddShowCModel(prefix, galId, filter='HSC-I', ref=False, root=None,
+                    noParent=False, zeropoint=27.0, mag0=24.5, mag1=18.0,
+                    fontSize=14, figSize=14, showSource=True,
+                    verbose=True):
+    """Visualize the cModel fitting results for given coadd image."""
     galId = str(galId).strip()
     # Get the coadd data, both image and catalog
-    imgData, imgHead, catData = getCoaddData(prefix, galId, filter=filter, root=root,
+    imgData, imgHead, catData = getCoaddData(prefix, galId,
+                                             filter=filter,
+                                             root=root,
                                              ref=ref)
     # Objects with useful cModel information
     catCModel = catData[(np.isfinite(catData['cmodel_flux'])) &
-                    (np.isfinite(catData['cmodel_exp_flux'])) &
-                    (np.isfinite(catData['cmodel_dev_flux'])) &
-                    (catData['cmodel_flux'] > 0.0) &
-                    (catData['deblend_nchild'] == 0) &
-                    (catData['classification_extendedness'] >= 0.5)]
+                        (np.isfinite(catData['cmodel_exp_flux'])) &
+                        (np.isfinite(catData['cmodel_dev_flux'])) &
+                        (catData['cmodel_flux'] > 0.0) &
+                        (catData['deblend_nchild'] == 0) &
+                        (catData['classification_extendedness'] >= 0.5)]
     if verbose:
         print "### %d objects with useful cModel information" % len(catCModel)
     # Convert (RA, DEC) into (X, Y)
     wcs = WCS(imgHead)
     raCmod, decCmod = srcToRaDec(catCModel)
     xyCmod = wcs.wcs_world2pix((catCModel['coord'] * 180.0 / np.pi), 1)
-    xCmod, yCmod = xyCmod[:,0], xyCmod[:,1]
+    xCmod, yCmod = xyCmod[:, 0], xyCmod[:, 1]
     # Get cModelMagnitude
     magCmod = catFlux2Mag(catCModel, 'cmodel_flux', zeropoint=zeropoint)
     # Convert into color array
@@ -220,12 +217,12 @@ def coaddShowCModel(prefix, galId, filter='HSC-I', ref=False, root=None, noParen
             print "### Start to work on %s model !" % ellipName
         ellipse = catCModel[ellipName]
         loc = os.path.join(root, galId, filter)
-        pngFile = os.path.join(loc, prefix + '_' + galId + '_' + filter + \
-                              '_' + ellipName + '.png')
+        pngFile = os.path.join(loc, prefix + '_' + galId + '_' +
+                               filter + '_' + ellipName + '.png')
         showCmodel(imgData, xCmod, yCmod, ellipse, colorCmod,
-                  figSize=figSize, fontSize=fontSize, filter=filter,
-                  ellipName=ellipType[ii], showSource=showSource,
-                  mag0=mag0, mag1=mag1, figName=pngFile)
+                   figSize=figSize, fontSize=fontSize, filter=filter,
+                   ellipName=ellipType[ii], showSource=showSource,
+                   mag0=mag0, mag1=mag1, figName=pngFile)
 
 
 if __name__ == '__main__':
@@ -234,23 +231,25 @@ if __name__ == '__main__':
     parser.add_argument("prefix", help="Prefix of the image files")
     parser.add_argument("id", help="Galaxy Id")
     parser.add_argument("-f", "--filter", dest="filter",
-            default='HSC-I', help="HSC Filter")
+                        default='HSC-I', help="HSC Filter")
     parser.add_argument("-r", "--root", dest="root",
-            default='', help="Root to the cutout images")
+                        default='', help="Root to the cutout images")
     parser.add_argument("-z", "--zeropoint", type=float, default=27.0,
-            dest='zeropoint', help="Photometric zeropoint")
+                        dest='zeropoint', help="Photometric zeropoint")
     parser.add_argument("--mag0", type=float, default=24.5,
-            dest='mag0', help="Faint limit of cModel magnitude")
+                        dest='mag0', help="Faint limit of cModel magnitude")
     parser.add_argument("--mag1", type=float, default=18.0,
-            dest='mag1', help="Bright limit of cModel magnitude")
+                        dest='mag1', help="Bright limit of cModel magnitude")
     parser.add_argument("--fontsize", type=float, default=18.0,
-            dest='fontsize', help="Font size")
+                        dest='fontsize', help="Font size")
     parser.add_argument("--figsize", type=float, default=14.0,
-            dest='figsize', help="Figure size")
-    parser.add_argument("--ref", help="Whether to use the deepCoadd_ref catalog",
-            dest='ref', action='store_true', default=False)
-    parser.add_argument("--nosource", help="Don't show the locations of detections",
-            dest='nosource', action='store_false', default=True)
+                        dest='figsize', help="Figure size")
+    parser.add_argument("--ref",
+                        help="Whether to use the deepCoadd_ref catalog",
+                        dest='ref', action='store_true', default=False)
+    parser.add_argument("--nosource",
+                        help="Don't show the locations of detections",
+                        dest='nosource', action='store_false', default=True)
     args = parser.parse_args()
 
     coaddShowCModel(args.prefix, args.id, filter=args.filter, ref=args.ref,
