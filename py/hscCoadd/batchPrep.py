@@ -34,12 +34,12 @@ def run(args):
         logFile = (args.incat).replace('.fits', '_%s_prep.log' % rerun)
         logging.basicConfig(filename=logFile)
 
-        print "########################################################"
+        print COM
         print "## Will deal with %d galaxies ! " % len(data)
+        print COM
 
         for index, galaxy in enumerate(data):
 
-            print "\n########################################################"
             galID = str(galaxy[id]).strip()
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
             galRoot = os.path.join(galID, filter)
@@ -47,12 +47,14 @@ def run(args):
             print "## Will Deal with %s now : %i / %i" % (galID,
                                                           (index + 1),
                                                           len(data))
-            print "########################################################"
+            print COM
 
             if not os.path.isdir(galRoot):
+                print WAR
                 raise Exception('### Can not find the root folder for the \
                         galaxy data !')
             if not os.path.isfile(os.path.join(galRoot, galImg)):
+                print WAR
                 raise Exception('### Can not find the cutout image of the \
                         galaxy !')
 
@@ -177,13 +179,13 @@ def run(args):
                                            combDet=args.combDet,
                                            multiMask=args.multiMask)
             except Exception, errMsg:
-                print "####################################################"
+                print WAR
                 print str(errMsg)
                 warnings.warn('### The cutout preparation is failed for %s' %
                               galPrefix)
                 logging.warning('### The cutout preparation is failed for %s' %
                                 galPrefix)
-            print "########################################################"
+            print COM
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 
