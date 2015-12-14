@@ -158,6 +158,50 @@ def imgSameSize(img1, img2):
         return False
 
 
+def ellipCompare(ellipStack, outPng='ellipse_compare.png',
+                 zp=27.0, maxRad=None, pix=0.168, bkg=0.0,
+                 exptime=1.0, outRatio=1.2, pngSize=10,
+                 ellipLabel=None):
+    """
+    Compare the Ellipse results.
+
+    Parameters:
+    """
+    reg1 = [0.075, 0.05, 0.98, 0.98]
+    fig = plt.figure(figsize=(pngSize, pngSize))
+    ax1 = fig.add_axes(reg1)
+
+    """ ax1 SBP """
+    ax1.minorticks_on()
+    ax1.invert_yaxis()
+    ax1.tick_params(axis='both', which='major', labelsize=22, pad=8)
+    radStr = 'RSMA (arcsec$^{1/4}$)'
+    ax1.set_xlabel(radStr, fontsize=23)
+    ax1.set_ylabel('${\mu}$ (mag/arcsec$^2$)', fontsize=28)
+
+    ellipLine = ['-', '--', '--', '-.', '-.', '-.']
+    ellipColor = ['k', 'r', 'b', 'g', 'c', 'm']
+    for ii, ellip in enumerate(ellipStack):
+        if ellipLabel is None:
+            label = str(ii+1)
+        else:
+            label = ellipLabel[ii]
+        if ellip is not None:
+            ax1.plot(ellip['rsma'], ellip['sbp_cor'],
+                     linestyle=ellipLine[ii],
+                     c=ellipColor[ii], linewidth=3.5, alpha=0.9,
+                     label=label)
+
+    ax1.legend(loc=[0.40, 0.48], fontsize=21)
+
+    """ Save Figure """
+    fig.savefig(outPng, dpi=80)
+    plt.close(fig)
+    print SEP
+
+    return
+
+
 def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                  maxRad=None, mask=None, radMode='rsma',
                  outPng='ellipse_summary.png', zp=27.0, threshold=None,
@@ -808,7 +852,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 print WAR
                 raise Exception("### Can not find the \
                                 PSF image: %s !" % psfFile)
-            psfOut = galSBP.galSBP(psfFile, iniSma=5.0,
+            psfRes = galSBP.galSBP(psfFile, iniSma=5.0,
                                    pix=pix,
                                    galQ=0.95,
                                    galPA=0.0,
@@ -820,6 +864,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                    savePng=False,
                                    bkg=0.0,
                                    updateIntens=False)
+            psfOut, psfBin = psfRes
         else:
             psfOut = None
         """ Ellipse run for the galaxy """
@@ -830,7 +875,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             print "##       Ellipse Run on Image %s- Stage 1 " % imgFile
             print SEP
             galSBP.unlearnEllipse()
-            ellOut1 = galSBP.galSBP(imgFile,
+            ellRes1 = galSBP.galSBP(imgFile,
                                     mask=mskFile,
                                     galX=galX,
                                     galY=galY,
@@ -856,6 +901,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     maxIt=maxIt,
                                     plMask=plMask,
                                     suffix=suffix)
+            ellOut1, ellBin1 = ellRes1
+
             if ellOut1 is None:
                 print WAR
                 raise Exception("!!!!! ELLIPSE RUN FAILED AT STAGE 1 !!!!")
@@ -875,7 +922,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             print SEP
             print "##       Ellipse Run on Image %s- Stage 2 " % imgFile
             print SEP
-            ellOut2 = galSBP.galSBP(imgFile, mask=mskFile,
+            ellRes2 = galSBP.galSBP(imgFile, mask=mskFile,
                                     galX=galX0,
                                     galY=galY0,
                                     maxSma=maxR,
@@ -900,6 +947,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     maxIt=maxIt,
                                     plMask=plMask,
                                     suffix=suffix)
+            ellOut2, ellBin2 = ellRes2
+
             if ellOut2 is None:
                 print WAR
                 raise Exception("!!!!! ELLIPSE RUN FAILED AT STAGE 2 !!!!")
@@ -917,7 +966,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             print SEP
             print "##       Ellipse Run on Image %s- Stage 3 " % imgFile
             print SEP
-            ellOut3 = galSBP.galSBP(imgFile, mask=mskFile,
+            ellRes3 = galSBP.galSBP(imgFile, mask=mskFile,
                                     galX=galX0,
                                     galY=galY0,
                                     maxSma=maxR,
@@ -940,6 +989,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     intMode=intMode,
                                     plMask=plMask,
                                     suffix=suffix)
+            ellOut3, ellBin3 = ellRes3
+
             if ellOut3 is None:
                 print WAR
                 raise Exception("!!!!! ELLIPSE RUN FAILED AT STAGE 3 !!!!")
@@ -958,6 +1009,163 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                              outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
                              showZoom=showZoom, exptime=exptime, bkg=bkg,
                              outRatio=outRatio)
+            if multiEllipse:
+                """
+                Run Ellipse using different mask and configuration
+
+                This is mainly to test the robustness of the 1-D SBP
+                """
+
+                """ 1. Small Mask """
+                if not noMask:
+                    mskSmall = mskFile.replace('mskfin', 'msksmall')
+                    inputSmall = ellBin3
+                    suffixSmall = 'multi1'
+                    print SEP
+                    print "##   Force Ellipse Run wit Small Mask "
+                    print "##   Mask : %s" % mskSmall
+                    print "##   Input binary : %s" % inputSmall
+                    print SEP
+                    smallOut = galSBP.galSBP(imgFile, mask=mskSmall,
+                                             ellipStep=step,
+                                             stage=4,
+                                             zpPhoto=zp,
+                                             pix=pix,
+                                             bkg=bkg,
+                                             maxTry=1,
+                                             updateIntens=updateIntens,
+                                             inEllip=inputSmall,
+                                             suffix=suffixSmall)
+                    smallEll, smallBin = smallOut
+                else:
+                    smallEll, temp = None, None
+
+                """ 2. Large Mask """
+                if not noMask:
+                    mskLarge = mskFile.replace('mskfin', 'msklarge')
+                    inputLarge = ellBin3
+                    suffixLarge = 'multi2'
+                    print SEP
+                    print "##   Force Ellipse Run wit Large Mask "
+                    print "##   Mask : %s" % mskLarge
+                    print "##   Input binary : %s" % inputLarge
+                    print SEP
+                    largeOut = galSBP.galSBP(imgFile, mask=mskLarge,
+                                             ellipStep=step,
+                                             stage=4,
+                                             zpPhoto=zp,
+                                             pix=pix,
+                                             bkg=bkg,
+                                             maxTry=1,
+                                             updateIntens=updateIntens,
+                                             inEllip=inputLarge,
+                                             suffix=suffixLarge)
+                    largeEll, largeBin = largeOut
+                else:
+                    largeEll, temp = None, None
+
+                """ 3. Strick clipping """
+                suffixMulti3 = 'multi3'
+                print SEP
+                print "##   Ellipse Run wit Strick Pixel Clipping "
+                print SEP
+                resMulti3 = galSBP.galSBP(imgFile, mask=mskFile,
+                                          galX=galX0,
+                                          galY=galY0,
+                                          maxSma=maxR,
+                                          iniSma=iniSma,
+                                          galR=galR50,
+                                          ellipStep=step,
+                                          maxTry=maxTry,
+                                          pix=pix,
+                                          bkg=bkg,
+                                          galQ=galQ0,
+                                          galPA=galPA0,
+                                          zpPhoto=zp,
+                                          updateIntens=updateIntens,
+                                          olthresh=olthresh,
+                                          stage=3,
+                                          lowClip=2.5,
+                                          uppClip=2.0,
+                                          nClip=3,
+                                          fracBad=0.5,
+                                          intMode=intMode,
+                                          plMask=plMask,
+                                          suffix=suffixMulti3)
+                ellMulti3, binMulti3 = resMulti3
+
+                """ 4. Larger step size """
+                suffixMulti4 = 'multi4'
+                print SEP
+                print "##   Ellipse Run wit Strick Pixel Clipping "
+                print SEP
+                resMulti4 = galSBP.galSBP(imgFile, mask=mskFile,
+                                          galX=galX0,
+                                          galY=galY0,
+                                          maxSma=maxR,
+                                          iniSma=iniSma,
+                                          galR=galR50,
+                                          ellipStep=0.2,
+                                          maxTry=maxTry,
+                                          pix=pix,
+                                          bkg=bkg,
+                                          galQ=galQ0,
+                                          galPA=galPA0,
+                                          zpPhoto=zp,
+                                          updateIntens=updateIntens,
+                                          olthresh=olthresh,
+                                          stage=3,
+                                          lowClip=lowClip,
+                                          uppClip=uppClip,
+                                          nClip=nClip,
+                                          fracBad=fracBad,
+                                          intMode=intMode,
+                                          plMask=plMask,
+                                          suffix=suffixMulti4)
+                ellMulti4, binMulti4 = resMulti4
+
+                """ 5. Use Median instead of Mean """
+                suffixMulti5 = 'multi5'
+                print SEP
+                print "##   Ellipse Run with Median integration mode "
+                print SEP
+                resMulti5 = galSBP.galSBP(imgFile, mask=mskFile,
+                                          galX=galX0,
+                                          galY=galY0,
+                                          maxSma=maxR,
+                                          iniSma=iniSma,
+                                          galR=galR50,
+                                          ellipStep=step,
+                                          maxTry=maxTry,
+                                          pix=pix,
+                                          bkg=bkg,
+                                          galQ=galQ0,
+                                          galPA=galPA0,
+                                          zpPhoto=zp,
+                                          updateIntens=updateIntens,
+                                          olthresh=olthresh,
+                                          stage=3,
+                                          lowClip=lowClip,
+                                          uppClip=uppClip,
+                                          nClip=nClip,
+                                          fracBad=fracBad,
+                                          intMode='median',
+                                          plMask=plMask,
+                                          suffix=suffixMulti5)
+                ellMulti5, binMulti5 = resMulti5
+
+                """ """
+                ellStack = [ellOut3, smallEll, largeEll,
+                            ellMulti3, ellMulti4, ellMulti5]
+                ellLabel = ['Standard', 'Small Mask',
+                            'Large Mask',
+                            'Large nClip',
+                            'Large Step',
+                            'intMode=Median']
+                comparePng = (root + prefix + '_ellip_' + suffix +
+                              'compare.png')
+                ellipCompare(ellStack, outPng=comparePng, zp=27.0,
+                             ellipLabel=ellLabel)
         else:
             """ # Run Ellipse in Forced Photometry Mode """
             print SEP

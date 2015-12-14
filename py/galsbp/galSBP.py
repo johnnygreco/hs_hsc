@@ -1442,6 +1442,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             print "###  !!! Make the Ellipse Run A Little Bit Easier !"
             print WAR
             ellipCfg = easierEllipse(ellipCfg)
+
         if not os.path.isfile(outBin):
             ellipOut = None
             print WAR
@@ -1449,7 +1450,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             print WAR
         gc.collect()
 
-    return ellipOut
+    return ellipOut, outBin
 
 
 if __name__ == '__main__':
