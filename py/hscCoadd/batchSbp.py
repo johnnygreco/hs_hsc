@@ -141,6 +141,7 @@ def run(args):
                                     maxTry=args.maxTry,
                                     outRatio=args.outRatio,
                                     exMask=galMsk,
+                                    multiEllipse=args.multiEllipse,
                                     suffix=ellipSuffix,
                                     plMask=args.plmask,
                                     noMask=args.nomask)
@@ -252,6 +253,9 @@ if __name__ == '__main__':
     parser.add_argument('--updateIntens', dest='updateIntens',
                         action="store_true",
                         default=True)
+    parser.add_argument('--multiEllipse', dest='multiEllipse',
+                        action="store_true",
+                        default=False)
     parser.add_argument('--plmask', dest='plmask', action="store_true",
                         default=True)
     parser.add_argument('--nomask', dest='nomask', action="store_true",

@@ -662,7 +662,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                    showZoom=True, checkCenter=True, updateIntens=True,
                    olthresh=0.5, intMode='mean', lowClip=3.0, uppClip=3.0,
                    nClip=2, fracBad=0.5, minIt=20, maxIt=150, outRatio=1.2,
-                   exMask=None, suffix='', plMask=False, noMask=False):
+                   exMask=None, suffix='', plMask=False, noMask=False,
+                   multiEllipse=False):
     """
     Generate 1-D SBP Plot.
 
@@ -1078,6 +1079,9 @@ if __name__ == '__main__':
                         help='Check if the center is off', default=True)
     parser.add_argument('--updateIntens', dest='updateIntens',
                         action="store_true", default=True)
+    parser.add_argument('--multiEllipse', dest='multiEllipse',
+                        action="store_true",
+                        default=False)
     parser.add_argument('--plmask', dest='plmask', action="store_true",
                         default=True)
     parser.add_argument('--nomask', dest='nomask', action="store_true",
@@ -1115,4 +1119,5 @@ if __name__ == '__main__':
                    outRatio=args.outRatio,
                    plMask=args.plmask,
                    exMask=args.exMask,
-                   noMask=args.noMask)
+                   noMask=args.noMask,
+                   multiEllipse=args.multiEllipse)
