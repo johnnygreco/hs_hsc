@@ -167,17 +167,18 @@ def ellipCompare(ellipStack, outPng='ellipse_compare.png',
 
     Parameters:
     """
-    reg1 = [0.075, 0.05, 0.98, 0.98]
+    reg1 = [0.1, 0.1, 0.88, 0.88]
     fig = plt.figure(figsize=(pngSize, pngSize))
     ax1 = fig.add_axes(reg1)
 
     """ ax1 SBP """
     ax1.minorticks_on()
     ax1.invert_yaxis()
-    ax1.tick_params(axis='both', which='major', labelsize=22, pad=8)
+    ax1.tick_params(axis='both', which='major', labelsize=20, pad=8)
+
     radStr = 'RSMA (arcsec$^{1/4}$)'
     ax1.set_xlabel(radStr, fontsize=23)
-    ax1.set_ylabel('${\mu}$ (mag/arcsec$^2$)', fontsize=28)
+    ax1.set_ylabel('${\mu}$ (mag/arcsec$^2$)', fontsize=26)
 
     ellipLine = ['-', '--', '--', '-.', '-.', '-.']
     ellipColor = ['k', 'r', 'b', 'g', 'c', 'm']
@@ -191,8 +192,10 @@ def ellipCompare(ellipStack, outPng='ellipse_compare.png',
                      linestyle=ellipLine[ii],
                      c=ellipColor[ii], linewidth=3.5, alpha=0.9,
                      label=label)
+    ax1.set_xlim(0.49, 4.4)
+    ax1.set_ylim(30.5, 16.9)
 
-    ax1.legend(loc=[0.40, 0.48], fontsize=21)
+    ax1.legend(loc=[0.60, 0.65], fontsize=20)
 
     """ Save Figure """
     fig.savefig(outPng, dpi=80)
