@@ -350,6 +350,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
 
     sbp_sub = ellipOut3['sbp_sub']
     sbp_ori = ellipOut3['sbp_ori']
+    sbp_cor = ellipOut3['sbp_cor']
     sbp_low = ellipOut3['sbp_low']
     sbp_upp = ellipOut3['sbp_upp']
 
@@ -359,6 +360,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
              linewidth=3.5)
     ax1.plot(rad3[indexUse3], sbp_sub[indexUse3], '-', color='r',
              linewidth=4.0)
+    ax1.plot(rad3[indexUse3], sbp_cor[indexUse3], '-.', color='b',
+             linewidth=3.0)
 
     ax1.set_xlim(minRad, radOut)
     sbpBuffer = 0.5
@@ -556,7 +559,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
              label='curve$_{sub}$')
     ax6.plot(rad3, growthCurveCor, '-', color='r', linewidth=4.0,
              label='curve$_{cor}$')
-    ax6.legend(loc=[0.34, 0.51], fontsize=22)
+    ax6.legend(loc=[0.38, 0.48], fontsize=21)
 
     ax6.set_xlim(minRad, maxRad)
 
@@ -570,13 +573,13 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax7.axhline(0.0, linestyle='-', color='k', alpha=0.6, linewidth=3.0)
     ax7.axhline(bkg, linestyle='-.', color='c', alpha=0.6, linewidth=2.5)
 
-    ax7.plot(rad3, ellipOut3['intens'], '--', color='g',
-             linewidth=2.5)
     ax7.fill_between(rad3,
                      (ellipOut3['intens_sub'] + ellipOut3['int_err']),
                      (ellipOut3['intens_sub'] - ellipOut3['int_err']),
                      facecolor='r', alpha=0.3)
+    ax7.plot(rad3, ellipOut3['intens'], '--', color='g', linewidth=2.5)
     ax7.plot(rad3, ellipOut3['intens_sub'], '-', color='r', linewidth=3.5)
+    ax7.plot(rad3, ellipOut3['intens_cor'], '-.', color='b', linewidth=3.0)
 
     ax7.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
     ax7.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
@@ -734,9 +737,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             print SEP
             print "###   CORREECT FOR SKY BACKGROUND "
             skyMed, skyAvg, skyStd = readInputSky(prefix, root=root)
-            bkg = skyAvg
-            if verbose:
-                print "###      Average Background : ", bkg
+            """ Try median instead """
+            bkg = skyMed
         except Exception:
             print WAR
             print "XXX   CAN NOT FIND THE BACKGROUND DATA !"
@@ -814,14 +816,15 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                    recenter=psfRecenter,
                                    outerThreshold=1e-6,
                                    useZscale=False,
-                                   savePng=False)
+                                   savePng=False,
+                                   bkg=0.0,
+                                   updateIntens=False)
         else:
             psfOut = None
         """ Ellipse run for the galaxy """
         if inEllip is None:
             iniSma = (galR50 * 2.0)
             """#        Start with Stage 1 """
-            print "XXXXX BKG %9.6f" % bkg
             print SEP
             print "##       Ellipse Run on Image %s- Stage 1 " % imgFile
             print SEP

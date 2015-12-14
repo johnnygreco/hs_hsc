@@ -435,7 +435,7 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     ellipseOut['tmag_e'] += zp
     ellipseOut['tmag_c'] += zp
     # Convert the intensity into surface brightness
-    parea = (pix ** 2.0)
+    pixArea = (pix ** 2.0)
     # Surface brightness
     # Fixed the negative intensity
     intensOri = (ellipseOut['intens'])
@@ -443,20 +443,20 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     # intensOri[intensOri <= 0] = np.nan
     # intensSub[intensSub <= 0] = np.nan
     # Surface brightness
-    sbpOri = zp - 2.5 * np.log10(intensOri / (parea * exptime))
-    sbpCor = zp - 2.5 * np.log10(intensSub / (parea * exptime))
+    sbpOri = zp - 2.5 * np.log10(intensOri / (pixArea * exptime))
+    sbpSub = zp - 2.5 * np.log10(intensSub / (pixArea * exptime))
     ellipseOut.add_column(Column(name='sbp_ori', data=sbpOri))
-    ellipseOut.add_column(Column(name='sbp_sub', data=sbpCor))
-    ellipseOut.add_column(Column(name='sbp', data=sbpCor))
+    ellipseOut.add_column(Column(name='sbp_sub', data=sbpSub))
+    ellipseOut.add_column(Column(name='sbp', data=sbpSub))
     ellipseOut.add_column(Column(name='intens_sub', data=intensSub))
     # Also save the background level
     ellipseOut.add_column(Column(name='intens_bkg', data=(
                           ellipseOut['sma'] * 0.0 + bkg)))
     # Not so accurate estimates of surface brightness error
     sbp_low = zp - 2.5 * np.log10((intensSub + ellipseOut['int_err']) /
-                                  (parea * exptime))
-    sbp_err = (sbpCor - sbp_low)
-    sbp_upp = (sbpCor + sbp_err)
+                                  (pixArea * exptime))
+    sbp_err = (sbpSub - sbp_low)
+    sbp_upp = (sbpSub + sbp_err)
     ellipseOut.add_column(Column(name='sbp_err', data=sbp_err))
     ellipseOut.add_column(Column(name='sbp_low', data=sbp_low))
     ellipseOut.add_column(Column(name='sbp_upp', data=sbp_upp))
@@ -484,10 +484,11 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
                                  data=(ellipseOut['sma'] * 0.0 + avgPA)))
     # Curve of Growth
     cogOri, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut)
-    ellipseOut.add_column(Column(name='growth_ori', data=(cogOri)))
+    ellipseOut.add_column(Column(name='growth_ori', data=cogOri))
+
     cogSub, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut,
                                                     bkgCor=True)
-    ellipseOut.add_column(Column(name='growth_sub', data=(cogSub)))
+    ellipseOut.add_column(Column(name='growth_sub', data=cogSub))
 
     return ellipseOut
 
@@ -517,7 +518,7 @@ def zscale(img, contrast=0.25, samples=500):
     return z1, z2
 
 
-def ellipseGetGrowthCurve(ellipOut, bkgCor=True, intensArr=None):
+def ellipseGetGrowthCurve(ellipOut, bkgCor=False, intensArr=None):
     """
     Extract growth curve from Ellipse output.
 
@@ -832,6 +833,8 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
              indexUse], '--', color='k', linewidth=3.0)
     ax1.plot(rad[indexUse], ellipOut['sbp_sub'][
              indexUse], '-', color='r', linewidth=3.5)
+    ax1.plot(rad[indexUse], ellipOut['sbp_cor'][
+             indexUse], '-.', color='b', linewidth=3.0)
 
     ax1.set_xlim(minRad, radOut)
     sbpBuffer = 0.5
@@ -1012,7 +1015,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
              label='curve$_{cor}$')
     ax6.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
 
-    ax6.legend(loc=[0.35, 0.40], fontsize=23)
+    ax6.legend(loc=[0.35, 0.40], fontsize=21)
     ax6.set_xlim(minRad, maxRad)
 
     """ ax7 Intensity Curve """
@@ -1026,16 +1029,15 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
                 linewidth=2.5)
 
     ax7.axhline(0.0, linestyle='-', color='k', alpha=0.5, linewidth=2.5)
-    ax7.fill_between(rad, ellipOut['intens'] + ellipOut['int_err'],
-                     ellipOut['intens'] - ellipOut['int_err'],
-                     facecolor='g', alpha=0.2)
-    ax7.plot(rad, ellipOut['intens'], '--', color='g', linewidth=3.0)
+    bkgVal = ellipOut['intens_bkg'][0]
+    ax7.axhline(bkgVal, linestyle='--', color='c', linewidth=2.5, alpha=0.6)
+
     ax7.fill_between(rad, ellipOut['intens_sub'] + ellipOut['int_err'],
                      ellipOut['intens_sub'] - ellipOut['int_err'],
-                     facecolor='b', alpha=0.2)
-    ax7.plot(rad, ellipOut['intens'], '-.', color='b', linewidth=3.0)
-    ax7.plot(rad, (ellipOut['intens'] - ellipOut['avg_bkg']), '-',
-             color='r', linewidth=3.5)
+                     facecolor='r', alpha=0.2)
+    ax7.plot(rad, ellipOut['intens'], '--', color='g', linewidth=3.0)
+    ax7.plot(rad, ellipOut['intens_sub'], '-', color='r', linewidth=3.5)
+    ax7.plot(rad, ellipOut['intens_cor'], '.-', color='b', linewidth=3.0)
 
     """ TODO: Could be problematic """
     indexOut = np.where(ellipOut['intens'] <= (
@@ -1155,7 +1157,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
            plMask=True, conver=0.05, recenter=True,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
            olthresh=0.5, harmonics='1 2', outerThreshold=None,
-           updateIntens=False, psfSma=6.0, suffix='', useZscale=True):
+           updateIntens=True, psfSma=6.0, suffix='', useZscale=True):
     """
     Running Ellipse to Extract 1-D profile.
 
@@ -1167,6 +1169,9 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
     """
     gc.collect()
     verStr = 'yes' if verbose else 'no'
+    """ Minimum starting radius for Ellipsein pixel """
+    minIniSma = 10.0
+    pixArea = (pix ** 2.0)
     """ Check input files """
     if os.path.islink(image):
         imgOri = os.readlink(image)
@@ -1224,7 +1229,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             galY = imgY
 
     """ Inisital radius for Ellipse """
-    iniSma = iniSma if iniSma >= 5.0 else 5.0
+    iniSma = iniSma if iniSma >= minIniSma else minIniSma
     if verbose:
         print SEP
         print "###      galX, galY : ", galX, galY
@@ -1352,28 +1357,44 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     indexBkg = np.where(ellipOut['sma'] > radOuter * 1.2)
                     if indexBkg[0].shape[0] > 0:
                         try:
-                            intensBkg = ellipOut['intens'][indexBkg]
-                            clipArr, clipL, clipU = sigmaclip(intensBkg,
+                            """ Don't subtract the background twice """
+                            intens1 = ellipOut['intens'][indexBkg]
+                            clipArr, clipL, clipU = sigmaclip(intens1,
+                                                              2.0, 2.0)
+                            avgOut = np.nanmedian(clipArr)
+                            intens2 = ellipOut['intens_sub'][indexBkg]
+                            clipArr, clipL, clipU = sigmaclip(intens2,
                                                               2.0, 2.0)
                             avgBkg = np.nanmedian(clipArr)
                             if not np.isfinite(avgBkg):
                                 avgBkg = 0.0
+                                avgOut = 0.0
                         except Exception:
+                            avgOut = 0.0
                             avgBkg = 0.0
                     else:
+                        avgOut = 0.0
                         avgBkg = 0.0
                 else:
+                    avgOut = 0.0
                     avgBkg = 0.0
-                print "###     Average Outer Intensity : ", avgBkg
+                print SEP
+                print "###     Input background value   : ", bkg
+                print "###     1-D SBP background value : ", avgOut
+                print "###     Current outer background : ", avgBkg
                 print SEP
 
                 """ Do not correct this ? """
                 ellipOut.add_column(Column(name='avg_bkg',
                                     data=(sma * 0.0 + avgBkg)))
-                intensArr = (ellipOut['intens_sub'] - avgBkg)
+                intensCor = (ellipOut['intens_sub'] - avgBkg)
+                ellipOut.add_column(Column(name='intens_cor', data=intensCor))
+                sbpCor = zpPhoto - 2.5 * np.log10(intensCor / (pixArea *
+                                                               expTime))
+                ellipOut.add_column(Column(name='sbp_cor', data=sbpCor))
                 """ Update the curve of growth """
                 cogCor, mm, ff = ellipseGetGrowthCurve(ellipOut,
-                                                       intensArr=intensArr)
+                                                       intensArr=intensCor)
                 ellipOut.add_column(Column(name='growth_cor', data=(cogCor)))
                 """ Update the outer radius """
                 radOuter = ellipseGetOuterBoundary(ellipOut, ratio=outRatio)

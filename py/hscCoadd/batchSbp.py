@@ -219,7 +219,7 @@ if __name__ == '__main__':
                         type=int, default=25)
     parser.add_argument('--maxIt', dest='maxIt',
                         help='Maximum number of iterations',
-                        type=int, default=200)
+                        type=int, default=120)
     parser.add_argument('--maxTry', dest='maxTry',
                         help='Maximum number of attempts of ellipse run',
                         type=int, default=4)
