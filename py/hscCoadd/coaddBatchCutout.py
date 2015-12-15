@@ -85,7 +85,7 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
     except KeyError:
         raise Exception('Can not find the DEC field')
 
-    if zField is not None:
+    if zCutoutSize and (zField is not None):
         try:
             redshift = cat.field(zField)
         except KeyError:
