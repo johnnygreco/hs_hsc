@@ -41,16 +41,14 @@ def run(args):
         print "## Will deal with %d galaxies ! " % len(data)
 
         for index, galaxy in enumerate(data):
-            print COM
 
-            print COM
+            print SEP
             galID = str(galaxy[id]).strip()
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
             galRoot = os.path.join(galID, filter)
-            print "## Will Deal with %s now : %i / %i" %(galID,
-                                                         (index + 1),
-                                                         len(data))
-            print COM
+            print "## Will Deal with %s now : %i / %i" % (galID,
+                                                          (index + 1),
+                                                          len(data))
             if not os.path.isdir(galRoot):
                 logging.warning('### Can not find ' +
                                 'ROOT folder for %s' % galRoot)
@@ -75,7 +73,6 @@ def run(args):
                 link = os.path.join(galRoot, seg[-1])
                 if (not os.path.islink(link)) and (not os.path.isfile(link)):
                     os.symlink(fitsFile, link)
-
             """
             External mask
             """
@@ -87,7 +84,7 @@ def run(args):
                 galMsk = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
                 if not os.path.isfile(galMsk):
                     logging.warning('### Can not find ' +
-                                    'MASK for  %s ' % galPrefix)
+                                    'MASK for  %s ' % str(id))
                     continue
             else:
                 galMsk = None
@@ -165,13 +162,113 @@ def run(args):
 
                 logging.warning('### The 1-D SBP is DONE for %s' % galPrefix)
                 gc.collect()
+                """ Forced photoetry using small """
+                if (galMsk is not None) and args.multiMask:
+                    mskSmall = galMsk.replace('mskfin', 'msksmall')
+                    mskLarge = galMsk.replace('mskfin', 'msklarge')
+                    print SEP
+                    print "##  MultiMask Mode "
+                    print "##     Input Ellipse : %s" % inEllipBin
+                    """ Small Mask """
+                    if os.path.isfile(mskSmall):
+                        print "##     Input MaskSmall : %s" % mskSmall
+                        suffixSmall = ellipSuffix + '_msksmall'
+                        try:
+                            cSbp.coaddCutoutSbp(galPrefix, root=galRoot,
+                                                verbose=args.verbose,
+                                                psf=False,
+                                                inEllip=inEllipBin,
+                                                bkgCor=args.bkgCor,
+                                                zp=args.zp,
+                                                step=4,
+                                                galX0=args.galX0,
+                                                galY0=args.galY0,
+                                                galQ0=args.galQ0,
+                                                galPA0=args.galPA0,
+                                                galRe=args.galRe,
+                                                checkCenter=args.noCheckCenter,
+                                                updateIntens=args.updateIntens,
+                                                pix=args.pix,
+                                                plot=args.plot,
+                                                redshift=args.redshift,
+                                                olthresh=args.olthresh,
+                                                fracBad=args.fracBad,
+                                                lowClip=args.lowClip,
+                                                uppClip=args.uppClip,
+                                                nClip=args.nClip,
+                                                intMode=args.intMode,
+                                                minIt=args.minIt,
+                                                maxIt=args.maxIt,
+                                                maxTry=args.maxTry,
+                                                outRatio=args.outRatio,
+                                                exMask=mskSmall,
+                                                suffix=suffixSmall,
+                                                plMask=args.plmask)
+                            logging.warning('### SMALLMASK is DONE for %s' %
+                                            galPrefix)
+                            gc.collect()
+                        except Exception, errMsg:
+                            print str(errMsg)
+                            logging.warning('### SMALLMASK is FAILED for %s' %
+                                            galPrefix)
+                            gc.collect()
+                    else:
+                        print "##    Can not find %s" % mskSmall
+                        logging.warning('### SMALLMASK is FAILED for %s' %
+                                        galPrefix)
+                    """ Large Mask """
+                    if os.path.isfile(mskLarge):
+                        print "##     Input MaskLarge : %s" % mskLarge
+                        suffixLarge = ellipSuffix + '_msklarge'
+                        try:
+                            cSbp.coaddCutoutSbp(galPrefix, root=galRoot,
+                                                verbose=args.verbose,
+                                                psf=False,
+                                                inEllip=inEllipBin,
+                                                bkgCor=args.bkgCor,
+                                                zp=args.zp,
+                                                step=4,
+                                                galX0=args.galX0,
+                                                galY0=args.galY0,
+                                                galQ0=args.galQ0,
+                                                galPA0=args.galPA0,
+                                                galRe=args.galRe,
+                                                checkCenter=args.noCheckCenter,
+                                                updateIntens=args.updateIntens,
+                                                pix=args.pix,
+                                                plot=args.plot,
+                                                redshift=args.redshift,
+                                                olthresh=args.olthresh,
+                                                fracBad=args.fracBad,
+                                                lowClip=args.lowClip,
+                                                uppClip=args.uppClip,
+                                                nClip=args.nClip,
+                                                intMode=args.intMode,
+                                                minIt=args.minIt,
+                                                maxIt=args.maxIt,
+                                                maxTry=args.maxTry,
+                                                outRatio=args.outRatio,
+                                                exMask=mskLarge,
+                                                suffix=suffixLarge,
+                                                plMask=args.plmask)
+                            logging.warning('### LARGEMASK is DONE for %s' %
+                                            galPrefix)
+                            gc.collect()
+                        except Exception, errMsg:
+                            print str(errMsg)
+                            logging.warning('### LARGEMASK is FAILED for %s' %
+                                            galPrefix)
+                            gc.collect()
+                    else:
+                        print "##    Can not find %s" % mskLarge
+                        logging.warning('### LARGEMASK is FAILED for %s' %
+                                        galPrefix)
             except Exception, errMsg:
                 print str(errMsg)
                 warnings.warn('### The 1-D SBP is failed for %s' % galPrefix)
                 logging.warning('### The 1-D SBP is FAILED for %s' % galPrefix)
                 gc.collect()
             print SEP
-
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 
@@ -197,6 +294,10 @@ if __name__ == '__main__':
     parser.add_argument('-rm', '--rModel', dest='refModel',
                         help="Reference ellipse binary output",
                         default='3')
+    parser.add_argument('--multiMask', dest='multiMask',
+                        action="store_true",
+                        help='Run Force mode using multiple masks',
+                        default=False)
     parser.add_argument("--suffix",
                         help="Suffix of the output file",
                         default='')
@@ -259,7 +360,7 @@ if __name__ == '__main__':
     parser.add_argument('--plot', dest='plot', action="store_true",
                         help='Generate summary plot', default=True)
     parser.add_argument('--bkgCor', dest='bkgCor', action="store_true",
-                        help='Background correction', default=False)
+                        help='Background correction', default=True)
     parser.add_argument('--noCheckCenter', dest='noCheckCenter',
                         action="store_false",
                         help='Check if the center is off', default=True)
