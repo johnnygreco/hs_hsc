@@ -12,18 +12,13 @@ WAR = '!' * 100
 
 def run(args):
     """Run cutout in batch mode."""
-    if args.noZCutout:
-        zCut = False
-    else:
-        zCut = True
-
     if os.path.isfile(args.incat):
         cbc.coaddBatchCutFull(args.root, args.incat,
                               size=args.size,
                               filter=args.filter,
                               idField=args.idField,
                               prefix=args.prefix,
-                              zCutoutSize=zCut,
+                              zCutoutSize=args.zCutoutSize,
                               zField=args.zField,
                               onlyColor=args.onlyColor,
                               noColor=args.noColor,
@@ -72,8 +67,8 @@ if __name__ == '__main__':
                         default=True)
     parser.add_argument('-makeDir', '--makeDir', action="store_true",
                         dest='makeDir', default=True)
-    parser.add_argument('-nz', '--noZCutout', action="store_false",
-                        dest='noZCutout', default=True)
+    parser.add_argument('-zs', '--zCutoutSize', action="store_true",
+                        dest='zCutoutSize', default=False)
     parser.add_argument('-nc', '--noColor', action="store_true",
                         dest='noColor', default=True)
     parser.add_argument('-p', '--prefix', dest='prefix',
