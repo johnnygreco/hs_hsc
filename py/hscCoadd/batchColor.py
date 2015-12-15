@@ -20,6 +20,7 @@ def run(args):
     if os.path.isfile(args.incat):
         cbc.coaddBatchCutFull(args.root, args.incat,
                               filter=args.filter,
+                              size=args.size,
                               idField=args.idField,
                               prefix=args.prefix,
                               zCutoutSize=zCut,
