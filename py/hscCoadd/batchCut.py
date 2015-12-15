@@ -12,19 +12,29 @@ WAR = '!' * 100
 
 def run(args):
     """Run cutout in batch mode."""
+    if args.noZCutout:
+        zCut = False
+    else:
+        zCut = True
+
     if os.path.isfile(args.incat):
         cbc.coaddBatchCutFull(args.root, args.incat,
+                              size=args.size,
                               filter=args.filter,
                               idField=args.idField,
                               prefix=args.prefix,
-                              zCutoutSize=args.zCutout,
+                              zCutoutSize=zCut,
                               zField=args.zField,
                               onlyColor=args.onlyColor,
                               noColor=args.noColor,
+                              colorFilters=args.colorFilters,
+                              infoField1=args.infoField1,
+                              infoField2=args.infoField2,
                               saveSrc=args.saveSrc,
                               makeDir=args.makeDir,
                               raField=args.raField,
-                              decField=args.decField)
+                              decField=args.decField,
+                              clean=args.clean)
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 
@@ -62,8 +72,8 @@ if __name__ == '__main__':
                         default=True)
     parser.add_argument('-makeDir', '--makeDir', action="store_true",
                         dest='makeDir', default=True)
-    parser.add_argument('-zc', '--zCutoutSize', action="store_true",
-                        dest='zCutout', default=True)
+    parser.add_argument('-nz', '--noZCutout', action="store_false",
+                        dest='noZCutout', default=True)
     parser.add_argument('-nc', '--noColor', action="store_true",
                         dest='noColor', default=True)
     parser.add_argument('-p', '--prefix', dest='prefix',
