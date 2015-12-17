@@ -208,8 +208,8 @@ def readProfile(ellFile):
     if os.path.isfile(ellFile):
         return pickle.load(open(ellFile, 'rb'))
     else:
-        warnings.warn("!!! Can not find the Ellipse Output at %s" %
-                      ellFile)
+        print(WAR)
+        print("!!! Can not find the Ellipse Output at %s" % ellFile)
         return None
 
 
@@ -230,7 +230,7 @@ def findProfile(pattern, loc, verbose=False):
     return result
 
 
-def getEllipProfile(galid, base, prefix, model,
+def getEllipProfile(galid, base, prefix, model, psf=False,
                     filter='HSC-I', rerun='default', verbose=False):
     """
     Find and load the Ellipse output.
@@ -239,15 +239,19 @@ def getEllipProfile(galid, base, prefix, model,
     """
     galid = str(galid).strip()
     location = os.path.join(base, galid, filter, rerun)
+    if psf:
+        ellType = 'psf'
+    else:
+        ellType = 'img'
     """Ellipse result file name"""
     ellFile = (prefix + '_' + str(galid) + '_' + filter +
-               '_full_img_' + model + '.pkl')
+               '_full_' + ellType + '_ellip_' + model + '.pkl')
     ellFile = os.path.join(location, ellFile)
 
     if not os.path.isfile(ellFile):
         if verbose:
-            warnings.warn('!!! Can not find the Ellipse profile ! %s' %
-                          ellFile)
+            print(WAR)
+            print('!!! Can not find the Ellipse profile ! %s' % ellFile)
         return None
     else:
         ellProf = readProfile(ellFile)
@@ -281,7 +285,7 @@ def sbpExtract(loc, galID, redshift, filter,
         return None
 
 
-def sbpCollect(loc, prefix, galID, redshift,
+def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                a_g=0.0, a_r=0.0, a_i=0.0,
                a_z=0.0, a_y=0.0, suffix=None,
                m2l_g=None, m2l_r=None, m2l_i=None,
@@ -312,9 +316,9 @@ def sbpCollect(loc, prefix, galID, redshift,
 
     """ The basic reference model """
     refEllI = sbpExtract(loc, galID, redshift, 'HSC-I',
-                         prefix, 'default_3',
+                         prefix, rerun, 'default_3',
                          extinction=a_i, m2l=m2l_i,
-                         amag_sun=SUN_I)
+                         amag_sun=SUN_I, verbose=verbose)
     if refEllI is not None:
         """ Reference profile in I-band """
         rad, muI1, lumI1, errI1 = refEllI
@@ -324,104 +328,122 @@ def sbpCollect(loc, prefix, galID, redshift,
 
         """ I largeR1 """
         ellI2 = sbpExtract(loc, galID, redshift,
-                           'HSC-I', prefix, 'multi1_4',
+                           'HSC-I', prefix, rerun, 'multi1_4',
                            m2l=m2l_i, extinction=a_i,
-                           amag_sun=SUN_I)
+                           amag_sun=SUN_I, verbose=verbose)
         if ellI2 is not None:
             r, muI2, lumI2, errI2 = ellI2
         else:
             muI2, lumI2, errI2 = empty, empty, empty
-            warnings.warn('### Can not find the small mask SBP for I-band!')
+            print(WAR)
+            print('### Can not find the small mask SBP ' +
+                  'for I-band : %s!' % str(galID))
 
         """ I smallR1 """
         ellI3 = sbpExtract(loc, galID, redshift,
-                           'HSC-I', prefix, 'multi_4',
+                           'HSC-I', prefix, rerun, 'multi2_4',
                            m2l=m2l_i, extinction=a_i,
-                           amag_sun=SUN_I)
+                           amag_sun=SUN_I, verbose=verbose)
         if ellI3 is not None:
             r, muI3, lumI3, errI3 = ellI3
         else:
             muI3, lumI3, errI3 = empty, empty, empty
-            warnings.warn('### Can not find the large mask SBP for I-band!')
+            print(WAR)
+            print('### Can not find the large mask SBP ' +
+                  'for I-band : %s!' % str(galID))
 
         """ G default """
         ellG1 = sbpExtract(loc, galID, redshift,
-                           'HSC-G', prefix, 'default_4',
+                           'HSC-G', prefix, rerun, 'default_4',
                            m2l=m2l_g, extinction=a_g,
-                           amag_sun=SUN_G)
+                           amag_sun=SUN_G, verbose=verbose)
         if ellG1 is not None:
             r, muG1, lumG1, errG1 = ellG1
         else:
             muG1, lumG1, errG1 = empty, empty, empty
-            warnings.warn('### Can not find the default for G-band!')
+            print(WAR)
+            print('### Can not find the default SBP ' +
+                  'for G-band : %s!' % str(galID))
 
         """ R default """
         ellR1 = sbpExtract(loc, galID, redshift,
-                           'HSC-R', prefix, 'default_4',
+                           'HSC-R', prefix, rerun, 'default_4',
                            m2l=m2l_r, extinction=a_r,
-                           amag_sun=SUN_R)
+                           amag_sun=SUN_R, verbose=verbose)
         if ellR1 is not None:
             r, muR1, lumR1, errR1 = ellR1
         else:
             muR1, lumR1, errR1 = empty, empty, empty
-            warnings.warn('### Can not find the default for R-band!')
+            print(WAR)
+            print('### Can not find the default SBP ' +
+                  'for R-band : %s!' % str(galID))
 
         """ Z default """
         ellZ1 = sbpExtract(loc, galID, redshift,
-                           'HSC-Z', prefix, 'default_4',
+                           'HSC-Z', prefix, rerun, 'default_4',
                            m2l=m2l_z, extinction=a_z,
-                           amag_sun=SUN_Z)
+                           amag_sun=SUN_Z, verbose=verbose)
         if ellZ1 is not None:
             r, muZ1, lumZ1, errZ1 = ellZ1
         else:
             muZ1, lumZ1, errZ1 = empty, empty, empty
-            warnings.warn('### Can not find the default for Z-band!')
+            print(WAR)
+            print('### Can not find the default SBP ' +
+                  'for Z-band : %s!' % str(galID))
 
         """ Y default """
         ellY1 = sbpExtract(loc, galID, redshift,
-                           'HSC-Y', prefix, 'default_4',
+                           'HSC-Y', prefix, rerun, 'default_4',
                            m2l=m2l_y, extinction=a_y,
-                           amag_sun=SUN_Y)
+                           amag_sun=SUN_Y, verbose=verbose)
         if ellY1 is not None:
             r, muY1, lumY1, errY1 = ellY1
         else:
             muY1, lumY1, errY1 = empty, empty, empty
-            warnings.warn('### Can not find the default for Y-band!')
+            print(WAR)
+            print('### Can not find the default SBP ' +
+                  'for Y-band : %s!' % str(galID))
 
         """ Save the summary table """
-        sbpTable = Table([rad, muI1, lumI1, errI1,
-                          muI2, lumI2, errI2,
-                          muI3, lumI3, errI3,
-                          muG1, lumG1, errG1,
-                          muR1, lumR1, errR1,
-                          muZ1, lumZ1, errZ1,
-                          muY1, lumY1, errY1,
-                          ],
-                         names=('rKpc', 'muI1', 'lumI1', 'errI1',
-                                'muI2', 'lumI2', 'errI2',
-                                'muI3', 'lumI3', 'errI3',
-                                'muG1', 'lumG1', 'errG1',
-                                'muR1', 'lumR1', 'errR1',
-                                'muZ1', 'lumZ1', 'errZ1',
-                                'muY1', 'lumY1', 'errY1'),
-                         meta={'LOCATION': loc,
-                               'GALID': galID,
-                               'REDSHIFT': redshift,
-                               'PREFIX': prefix,
-                               'A_G': a_g,
-                               'A_R': a_r,
-                               'A_I': a_i,
-                               'A_Z': a_z,
-                               'A_Y': a_y})
-        if save:
-            sbpTable.write(sumTable, format='fits',
-                           overwrite=True)
-        return sbpTable
+        try:
+            sbpTable = Table([rad, muI1, lumI1, errI1,
+                              muI2, lumI2, errI2,
+                              muI3, lumI3, errI3,
+                              muG1, lumG1, errG1,
+                              muR1, lumR1, errR1,
+                              muZ1, lumZ1, errZ1,
+                              muY1, lumY1, errY1,
+                              ],
+                             names=('rKpc', 'muI1', 'lumI1', 'errI1',
+                                    'muI2', 'lumI2', 'errI2',
+                                    'muI3', 'lumI3', 'errI3',
+                                    'muG1', 'lumG1', 'errG1',
+                                    'muR1', 'lumR1', 'errR1',
+                                    'muZ1', 'lumZ1', 'errZ1',
+                                    'muY1', 'lumY1', 'errY1'),
+                             meta={'LOCATION': loc,
+                                   'GALID': galID,
+                                   'REDSHIFT': redshift,
+                                   'PREFIX': prefix,
+                                   'A_G': a_g,
+                                   'A_R': a_r,
+                                   'A_I': a_i,
+                                   'A_Z': a_z,
+                                   'A_Y': a_y})
+            if save:
+                sbpTable.write(sumTable, format='fits',
+                               overwrite=True)
+            return sbpTable
+        except ValueError:
+            print(WAR)
+            print("## Inconsistent SBPs for %s" % str(galID))
+            return None
     else:
         rad, muI1, lumI1, errI1 = None, None, None, None
-        print(WAR)
-        warnings.warn('### Model is not available at %s for %s' %
-                      (loc, str(galID)))
+        if verbose:
+            print(WAR)
+            warnings.warn('### Model is not available at %s for %s' %
+                          (loc, str(galID)))
         return None
 
 
@@ -458,9 +480,15 @@ def correctProf(ellProf, redshift, extinction=0.0, zp=27.0,
 
     """ Extinction and/or Dimming corrected SBP """
     if corCurve:
-        sbp_use = (ellProf['sbp_cor'] - extinction - dim)
+        try:
+            sbp_use = (ellProf['sbp_cor'] - extinction - dim)
+        except KeyError:
+            sbp_use = (ellProf['sbp'] - extinction - dim)
     else:
-        sbp_use = (ellProf['sbp_ori'] - extinction - dim)
+        try:
+            sbp_use = (ellProf['sbp_ori'] - extinction - dim)
+        except KeyError:
+            sbp_use = (ellProf['sbp'] - extinction - dim)
     sbp_cor_upp = (ellProf['sbp_upp'] - extinction - dim)
     sbp_err = (sbp_cor_upp - sbp_use)
 
@@ -630,12 +658,14 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
     colTemp = (np.asarray(inTab[zCol]) * 0.0 - 9999.0)
     col1 = Column(name='ilum_max', data=colTemp)
     col2 = Column(name='ilum_100', data=colTemp)
-    col3 = Column(name='ilum_50', data=colTemp)
-    col4 = Column(name='ilum_25', data=colTemp)
-    col5 = Column(name='ilum_10', data=colTemp)
-    outTab.add_columns([col1, col2, col3, col4, col5])
+    col3 = Column(name='ilum_75', data=colTemp)
+    col4 = Column(name='ilum_50', data=colTemp)
+    col5 = Column(name='ilum_25', data=colTemp)
+    col6 = Column(name='ilum_10', data=colTemp)
+    outTab.add_columns([col1, col2, col3, col4, col5, col6])
     """Start a ProgressBar"""
     sbpSum = []
+    sbpList = []
     with ProgressBar(len(inTab)) as bar:
         print(SEP)
         print("## Dealing with %d galaxies" % len(inTab))
@@ -672,11 +702,27 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                 rKpc = galTab['rKpc']
                 """Maximum i-band luminosity"""
                 lumI = galTab['lumI1']
-                galTab.meta['ILUM_MAX'] = np.nanmax(lumI)
-                galTab.meta['ILUM_100'] = np.nanmax(lumI[rKpc <= 100.0])
-                galTab.meta['ILUM_50'] = np.nanmax(lumI[rKpc <= 50.0])
-                galTab.meta['ILUM_25'] = np.nanmax(lumI[rKpc <= 25.0])
-                galTab.meta['ILUM_10'] = np.nanmax(lumI[rKpc <= 10.0])
+                ilumMax = np.nanmax(lumI).astype(np.float32)
+                ilum100 = np.nanmax(lumI[rKpc <= 100.0]).astype(np.float32)
+                ilum75 = np.nanmax(lumI[rKpc <= 75.0]).astype(np.float32)
+                ilum50 = np.nanmax(lumI[rKpc <= 50.0]).astype(np.float32)
+                ilum25 = np.nanmax(lumI[rKpc <= 25.0]).astype(np.float32)
+                ilum10 = np.nanmax(lumI[rKpc <= 10.0]).astype(np.float32)
+                if not np.isfinite(ilumMax):
+                    print(WAR)
+                    print("## Problematic SBP for %s !" % galStr)
+                    ilumMax = -9999.0
+                    ilum100 = -9999.0
+                    ilum75 = -9999.0
+                    ilum50 = -9999.0
+                    ilum25 = -9999.0
+                    ilum10 = -9999.0
+                galTab.meta['ILUM_MAX'] = ilumMax
+                galTab.meta['ILUM_100'] = ilum100
+                galTab.meta['ILUM_75'] = ilum75
+                galTab.meta['ILUM_50'] = ilum50
+                galTab.meta['ILUM_25'] = ilum25
+                galTab.meta['ILUM_10'] = ilum10
                 """M2L"""
                 galTab.meta['LOGM2L_G'] = galaxy['logm2l_g']
                 galTab.meta['LOGM2L_R'] = galaxy['logm2l_r']
@@ -686,14 +732,20 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                 """Save the result of the individual galaxy"""
                 galTab.write(sumCat, format='fits', overwrite=True)
                 """Update the sample summary table"""
-                outTab['ilum_max'][ii] = galTab.meta['ILUM_MAX']
-                outTab['ilum_100'][ii] = galTab.meta['ILUM_100']
-                outTab['ilum_50'][ii] = galTab.meta['ILUM_50']
-                outTab['ilum_25'][ii] = galTab.meta['ILUM_25']
-                outTab['ilum_10'][ii] = galTab.meta['ILUM_10']
+                outTab['ilum_max'][ii] = ilumMax
+                outTab['ilum_100'][ii] = ilum100
+                outTab['ilum_75'][ii] = ilum75
+                outTab['ilum_50'][ii] = ilum50
+                outTab['ilum_25'][ii] = ilum25
+                outTab['ilum_10'][ii] = ilum10
                 """"""
                 sbpSum.append(galTab)
+                sbpList.append(sumCat)
             else:
+                """"""
+                sbpSum.append(None)
+                sbpList.append('None')
+                """"""
                 warnings.warn('### NO USEFUL DATA FOR %s' % galStr)
             """Update the progress bar"""
             bar.update()
@@ -701,6 +753,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
         hUtil.saveToPickle(sbpSum, outPkl)
 
     """Save the output catalog"""
+    outTab.add_column(Column(np.asarray(sbpList), name='sum_tab'))
     outTab.write(outCat, format='fits', overwrite=True)
 
     return outCat
