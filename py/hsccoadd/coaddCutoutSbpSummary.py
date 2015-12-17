@@ -611,7 +611,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
     else:
         logm2lG = inTab[logmCol] - getLuminosity(inTab[gmagCol],
                                                  inTab[zCol], amag_sun=SUN_G,
-                                                 extinction=agCol)
+                                                 extinction=inTab[agCol])
         inTab.add_column(Column(name='logm2l_g', data=logm2lG))
     # HSC-R
     if (logmCol not in colNames) or (rmagCol not in colNames):
@@ -621,7 +621,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
     else:
         logm2lR = inTab[logmCol] - getLuminosity(inTab[rmagCol],
                                                  inTab[zCol], amag_sun=SUN_R,
-                                                 extinction=arCol)
+                                                 extinction=inTab[arCol])
         inTab.add_column(Column(name='logm2l_r', data=logm2lR))
     # HSC-I
     if (logmCol not in colNames) or (imagCol not in colNames):
@@ -631,7 +631,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
     else:
         logm2lI = inTab[logmCol] - getLuminosity(inTab[imagCol],
                                                  inTab[zCol], amag_sun=SUN_I,
-                                                 extinction=aiCol)
+                                                 extinction=inTab[aiCol])
         inTab.add_column(Column(name='logm2l_i', data=logm2lI))
     # HSC-Z
     if (logmCol not in colNames) or (zmagCol not in colNames):
@@ -641,7 +641,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
     else:
         logm2lZ = inTab[logmCol] - getLuminosity(inTab[zmagCol],
                                                  inTab[zCol], amag_sun=SUN_Z,
-                                                 extinction=azCol)
+                                                 extinction=inTab[azCol])
         inTab.add_column(Column(name='logm2l_z', data=logm2lZ))
     # HSC-Y
     if (logmCol not in colNames) or (ymagCol not in colNames):
@@ -651,7 +651,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
     else:
         logm2lY = inTab[logmCol] - getLuminosity(inTab[ymagCol],
                                                  inTab[zCol], amag_sun=SUN_Y,
-                                                 extinction=ayCol)
+                                                 extinction=inTab[ayCol])
         inTab.add_column(Column(name='logm2l_y', data=logm2lY))
 
     """Add columns to the output table"""
