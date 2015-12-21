@@ -37,6 +37,11 @@ __dataDir__ = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
 if not os.path.exists(__dataDir__):
     raise Exception("Can not find the data directory: %s" % __dataDir__)
 
+SIGMA1 = 0.3173
+SIGMA2 = 0.0455
+SIGMA3 = 0.0027
+
+
 """
 Angle related functions:
 
@@ -942,9 +947,6 @@ See: https://github.com/ptweir/pyresampling/blob/master/bootstrap.py
 And: http://peterthomasweir.blogspot.jp/2014/03/
      statistics-based-on-resampling-in.html
 """
-SIGMA1 = 0.3173
-SIGMA2 = 0.0455
-SIGMA3 = 0.0027
 
 
 def confidence_interval_1d(A, alpha=SIGMA1, metric=np.mean,
