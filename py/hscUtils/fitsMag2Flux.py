@@ -221,18 +221,17 @@ def run(incat, idCol='ID', magType='cmodel', snType='kron', redCol='Z',
     outTab.add_column(Column(name='Maggies', data=Maggies))
 
     """Error of fluxes"""
-    if not snError:
-        gErrCol = gCol + '_err'
-        rErrCol = rCol + '_err'
-        iErrCol = iCol + '_err'
-        zErrCol = zCol + '_err'
-        yErrCol = yCol + '_err'
-        ivarG = hscMagerr2Ivar(fluxG, inTab[gErrCol])
-        ivarR = hscMagerr2Ivar(fluxR, inTab[rErrCol])
-        ivarI = hscMagerr2Ivar(fluxI, inTab[iErrCol])
-        ivarZ = hscMagerr2Ivar(fluxZ, inTab[zErrCol])
-        ivarY = hscMagerr2Ivar(fluxY, inTab[yErrCol])
-    else:
+    gErrCol = gCol + '_err'
+    rErrCol = rCol + '_err'
+    iErrCol = iCol + '_err'
+    zErrCol = zCol + '_err'
+    yErrCol = yCol + '_err'
+    ivarG = hscMagerr2Ivar(fluxG, inTab[gErrCol])
+    ivarR = hscMagerr2Ivar(fluxR, inTab[rErrCol])
+    ivarI = hscMagerr2Ivar(fluxI, inTab[iErrCol])
+    ivarZ = hscMagerr2Ivar(fluxZ, inTab[zErrCol])
+    ivarY = hscMagerr2Ivar(fluxY, inTab[yErrCol])
+    if snError:
         sigmaG = hscMag2Flux(inTab['gmag_' + snType] - aG, unit='maggy')
         sigmaR = hscMag2Flux(inTab['rmag_' + snType] - aR, unit='maggy')
         sigmaI = hscMag2Flux(inTab['imag_' + snType] - aI, unit='maggy')
@@ -248,14 +247,24 @@ def run(incat, idCol='ID', magType='cmodel', snType='kron', redCol='Z',
                                           inTab['zmag_' + snType + '_err'])
         snrY = sigmaY / hscMagerr2Fluxerr(sigmaY,
                                           inTab['ymag_' + snType + '_err'])
-        ivarG = hscFluxSNR2Ivar(fluxG, snrG)
-        ivarR = hscFluxSNR2Ivar(fluxR, snrR)
-        ivarI = hscFluxSNR2Ivar(fluxI, snrI)
-        ivarZ = hscFluxSNR2Ivar(fluxZ, snrZ)
-        ivarY = hscFluxSNR2Ivar(fluxY, snrY)
+        ivarSnrG = hscFluxSNR2Ivar(fluxG, snrG)
+        ivarSnrR = hscFluxSNR2Ivar(fluxR, snrR)
+        ivarSnrI = hscFluxSNR2Ivar(fluxI, snrI)
+        ivarSnrZ = hscFluxSNR2Ivar(fluxZ, snrZ)
+        ivarSnrY = hscFluxSNR2Ivar(fluxY, snrY)
+        """ Replace the NaN invariance"""
+        ivarSnrG[np.isnan(ivarSnrG)] = ivarG[np.isnan(ivarSnrG)]
+        ivarSnrR[np.isnan(ivarSnrR)] = ivarR[np.isnan(ivarSnrR)]
+        ivarSnrI[np.isnan(ivarSnrI)] = ivarI[np.isnan(ivarSnrI)]
+        ivarSnrZ[np.isnan(ivarSnrZ)] = ivarZ[np.isnan(ivarSnrZ)]
+        ivarSnrY[np.isnan(ivarSnrY)] = ivarY[np.isnan(ivarSnrY)]
     """Add columns for invariance of fluxes"""
-    IvarMaggies = np.dstack((ivarG, ivarR, ivarI, ivarZ, ivarY))[0]
-    outTab.add_column(Column(name='Ivars', data=IvarMaggies))
+    if snError:
+        IvarMaggies = np.dstack((ivarSnrG, ivarSnrR, ivarSnrI,
+                                ivarSnrZ, ivarSnrY))[0]
+    else:
+        IvarMaggies = np.dstack((ivarG, ivarR, ivarI, ivarZ, ivarY))[0]
+    outTab.add_column(Column(name='IvarMaggies', data=IvarMaggies))
 
     """Also get the absolute magnitudes"""
     if redCol in colNames:
