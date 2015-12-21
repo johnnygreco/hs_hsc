@@ -171,10 +171,10 @@ def run(incat, idCol='ID', magType='cmodel', snType='kron', redCol='Z',
         outCat = incat.replace('.fits', ('_flux_' + magType + '.fits'))
         outTab = copy.deepcopy(inTab)
         colNames = inTab.colnames
-        empty = np.zeros(len(incat))
+        empty = np.zeros(len(inTab))
         if verbose:
             print(SEP)
-            print("## There are %d galaxies in the input catalog" % len(incat))
+            print("## There are %d galaxies in the input catalog" % len(inTab))
     """Check Extinction Correction"""
     if extCor:
         if ((agCol not in colNames) or (arCol not in colNames) or
@@ -331,7 +331,7 @@ if __name__ == '__main__':
                         default=True)
     parser.add_argument('--ext', '--extCor', dest='extCor',
                         action="store_true",
-                        default=False)
+                        default=True)
     parser.add_argument('-v', '--verbose', dest='verbose',
                         action="store_true",
                         default=True)
@@ -339,7 +339,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     run(args.incat, idCol=args.idCol, magType=args.magType, snType=args.snType,
-        zCol=args.zCol, raCol=args.raCol, decCol=args.decCol,
+        redCol=args.redCol, raCol=args.raCol, decCol=args.decCol,
         agCol=args.agCol, arCol=args.arCol, aiCol=args.aiCol, azCol=args.azCol,
         ayCol=args.ayCol, snError=args.snError, verbose=args.verbose,
         extCor=args.extCor)
