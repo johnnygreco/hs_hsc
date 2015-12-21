@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""Run ELLIPSE in force photometry mode."""
 
 import os
 import gc

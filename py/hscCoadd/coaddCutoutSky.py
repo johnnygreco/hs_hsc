@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""Estimate background of HSC cutout."""
 
 from __future__ import division
 

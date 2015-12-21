@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+"""Get the shape of a Tract."""
 
 from __future__ import division
 

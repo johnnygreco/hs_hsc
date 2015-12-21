@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""Generate HSC cutout image for galaxy."""
 
 import os
 import copy

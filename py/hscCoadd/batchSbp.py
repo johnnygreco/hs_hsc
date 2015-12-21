@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""Run ELLIPSE to extract 1-D SBP in batch mode."""
 
 import os
 import gc
@@ -26,7 +27,7 @@ def run(args):
     """
     Run coaddCutoutSbp in batch mode.
 
-    Parameters:
+    Parameters
     """
     if psutilOk:
         proc = psutil.Process(os.getpid())

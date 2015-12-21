@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+"""Generate HSC full cutout in batch mode."""
 
 import os
 import numpy

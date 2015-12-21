@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""Prepare the HSC cutout for photometry."""
 
 import os
 import logging

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""Prepare HSC cutout for photometry."""
 
 from __future__ import division
 

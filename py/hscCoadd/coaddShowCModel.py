@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""Visualize the cModel of a cutout."""
 
 from __future__ import division
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""Generate color picture in batch mode."""
 
 import os
 import argparse

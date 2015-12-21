@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+"""Generate color picture of HSC cutout."""
 
 from __future__ import division
 

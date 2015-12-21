@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""Single Sersic fits to HSC cutouts."""
 
 from __future__ import division
 

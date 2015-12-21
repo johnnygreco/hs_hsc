@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""Extract 1-D SBP for HSC cutout."""
 
 from __future__ import division
 
