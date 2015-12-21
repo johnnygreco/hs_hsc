@@ -44,49 +44,50 @@ def run(args):
         for galaxy in data:
 
             galID = str(galaxy[id]).strip()
-
             print SEP
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
 
-            galRoot = os.path.join(galID, filter)
-            if not os.path.isdir(galRoot):
-                print WAR
-                raise Exception('### Can not find the root folder' +
-                                ' for the galaxy data !')
-            fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
-            if len(fitsList) <= 3:
-                print WAR
-                raise Exception("### Missing data under %s" % galRoot)
-
-            """
-            Set up a rerun
-            """
-            galRoot = os.path.join(galRoot, rerun.strip())
-            if not os.path.isdir(galRoot):
-                os.makedirs(galRoot)
-            """ Link the necessary files to the rerun folder """
-            for fitsFile in fitsList:
-                seg = fitsFile.split('/')
-                link = os.path.join(galRoot, seg[-1])
-                if (not os.path.islink(link)) and (not os.path.isfile(link)):
-                    os.symlink(fitsFile, link)
-
-            """
-            External mask
-            """
-            if args.maskFilter is not None:
-                mskFilter = (args.maskFilter).strip().upper()
-                print "###  Use %s filter for mask \n" % mskFilter
-                mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
-                mskRoot = os.path.join(galID, mskFilter, rerun)
-                galMsk = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
-                if not os.path.isfile(galMsk):
-                    raise Exception('### Can not find the final mask ' +
-                                    'of the galaxy !')
-            else:
-                galMsk = None
-
             try:
+                """Folder for the data"""
+                galRoot = os.path.join(galID, filter)
+                if not os.path.isdir(galRoot):
+                    print WAR
+                    print('### Can not find the root folder : %s !' % galRoot)
+                    print WAR
+                """Collect the FITS file information"""
+                fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
+                if len(fitsList) <= 3:
+                    print WAR
+                    print("### Missing data under %s" % galRoot)
+                    print WAR
+                """
+                Set up a rerun
+                """
+                galRoot = os.path.join(galRoot, rerun.strip())
+                if not os.path.isdir(galRoot):
+                    os.makedirs(galRoot)
+                """ Link the necessary files to the rerun folder """
+                for fitsFile in fitsList:
+                    seg = fitsFile.split('/')
+                    link = os.path.join(galRoot, seg[-1])
+                    if (not os.path.islink(link)) and (not os.path.isfile(link)):
+                        os.symlink(fitsFile, link)
+                """
+                External mask
+                """
+                if args.maskFilter is not None:
+                    mskFilter = (args.maskFilter).strip().upper()
+                    print "###  Use %s filter for mask \n" % mskFilter
+                    mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
+                    mskRoot = os.path.join(galID, mskFilter, rerun)
+                    galMsk = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
+                    if not os.path.isfile(galMsk):
+                        print(WAR)
+                        print('### Can not find the final mask : %s !' % galMsk)
+                        print(WAR)
+                else:
+                    galMsk = None
+                """Estimate the Sky Background"""
                 ccs.coaddCutoutSky(galPrefix, root=galRoot,
                                    pix=args.pix,
                                    zp=args.zp,
