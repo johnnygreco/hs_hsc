@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # encoding: utf-8
-
 """
 Collection of useful tools .
 
@@ -10,16 +9,23 @@ Collection of useful tools .
  * Coordinate related shortcuts
 
 """
+
 from __future__ import (absolute_import, division,
                         unicode_literals)
 import os
 import sys
 import numbers
+import collections
+
+# Numpy & Scipy
 import numpy as np
-
-import scipy.interpolate
 import scipy.ndimage
-
+import scipy.interpolate
+try:
+    from scipy.stats import scoreatpercentile
+except:
+    scoreatpercentile = False
+# Astropy
 import astropy.units as u
 from astropy.utils.misc import isiterable
 from astropy.coordinates import SkyCoord
@@ -927,3 +933,115 @@ def check_random_state(seed):
         return seed
     raise ValueError('%r cannot be used to seed a numpy.random.RandomState'
                      ' instance' % seed)
+
+
+"""
+Boostrap Resampling Method for Confidence Interval.
+
+See: https://github.com/ptweir/pyresampling/blob/master/bootstrap.py
+And: http://peterthomasweir.blogspot.jp/2014/03/
+     statistics-based-on-resampling-in.html
+"""
+SIGMA1 = 0.3173
+SIGMA2 = 0.0455
+SIGMA3 = 0.0027
+
+
+def confidence_interval_1d(A, alpha=SIGMA1, metric=np.mean,
+                           numResamples=10000, interpolate=True):
+    """Calculate confidence interval along one dimensional array."""
+    if not isinstance(alpha, collections.Iterable):
+        alpha = np.array([alpha])
+
+    N = len(A)
+    resampleInds = np.random.randint(0, N, (numResamples, N))
+    metricOfResampled = metric(A[resampleInds], axis=-1)
+    confidenceInterval = np.zeros(2*len(alpha), dtype='float')
+
+    if interpolate:
+        for thisAlphaInd, thisAlpha in enumerate(alpha):
+            percenPos = (thisAlpha * 100 / 2.0)
+            samplePos = scoreatpercentile(metricOfResampled, percenPos)
+            confidenceInterval[2*thisAlphaInd] = samplePos
+            percenNeg = (100 - thisAlpha * 100 / 2.0)
+            sampleNeg = scoreatpercentile(metricOfResampled, percenNeg)
+            confidenceInterval[2*thisAlphaInd+1] = sampleNeg
+    else:
+        sortedMetricOfResampled = np.sort(metricOfResampled)
+        for thisAlphaInd, thisAlpha in enumerate(alpha):
+            percenPos = int(round(thisAlpha*numResamples / 2.0))
+            samplePos = sortedMetricOfResampled[percenPos]
+            confidenceInterval[2*thisAlphaInd] = samplePos
+            percenNeg = int(round(numResamples -
+                                  (thisAlpha * numResamples / 2.0)))
+            sampleNeg = sortedMetricOfResampled[percenNeg]
+            confidenceInterval[2*thisAlphaInd+1] = sampleNeg
+    return confidenceInterval
+
+
+def ma_confidence_interval_1d(A, alpha=.05, metric=np.mean,
+                              numResamples=1000, interpolate=True):
+    """
+    Confidence interval for 1-D array.
+
+    Parameters
+    """
+    A = np.ma.masked_invalid(A, copy=True)
+    A = A.compressed()
+    confidenceInterval = confidence_interval_1d(A, alpha, metric,
+                                                numResamples, interpolate)
+    return confidenceInterval
+
+
+def confidence_interval(A, axis=None, alpha=.05, metric=np.mean,
+                        numResamples=1000, interpolate=True):
+    """
+    Bootstrap confidence interval.
+
+    Return the bootstrap confidence interval of an array or along an axis
+    ignoring NaNs and masked elements.
+
+    Parameters
+    ----------
+    A : array_like
+        Array containing numbers whose confidence interval is desired.
+    axis : int, optional
+        Axis along which the confidence interval is computed.
+        The default is to compute the confidence interval of the flattened
+        array.
+    alpha: float or array, optional
+        confidence level of confidence interval. 100.0*(1-alpha) percent
+        confidence interval will be returned.
+        If length-n array, n confidence intervals will be computed
+        The default is .05
+    metric : numpy function, optional
+        metric to calculate confidence interval for.
+        The default is numpy.mean
+    numResamples : int, optional
+        number of bootstrap samples. The default is 10000.
+    interpolate: bool, optional
+        uses scipy.stats.scoreatpercentile to interpolate between
+        bootstrap samples if alpha*numResamples/2.0 is not integer.
+        The default is True
+
+    Returns
+    -------
+    confidenceInterval : ndarray
+    An array with the same shape as `A`, with the specified axis replaced by
+    one twice the length of the alpha
+
+    If `A` is a 0-d array, or if axis is None, a length-2 ndarray is returned.
+    """
+    if interpolate is True and scoreatpercentile is False:
+        print("need scipy to interpolate between values")
+        interpolate = False
+    A = A.copy()
+    if axis is None:
+        A = A.ravel()
+        outA = ma_confidence_interval_1d(A, alpha, metric, numResamples,
+                                         interpolate)
+    else:
+        outA = np.apply_along_axis(ma_confidence_interval_1d, axis, A, alpha,
+                                   metric, numResamples, interpolate)
+
+    return outA
