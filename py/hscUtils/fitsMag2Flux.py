@@ -157,7 +157,7 @@ def getExtinction(ra, dec, a_lambda=None):
 
 def run(incat, idCol='ID', magType='cmodel', snType='kron', redCol='Z',
         raCol='RA', decCol='DEC', agCol='a_g', arCol='a_r', aiCol='a_i',
-        azCol='a_z', ayCol='a_y', snError=True, verbose=True, extCor=True):
+        azCol='a_z', ayCol='a_y', snError=False, verbose=True, extCor=True):
     """
     Read in an input catalog, convert the HSC magnitudes to useful fluxes.
 
@@ -337,7 +337,7 @@ if __name__ == '__main__':
                         default='a_y')
     parser.add_argument('--se', '--snError', dest='snError',
                         action="store_true",
-                        default=True)
+                        default=False)
     parser.add_argument('--ext', '--extCor', dest='extCor',
                         action="store_true",
                         default=True)
