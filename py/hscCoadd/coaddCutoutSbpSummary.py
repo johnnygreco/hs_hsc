@@ -657,6 +657,8 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
     """Add columns to the output table"""
     colTemp = (np.asarray(outTab[zCol]) * 0.0 - 9999.0)
     col1 = Column(name='ilum_max', data=colTemp)
+    col2 = Column(name='ilum_150', data=colTemp)
+    col2 = Column(name='ilum_120', data=colTemp)
     col2 = Column(name='ilum_100', data=colTemp)
     col3 = Column(name='ilum_75', data=colTemp)
     col4 = Column(name='ilum_50', data=colTemp)
@@ -703,6 +705,8 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                 """Maximum i-band luminosity"""
                 lumI = galTab['lumI1']
                 ilumMax = np.nanmax(lumI).astype(np.float32)
+                ilum150 = np.nanmax(lumI[rKpc <= 150.0]).astype(np.float32)
+                ilum120 = np.nanmax(lumI[rKpc <= 120.0]).astype(np.float32)
                 ilum100 = np.nanmax(lumI[rKpc <= 100.0]).astype(np.float32)
                 ilum75 = np.nanmax(lumI[rKpc <= 75.0]).astype(np.float32)
                 ilum50 = np.nanmax(lumI[rKpc <= 50.0]).astype(np.float32)
@@ -712,12 +716,16 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                     print(WAR)
                     print("## Problematic SBP for %s !" % galStr)
                     ilumMax = -9999.0
+                    ilum150 = -9999.0
+                    ilum120 = -9999.0
                     ilum100 = -9999.0
                     ilum75 = -9999.0
                     ilum50 = -9999.0
                     ilum25 = -9999.0
                     ilum10 = -9999.0
                 galTab.meta['ILUM_MAX'] = ilumMax
+                galTab.meta['ILUM_150'] = ilum150
+                galTab.meta['ILUM_120'] = ilum120
                 galTab.meta['ILUM_100'] = ilum100
                 galTab.meta['ILUM_75'] = ilum75
                 galTab.meta['ILUM_50'] = ilum50
@@ -733,6 +741,8 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                 galTab.write(sumCat, format='fits', overwrite=True)
                 """Update the sample summary table"""
                 outTab['ilum_max'][ii] = ilumMax
+                outTab['ilum_150'][ii] = ilum150
+                outTab['ilum_120'][ii] = ilum120
                 outTab['ilum_100'][ii] = ilum100
                 outTab['ilum_75'][ii] = ilum75
                 outTab['ilum_50'][ii] = ilum50
