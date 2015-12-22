@@ -658,13 +658,13 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
     colTemp = (np.asarray(outTab[zCol]) * 0.0 - 9999.0)
     col1 = Column(name='ilum_max', data=colTemp)
     col2 = Column(name='ilum_150', data=colTemp)
-    col2 = Column(name='ilum_120', data=colTemp)
-    col2 = Column(name='ilum_100', data=colTemp)
-    col3 = Column(name='ilum_75', data=colTemp)
-    col4 = Column(name='ilum_50', data=colTemp)
-    col5 = Column(name='ilum_25', data=colTemp)
-    col6 = Column(name='ilum_10', data=colTemp)
-    outTab.add_columns([col1, col2, col3, col4, col5, col6])
+    col3 = Column(name='ilum_120', data=colTemp)
+    col4 = Column(name='ilum_100', data=colTemp)
+    col5 = Column(name='ilum_75', data=colTemp)
+    col6 = Column(name='ilum_50', data=colTemp)
+    col7 = Column(name='ilum_25', data=colTemp)
+    col8 = Column(name='ilum_10', data=colTemp)
+    outTab.add_columns([col1, col2, col3, col4, col5, col6, col7, col8])
     """Start a ProgressBar"""
     sbpSum = []
     sbpList = []
