@@ -168,7 +168,11 @@ def run(incat, idCol='ID', magType='cmodel', snType='kron', redCol='Z',
     else:
         inTab = Table.read(incat, format='fits')
         """Name of the output table"""
-        outCat = incat.replace('.fits', ('_flux_' + magType + '.fits'))
+        if snError:
+            outCat = incat.replace('.fits',
+                                   ('_flux_' + magType + '_snerr.fits'))
+        else:
+            outCat = incat.replace('.fits', ('_flux_' + magType + '.fits'))
         outTab = copy.deepcopy(inTab)
         colNames = inTab.colnames
         empty = np.zeros(len(inTab))
@@ -235,21 +239,21 @@ def run(incat, idCol='ID', magType='cmodel', snType='kron', redCol='Z',
         if verbose:
             print(SEP)
             print("## Use S/N of mag_%s to estimate the flux error!" % snType)
-        sigmaG = hscMag2Flux(inTab['gmag_' + snType] - aG, unit='maggy')
-        sigmaR = hscMag2Flux(inTab['rmag_' + snType] - aR, unit='maggy')
-        sigmaI = hscMag2Flux(inTab['imag_' + snType] - aI, unit='maggy')
-        sigmaZ = hscMag2Flux(inTab['zmag_' + snType] - aZ, unit='maggy')
-        sigmaY = hscMag2Flux(inTab['ymag_' + snType] - aY, unit='maggy')
-        snrG = sigmaG / hscMagerr2Fluxerr(sigmaG,
-                                          inTab['gmag_' + snType + '_err'])
-        snrR = sigmaR / hscMagerr2Fluxerr(sigmaR,
-                                          inTab['rmag_' + snType + '_err'])
-        snrI = sigmaI / hscMagerr2Fluxerr(sigmaI,
-                                          inTab['imag_' + snType + '_err'])
-        snrZ = sigmaZ / hscMagerr2Fluxerr(sigmaZ,
-                                          inTab['zmag_' + snType + '_err'])
-        snrY = sigmaY / hscMagerr2Fluxerr(sigmaY,
-                                          inTab['ymag_' + snType + '_err'])
+        sigmaG = hscMag2Flux(inTab['gmag_' + snType], unit='maggy')
+        sigmaR = hscMag2Flux(inTab['rmag_' + snType], unit='maggy')
+        sigmaI = hscMag2Flux(inTab['imag_' + snType], unit='maggy')
+        sigmaZ = hscMag2Flux(inTab['zmag_' + snType], unit='maggy')
+        sigmaY = hscMag2Flux(inTab['ymag_' + snType], unit='maggy')
+        errorG = hscMagerr2Fluxerr(sigmaG, inTab['gmag_' + snType + '_err'])
+        errorR = hscMagerr2Fluxerr(sigmaR, inTab['rmag_' + snType + '_err'])
+        errorI = hscMagerr2Fluxerr(sigmaI, inTab['imag_' + snType + '_err'])
+        errorZ = hscMagerr2Fluxerr(sigmaZ, inTab['zmag_' + snType + '_err'])
+        errorY = hscMagerr2Fluxerr(sigmaY, inTab['ymag_' + snType + '_err'])
+        snrG = sigmaG / errorG
+        snrR = sigmaR / errorR
+        snrI = sigmaI / errorI
+        snrZ = sigmaZ / errorZ
+        snrY = sigmaY / errorY
         ivarSnrG = hscFluxSNR2Ivar(fluxG, snrG)
         ivarSnrR = hscFluxSNR2Ivar(fluxR, snrR)
         ivarSnrI = hscFluxSNR2Ivar(fluxI, snrI)
@@ -261,16 +265,23 @@ def run(incat, idCol='ID', magType='cmodel', snType='kron', redCol='Z',
         ivarSnrI[np.isnan(ivarSnrI)] = ivarI[np.isnan(ivarSnrI)]
         ivarSnrZ[np.isnan(ivarSnrZ)] = ivarZ[np.isnan(ivarSnrZ)]
         ivarSnrY[np.isnan(ivarSnrY)] = ivarY[np.isnan(ivarSnrY)]
+        """ Save the SNR """
+        outTab.add_column(Column(name='snr_G', data=snrG))
+        outTab.add_column(Column(name='snr_R', data=snrR))
+        outTab.add_column(Column(name='snr_I', data=snrI))
+        outTab.add_column(Column(name='snr_Z', data=snrZ))
+        outTab.add_column(Column(name='snr_Y', data=snrY))
     """Add columns for invariance of fluxes"""
     if snError:
+        IvarMaggies = np.dstack((ivarSnrG, ivarSnrR, ivarSnrI,
+                                ivarSnrZ, ivarSnrY))[0]
+    else:
         if verbose:
             print(SEP)
             print("## Use the error of mag_%s to estimate the flux error!" %
                   magType)
-        IvarMaggies = np.dstack((ivarSnrG, ivarSnrR, ivarSnrI,
-                                ivarSnrZ, ivarSnrY))[0]
-    else:
         IvarMaggies = np.dstack((ivarG, ivarR, ivarI, ivarZ, ivarY))[0]
+
     outTab.add_column(Column(name='IvarMaggies', data=IvarMaggies))
 
     """Also get the absolute magnitudes"""
