@@ -232,6 +232,9 @@ def run(incat, idCol='ID', magType='cmodel', snType='kron', redCol='Z',
     ivarZ = hscMagerr2Ivar(fluxZ, inTab[zErrCol])
     ivarY = hscMagerr2Ivar(fluxY, inTab[yErrCol])
     if snError:
+        if verbose:
+            print(SEP)
+            print("## Use S/N of mag_%s to estimate the flux error!" % snType)
         sigmaG = hscMag2Flux(inTab['gmag_' + snType] - aG, unit='maggy')
         sigmaR = hscMag2Flux(inTab['rmag_' + snType] - aR, unit='maggy')
         sigmaI = hscMag2Flux(inTab['imag_' + snType] - aI, unit='maggy')
@@ -260,6 +263,10 @@ def run(incat, idCol='ID', magType='cmodel', snType='kron', redCol='Z',
         ivarSnrY[np.isnan(ivarSnrY)] = ivarY[np.isnan(ivarSnrY)]
     """Add columns for invariance of fluxes"""
     if snError:
+        if verbose:
+            print(SEP)
+            print("## Use the error of mag_%s to estimate the flux error!" %
+                  magType)
         IvarMaggies = np.dstack((ivarSnrG, ivarSnrR, ivarSnrI,
                                 ivarSnrZ, ivarSnrY))[0]
     else:
