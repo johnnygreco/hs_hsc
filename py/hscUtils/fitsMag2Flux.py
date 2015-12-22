@@ -223,18 +223,22 @@ def run(incat, idCol='ID', magType='cmodel', snType='kron', redCol='Z',
     """Add columns for fluxes"""
     Maggies = np.dstack((fluxG, fluxR, fluxI, fluxZ, fluxY))[0]
     outTab.add_column(Column(name='Maggies', data=Maggies))
-
     """Error of fluxes"""
     gErrCol = gCol + '_err'
     rErrCol = rCol + '_err'
     iErrCol = iCol + '_err'
     zErrCol = zCol + '_err'
     yErrCol = yCol + '_err'
-    ivarG = hscMagerr2Ivar(fluxG, inTab[gErrCol])
-    ivarR = hscMagerr2Ivar(fluxR, inTab[rErrCol])
-    ivarI = hscMagerr2Ivar(fluxI, inTab[iErrCol])
-    ivarZ = hscMagerr2Ivar(fluxZ, inTab[zErrCol])
-    ivarY = hscMagerr2Ivar(fluxY, inTab[yErrCol])
+    ivarG = hscMagerr2Ivar(hscMag2Flux(inTab[gCol], unit='maggy'),
+                           inTab[gErrCol])
+    ivarR = hscMagerr2Ivar(hscMag2Flux(inTab[rCol], unit='maggy'),
+                           inTab[rErrCol])
+    ivarI = hscMagerr2Ivar(hscMag2Flux(inTab[iCol], unit='maggy'),
+                           inTab[iErrCol])
+    ivarZ = hscMagerr2Ivar(hscMag2Flux(inTab[zCol], unit='maggy'),
+                           inTab[zErrCol])
+    ivarY = hscMagerr2Ivar(hscMag2Flux(inTab[yCol], unit='maggy'),
+                           inTab[yErrCol])
     if snError:
         if verbose:
             print(SEP)
