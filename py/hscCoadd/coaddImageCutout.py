@@ -198,21 +198,19 @@ def getCoaddBadMsk(calExp):
 
     badMsk = copy.deepcopy(mskImg)
     # Clear the "EDGE" plane
-    badMsk.clearMaskPlane(4)
+    badMsk.removeAndClearMaskPlane('EDGE', True)
     # Clear the "DETECTED" plane
-    badMsk.clearMaskPlane(5)
+    badMsk.removeAndClearMaskPlane('DETECTED', True)
     # Clear the "DETECTED_NEGATIVE" plane
-    badMsk.clearMaskPlane(6)
-
-    # Clear the "CLIPPED" plane XXX TODO: Check later to see if it is still
-    # appropriate
-    badMsk.clearMaskPlane(9)
-    # Clear the "CROSSTALK" plane XXX TODO: Check later to see if it is still
-    # appropriate
-    badMsk.clearMaskPlane(10)
+    badMsk.removeAndClearMaskPlane('DETECTED_NEGATIVE', True)
+    # Clear the "CLIPPED" plane
+    badMsk.removeAndClearMaskPlane('CLIPPED', True)
+    # Clear the "CROSSTALK" plane
+    badMsk.removeAndClearMaskPlane('CROSSTALK', True)
     # Clear the "NOT_DEBLENDED" plane
-    # appropriate
-    badMsk.clearMaskPlane(11)
+    badMsk.removeAndClearMaskPlane('NOT_DEBLENDED', True)
+    # Clear the "BRIGHT_OBJECT" plane
+    badMsk.removeAndClearMaskPlane('BRIGHT_OBJECT', True)
 
     return badMsk
 
