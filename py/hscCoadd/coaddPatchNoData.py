@@ -1,18 +1,20 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""Generate NoData mask for HSC coadd image."""
 
 from __future__ import division
 
-import copy
 import os
+import glob
+import copy
 import argparse
 import numpy as np
 from distutils.version import StrictVersion
 
-import lsst.daf.persistence  as dafPersist
-import lsst.afw.coord        as afwCoord
-import lsst.afw.geom         as afwGeom
-import lsst.afw.image        as afwImage
+import lsst.daf.persistence as dafPersist
+# import lsst.afw.coord as afwCoord
+import lsst.afw.geom as afwGeom
+import lsst.afw.image as afwImage
 
 # Matplotlib default settings
 import matplotlib as mpl
@@ -25,12 +27,12 @@ mpl.rcParams['xtick.minor.width'] = 1.5
 mpl.rcParams['ytick.major.size'] = 8.0
 mpl.rcParams['ytick.major.width'] = 1.5
 mpl.rcParams['ytick.minor.size'] = 4.0
-#mpl.rcParams['ytick.minor.width'] = 1.5
+# mpl.rcParams['ytick.minor.width'] = 1.5
 mpl.rc('axes', linewidth=2)
 
 # Shapely related imports
 from shapely.geometry import Polygon, MultiPolygon, LineString
-from shapely.ops      import cascaded_union
+from shapely.ops import cascaded_union
 
 from scipy import ndimage
 from skimage.measure import find_contours, approximate_polygon
@@ -43,6 +45,7 @@ import coaddTractShape as cdTract
 def bboxToRaDec(bbox, wcs):
     """
     Get the corners of a BBox and convert them to lists of RA and Dec.
+
     From Steve's showVisitSkyMap.py
     """
     corners = []
@@ -56,7 +59,8 @@ def bboxToRaDec(bbox, wcs):
 
 def percent(values, p=0.5):
     """
-    Return a value a faction of the way between the min and max values in a list.
+    Return a faction of the way between the min and max values in a list.
+
     From Steve's showVisitSkyMap.py
     """
     m = min(values)
@@ -65,29 +69,33 @@ def percent(values, p=0.5):
 
 
 def imgAddNoise(im, gaussian, factor):
-
+    """Add Gaussian noises."""
     im = ndimage.gaussian_filter(im, gaussian)
     im += factor * np.random.random(im.shape)
 
     return im
 
-def getPixelRaDec(wcs, xx, yy, xStart=0, yStart=0):
 
+def getPixelRaDec(wcs, xx, yy, xStart=0, yStart=0):
+    """Convert pixels coordinates into Ra, Dec."""
     coord = wcs.pixelToSky((xStart + xx - 1),
                            (yStart + yy - 1)).toIcrs()
 
-    ra  = coord.getRa().asDegrees()
+    ra = coord.getRa().asDegrees()
     dec = coord.getDec().asDegrees()
 
     return ra, dec
 
-# Save the Polygon region into a DS9 .reg file
-def getPolyLine(polyCoords):
 
-    coordShow = map(lambda x: str(x[0]) + ' ' + str(x[1]) + ' ', polyCoords)
+def getPolyLine(polyCoords):
+    """
+    Convert polygon coordinates into a DS9 region coordinates.
 
     # The format for Polygon in DS9 is:
     # Usage: polygon x1 y1 x2 y2 x3 y3 ...
+    """
+    coordShow = map(lambda x: str(x[0]) + ' ' + str(x[1]) + ' ', polyCoords)
+
     polyLine = 'polygon '
     for p in coordShow:
         polyLine += p
@@ -96,10 +104,14 @@ def getPolyLine(polyCoords):
 
     return polyLine
 
-# !!! Make sure that the Polygon is simple
+
 def polySaveReg(poly, regName, listPoly=False, color='blue',
                 verbose=True):
+    """
+    Save the Polygon region into a DS9 .reg file.
 
+    !!! Make sure that the Polygon is simple
+    """
     # DS9 region file header
     head1 = '# Region file format: DS9 version 4.1\n'
     head2 = 'global color=%s width=2\n' % color
@@ -120,7 +132,7 @@ def polySaveReg(poly, regName, listPoly=False, color='blue',
                     polyCoords = pp.boundary.coords[:]
                     polyLine = getPolyLine(polyCoords)
                     regFile.write(polyLine)
-                except NotImplementedError as notImplent:
+                except NotImplementedError:
                     # Right now the work-around is to "puff-up" the Polygon a
                     # little bit; This should be fine for small polygon shape
                     # For very rare case, this could fail !!
@@ -176,20 +188,21 @@ def polySaveReg(poly, regName, listPoly=False, color='blue',
     regFile.close()
 
 
-def listAllCatalog(rootDir, filter, checkSize=True, minSize=20.0, tract=None):
-
-    import glob
-
+def listAllCatalog(rootDir, filter, checkSize=True, minSize=20.0,
+                   tract=None):
+    """Find all deepCoadd_ref catalogs."""
     if tract is None:
         tractStr = '*'
     else:
         tractStr = str(tract).strip()
 
     if rootDir[-1] is '/':
-        searchDir = rootDir + 'deepCoadd-results/merged/' + tractStr + '/*/ref*.fits'
+        searchDir = (rootDir + 'deepCoadd-results/merged/' + tractStr +
+                     '/*/ref*.fits')
         imgDir = rootDir + 'deepCoadd/' + filter.upper() + '/'
     else:
-        searchDir = rootDir + '/deepCoadd-results/merged/' + tractStr + '/*/ref*.fits'
+        searchDir = (rootDir + '/deepCoadd-results/merged/' + tractStr +
+                     '/*/ref*.fits')
         imgDir = rootDir + '/deepCoadd/' + filter.upper() + '/'
 
     fitsList = glob.glob(searchDir)
@@ -199,7 +212,9 @@ def listAllCatalog(rootDir, filter, checkSize=True, minSize=20.0, tract=None):
             if (os.path.getsize(fits) / 1024.0 / 1024.0) >= minSize:
                 catList.append(fits)
             else:
-                print "#### WARNING: %s has size %7d Kb " % (fits, os.path.getsize(fits))
+                fileSize = os.path.getsize(fits)
+                print "#### WARNING: %s has size %7d Kb " % (fits,
+                                                             fileSize)
     else:
         catList = fitsList
 
@@ -217,18 +232,19 @@ def listAllCatalog(rootDir, filter, checkSize=True, minSize=20.0, tract=None):
 
 
 def listAllImages(rootDir, filter, checkSize=True, minSize=70.0, tract=None):
-
-    import glob
-
+    """Find all deepCoadd_calexp images."""
     if tract is None:
         tractStr = '*'
     else:
         tractStr = str(tract).strip()
 
+    """XXX This only works for the new pipeline"""
     if rootDir[-1] is '/':
-        searchDir = rootDir + 'deepCoadd/' + filter.upper() + '/' + tractStr + '/*.fits'
+        searchDir = (rootDir + 'deepCoadd/' + filter.upper() + '/' +
+                     tractStr + '/*.fits')
     else:
-        searchDir = rootDir + '/deepCoadd/' + filter.upper() + '/' + tractStr + '/*.fits'
+        searchDir = (rootDir + '/deepCoadd/' + filter.upper() + '/' +
+                     tractStr + '/*.fits')
 
     fitsList = glob.glob(searchDir)
     if checkSize:
@@ -237,7 +253,9 @@ def listAllImages(rootDir, filter, checkSize=True, minSize=70.0, tract=None):
             if (os.path.getsize(fits) / 1024.0 / 1024.0) >= minSize:
                 useList.append(fits)
             else:
-                print "#### WARNING: %s has size %7d Kb " % (fits, os.path.getsize(fits))
+                fileSize = os.path.getsize(fits)
+                print "#### WARNING: %s has size %7d Kb " % (fits,
+                                                             fileSize)
     else:
         useList = fitsList
 
@@ -248,8 +266,11 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
                      savePNG=True, verbose=True, tolerence=4,
                      minArea=10000, clobber=False, butler=None, dataId=None,
                      workDir=''):
+    """
+    Generate NoData Mask for one Patch.
 
-
+    Parameters:
+    """
     pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
     if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
         coaddData = "deepCoadd_calexp"
@@ -258,14 +279,14 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
 
     # Get the name of the wkb and deg file
     strTractPatch = (str(tract).strip() + '_' + patch + '_' + filter)
-    ## For all the accepted regions
+    # For all the accepted regions
     if (workDir is not '') and (workDir[-1] is not '/'):
         workDir += '/'
     noDataAllWkb = workDir + prefix + '_' + strTractPatch + '_nodata_all.wkb'
     fileExist1 = os.path.isfile(noDataAllWkb)
     noDataAllReg = workDir + prefix + '_' + strTractPatch + '_nodata_all.reg'
     fileExist2 = os.path.isfile(noDataAllReg)
-    ## For all the big mask regions
+    # For all the big mask regions
     noDataBigWkb = workDir + prefix + '_' + strTractPatch + '_nodata_big.wkb'
     noDataBigReg = workDir + prefix + '_' + strTractPatch + '_nodata_big.reg'
 
@@ -281,19 +302,20 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
         if butler is None:
             butler = dafPersist.Butler(rootDir)
         if dataId is None:
-            dataId = {'tract':tract, 'patch':patch, 'filter':filter}
+            dataId = {'tract': tract, 'patch': patch, 'filter': filter}
 
         # Get the name of the input fits image
         if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
-            coaddImg = '%s/calexp-%s-%s-%s.fits' % (patch, filter, tract, patch)
+            coaddImg = '%s/calexp-%s-%s-%s.fits' % (patch, filter,
+                                                    tract, patch)
         else:
             coaddImg = '%s.fits' % (patch)
         if rootDir[-1] is '/':
-            fitsName = rootDir + 'deepCoadd/' + filter + '/' + str(tract).strip() \
-                    + '/' + coaddImg
+            fitsName = (rootDir + 'deepCoadd/' + filter + '/' +
+                        str(tract).strip() + '/' + coaddImg)
         else:
-            fitsName = rootDir + '/deepCoadd/' + filter + '/' + str(tract).strip() \
-                    + '/' + coaddImg
+            fitsName = (rootDir + '/deepCoadd/' + filter + '/' +
+                        str(tract).strip() + '/' + coaddImg)
         if not os.path.isfile(fitsName):
             raise Exception('Can not find the input fits image: %s' % fitsName)
 
@@ -305,7 +327,8 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
             print "## Reading Fits Image: %s" % fitsName
 
         # Get the exposure from the butler
-        # TODO Be careful here, some of the coadd image files on the disk are not useful
+        # TODO Be careful here, some of the coadd image files
+        #      on the disk are not useful
         try:
             calExp = butler.get(coaddData, dataId, immediate=True)
         except Exception:
@@ -335,7 +358,7 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
             # approximate_polygon methods from scikit-images package
             maskShapes = []  # For all the accepted mask regions
             maskCoords = []  # For the "corner" coordinates of these regions
-            maskAreas  = []  # The sizes of all regions
+            maskAreas = []  # The sizes of all regions
 
             # Only find the 0-level contour
             contoursAll = find_contours(noDataArr, 0)
@@ -349,19 +372,18 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
                 # polygons
                 contourCoords = approximate_polygon(maskContour,
                                                     tolerance=tolerence)
-                # Convert these coordinates into (RA, DEC) using the WCS information
+                # Convert these coordinates into (RA, DEC) using the WCS
                 contourSkyCoords = map(lambda x: [x[1], x[0]], contourCoords)
-                contourRaDec     = map(lambda x: getPixelRaDec(imgWcs, x[0], x[1],
-                                                              xStart=xBegin,
-                                                              yStart=yBegin),
-                                       contourSkyCoords)
-                #contourRaDec     = imgWcs.wcs_pix2world(contourSkyCoords, 1)
+                contourRaDec = map(lambda x: getPixelRaDec(imgWcs, x[0], x[1],
+                                                           xStart=xBegin,
+                                                           yStart=yBegin),
+                                   contourSkyCoords)
                 # Require that any useful region must be at least an triangular
                 if len(contourCoords) > 3:
                     # Form a lineString using these coordinates
                     maskLine = LineString(contourRaDec)
-                    # Check if the lineString is valid and simple, so can be used
-                    # to form a closed and simple polygon
+                    # Check if the lineString is valid and simple,
+                    # so can be used to form a closed and simple polygon
                     # if maskLine.is_valid and maskLine.is_simple:
                     if maskLine.is_valid:
                         contourPoly = Polygon(contourRaDec)
@@ -371,7 +393,6 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
                         maskShapes.append(contourPoly)
                         maskCoords.append(contourRaDec)
                         maskAreas.append(Polygon(contourCoords).area)
-
             if verbose:
                 print "### %d regions are useful" % len(maskAreas)
 
@@ -383,9 +404,10 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
             nBig = len(maskBigList)
             if nBig > 0:
                 if verbose:
-                    print "### %d regions are larger than the minimum mask sizes" % nBig
+                    print "### %d regions are large enough: " % nBig
                 # Save all the masked regions to a .reg file
-                polySaveReg(maskBigList, noDataBigReg, listPoly=True, color='blue')
+                polySaveReg(maskBigList, noDataBigReg, listPoly=True,
+                            color='blue')
                 # Also create a MultiPolygon object, and save a .wkb file
                 maskBig = cascaded_union(maskBigList)
                 cdPatch.polySaveWkb(maskBig, noDataBigWkb)
@@ -405,20 +427,19 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
                     showNoDataMask(noDataAllWkb, title=titlePng,
                                    pngName=noDataPng)
                 else:
-                    showNoDataMask(noDataAllWkb, large=noDataBigWkb, title=titlePng,
-                                   pngName=noDataPng)
-
+                    showNoDataMask(noDataAllWkb, large=noDataBigWkb,
+                                   title=titlePng, pngName=noDataPng)
     else:
         if verbose:
             print "### %d, %s has been reduced before! Skip!" % (tract, patch)
 
 
 def saveTractFileList(tr, patch, filter, prefix, suffix):
-
+    """Save a list of Tracts."""
     wkbLis = open(prefix + '_' + str(tr) + '_' + filter +
-                     '_' + suffix + '_wkb.lis', 'w')
+                  '_' + suffix + '_wkb.lis', 'w')
     regLis = open(prefix + '_' + str(tr) + '_' + filter +
-                     '_' + suffix + '_reg.lis', 'w')
+                  '_' + suffix + '_reg.lis', 'w')
 
     for pp in patch:
         # Get the name of the wkb and deg file
@@ -432,8 +453,7 @@ def saveTractFileList(tr, patch, filter, prefix, suffix):
 
 
 def combineRegFiles(listFile, output=None, check=True, local=True):
-
-    """ Get the list of .reg files """
+    """Combine a list of DS9 region files."""
     regList = open(listFile, 'r').readlines()
     nReg = len(regList)
     print "### Will combine %d .reg files" % nReg
@@ -471,14 +491,12 @@ def combineRegFiles(listFile, output=None, check=True, local=True):
         else:
             raise Exception("Can not find the .reg file: %s !" % fileRead)
 
-
     regComb.close()
 
 
-def combineWkbFiles(listFile, output=None, check=True, local=True, listAll=False,
-                    allOutput=None):
-
-    """ Get the list of .wkb files """
+def combineWkbFiles(listFile, output=None, check=True, local=True,
+                    listAll=False, allOutput=None):
+    """Combine a list of .Wkb region files."""
     wkbList = open(listFile, 'r').readlines()
     nWkb = len(wkbList)
     print "### Will combine %d .wkb files" % nWkb
@@ -492,7 +510,8 @@ def combineWkbFiles(listFile, output=None, check=True, local=True, listAll=False
     else:
         fileComb = output
     if allOutput is None:
-        fileList = os.path.splitext(os.path.split(listFile)[1])[0] + '_list.wkb'
+        fileList = (os.path.splitext(os.path.split(listFile)[1])[0] +
+                    '_list.wkb')
     else:
         fileList = allOutput
     if not local:
@@ -530,7 +549,7 @@ def combineWkbFiles(listFile, output=None, check=True, local=True, listAll=False
 
 def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
                      saveList=True, notRun=False, checkCat=False):
-
+    """Generate NoData mask in batch mode."""
     # Get the list of coadded images in the direction
     if checkCat:
         imgList, catList = listAllCatalog(rootDir, filter)
@@ -557,25 +576,24 @@ def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
     if not notRun:
         """ Load the Butler """
         butler = dafPersist.Butler(rootDir)
-        # If there are too many images, do not generate the combined region file at
-        # first
+        # If there are too many images, do not generate the
+        # combined region file at first
         for tt, pp in zip(tract, patch):
-            dataId = {'tract':tt, 'patch':pp, 'filter':filter}
+            dataId = {'tract': tt, 'patch': pp, 'filter': filter}
             try:
                 coaddPatchNoData(rootDir, tt, pp, filter, prefix=prefix,
                                  savePNG=False, verbose=True, tolerence=3,
                                  minArea=10000, clobber=False, butler=butler,
                                  dataId=dataId)
             except Exception:
-                print "!!!!! Sorry, can not make the NO_DATA mask for: %i %s %s" % (tt,
-                        pp, filter)
-
-
+                print "# Can not make NO_DATA mask for: %i %s %s" % (tt,
+                                                                     pp,
+                                                                     filter)
 
 
 def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
                     verbose=True, clobber=False, butler=None, dataId=None):
-
+    """Get the general shape of the Patch."""
     pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
     if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
         coaddData = "deepCoadd_calexp"
@@ -608,15 +626,17 @@ def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
 
         # Get the name of the input fits image
         if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
-            coaddImg = '%s/calexp-%s-%s-%s.fits' % (patch, filter, tract, patch)
+            coaddImg = '%s/calexp-%s-%s-%s.fits' % (patch, filter,
+                                                    tract, patch)
         else:
             coaddImg = '%s.fits' % (patch)
         if rootDir[-1] is '/':
-            fitsName = rootDir + 'deepCoadd/' + filter + '/' + str(tract).strip() \
-                    + '/' + coaddImg
+            fitsName = (rootDir + 'deepCoadd/' + filter + '/' +
+                        str(tract).strip() + '/' + coaddImg)
         else:
-            fitsName = rootDir + '/deepCoadd/' + filter + '/' + str(tract).strip() \
-                    + '/' + coaddImg
+            fitsName = (rootDir + '/deepCoadd/' + filter + '/' +
+                        str(tract).strip() + '/' + coaddImg)
+
         if not os.path.isfile(fitsName):
             raise Exception('Can not find the input fits image: %s' % fitsName)
 
@@ -635,6 +655,7 @@ def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
         corners.append(imgWcs.pixelToSky(bbox.getMinX(), bbox.getMaxY()))
         corners.append(imgWcs.pixelToSky(bbox.getMaxX(), bbox.getMaxY()))
         corners.append(imgWcs.pixelToSky(bbox.getMaxX(), bbox.getMinY()))
+
         raDec = map(lambda x: (x.getLongitude().asDegrees(),
                                x.getLatitude().asDegrees()), corners)
         # Convert the raDec array into a polygon
@@ -651,12 +672,12 @@ def coaddPatchShape(rootDir, tract, patch, filter, prefix='hsc_coadd',
 def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
                     saveList=True, notRun=False, minSize=110, checkCat=False):
     """
-    Get the shape of patches in batch mode
+    Get the shape of patches in batch mode.
+
     This is better than the method in coaddPatchShape
 
     TODO: Merge this into coaddPatchShape later
     """
-
     pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
     if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
         coaddData = "deepCoadd_calexp"
@@ -664,13 +685,15 @@ def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
         coaddData = "deepCoadd"
 
     """ Save a list of tract IDs """
-    trUniq = cdTract.getTractList(rootDir, filter, imgType=coaddData, toInt=True,
-                                  prefix=prefix, toFile=True)
+    trUniq = cdTract.getTractList(rootDir, filter, imgType=coaddData,
+                                  toInt=True, prefix=prefix, toFile=True)
+    print "### There are %d unique tracts!" % len(trUniq)
     # Get the list of coadded images in the direction
     if checkCat:
         imgList, catList = listAllCatalog(rootDir, filter)
     else:
-        imgList = listAllImages(rootDir, filter, checkSize=True, minSize=minSize)
+        imgList = listAllImages(rootDir, filter, checkSize=True,
+                                minSize=minSize)
     nImg = len(imgList)
     print '### Will go through %d images !' % nImg
 
@@ -678,9 +701,6 @@ def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
     tract = map(lambda x: int(x.split('/')[-2]), imgList)
     patch = map(lambda x: x.split('/')[-1].split('.')[0], imgList)
 
-    # Get the uniqe tract
-    #trUniq = np.unique(tract)
-    print "### There are %d unique tracts!" % len(trUniq)
     if saveList:
         for tr in trUniq:
             tArr = np.asarray(tract)
@@ -696,13 +716,13 @@ def batchPatchShape(rootDir, filter='HSC-I', prefix='hsc_coadd',
         for tt, pp in zip(tract, patch):
             dataId = {'tract': tt, 'patch': pp, 'filter': filter}
             coaddPatchShape(rootDir, tt, pp, filter, prefix=prefix,
-                            verbose=True, clobber=False, butler=butler, dataId=dataId)
+                            verbose=True, clobber=False, butler=butler,
+                            dataId=dataId)
 
 
 def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
                        verbose=True, check=True):
-
-    """ Get the prefix and filter name """
+    """Combine the NoData mask."""
     temp = os.path.basename(tractFile).split('_')
     prefix = temp[0] + '_' + temp[1]
     filter = temp[2]
@@ -733,25 +753,25 @@ def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
         """ Get the list file names """
         if not big:
             """ All Region .wkb and .reg list """
-            regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                    '_nodata_all_reg.lis'
-            wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                    '_nodata_all_wkb.lis'
+            regLis = (location + prefix + '_' + str(tractId) + '_' +
+                      filter + '_nodata_all_reg.lis')
+            wkbLis = (location + prefix + '_' + str(tractId) + '_' +
+                      filter + '_nodata_all_wkb.lis')
             strComb = '_all'
         else:
             """ Big Region .wkb and .reg list """
-            regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                    '_nodata_big_reg.lis'
-            wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                    '_nodata_big_wkb.lis'
+            regLis = (location + prefix + '_' + str(tractId) + '_' +
+                      filter + '_nodata_big_reg.lis')
+            wkbLis = (location + prefix + '_' + str(tractId) + '_' +
+                      filter + '_nodata_big_wkb.lis')
             strComb = '_big'
 
         if not os.path.isfile(regLis):
             raise Exception("Can not find the regLis file: %s" % regLis)
         else:
             """ Combine the .reg file, it should be easy """
-            outReg = prefix + '_' + str(tractId) + '_' + filter + \
-                    '_nodata' + strComb + '.reg'
+            outReg = (prefix + '_' + str(tractId) + '_' +
+                      filter + '_nodata' + strComb + '.reg')
             if verbose:
                 print "### Try to combined their .reg files into %s" % outReg
             combineRegFiles(regLis, output=outReg, check=check)
@@ -763,8 +783,8 @@ def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
             raise Exception("Can not find the wkbLis file: %s" % wkbLis)
         else:
             """ Combine the .wkb file """
-            outWkb = prefix + '_' + str(tractId) + '_' + filter + \
-                    '_nodata' + strComb + '.wkb'
+            outWkb = (prefix + '_' + str(tractId) + '_' +
+                      filter + '_nodata' + strComb + '.wkb')
 
             if verbose:
                 print "### Try to combined their .wkb files into %s" % outWkb
@@ -776,18 +796,15 @@ def batchNoDataCombine(tractFile, location='.', big=True, showComb=True,
             else:
                 """ Show the results """
                 if showComb:
-                    pngTitle = prefix + '_' + str(tractId) + '_' + filter + \
-                               '_nodata' + strComb
+                    pngTitle = (prefix + '_' + str(tractId) + '_' + filter +
+                                '_nodata' + strComb)
                     pngName = pngTitle + '.png'
                     showNoDataMask(outWkb, title=pngTitle, pngName=pngName)
 
 
-
-
 def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
                       check=True):
-
-    """ Get the prefix and filter name """
+    """Combine the Shape masks for a list of Patches."""
     temp = os.path.basename(tractFile).split('_')
     prefix = temp[0] + '_' + temp[1]
     filter = temp[2]
@@ -816,18 +833,18 @@ def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
             print "### Will deal with tract: %d" % tractId
 
         """ Get the list file names """
-        regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                '_shape_reg.lis'
-        wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                '_shape_wkb.lis'
+        regLis = (location + prefix + '_' + str(tractId) + '_' + filter +
+                  '_shape_reg.lis')
+        wkbLis = (location + prefix + '_' + str(tractId) + '_' + filter +
+                  '_shape_wkb.lis')
         strComb = '_all'
 
         if not os.path.isfile(regLis):
             raise Exception("Can not find the regLis file: %s" % regLis)
         else:
             """ Combine the .reg file, it should be easy """
-            outReg = prefix + '_' + str(tractId) + '_' + filter + \
-                    '_shape' + strComb + '.reg'
+            outReg = (prefix + '_' + str(tractId) + '_' + filter +
+                      '_shape' + strComb + '.reg')
             if verbose:
                 print "### Try to combined their .reg files into %s" % outReg
             combineRegFiles(regLis, output=outReg, check=check)
@@ -839,10 +856,10 @@ def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
             raise Exception("Can not find the wkbLis file: %s" % wkbLis)
         else:
             """ Combine the .wkb file """
-            outWkb = prefix + '_' + str(tractId) + '_' + filter + \
-                    '_shape' + strComb + '.wkb'
-            outAll = prefix + '_' + str(tractId) + '_' + filter + \
-                    '_nodata' + strComb + '_list.wkb'
+            outWkb = (prefix + '_' + str(tractId) + '_' + filter +
+                      '_shape' + strComb + '.wkb')
+            outAll = (prefix + '_' + str(tractId) + '_' + filter +
+                      '_nodata' + strComb + '_list.wkb')
 
             if verbose:
                 print "### Try to combined their .wkb files into %s" % outWkb
@@ -855,17 +872,18 @@ def batchPatchCombine(tractFile, location='.', showComb=True, verbose=True,
             else:
                 """ Show the results """
                 if showComb:
-                    pngTitle = prefix + '_' + str(tractId) + '_' + filter + \
-                               '_shape' + strComb
+                    pngTitle = (prefix + '_' + str(tractId) + '_' + filter +
+                                '_shape' + strComb)
                     pngName = pngTitle + '.png'
-                    showNoDataMask(outAll, corner=outWkb, title=pngTitle, pngName=pngName)
+                    showNoDataMask(outAll, corner=outWkb, title=pngTitle,
+                                   pngName=pngName)
 
 
-def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
-                  pngName='tract_mask.png', xsize=20, ysize=18, dpi=150,
-                  saveFile=True, tractMap=None):
-
-
+def showNoDataMask(wkbFile, large=None, corner=None,
+                   title='No Data Mask Plane',
+                   pngName='tract_mask.png', xsize=20, ysize=18, dpi=150,
+                   saveFile=True, tractMap=None):
+    """Visualize the NoData Mask."""
     fig = plt.figure(figsize=(xsize, ysize), dpi=dpi)
 
     ax = fig.add_subplot(111)
@@ -879,7 +897,7 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
 
     # Set title
     ax.set_title(title, fontsize=25, fontweight='bold')
-    ax.title.set_position((0.5,1.01))
+    ax.title.set_position((0.5, 1.01))
 
     maskShow = cdPatch.polyReadWkb(wkbFile, load=True)
     # Outline all the mask regions
@@ -928,7 +946,8 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
                         x, y = bb.xy
                         ax.plot(x, y, lw=2.5, color='b')
                 else:
-                    print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
+                    print " !!! Can not plot shape %d - %s !" % (ii,
+                                                                 bounds.type)
 
     # highlight all the tract corner
     if corner is not None:
@@ -955,7 +974,8 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
                         x, y = bb.xy
                         ax.plot(x, y, lw=3.5, color='g')
                 else:
-                    print " !!! Can not plot shape %d - %s !" % (ii, bounds.type)
+                    print " !!! Can not plot shape %d - %s !" % (ii,
+                                                                 bounds.type)
         else:
             print " !!! Not valid tract_corner Polygon"
 
@@ -967,11 +987,14 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
     if tractMap is not None:
         for patch in tractMap:
             print "#### Plot Patch : ", patch.getIndex()
-            raPatch, decPatch = bboxToRaDec(patch.getInnerBBox(), tractMap.getWcs())
+            raPatch, decPatch = bboxToRaDec(patch.getInnerBBox(),
+                                            tractMap.getWcs())
             ax.fill(raPatch, decPatch, fill=False, edgecolor='k', lw=1,
                     linestyle='dashed')
-            ax.text(percent(raPatch), percent(decPatch, 0.9), str(patch.getIndex()),
-                    fontsize=16, horizontalalignment='center', verticalalignment='top')
+            ax.text(percent(raPatch), percent(decPatch, 0.9),
+                    str(patch.getIndex()),
+                    fontsize=16, horizontalalignment='center',
+                    verticalalignment='top')
 
     fig.subplots_adjust(hspace=0.1, wspace=0.1,
                         top=0.95, right=0.95)
@@ -986,14 +1009,14 @@ def showNoDataMask(wkbFile, large=None, corner=None, title='No Data Mask Plane',
 def tractNoData(rootDir, tractUse, filter='HSC-I', prefix='hsc_coadd',
                 saveList=True, notRun=False, combine=True, showPatch=True,
                 checkCat=True):
-
-    # TODO Not finished
+    """Wrapper to get the NoData mask for an entire Tract."""
     print '### Will only generate mask files for one Tract: %d ' % tractUse
     # Get the list of coadded images in the direction
     if checkCat:
         imgList, catList = listAllCatalog(rootDir, filter, tract=tractUse)
     else:
-        imgList = listAllImages(rootDir, filter, tract=tractUse, checkSize=True,
+        imgList = listAllImages(rootDir, filter, tract=tractUse,
+                                checkSize=True,
                                 minSize=100)
     nImg = len(imgList)
     print '### Will go through %d images !' % nImg
@@ -1016,44 +1039,46 @@ def tractNoData(rootDir, tractUse, filter='HSC-I', prefix='hsc_coadd',
     if not notRun:
         """ Load the Butler """
         butler = dafPersist.Butler(rootDir)
-        # If there are too many images, do not generate the combined region file at
-        # first
         for tt, pp in zip(tract, patch):
-            dataId = {'tract':tt, 'patch':pp, 'filter':filter}
+            dataId = {'tract': tt, 'patch': pp, 'filter': filter}
             try:
                 coaddPatchNoData(rootDir, tt, pp, filter, prefix=prefix,
                                  savePNG=False, verbose=True, tolerence=3,
                                  minArea=10000, clobber=False, butler=butler,
                                  dataId=dataId)
             except Exception:
-                print "!!!!! Sorry, can not make the NO_DATA mask for: %i %s %s" % (tt,
-                        pp, filter)
+                print "! Can not make NO_DATA mask for: %i %s %s" % (tt,
+                                                                     pp,
+                                                                     filter)
 
         if combine:
             if showPatch:
-                skyMap = butler.get('deepCoadd_skyMap', {'tract':tractUse})
+                skyMap = butler.get('deepCoadd_skyMap', {'tract': tractUse})
                 tractMap = None
                 for tr in skyMap:
                     if tr.getId() == tractUse:
                         print "#### Find the tract we want : %d" % tractUse
                         tractMap = tr
-                tractNoDataCombine(prefix, tractUse, filter='HSC-I', location='.',
-                                   big=True, showComb=True, verbose=True, check=False,
+                tractNoDataCombine(prefix, tractUse, filter='HSC-I',
+                                   location='.', big=True, showComb=True,
+                                   verbose=True, check=False,
                                    tractMap=tractMap)
-                tractNoDataCombine(prefix, tractUse, filter='HSC-I', location='.',
-                                   big=False, showComb=True, verbose=True, check=False,
+                tractNoDataCombine(prefix, tractUse, filter='HSC-I',
+                                   location='.', big=False, showComb=True,
+                                   verbose=True, check=False,
                                    tractMap=tractMap)
             else:
-                tractNoDataCombine(prefix, tractUse, filter='HSC-I', location='.',
-                                   big=True, showComb=True, verbose=True, check=False)
-                tractNoDataCombine(prefix, tractUse, filter='HSC-I', location='.',
-                                   big=False, showComb=True, verbose=True, check=False)
+                tractNoDataCombine(prefix, tractUse, filter='HSC-I',
+                                   location='.', big=True, showComb=True,
+                                   verbose=True, check=False)
+                tractNoDataCombine(prefix, tractUse, filter='HSC-I',
+                                   location='.', big=False, showComb=True,
+                                   verbose=True, check=False)
 
 
 def tractNoDataCombine(prefix, tractId, filter='HSC-I', location='.', big=True,
                        showComb=True, verbose=True, check=True, tractMap=None):
-
-    """ Get the prefix and filter name """
+    """Combine the NoData masks for an entire Tract."""
     prefix = str(prefix).strip()
     filter = str(filter).strip()
 
@@ -1066,25 +1091,25 @@ def tractNoDataCombine(prefix, tractId, filter='HSC-I', location='.', big=True,
     """ Get the list file names """
     if not big:
         """ All Region .wkb and .reg list """
-        regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                '_nodata_all_reg.lis'
-        wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                '_nodata_all_wkb.lis'
+        regLis = (location + prefix + '_' + str(tractId) + '_' + filter +
+                  '_nodata_all_reg.lis')
+        wkbLis = (location + prefix + '_' + str(tractId) + '_' + filter +
+                  '_nodata_all_wkb.lis')
         strComb = '_all'
     else:
         """ Big Region .wkb and .reg list """
-        regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                '_nodata_big_reg.lis'
-        wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-                '_nodata_big_wkb.lis'
+        regLis = (location + prefix + '_' + str(tractId) + '_' + filter +
+                  '_nodata_big_reg.lis')
+        wkbLis = (location + prefix + '_' + str(tractId) + '_' + filter +
+                  '_nodata_big_wkb.lis')
         strComb = '_big'
 
     if not os.path.isfile(regLis):
         raise Exception("Can not find the regLis file: %s" % regLis)
     else:
         """ Combine the .reg file, it should be easy """
-        outReg = prefix + '_' + str(tractId) + '_' + filter + \
-                '_nodata' + strComb + '.reg'
+        outReg = (prefix + '_' + str(tractId) + '_' + filter +
+                  '_nodata' + strComb + '.reg')
         if verbose:
             print "### Try to combined their .reg files into %s" % outReg
         combineRegFiles(regLis, output=outReg, check=check)
@@ -1096,8 +1121,8 @@ def tractNoDataCombine(prefix, tractId, filter='HSC-I', location='.', big=True,
         raise Exception("Can not find the wkbLis file: %s" % wkbLis)
     else:
         """ Combine the .wkb file """
-        outWkb = prefix + '_' + str(tractId) + '_' + filter + \
-                '_nodata' + strComb + '.wkb'
+        outWkb = (prefix + '_' + str(tractId) + '_' + filter +
+                  '_nodata' + strComb + '.wkb')
 
         if verbose:
             print "### Try to combined their .wkb files into %s" % outWkb
@@ -1109,23 +1134,23 @@ def tractNoDataCombine(prefix, tractId, filter='HSC-I', location='.', big=True,
         else:
             """ Show the results """
             if showComb:
-                pngTitle = prefix + '_' + str(tractId) + '_' + filter + \
-                           '_nodata' + strComb
+                pngTitle = (prefix + '_' + str(tractId) + '_' + filter +
+                            '_nodata' + strComb)
                 pngName = pngTitle + '.png'
-                showNoDataMask(outWkb, title=pngTitle, pngName=pngName, tractMap=tractMap)
+                showNoDataMask(outWkb, title=pngTitle, pngName=pngName,
+                               tractMap=tractMap)
 
 
 def tractShape(rootDir, tractId, filter='HSC-I', prefix='hsc_coadd',
-               saveList=True, notRun=False, minSize=110, combine=True, showPatch=True,
-               checkCat=True):
+               saveList=True, notRun=False, minSize=110, combine=True,
+               showPatch=True, checkCat=True):
     """
-    Get the shape of patches in batch mode
+    Get the shape of patches in batch mode.
+
     This is better than the method in coaddPatchShape
 
     TODO: Merge this into coaddPatchShape later
     """
-
-    """ Save a list of tract IDs """
     # Get the list of coadded images in the direction
     if checkCat:
         imgList, catList = listAllCatalog(rootDir, filter, tract=tractId)
@@ -1157,28 +1182,30 @@ def tractShape(rootDir, tractId, filter='HSC-I', prefix='hsc_coadd',
         for tt, pp in zip(tract, patch):
             dataId = {'tract': tt, 'patch': pp, 'filter': filter}
             coaddPatchShape(rootDir, tt, pp, filter, prefix=prefix,
-                            verbose=True, clobber=False, butler=butler, dataId=dataId)
+                            verbose=True, clobber=False, butler=butler,
+                            dataId=dataId)
 
         if combine:
             if showPatch:
-                skyMap = butler.get('deepCoadd_skyMap', {'tract':tractId})
+                skyMap = butler.get('deepCoadd_skyMap', {'tract': tractId})
                 tractMap = None
                 for tr in skyMap:
                     if tr.getId() == tractId:
                         print "#### Find the tract we want : %d" % tractId
                         tractMap = tr
-                tractShapeCombine(prefix, tractId, filter='HSC-I', location='.',
+                tractShapeCombine(prefix, tractId, filter='HSC-I',
+                                  location='.',
                                   showComb=True, verbose=True, check=False,
                                   tractMap=tractMap)
             else:
-                tractShapeCombine(prefix, tractId, filter='HSC-I', location='.',
+                tractShapeCombine(prefix, tractId, filter='HSC-I',
+                                  location='.',
                                   showComb=True, verbose=True, check=False)
 
 
-def tractShapeCombine(prefix, tractId, filter='HSC-I', location='.', showComb=True,
-                      verbose=True, check=True, tractMap=None):
-
-    """ Get the prefix and filter name """
+def tractShapeCombine(prefix, tractId, filter='HSC-I', location='.',
+                      showComb=True, verbose=True, check=True, tractMap=None):
+    """Combine the Shape for an entire Tract."""
     prefix = str(prefix).strip()
     filter = str(filter).strip()
 
@@ -1194,18 +1221,18 @@ def tractShapeCombine(prefix, tractId, filter='HSC-I', location='.', showComb=Tr
         print "### Will deal with tract: %d" % tractId
 
     """ Get the list file names """
-    regLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-            '_shape_reg.lis'
-    wkbLis = location + prefix + '_' + str(tractId) + '_' + filter + \
-            '_shape_wkb.lis'
+    regLis = (location + prefix + '_' + str(tractId) + '_' + filter +
+              '_shape_reg.lis')
+    wkbLis = (location + prefix + '_' + str(tractId) + '_' + filter +
+              '_shape_wkb.lis')
     strComb = '_all'
 
     if not os.path.isfile(regLis):
         raise Exception("Can not find the regLis file: %s" % regLis)
     else:
         """ Combine the .reg file, it should be easy """
-        outReg = prefix + '_' + str(tractId) + '_' + filter + \
-                '_shape' + strComb + '.reg'
+        outReg = (prefix + '_' + str(tractId) + '_' + filter +
+                  '_shape' + strComb + '.reg')
         if verbose:
             print "### Try to combined their .reg files into %s" % outReg
         combineRegFiles(regLis, output=outReg, check=check)
@@ -1217,10 +1244,10 @@ def tractShapeCombine(prefix, tractId, filter='HSC-I', location='.', showComb=Tr
         raise Exception("Can not find the wkbLis file: %s" % wkbLis)
     else:
         """ Combine the .wkb file """
-        outWkb = prefix + '_' + str(tractId) + '_' + filter + \
-                '_shape' + strComb + '.wkb'
-        outAll = prefix + '_' + str(tractId) + '_' + filter + \
-                '_shape' + strComb + '_list.wkb'
+        outWkb = (prefix + '_' + str(tractId) + '_' + filter +
+                  '_shape' + strComb + '.wkb')
+        outAll = (prefix + '_' + str(tractId) + '_' + filter +
+                  '_shape' + strComb + '_list.wkb')
 
         if verbose:
             print "### Try to combined their .wkb files into %s" % outWkb
@@ -1234,11 +1261,11 @@ def tractShapeCombine(prefix, tractId, filter='HSC-I', location='.', showComb=Tr
         else:
             """ Show the results """
             if showComb:
-                pngTitle = prefix + '_' + str(tractId) + '_' + filter + \
-                           '_shape' + strComb
+                pngTitle = (prefix + '_' + str(tractId) + '_' + filter +
+                            '_shape' + strComb)
                 pngName = pngTitle + '.png'
                 showNoDataMask(outAll, corner=outWkb, title=pngTitle,
-                        pngName=pngName, tractMap=tractMap)
+                               pngName=pngName, tractMap=tractMap)
 
 
 if __name__ == '__main__':
