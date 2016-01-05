@@ -12,7 +12,7 @@ import argparse
 
 import numpy as np
 import cPickle as pickle
-# from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d
 
 # Astropy
 # from astropy.io import fits
@@ -65,7 +65,7 @@ HSC_FILTERS = ['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y']
 """
 Common radius array
 """
-RSMA_COMMON = np.arange(0.2, 4.0, 0.1)
+RSMA_COMMON = np.arange(0.2, 4.5, 0.02)
 EMPTY = (RSMA_COMMON * np.nan)
 """
 For output
@@ -73,6 +73,20 @@ For output
 COM = '#' * 100
 SEP = '-' * 100
 WAR = '!' * 100
+
+
+def interpSbp(rad, data, radCommon=RSMA_COMMON, kind='slinear'):
+    """
+    Interpolate 1-D SBP data.
+
+    Parameters:
+        kind  :
+    """
+    if len(rad) != len(data):
+        raise Exception("# The radius and data should be the same in size!")
+    intrpFunc = interp1d(rad, data, kind=kind, bounds_error=False)
+
+    return intrpFunc(radCommon)
 
 
 def toColorArr(data, bottom=None, top=None):
@@ -526,7 +540,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                           gmagCol='gmag_cmodel', rmagCol='rmag_cmodel',
                           imagCol='imag_cmodel', zmagCol='zmag_cmodel',
                           ymagCol='zmag_cmodel', refFilter='HSC-I',
-                          verbose=False):
+                          verbose=False, interp=True):
     """
     Summarize the Ellipse results.
 
