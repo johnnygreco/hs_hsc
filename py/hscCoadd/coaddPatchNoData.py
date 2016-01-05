@@ -346,9 +346,18 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
             # Extract the NO_DATA plane
             # TODO: NO_DATA is not a system mask, maybe should use INTRP later
             noData = copy.deepcopy(mskImg)
-            noData &= noData.getPlaneBitMask('NO_DATA')
+            noData.removeAndClearMaskPlane('EDGE', True)
+            noData.removeAndClearMaskPlane('FAKE', True)
+            noData.removeAndClearMaskPlane('CLIPPED', True)
+            noData.removeAndClearMaskPlane('CROSSTALK', True)
+            noData.removeAndClearMaskPlane('NOT_DEBLENDED', True)
+            noData.removeAndClearMaskPlane('UNMASKEDNAN', True)
+            noData.removeAndClearMaskPlane('DETECTED', True)
+            noData.removeAndClearMaskPlane('DETECTED_NEGATIVE', True)
+            # noData &= noData.getPlaneBitMask('INTRP')
             # Return the mask image array
             noDataArr = noData.getArray()
+            noDataArr[noDataArr > 0] = 10
 
             # Pad the 2-D array by a little
             noDataArr = np.lib.pad(noDataArr, ((1, 1), (1, 1)), 'constant',
