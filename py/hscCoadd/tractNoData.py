@@ -10,7 +10,8 @@ def run(rootDir, tractUse, filter, prefix):
     """Run tractNoData."""
     cdNoData.tractNoData(rootDir, tractUse, filter=filter, prefix=prefix,
                          notRun=False, saveList=True, combine=True,
-                         showPatch=True, checkCat=True)
+                         showPatch=True, checkCat=True, starMask=False,
+                         notDeblend=True)
 
 if __name__ == '__main__':
 

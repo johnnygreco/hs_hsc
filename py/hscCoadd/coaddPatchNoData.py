@@ -265,7 +265,7 @@ def listAllImages(rootDir, filter, checkSize=True, minSize=70.0, tract=None):
 def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
                      savePNG=True, verbose=True, tolerence=4,
                      minArea=10000, clobber=False, butler=None, dataId=None,
-                     workDir=''):
+                     workDir='', starMask=False, notDeblend=True):
     """
     Generate NoData Mask for one Patch.
 
@@ -344,17 +344,18 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
             mskImg = calExp.getMaskedImage().getMask()
 
             # Extract the NO_DATA plane
-            # TODO: NO_DATA is not a system mask, maybe should use INTRP later
             noData = copy.deepcopy(mskImg)
             noData.removeAndClearMaskPlane('EDGE', True)
             noData.removeAndClearMaskPlane('FAKE', True)
             noData.removeAndClearMaskPlane('CLIPPED', True)
             noData.removeAndClearMaskPlane('CROSSTALK', True)
-            noData.removeAndClearMaskPlane('NOT_DEBLENDED', True)
             noData.removeAndClearMaskPlane('UNMASKEDNAN', True)
             noData.removeAndClearMaskPlane('DETECTED', True)
             noData.removeAndClearMaskPlane('DETECTED_NEGATIVE', True)
-            # noData &= noData.getPlaneBitMask('INTRP')
+            if not notDeblend:
+                noData.removeAndClearMaskPlane('NOT_DEBLENDED', True)
+            if not starMask:
+                noData.removeAndClearMaskPlane('BRIGHT_OBJECT', True)
             # Return the mask image array
             noDataArr = noData.getArray()
             noDataArr[noDataArr > 0] = 10
@@ -557,7 +558,8 @@ def combineWkbFiles(listFile, output=None, check=True, local=True,
 
 
 def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
-                     saveList=True, notRun=False, checkCat=False):
+                     saveList=True, notRun=False, checkCat=False,
+                     starMask=False, notDeblend=True):
     """Generate NoData mask in batch mode."""
     # Get the list of coadded images in the direction
     if checkCat:
@@ -593,7 +595,8 @@ def batchPatchNoData(rootDir, filter='HSC-I', prefix='hsc_coadd',
                 coaddPatchNoData(rootDir, tt, pp, filter, prefix=prefix,
                                  savePNG=False, verbose=True, tolerence=3,
                                  minArea=10000, clobber=False, butler=butler,
-                                 dataId=dataId)
+                                 dataId=dataId, starMask=starMask,
+                                 notDeblend=notDeblend)
             except Exception:
                 print "# Can not make NO_DATA mask for: %i %s %s" % (tt,
                                                                      pp,
@@ -1017,7 +1020,7 @@ def showNoDataMask(wkbFile, large=None, corner=None,
 
 def tractNoData(rootDir, tractUse, filter='HSC-I', prefix='hsc_coadd',
                 saveList=True, notRun=False, combine=True, showPatch=True,
-                checkCat=True):
+                checkCat=True, starMask=False, notDeblend=True):
     """Wrapper to get the NoData mask for an entire Tract."""
     print '### Will only generate mask files for one Tract: %d ' % tractUse
     # Get the list of coadded images in the direction
@@ -1054,7 +1057,8 @@ def tractNoData(rootDir, tractUse, filter='HSC-I', prefix='hsc_coadd',
                 coaddPatchNoData(rootDir, tt, pp, filter, prefix=prefix,
                                  savePNG=False, verbose=True, tolerence=3,
                                  minArea=10000, clobber=False, butler=butler,
-                                 dataId=dataId)
+                                 dataId=dataId, starMask=starMask,
+                                 notDeblend=notDeblend)
             except Exception:
                 print "! Can not make NO_DATA mask for: %i %s %s" % (tt,
                                                                      pp,
