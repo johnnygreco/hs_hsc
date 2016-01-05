@@ -346,7 +346,6 @@ def coaddPatchNoData(rootDir, tract, patch, filter, prefix='hsc_coadd',
             # Extract the NO_DATA plane
             noData = copy.deepcopy(mskImg)
             noData.removeAndClearMaskPlane('EDGE', True)
-            noData.removeAndClearMaskPlane('FAKE', True)
             noData.removeAndClearMaskPlane('CLIPPED', True)
             noData.removeAndClearMaskPlane('CROSSTALK', True)
             noData.removeAndClearMaskPlane('UNMASKEDNAN', True)
