@@ -65,7 +65,7 @@ HSC_FILTERS = ['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y']
 """
 Common radius array
 """
-RSMA_COMMON = np.arange(0.2, 4.5, 0.02)
+RSMA_COMMON = np.arange(0.4, 4.2, 0.02)
 EMPTY = (RSMA_COMMON * np.nan)
 """
 For output
@@ -272,13 +272,11 @@ def getEllipProfile(galid, base, prefix, model, psf=False,
         return ellProf
 
 
-def sbpExtract(loc, galID, redshift, filter,
-               prefix, rerun, model,
-               zp=27.0, extinction=0.0,
-               amag_sun=None, m2l=None,
-               origin=False, verbose=False):
+def geomExtract(loc, galID, redshift, filter,
+                prefix, rerun, model,
+                verbose=False, interp=True):
     """
-    Return important SBP information.
+    Return geometric information.
 
     Parameters:
     """
@@ -286,11 +284,58 @@ def sbpExtract(loc, galID, redshift, filter,
                            filter=filter, rerun=rerun,
                            verbose=verbose)
     if prof is not None:
+        """ Get physical pixel scale and distant module """
+        scale = hUtil.cosmoScale(redshift)
+        """ Convert unit of major axis radius to Kpc """
+        sma_kpc = prof['sma_asec'] * scale
+        rsma_kpc = (sma_kpc ** 0.25)
+        """ Basic geometric information """
+        ell = prof['ell']
+        ell_err = prof['ell_err']
+        pa = prof['pa']
+        pa_err = prof['pa_err']
+        if not interp:
+            return sma_kpc, ell, ell_err, pa, pa_err
+        else:
+            ell_i = interpSbp(rsma_kpc, ell,
+                              radCommon=RSMA_COMMON,
+                              kind='slinear')
+            ell_err_i = interpSbp(rsma_kpc, ell_err,
+                                  radCommon=RSMA_COMMON,
+                                  kind='slinear')
+            pa_i = interpSbp(rsma_kpc, pa,
+                             radCommon=RSMA_COMMON,
+                             kind='slinear')
+            pa_err_i = interpSbp(rsma_kpc, pa_err,
+                                 radCommon=RSMA_COMMON,
+                                 kind='slinear')
+            sma_common = (RSMA_COMMON ** 4.0)
+
+            return sma_common, ell_i, ell_err_i, pa_i, pa_err_i
+    else:
+        return None
+
+
+def sbpExtract(loc, galID, redshift, filter,
+               prefix, rerun, model,
+               zp=27.0, extinction=0.0,
+               amag_sun=None, m2l=None, psf=False,
+               origin=False, verbose=False, interp=True):
+    """
+    Return important SBP information.
+
+    Parameters:
+    """
+    prof = getEllipProfile(galID, loc, prefix, model,
+                           filter=filter, rerun=rerun,
+                           verbose=verbose, psf=psf)
+    if prof is not None:
         ell = correctProf(prof, redshift,
                           extinction=extinction,
                           zp=zp, amag_sun=amag_sun,
                           dimming=True, corCurve=True,
-                          verbose=verbose, m2l=m2l)
+                          verbose=verbose, m2l=m2l,
+                          interp=interp)
         if origin:
             return ell, prof
         else:
@@ -304,7 +349,8 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                a_z=0.0, a_y=0.0, suffix=None,
                m2l_g=None, m2l_r=None, m2l_i=None,
                m2l_z=None, m2l_y=None,
-               verbose=False, save=True):
+               verbose=False, save=True, interp=True,
+               sumFolder='sbp_sum', sample=None):
     """
     Collect profiles from the cutout folder.
 
@@ -314,72 +360,231 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
     And, can not use for any profile with suffix
     """
     """Location and Table name"""
-    sumDir = os.path.join(loc, 'sum')
+    sumDir = os.path.join(loc, sumFolder)
     if not os.path.isdir(sumDir):
         os.mkdir(sumDir)
-    """Name of the summary table of each galaxy"""
-    if suffix is None:
-        sumTab = str(galID) + '_sbp_sum.fits'
-        suffix = ''
-    else:
-        sumTab = str(galID) + '_' + suffix + '_sbp_sum.fits'
 
+    """Name of the summary table of each galaxy"""
+    if sample is None:
+        strTemp = str(galID)
+    else:
+        strTemp = str(sample).strip() + '_' + str(galID)
+    if suffix is None:
+        sumTab = strTemp + '_sbp_sum.fits'
+    else:
+        sumTab = strTemp + '_sbp_sum_' + suffix + '.fits'
+    """If the directory does not exist, make it"""
     if not os.path.exists(sumDir):
         os.mkdir(sumDir)
     sumTable = os.path.join(sumDir, sumTab)
 
-    """ The basic reference model """
+    """
+    The basic reference model
+    """
     refEllI = sbpExtract(loc, galID, redshift, 'HSC-I',
                          prefix, rerun, 'default_3',
                          extinction=a_i, m2l=m2l_i,
-                         amag_sun=SUN_I, verbose=verbose)
+                         amag_sun=SUN_I, verbose=verbose,
+                         interp=interp)
+
     if refEllI is not None:
         """ Reference profile in I-band """
         rad, muI1, lumI1, errI1 = refEllI
         """ Create a NaN array """
-        empty = copy.deepcopy(rad)
-        empty[:] = np.nan
+        if interp:
+            empty = EMPTY
+        else:
+            empty = copy.deepcopy(rad)
+            empty[:] = np.nan
 
-        """ I largeR1 """
+        """
+        I-band Geometry
+        """
+        refGeomI = geomExtract(loc, galID, redshift, 'HSC-I',
+                               prefix, rerun, 'default_2',
+                               verbose=verbose, interp=interp)
+        if refGeomI is not None:
+            r, ell, ellErr, pa, paErr = refGeomI
+        else:
+            ell, ellErr, pa, paErr = empty, empty, empty, empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the geometry profile ' +
+                      'for I-band : %s!' % str(galID))
+
+        """
+        I PSF
+        """
+        psfI = sbpExtract(loc, galID, redshift,
+                          'HSC-I', prefix, rerun, '3',
+                          m2l=m2l_i, extinction=0.0,
+                          amag_sun=SUN_I, verbose=verbose,
+                          interp=interp, psf=True)
+        if psfI is not None:
+            r, psfMuI, temp1, temp2 = psfI
+        else:
+            psfMuI = empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the PSF SBP ' +
+                      'for I-band : %s!' % str(galID))
+
+        """
+        I largeR1
+        """
         ellI2 = sbpExtract(loc, galID, redshift,
                            'HSC-I', prefix, rerun, 'multi1_4',
                            m2l=m2l_i, extinction=a_i,
-                           amag_sun=SUN_I, verbose=verbose)
+                           amag_sun=SUN_I, verbose=verbose,
+                           interp=interp)
         if ellI2 is not None:
             r, muI2, lumI2, errI2 = ellI2
         else:
             muI2, lumI2, errI2 = empty, empty, empty
-            print(WAR)
-            print('### Can not find the small mask SBP ' +
-                  'for I-band : %s!' % str(galID))
+            if verbose:
+                print(WAR)
+                print('### Can not find the small mask SBP ' +
+                      'for I-band : %s!' % str(galID))
 
-        """ I smallR1 """
+        """
+        I smallR1
+        """
         ellI3 = sbpExtract(loc, galID, redshift,
                            'HSC-I', prefix, rerun, 'multi2_4',
                            m2l=m2l_i, extinction=a_i,
-                           amag_sun=SUN_I, verbose=verbose)
+                           amag_sun=SUN_I, verbose=verbose,
+                           interp=interp)
         if ellI3 is not None:
             r, muI3, lumI3, errI3 = ellI3
         else:
             muI3, lumI3, errI3 = empty, empty, empty
-            print(WAR)
-            print('### Can not find the large mask SBP ' +
-                  'for I-band : %s!' % str(galID))
+            if verbose:
+                print(WAR)
+                print('### Can not find the large mask SBP ' +
+                      'for I-band : %s!' % str(galID))
 
-        """ G default """
+        """
+        I multi3
+        """
+        ellI4 = sbpExtract(loc, galID, redshift,
+                           'HSC-I', prefix, rerun, 'multi3_3',
+                           m2l=m2l_i, extinction=a_i,
+                           amag_sun=SUN_I, verbose=verbose,
+                           interp=interp)
+        if ellI4 is not None:
+            r, muI4, lumI4, errI4 = ellI4
+        else:
+            muI4, lumI4, errI4 = empty, empty, empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the multi3 SBP ' +
+                      'for I-band : %s!' % str(galID))
+
+        """
+        I multi4
+        """
+        ellI5 = sbpExtract(loc, galID, redshift,
+                           'HSC-I', prefix, rerun, 'multi4_3',
+                           m2l=m2l_i, extinction=a_i,
+                           amag_sun=SUN_I, verbose=verbose,
+                           interp=interp)
+        if ellI5 is not None:
+            r, muI5, lumI5, errI5 = ellI5
+        else:
+            if verbose:
+                muI5, lumI5, errI5 = empty, empty, empty
+                print(WAR)
+                print('### Can not find the multi4 SBP ' +
+                      'for I-band : %s!' % str(galID))
+
+        """
+        I multi5
+        """
+        ellI6 = sbpExtract(loc, galID, redshift,
+                           'HSC-I', prefix, rerun, 'multi5_3',
+                           m2l=m2l_i, extinction=a_i,
+                           amag_sun=SUN_I, verbose=verbose,
+                           interp=interp)
+        if ellI6 is not None:
+            r, muI6, lumI6, errI6 = ellI6
+        else:
+            if verbose:
+                muI6, lumI6, errI6 = empty, empty, empty
+                print(WAR)
+                print('### Can not find the multi5 SBP ' +
+                      'for I-band : %s!' % str(galID))
+
+        """
+        G default
+        """
         ellG1 = sbpExtract(loc, galID, redshift,
                            'HSC-G', prefix, rerun, 'default_4',
                            m2l=m2l_g, extinction=a_g,
-                           amag_sun=SUN_G, verbose=verbose)
+                           amag_sun=SUN_G, verbose=verbose,
+                           interp=interp)
         if ellG1 is not None:
             r, muG1, lumG1, errG1 = ellG1
         else:
             muG1, lumG1, errG1 = empty, empty, empty
-            print(WAR)
-            print('### Can not find the default SBP ' +
-                  'for G-band : %s!' % str(galID))
+            if verbose:
+                print(WAR)
+                print('### Can not find the default SBP ' +
+                      'for G-band : %s!' % str(galID))
 
-        """ R default """
+        """
+        G PSF
+        """
+        psfG = sbpExtract(loc, galID, redshift,
+                          'HSC-G', prefix, rerun, '3',
+                          m2l=m2l_g, extinction=0.0,
+                          amag_sun=SUN_G, verbose=verbose,
+                          interp=interp, psf=True)
+        if psfG is not None:
+            r, psfMuG, temp1, temp2 = psfG
+        else:
+            psfMuG = empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the PSF SBP ' +
+                      'for G-band : %s!' % str(galID))
+
+        """
+        G small mask
+        """
+        ellG2 = sbpExtract(loc, galID, redshift,
+                           'HSC-G', prefix, rerun, 'default_msksmall_4',
+                           m2l=m2l_g, extinction=a_g,
+                           amag_sun=SUN_G, verbose=verbose,
+                           interp=interp)
+        if ellG2 is not None:
+            r, muG2, lumG2, errG2 = ellG2
+        else:
+            muG2, lumG2, errG2 = empty, empty, empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the small mask SBP ' +
+                      'for G-band : %s!' % str(galID))
+
+        """
+        G large mask
+        """
+        ellG3 = sbpExtract(loc, galID, redshift,
+                           'HSC-G', prefix, rerun, 'default_msklarge_4',
+                           m2l=m2l_g, extinction=a_g,
+                           amag_sun=SUN_G, verbose=verbose,
+                           interp=interp)
+        if ellG3 is not None:
+            r, muG3, lumG3, errG3 = ellG3
+        else:
+            muG3, lumG3, errG3 = empty, empty, empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the large mask SBP ' +
+                      'for G-band : %s!' % str(galID))
+
+        """
+        R default
+        """
         ellR1 = sbpExtract(loc, galID, redshift,
                            'HSC-R', prefix, rerun, 'default_4',
                            m2l=m2l_r, extinction=a_r,
@@ -388,53 +593,242 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
             r, muR1, lumR1, errR1 = ellR1
         else:
             muR1, lumR1, errR1 = empty, empty, empty
-            print(WAR)
-            print('### Can not find the default SBP ' +
-                  'for R-band : %s!' % str(galID))
+            if verbose:
+                print(WAR)
+                print('### Can not find the default SBP ' +
+                      'for R-band : %s!' % str(galID))
 
-        """ Z default """
+        """
+        R PSF
+        """
+        psfR = sbpExtract(loc, galID, redshift,
+                          'HSC-R', prefix, rerun, '3',
+                          m2l=m2l_r, extinction=0.0,
+                          amag_sun=SUN_R, verbose=verbose,
+                          interp=interp, psf=True)
+        if psfR is not None:
+            r, psfMuR, temp1, temp2 = psfR
+        else:
+            psfMuR = empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the PSF SBP ' +
+                      'for R-band : %s!' % str(galID))
+
+        """
+        R small mask
+        """
+        ellR2 = sbpExtract(loc, galID, redshift,
+                           'HSC-R', prefix, rerun, 'default_msksmall_4',
+                           m2l=m2l_r, extinction=a_r,
+                           amag_sun=SUN_R, verbose=verbose,
+                           interp=interp)
+        if ellR2 is not None:
+            r, muR2, lumR2, errR2 = ellR2
+        else:
+            muR2, lumR2, errR2 = empty, empty, empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the small mask SBP ' +
+                      'for R-band : %s!' % str(galID))
+
+        """
+        R large mask
+        """
+        ellR3 = sbpExtract(loc, galID, redshift,
+                           'HSC-R', prefix, rerun, 'default_msklarge_4',
+                           m2l=m2l_r, extinction=a_r,
+                           amag_sun=SUN_R, verbose=verbose,
+                           interp=interp)
+        if ellR3 is not None:
+            r, muR3, lumR3, errR3 = ellR3
+        else:
+            muR3, lumR3, errR3 = empty, empty, empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the large mask SBP ' +
+                      'for R-band : %s!' % str(galID))
+
+        """
+        Z default
+        """
         ellZ1 = sbpExtract(loc, galID, redshift,
                            'HSC-Z', prefix, rerun, 'default_4',
                            m2l=m2l_z, extinction=a_z,
-                           amag_sun=SUN_Z, verbose=verbose)
+                           amag_sun=SUN_Z, verbose=verbose,
+                           interp=interp)
         if ellZ1 is not None:
             r, muZ1, lumZ1, errZ1 = ellZ1
         else:
             muZ1, lumZ1, errZ1 = empty, empty, empty
-            print(WAR)
-            print('### Can not find the default SBP ' +
-                  'for Z-band : %s!' % str(galID))
+            if verbose:
+                print(WAR)
+                print('### Can not find the default SBP ' +
+                      'for Z-band : %s!' % str(galID))
 
-        """ Y default """
+        """
+        Z PSF
+        """
+        psfZ = sbpExtract(loc, galID, redshift,
+                          'HSC-Z', prefix, rerun, '3',
+                          m2l=m2l_z, extinction=0.0,
+                          amag_sun=SUN_Z, verbose=verbose,
+                          interp=interp, psf=True)
+        if psfZ is not None:
+            r, psfMuZ, temp1, temp2 = psfZ
+        else:
+            psfMuZ = empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the PSF SBP ' +
+                      'for Z-band : %s!' % str(galID))
+
+        """
+        Z small mask
+        """
+        ellZ2 = sbpExtract(loc, galID, redshift,
+                           'HSC-Z', prefix, rerun, 'default_msksmall_4',
+                           m2l=m2l_z, extinction=a_z,
+                           amag_sun=SUN_Z, verbose=verbose,
+                           interp=interp)
+        if ellZ2 is not None:
+            r, muZ2, lumZ2, errZ2 = ellZ2
+        else:
+            muZ2, lumZ2, errZ2 = empty, empty, empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the small mask SBP ' +
+                      'for Z-band : %s!' % str(galID))
+
+        """
+        Z large mask
+        """
+        ellZ3 = sbpExtract(loc, galID, redshift,
+                           'HSC-Z', prefix, rerun, 'default_msklarge_4',
+                           m2l=m2l_z, extinction=a_z,
+                           amag_sun=SUN_Z, verbose=verbose,
+                           interp=interp)
+        if ellZ3 is not None:
+            r, muZ3, lumZ3, errZ3 = ellZ3
+        else:
+            muZ3, lumZ3, errZ3 = empty, empty, empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the large mask SBP ' +
+                      'for Z-band : %s!' % str(galID))
+
+        """
+        Y default
+        """
         ellY1 = sbpExtract(loc, galID, redshift,
                            'HSC-Y', prefix, rerun, 'default_4',
                            m2l=m2l_y, extinction=a_y,
-                           amag_sun=SUN_Y, verbose=verbose)
+                           amag_sun=SUN_Y, verbose=verbose,
+                           interp=interp)
         if ellY1 is not None:
             r, muY1, lumY1, errY1 = ellY1
         else:
             muY1, lumY1, errY1 = empty, empty, empty
-            print(WAR)
-            print('### Can not find the default SBP ' +
-                  'for Y-band : %s!' % str(galID))
+            if verbose:
+                print(WAR)
+                print('### Can not find the default SBP ' +
+                      'for Y-band : %s!' % str(galID))
+
+        """
+        Y PSF
+        """
+        psfY = sbpExtract(loc, galID, redshift,
+                          'HSC-Y', prefix, rerun, '3',
+                          m2l=m2l_y, extinction=0.0,
+                          amag_sun=SUN_Y, verbose=verbose,
+                          interp=interp, psf=True)
+        if psfY is not None:
+            r, psfMuY, temp1, temp2 = psfY
+        else:
+            psfMuY = empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the PSF SBP ' +
+                      'for Y-band : %s!' % str(galID))
+
+        """
+        Y small mask
+        """
+        ellY2 = sbpExtract(loc, galID, redshift,
+                           'HSC-Z', prefix, rerun, 'default_msksmall_4',
+                           m2l=m2l_y, extinction=a_y,
+                           amag_sun=SUN_Y, verbose=verbose,
+                           interp=interp)
+        if ellY2 is not None:
+            r, muY2, lumY2, errY2 = ellY2
+        else:
+            muY2, lumY2, errY2 = empty, empty, empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the small mask SBP ' +
+                      'for Y-band : %s!' % str(galID))
+
+        """
+        Y large mask
+        """
+        ellY3 = sbpExtract(loc, galID, redshift,
+                           'HSC-Z', prefix, rerun, 'default_msklarge_4',
+                           m2l=m2l_y, extinction=a_y,
+                           amag_sun=SUN_Y, verbose=verbose,
+                           interp=interp)
+        if ellY3 is not None:
+            r, muY3, lumY3, errY3 = ellY3
+        else:
+            muY3, lumY3, errY3 = empty, empty, empty
+            if verbose:
+                print(WAR)
+                print('### Can not find the large mask SBP ' +
+                      'for Y-band : %s!' % str(galID))
 
         """ Save the summary table """
         try:
             sbpTable = Table([rad, muI1, lumI1, errI1,
+                              ell, ellErr, pa, paErr,
                               muI2, lumI2, errI2,
                               muI3, lumI3, errI3,
+                              muI4, lumI4, errI4,
+                              muI5, lumI5, errI5,
+                              muI6, lumI6, errI6,
                               muG1, lumG1, errG1,
+                              muG2, lumG2, errG2,
+                              muG3, lumG3, errG3,
                               muR1, lumR1, errR1,
+                              muR2, lumR2, errR2,
+                              muR3, lumR3, errR3,
                               muZ1, lumZ1, errZ1,
+                              muZ2, lumZ2, errZ2,
+                              muZ3, lumZ3, errZ3,
                               muY1, lumY1, errY1,
+                              muY2, lumY2, errY2,
+                              muY3, lumY3, errY3,
+                              psfMuG, psfMuR, psfMuI,
+                              psfMuZ, psfMuY
                               ],
                              names=('rKpc', 'muI1', 'lumI1', 'errI1',
+                                    'ell', 'ellErr', 'pa', 'paErr',
                                     'muI2', 'lumI2', 'errI2',
                                     'muI3', 'lumI3', 'errI3',
+                                    'muI4', 'lumI4', 'errI4',
+                                    'muI5', 'lumI5', 'errI5',
+                                    'muI6', 'lumI6', 'errI6',
                                     'muG1', 'lumG1', 'errG1',
+                                    'muG2', 'lumG2', 'errG2',
+                                    'muG3', 'lumG3', 'errG3',
                                     'muR1', 'lumR1', 'errR1',
+                                    'muR2', 'lumR2', 'errR2',
+                                    'muR3', 'lumR3', 'errR3',
                                     'muZ1', 'lumZ1', 'errZ1',
-                                    'muY1', 'lumY1', 'errY1'),
+                                    'muZ2', 'lumZ2', 'errZ2',
+                                    'muZ3', 'lumZ3', 'errZ3',
+                                    'muY1', 'lumY1', 'errY1',
+                                    'muY2', 'lumY2', 'errY2',
+                                    'muY3', 'lumY3', 'errY3',
+                                    'psfG', 'psfR', 'psfI', 'psfZ', 'psfY'),
                              meta={'LOCATION': loc,
                                    'GALID': galID,
                                    'REDSHIFT': redshift,
@@ -463,7 +857,8 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
 
 def correctProf(ellProf, redshift, extinction=0.0, zp=27.0,
                 amag_sun=None, dimming=True, corCurve=True,
-                verbose=False, m2l=None, z0=0.1):
+                verbose=False, m2l=None, z0=0.1, interp=True,
+                blahblah=False):
     """
     Photometric correction of the Ellipse profile.
 
@@ -476,7 +871,7 @@ def correctProf(ellProf, redshift, extinction=0.0, zp=27.0,
         dim = getDimming(redshift, z0)
     else:
         dim = 0.0
-    if verbose:
+    if blahblah:
         print("### REDSHIFT  : %7.4f" % redshift)
         print("### PIX SCALE : %7.4f kpc/arcsec" % scale)
         print("### DIST_MOD  : %7.4f mag" % distmod)
@@ -529,7 +924,21 @@ def correctProf(ellProf, redshift, extinction=0.0, zp=27.0,
         abs_sbp = sbp_use
         err_sbp = sbp_err
 
-    return sma_kpc, abs_sbp, abs_mag, err_sbp
+    if not interp:
+        return sma_kpc, abs_sbp, abs_mag, err_sbp
+    else:
+        rsma_kpc = (sma_kpc ** 0.25)
+        abs_sbp_interp = interpSbp(rsma_kpc, abs_sbp,
+                                   radCommon=RSMA_COMMON,
+                                   kind='slinear')
+        abs_mag_interp = interpSbp(rsma_kpc, abs_mag,
+                                   radCommon=RSMA_COMMON,
+                                   kind='slinear')
+        err_sbp_interp = interpSbp(rsma_kpc, err_sbp,
+                                   radCommon=RSMA_COMMON,
+                                   kind='slinear')
+        smaKpc_common = (RSMA_COMMON ** 4.0)
+        return smaKpc_common, abs_sbp_interp, abs_mag_interp, err_sbp_interp
 
 
 def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
@@ -540,7 +949,8 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                           gmagCol='gmag_cmodel', rmagCol='rmag_cmodel',
                           imagCol='imag_cmodel', zmagCol='zmag_cmodel',
                           ymagCol='zmag_cmodel', refFilter='HSC-I',
-                          verbose=False, interp=True):
+                          verbose=False, interp=True, sbpRef='lumI1',
+                          sumFolder='sbp_sum', suffix=None, sample=None):
     """
     Summarize the Ellipse results.
 
@@ -550,16 +960,24 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
     """
     if not os.path.isfile(inCat):
         raise Exception("## Can not find the input catalog : %s !" % inCat)
+
     """Name of the output catalog."""
-    outCat = inCat.replace('.fits', '_sbpsum.fits')
-    outPkl = inCat.replace('.fits', '_sbpsum.pkl')
+    if suffix is None:
+        strTemp = '_sbpsum'
+    else:
+        strTemp = '_sbpsum_' + str(suffix).strip()
+    outCat = inCat.replace('.fits', strTemp + '.fits')
+    outPkl = inCat.replace('.fits', strTemp + '.pkl')
+
     """Read in the catalog"""
     inTab = Table.read(inCat, format='fits')
     colNames = inTab.colnames
     outTab = copy.deepcopy(inTab)
+
     """Check the necessary columns"""
     if (idCol not in colNames) or (zCol not in colNames):
         raise Exception("## Can not find columns for ID and Redshfit!")
+
     """Check the Galactic extinction correction"""
     # HSC-G
     if agCol not in colNames:
@@ -567,8 +985,9 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
             raise Exception("## Can not estimate the extinction " +
                             " in HSC-G band!")
         else:
-            print(SEP)
-            print("## Estimate the Galactic Extinction in HSC-G band")
+            if verbose:
+                print(SEP)
+                print("## Estimate the Galactic Extinction in HSC-G band")
             aG = getExtinction(outTab[raCol], outTab[decCol], a_lambda=A_G)
             outTab.add_column(Column(name='a_g', data=aG))
             agCol = 'a_g'
@@ -578,8 +997,9 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
             raise Exception("## Can not estimate the extinction " +
                             " in HSC-R band!")
         else:
-            print(SEP)
-            print("## Estimate the Galactic Extinction in HSC-R band")
+            if verbose:
+                print(SEP)
+                print("## Estimate the Galactic Extinction in HSC-R band")
             aR = getExtinction(outTab[raCol], outTab[decCol], a_lambda=A_R)
             outTab.add_column(Column(name='a_r', data=aR))
             arCol = 'a_r'
@@ -589,8 +1009,9 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
             raise Exception("## Can not estimate the extinction " +
                             " in HSC-I band!")
         else:
-            print(SEP)
-            print("## Estimate the Galactic Extinction in HSC-I band")
+            if verbose:
+                print(SEP)
+                print("## Estimate the Galactic Extinction in HSC-I band")
             aI = getExtinction(outTab[raCol], outTab[decCol], a_lambda=A_I)
             outTab.add_column(Column(name='a_i', data=aI))
             aiCol = 'a_i'
@@ -600,8 +1021,9 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
             raise Exception("## Can not estimate the extinction " +
                             " in HSC-Z band!")
         else:
-            print(SEP)
-            print("## Estimate the Galactic Extinction in HSC-Z band")
+            if verbose:
+                print(SEP)
+                print("## Estimate the Galactic Extinction in HSC-Z band")
             aZ = getExtinction(outTab[raCol], outTab[decCol], a_lambda=A_Z)
             outTab.add_column(Column(name='a_z', data=aZ))
             azCol = 'a_z'
@@ -611,16 +1033,19 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
             raise Exception("## Can not estimate the extinction " +
                             " in HSC-Y band!")
         else:
-            print(SEP)
-            print("## Estimate the Galactic Extinction in HSC-Y band")
+            if verbose:
+                print(SEP)
+                print("## Estimate the Galactic Extinction in HSC-Y band")
             aY = getExtinction(outTab[raCol], outTab[decCol], a_lambda=A_Y)
             outTab.add_column(Column(name='a_y', data=aY))
             ayCol = 'a_y'
+
     """Estimate the 'logM2L'"""
     # HSC-G
     if (logmCol not in colNames) or (gmagCol not in colNames):
-        print(WAR)
-        print("## Can not estimate log(M/L) in HSC-G band")
+        if verbose:
+            print(WAR)
+            print("## Can not estimate log(M/L) in HSC-G band")
         outTab.add_column(Column(name='logm2l_g', data=(outTab[zCol] * 0.0)))
     else:
         logm2lG = outTab[logmCol] - getLuminosity(outTab[gmagCol],
@@ -629,8 +1054,9 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
         outTab.add_column(Column(name='logm2l_g', data=logm2lG))
     # HSC-R
     if (logmCol not in colNames) or (rmagCol not in colNames):
-        print(WAR)
-        print("## Can not estimate log(M/L) in HSC-R band")
+        if verbose:
+            print(WAR)
+            print("## Can not estimate log(M/L) in HSC-R band")
         outTab.add_column(Column(name='logm2l_r', data=(outTab[zCol] * 0.0)))
     else:
         logm2lR = outTab[logmCol] - getLuminosity(outTab[rmagCol],
@@ -639,8 +1065,9 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
         outTab.add_column(Column(name='logm2l_r', data=logm2lR))
     # HSC-I
     if (logmCol not in colNames) or (imagCol not in colNames):
-        print(WAR)
-        print("## Can not estimate log(M/L) in HSC-I band")
+        if verbose:
+            print(WAR)
+            print("## Can not estimate log(M/L) in HSC-I band")
         outTab.add_column(Column(name='logm2l_i', data=(outTab[zCol] * 0.0)))
     else:
         logm2lI = outTab[logmCol] - getLuminosity(outTab[imagCol],
@@ -649,8 +1076,9 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
         outTab.add_column(Column(name='logm2l_i', data=logm2lI))
     # HSC-Z
     if (logmCol not in colNames) or (zmagCol not in colNames):
-        print(WAR)
-        print("## Can not estimate log(M/L) in HSC-Z band")
+        if verbose:
+            print(WAR)
+            print("## Can not estimate log(M/L) in HSC-Z band")
         outTab.add_column(Column(name='logm2l_z', data=(outTab[zCol] * 0.0)))
     else:
         logm2lZ = outTab[logmCol] - getLuminosity(outTab[zmagCol],
@@ -659,8 +1087,9 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
         outTab.add_column(Column(name='logm2l_z', data=logm2lZ))
     # HSC-Y
     if (logmCol not in colNames) or (ymagCol not in colNames):
-        print(WAR)
-        print("## Can not estimate log(M/L) in HSC-Y band")
+        if verbose:
+            print(WAR)
+            print("## Can not estimate log(M/L) in HSC-Y band")
         outTab.add_column(Column(name='logm2l_y', data=(outTab[zCol] * 0.0)))
     else:
         logm2lY = outTab[logmCol] - getLuminosity(outTab[ymagCol],
@@ -670,22 +1099,24 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
 
     """Add columns to the output table"""
     colTemp = (np.asarray(outTab[zCol]) * 0.0 - 9999.0)
-    col1 = Column(name='ilum_max', data=colTemp)
-    col2 = Column(name='ilum_150', data=colTemp)
-    col3 = Column(name='ilum_120', data=colTemp)
-    col4 = Column(name='ilum_100', data=colTemp)
-    col5 = Column(name='ilum_75', data=colTemp)
-    col6 = Column(name='ilum_50', data=colTemp)
-    col7 = Column(name='ilum_25', data=colTemp)
-    col8 = Column(name='ilum_10', data=colTemp)
+    col1 = Column(name='lum_max', data=colTemp)
+    col2 = Column(name='lum_150', data=colTemp)
+    col3 = Column(name='lum_120', data=colTemp)
+    col4 = Column(name='lum_100', data=colTemp)
+    col5 = Column(name='lum_75', data=colTemp)
+    col6 = Column(name='lum_50', data=colTemp)
+    col7 = Column(name='lum_25', data=colTemp)
+    col8 = Column(name='lum_10', data=colTemp)
     outTab.add_columns([col1, col2, col3, col4, col5, col6, col7, col8])
+
     """Start a ProgressBar"""
     sbpSum = []
     sbpList = []
     with ProgressBar(len(outTab)) as bar:
-        print(SEP)
-        print("## Dealing with %d galaxies" % len(outTab))
-        print(SEP)
+        if verbose:
+            print(SEP)
+            print("## Dealing with %d galaxies" % len(outTab))
+            print(SEP)
         """Go through the catalog to search for data"""
         for (ii, galaxy) in enumerate(outTab):
             """ID of the galaxy"""
@@ -699,69 +1130,95 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
             else:
                 loc = root
             """Folder for summary table"""
-            sumDir = os.path.join(loc, 'sbp_sum')
+            sumDir = os.path.join(loc, sumFolder)
             if not os.path.isdir(sumDir):
                 os.mkdir(sumDir)
+
             """Summary table"""
-            sumCat = galStr + '_sbp_sum.fits'
+            if sample is None:
+                sumCat = galStr + '_sbp_sum'
+            else:
+                sumCat = str(sample).strip() + '_' + galStr + '_sbp_sum'
+            if suffix is None:
+                sumCat = sumCat + '.fits'
+            else:
+                sumCat = sumCat + '_' + str(suffix).strip() + '.fits'
+
             sumCat = os.path.join(sumDir, sumCat)
-            """Get the collection of SBP results"""
+
+            """
+            Get the collection of SBP results
+
+            Right now, don't automatically convert into mass profile
+            """
             galTab = sbpCollect(loc, prefix, galStr, galZ,
                                 a_g=galaxy[agCol],
                                 a_r=galaxy[arCol],
                                 a_i=galaxy[aiCol],
                                 a_z=galaxy[azCol],
                                 a_y=galaxy[ayCol],
-                                verbose=verbose, save=True)
+                                verbose=verbose, save=False,
+                                sumFolder=sumFolder,
+                                sample=sample,
+                                suffix=suffix)
+
             if galTab is not None:
                 """Radius KPc"""
                 rKpc = galTab['rKpc']
-                """Maximum i-band luminosity"""
-                lumI = galTab['lumI1']
-                ilumMax = np.nanmax(lumI).astype(np.float32)
-                ilum150 = np.nanmax(lumI[rKpc <= 150.0]).astype(np.float32)
-                ilum120 = np.nanmax(lumI[rKpc <= 120.0]).astype(np.float32)
-                ilum100 = np.nanmax(lumI[rKpc <= 100.0]).astype(np.float32)
-                ilum75 = np.nanmax(lumI[rKpc <= 75.0]).astype(np.float32)
-                ilum50 = np.nanmax(lumI[rKpc <= 50.0]).astype(np.float32)
-                ilum25 = np.nanmax(lumI[rKpc <= 25.0]).astype(np.float32)
-                ilum10 = np.nanmax(lumI[rKpc <= 10.0]).astype(np.float32)
-                if not np.isfinite(ilumMax):
-                    print(WAR)
-                    print("## Problematic SBP for %s !" % galStr)
-                    ilumMax = -9999.0
-                    ilum150 = -9999.0
-                    ilum120 = -9999.0
-                    ilum100 = -9999.0
-                    ilum75 = -9999.0
-                    ilum50 = -9999.0
-                    ilum25 = -9999.0
-                    ilum10 = -9999.0
-                galTab.meta['ILUM_MAX'] = ilumMax
-                galTab.meta['ILUM_150'] = ilum150
-                galTab.meta['ILUM_120'] = ilum120
-                galTab.meta['ILUM_100'] = ilum100
-                galTab.meta['ILUM_75'] = ilum75
-                galTab.meta['ILUM_50'] = ilum50
-                galTab.meta['ILUM_25'] = ilum25
-                galTab.meta['ILUM_10'] = ilum10
+                """Maximum luminosity from certain model"""
+                lumRef = galTab[sbpRef]
+
+                lumMax = np.nanmax(lumRef).astype(np.float32)
+                lum150 = np.nanmax(lumRef[rKpc <= 150.0]).astype(np.float32)
+                lum120 = np.nanmax(lumRef[rKpc <= 120.0]).astype(np.float32)
+                lum100 = np.nanmax(lumRef[rKpc <= 100.0]).astype(np.float32)
+                lum75 = np.nanmax(lumRef[rKpc <= 75.0]).astype(np.float32)
+                lum50 = np.nanmax(lumRef[rKpc <= 50.0]).astype(np.float32)
+                lum25 = np.nanmax(lumRef[rKpc <= 25.0]).astype(np.float32)
+                lum10 = np.nanmax(lumRef[rKpc <= 10.0]).astype(np.float32)
+
+                if not np.isfinite(lumMax):
+                    if verbose:
+                        print(WAR)
+                        print("## Problematic SBP for %s !" % galStr)
+                    lumMax = -9999.0
+                    lum150 = -9999.0
+                    lum120 = -9999.0
+                    lum100 = -9999.0
+                    lum75 = -9999.0
+                    lum50 = -9999.0
+                    lum25 = -9999.0
+                    lum10 = -9999.0
+
+                galTab.meta['LUM_MAX'] = lumMax
+                galTab.meta['LUM_150'] = lum150
+                galTab.meta['LUM_120'] = lum120
+                galTab.meta['LUM_100'] = lum100
+                galTab.meta['LUM_75'] = lum75
+                galTab.meta['LUM_50'] = lum50
+                galTab.meta['LUM_25'] = lum25
+                galTab.meta['LUM_10'] = lum10
+
                 """M2L"""
                 galTab.meta['LOGM2L_G'] = galaxy['logm2l_g']
                 galTab.meta['LOGM2L_R'] = galaxy['logm2l_r']
                 galTab.meta['LOGM2L_I'] = galaxy['logm2l_i']
                 galTab.meta['LOGM2L_Z'] = galaxy['logm2l_z']
                 galTab.meta['LOGM2L_Y'] = galaxy['logm2l_y']
+
                 """Save the result of the individual galaxy"""
                 galTab.write(sumCat, format='fits', overwrite=True)
+
                 """Update the sample summary table"""
-                outTab['ilum_max'][ii] = ilumMax
-                outTab['ilum_150'][ii] = ilum150
-                outTab['ilum_120'][ii] = ilum120
-                outTab['ilum_100'][ii] = ilum100
-                outTab['ilum_75'][ii] = ilum75
-                outTab['ilum_50'][ii] = ilum50
-                outTab['ilum_25'][ii] = ilum25
-                outTab['ilum_10'][ii] = ilum10
+                outTab['lum_max'][ii] = lumMax
+                outTab['lum_150'][ii] = lum150
+                outTab['lum_120'][ii] = lum120
+                outTab['lum_100'][ii] = lum100
+                outTab['lum_75'][ii] = lum75
+                outTab['lum_50'][ii] = lum50
+                outTab['lum_25'][ii] = lum25
+                outTab['lum_10'][ii] = lum10
+
                 """"""
                 sbpSum.append(galTab)
                 sbpList.append(sumCat)
@@ -771,12 +1228,16 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                 sbpList.append('None')
                 """"""
                 warnings.warn('### NO USEFUL DATA FOR %s' % galStr)
+
             """Update the progress bar"""
             bar.update()
+
         """Save a Pickle file of the results"""
         hUtil.saveToPickle(sbpSum, outPkl)
 
     """Save the output catalog"""
+    if verbose:
+        print("# Summary table saved to : %s" % outCat)
     outTab.add_column(Column(np.asarray(sbpList), name='sum_tab'))
     outTab.write(outCat, format='fits', overwrite=True)
 
@@ -812,6 +1273,18 @@ if __name__ == '__main__':
     parser.add_argument('--rerun', dest='rerun',
                         help='Name of the rerun',
                         default='default')
+    parser.add_argument('--sumFolder', dest='sumFolder',
+                        help='Name of the folder for the summary',
+                        default='sbp_sum')
+    parser.add_argument('--sbpRef', dest='sbpRef',
+                        help='Name of the reference SBP',
+                        default='lumI1')
+    parser.add_argument('--suffix', dest='suffix',
+                        help='Suffix of the summary file',
+                        default=None)
+    parser.add_argument('--sample', dest='sample',
+                        help='Name of the sample',
+                        default=None)
     parser.add_argument('-v', '--verbose', dest='verbose',
                         action="store_true",
                         default=False)
@@ -827,4 +1300,8 @@ if __name__ == '__main__':
                           raCol=args.raCol,
                           decCol=args.decCol,
                           rerun=args.rerun,
-                          verbose=args.verbose)
+                          verbose=args.verbose,
+                          sumFolder=args.sumFolder,
+                          sbpRef=args.sbpRef,
+                          suffix=args.suffix,
+                          sample=args.sample)
