@@ -75,6 +75,143 @@ SEP = '-' * 100
 WAR = '!' * 100
 
 
+def sbpCompare(galTab, sumPng, pngSize=10):
+    """QA plot of the SBPs."""
+    reg1 = [0.1, 0.1, 0.88, 0.88]
+    fig = plt.figure(figsize=(pngSize, pngSize))
+    ax1 = fig.add_axes(reg1)
+
+    """ ax1 SBP """
+    ax1.minorticks_on()
+    ax1.tick_params(axis='both', which='major', labelsize=20, pad=8)
+
+    radStr = 'RSMA (kpc$^{1/4}$)'
+    ax1.set_xlabel(radStr, fontsize=23)
+    ax1.set_ylabel('${\mu}$ ($L_{\odot}$/kpc$^2$)', fontsize=26)
+
+    if galTab.meta['MU_I4']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muI4'],
+                 linestyle=':',
+                 c='r', linewidth=3.0, alpha=0.7,
+                 label='muI4')
+
+    if galTab.meta['MU_I5']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muI5'],
+                 linestyle=':',
+                 c='r', linewidth=3.0, alpha=0.7,
+                 label='muI5')
+
+    if galTab.meta['MU_I6']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muI6'],
+                 linestyle=':',
+                 c='r', linewidth=3.0, alpha=0.7,
+                 label='muI6')
+
+    if galTab.meta['MU_I2']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muI2'],
+                 linestyle='--',
+                 c='r', linewidth=3.5, alpha=0.8,
+                 label='muI2')
+
+    if galTab.meta['MU_I3']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muI3'],
+                 linestyle='-.',
+                 c='r', linewidth=3.5, alpha=0.8,
+                 label='muI3')
+
+    ax1.plot(galTab['rKpc'] ** 0.25, galTab['muI1'],
+             linestyle='-',
+             c='r', linewidth=3.0, alpha=0.9,
+             label='muI1')
+
+    if galTab.meta['MU_G2']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muG2'],
+                 linestyle='--',
+                 c='b', linewidth=3.5, alpha=0.8,
+                 label='muG2')
+
+    if galTab.meta['MU_G3']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muG3'],
+                 linestyle='-.',
+                 c='b', linewidth=3.5, alpha=0.8,
+                 label='muG3')
+
+    if galTab.meta['MU_G1']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muG1'],
+                 linestyle='-',
+                 c='b', linewidth=3.0, alpha=0.9,
+                 label='muG1')
+
+    if galTab.meta['MU_R2']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muR2'],
+                 linestyle='--',
+                 c='g', linewidth=3.5, alpha=0.8,
+                 label='muR2')
+
+    if galTab.meta['MU_R3']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muR3'],
+                 linestyle='-.',
+                 c='g', linewidth=3.5, alpha=0.8,
+                 label='muR3')
+
+    if galTab.meta['MU_R1']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muR1'],
+                 linestyle='-',
+                 c='g', linewidth=3.0, alpha=0.9,
+                 label='muR1')
+
+    if galTab.meta['MU_Z2']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muZ2'],
+                 linestyle='--',
+                 c='m', linewidth=3.5, alpha=0.8,
+                 label='muZ2')
+
+    if galTab.meta['MU_Z3']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muZ3'],
+                 linestyle='-.',
+                 c='m', linewidth=3.5, alpha=0.8,
+                 label='muZ3')
+
+    if galTab.meta['MU_Z1']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muZ1'],
+                 linestyle='-',
+                 c='m', linewidth=3.0, alpha=0.9,
+                 label='muZ1')
+
+    if galTab.meta['MU_Y2']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muY2'],
+                 linestyle='--',
+                 c='k', linewidth=3.5, alpha=0.8,
+                 label='muY2')
+
+    if galTab.meta['MU_Y3']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muY3'],
+                 linestyle='-.',
+                 c='k', linewidth=3.5, alpha=0.8,
+                 label='muY3')
+
+    if galTab.meta['MU_Y1']:
+        ax1.plot(galTab['rKpc'] ** 0.25, galTab['muY1'],
+                 linestyle='-',
+                 c='k', linewidth=3.0, alpha=0.9,
+                 label='muY1')
+
+    ax1.set_xlim(0.45, 4.4)
+    ax1.set_ylim(3.01, 9.99)
+
+    ax1.legend(loc=[0.83, 0.5], fontsize=11)
+
+    if galTab.meta['CONTAM']:
+        ax1.text(0.25, 0.25, 'CONTAMINATED', fontsize=20,
+                 transform=ax1.transAxes)
+
+    """ Save Figure """
+    fig.savefig(sumPng, dpi=80)
+    plt.close(fig)
+
+    return
+
+
 def interpSbp(rad, data, radCommon=RSMA_COMMON, kind='slinear'):
     """
     Interpolate 1-D SBP data.
@@ -477,7 +614,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
         is detected within the inner ~50 Kpc, set a Flag to indicate it.
         """
         radThreshold = 50.0   # Kpc
-        diffThreshold = 0.6   # mag / arcsec^2
+        diffThreshold = 0.4   # mag / arcsec^2
         if isMuI3:
             diffMuI = np.abs(muI3 - muI1)
             if np.nanmax(diffMuI[rad <= radThreshold]) > diffThreshold:
@@ -816,7 +953,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
         Y small mask
         """
         ellY2 = sbpExtract(loc, galID, redshift,
-                           'HSC-Z', prefix, rerun, 'default_msksmall_4',
+                           'HSC-Y', prefix, rerun, 'default_msksmall_4',
                            m2l=m2l_y, extinction=a_y,
                            amag_sun=SUN_Y, verbose=verbose,
                            interp=interp)
@@ -835,7 +972,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
         Y large mask
         """
         ellY3 = sbpExtract(loc, galID, redshift,
-                           'HSC-Z', prefix, rerun, 'default_msklarge_4',
+                           'HSC-Y', prefix, rerun, 'default_msklarge_4',
                            m2l=m2l_y, extinction=a_y,
                            amag_sun=SUN_Y, verbose=verbose,
                            interp=interp)
@@ -903,7 +1040,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                                    'A_I': a_i,
                                    'A_Z': a_z,
                                    'A_Y': a_y,
-                                   'CONTAMINATED': contaminated,
+                                   'CONTAM': contaminated,
                                    'GEOM': isGeom,
                                    'MU_I2': isMuI2,
                                    'MU_I3': isMuI3,
@@ -1040,7 +1177,8 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                           imagCol='imag_cmodel', zmagCol='zmag_cmodel',
                           ymagCol='zmag_cmodel', refFilter='HSC-I',
                           verbose=False, interp=True, sbpRef='lumI1',
-                          sumFolder='sbp_sum', suffix=None, sample=None):
+                          sumFolder='sbp_sum', suffix=None, sample=None,
+                          plot=True):
     """
     Summarize the Ellipse results.
 
@@ -1235,6 +1373,8 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                 sumCat = sumCat + '_' + str(suffix).strip() + '.fits'
 
             sumCat = os.path.join(sumDir, sumCat)
+            if plot:
+                sumPng = sumCat.replace('.fits', '.png')
 
             """
             Get the collection of SBP results
@@ -1312,6 +1452,9 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                 """"""
                 sbpSum.append(galTab)
                 sbpList.append(sumCat)
+
+                if plot:
+                    sbpCompare(galTab, sumPng)
             else:
                 """"""
                 sbpSum.append(None)
@@ -1378,6 +1521,9 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--verbose', dest='verbose',
                         action="store_true",
                         default=False)
+    parser.add_argument('-p', '--plot', dest='plot',
+                        action="store_true",
+                        default=False)
 
     args = parser.parse_args()
 
@@ -1394,4 +1540,5 @@ if __name__ == '__main__':
                           sumFolder=args.sumFolder,
                           sbpRef=args.sbpRef,
                           suffix=args.suffix,
-                          sample=args.sample)
+                          sample=args.sample,
+                          plot=args.plot)
