@@ -390,6 +390,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
     if refEllI is not None:
         """ Reference profile in I-band """
         rad, muI1, lumI1, errI1 = refEllI
+
         """ Create a NaN array """
         if interp:
             empty = EMPTY
@@ -405,8 +406,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                                verbose=verbose, interp=interp)
         if refGeomI is not None:
             r, ell, ellErr, pa, paErr = refGeomI
+            isGeom = True
         else:
             ell, ellErr, pa, paErr = empty, empty, empty, empty
+            isGeom = False
             if verbose:
                 print(WAR)
                 print('### Can not find the geometry profile ' +
@@ -422,8 +425,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                           interp=interp, psf=True)
         if psfI is not None:
             r, psfMuI, temp1, temp2 = psfI
+            isPsfI = True
         else:
             psfMuI = empty
+            isPsfI = False
             if verbose:
                 print(WAR)
                 print('### Can not find the PSF SBP ' +
@@ -439,8 +444,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellI2 is not None:
             r, muI2, lumI2, errI2 = ellI2
+            isMuI2 = True
         else:
             muI2, lumI2, errI2 = empty, empty, empty
+            isMuI2 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the small mask SBP ' +
@@ -456,12 +463,32 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellI3 is not None:
             r, muI3, lumI3, errI3 = ellI3
+            isMuI3 = True
         else:
             muI3, lumI3, errI3 = empty, empty, empty
+            isMuI3 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the large mask SBP ' +
                       'for I-band : %s!' % str(galID))
+
+        """
+        Compare the default SBP with the largeMask one, if large difference
+        is detected within the inner ~50 Kpc, set a Flag to indicate it.
+        """
+        radThreshold = 50.0   # Kpc
+        diffThreshold = 0.6   # mag / arcsec^2
+        if isMuI3:
+            diffMuI = np.abs(muI3 - muI1)
+            if np.nanmax(diffMuI[rad <= radThreshold]) > diffThreshold:
+                contaminated = True
+                if verbose:
+                    print("## SBP of %d is contaminated by nearby object!")
+            else:
+                contaminated = False
+        else:
+            print("## WARNING: MU_I3 is not available; Set CONTAMINATED=False")
+            contaminated = False
 
         """
         I multi3
@@ -473,8 +500,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellI4 is not None:
             r, muI4, lumI4, errI4 = ellI4
+            isMuI4 = True
         else:
             muI4, lumI4, errI4 = empty, empty, empty
+            isMuI4 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the multi3 SBP ' +
@@ -490,9 +519,11 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellI5 is not None:
             r, muI5, lumI5, errI5 = ellI5
+            isMuI5 = True
         else:
+            muI5, lumI5, errI5 = empty, empty, empty
+            isMuI5 = False
             if verbose:
-                muI5, lumI5, errI5 = empty, empty, empty
                 print(WAR)
                 print('### Can not find the multi4 SBP ' +
                       'for I-band : %s!' % str(galID))
@@ -507,9 +538,11 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellI6 is not None:
             r, muI6, lumI6, errI6 = ellI6
+            isMuI6 = True
         else:
+            muI6, lumI6, errI6 = empty, empty, empty
+            isMuI6 = False
             if verbose:
-                muI6, lumI6, errI6 = empty, empty, empty
                 print(WAR)
                 print('### Can not find the multi5 SBP ' +
                       'for I-band : %s!' % str(galID))
@@ -524,8 +557,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellG1 is not None:
             r, muG1, lumG1, errG1 = ellG1
+            isMuG1 = True
         else:
             muG1, lumG1, errG1 = empty, empty, empty
+            isMuG1 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the default SBP ' +
@@ -541,8 +576,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                           interp=interp, psf=True)
         if psfG is not None:
             r, psfMuG, temp1, temp2 = psfG
+            isPsfG = True
         else:
             psfMuG = empty
+            isPsfG = False
             if verbose:
                 print(WAR)
                 print('### Can not find the PSF SBP ' +
@@ -558,8 +595,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellG2 is not None:
             r, muG2, lumG2, errG2 = ellG2
+            isMuG2 = True
         else:
             muG2, lumG2, errG2 = empty, empty, empty
+            isMuG2 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the small mask SBP ' +
@@ -575,8 +614,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellG3 is not None:
             r, muG3, lumG3, errG3 = ellG3
+            isMuG3 = True
         else:
             muG3, lumG3, errG3 = empty, empty, empty
+            isMuG3 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the large mask SBP ' +
@@ -591,8 +632,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            amag_sun=SUN_R, verbose=verbose)
         if ellR1 is not None:
             r, muR1, lumR1, errR1 = ellR1
+            isMuR1 = True
         else:
             muR1, lumR1, errR1 = empty, empty, empty
+            isMuR1 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the default SBP ' +
@@ -608,8 +651,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                           interp=interp, psf=True)
         if psfR is not None:
             r, psfMuR, temp1, temp2 = psfR
+            isPsfR = True
         else:
             psfMuR = empty
+            isPsfR = False
             if verbose:
                 print(WAR)
                 print('### Can not find the PSF SBP ' +
@@ -625,8 +670,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellR2 is not None:
             r, muR2, lumR2, errR2 = ellR2
+            isMuR2 = True
         else:
             muR2, lumR2, errR2 = empty, empty, empty
+            isMuR2 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the small mask SBP ' +
@@ -642,8 +689,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellR3 is not None:
             r, muR3, lumR3, errR3 = ellR3
+            isMuR3 = True
         else:
             muR3, lumR3, errR3 = empty, empty, empty
+            isMuR3 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the large mask SBP ' +
@@ -659,8 +708,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellZ1 is not None:
             r, muZ1, lumZ1, errZ1 = ellZ1
+            isMuZ1 = True
         else:
             muZ1, lumZ1, errZ1 = empty, empty, empty
+            isMuZ1 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the default SBP ' +
@@ -676,8 +727,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                           interp=interp, psf=True)
         if psfZ is not None:
             r, psfMuZ, temp1, temp2 = psfZ
+            isPsfZ = True
         else:
             psfMuZ = empty
+            isPsfZ = False
             if verbose:
                 print(WAR)
                 print('### Can not find the PSF SBP ' +
@@ -693,8 +746,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellZ2 is not None:
             r, muZ2, lumZ2, errZ2 = ellZ2
+            isMuZ2 = True
         else:
             muZ2, lumZ2, errZ2 = empty, empty, empty
+            isMuZ2 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the small mask SBP ' +
@@ -710,8 +765,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellZ3 is not None:
             r, muZ3, lumZ3, errZ3 = ellZ3
+            isMuZ3 = True
         else:
             muZ3, lumZ3, errZ3 = empty, empty, empty
+            isMuZ3 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the large mask SBP ' +
@@ -727,8 +784,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellY1 is not None:
             r, muY1, lumY1, errY1 = ellY1
+            isMuY1 = True
         else:
             muY1, lumY1, errY1 = empty, empty, empty
+            isMuY1 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the default SBP ' +
@@ -744,8 +803,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                           interp=interp, psf=True)
         if psfY is not None:
             r, psfMuY, temp1, temp2 = psfY
+            isPsfY = True
         else:
             psfMuY = empty
+            isPsfY = False
             if verbose:
                 print(WAR)
                 print('### Can not find the PSF SBP ' +
@@ -761,8 +822,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellY2 is not None:
             r, muY2, lumY2, errY2 = ellY2
+            isMuY2 = True
         else:
             muY2, lumY2, errY2 = empty, empty, empty
+            isMuY2 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the small mask SBP ' +
@@ -778,8 +841,10 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            interp=interp)
         if ellY3 is not None:
             r, muY3, lumY3, errY3 = ellY3
+            isMuY3 = True
         else:
             muY3, lumY3, errY3 = empty, empty, empty
+            isMuY3 = False
             if verbose:
                 print(WAR)
                 print('### Can not find the large mask SBP ' +
@@ -837,7 +902,32 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                                    'A_R': a_r,
                                    'A_I': a_i,
                                    'A_Z': a_z,
-                                   'A_Y': a_y})
+                                   'A_Y': a_y,
+                                   'CONTAMINATED': contaminated,
+                                   'GEOM': isGeom,
+                                   'MU_I2': isMuI2,
+                                   'MU_I3': isMuI3,
+                                   'MU_I4': isMuI4,
+                                   'MU_I5': isMuI5,
+                                   'MU_I6': isMuI6,
+                                   'MU_G1': isMuG1,
+                                   'MU_G2': isMuG2,
+                                   'MU_G3': isMuG3,
+                                   'MU_R1': isMuR1,
+                                   'MU_R2': isMuR2,
+                                   'MU_R3': isMuR3,
+                                   'MU_Z1': isMuZ1,
+                                   'MU_Z2': isMuZ2,
+                                   'MU_Z3': isMuZ3,
+                                   'MU_Y1': isMuY1,
+                                   'MU_Y2': isMuY2,
+                                   'MU_Y3': isMuY3,
+                                   'PSF_I': isPsfI,
+                                   'PSF_G': isPsfG,
+                                   'PSF_R': isPsfR,
+                                   'PSF_Z': isPsfZ,
+                                   'PSF_Y': isPsfY
+                                   })
             if save:
                 sbpTable.write(sumTable, format='fits',
                                overwrite=True)
