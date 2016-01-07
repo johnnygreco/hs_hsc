@@ -620,7 +620,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
             if np.nanmax(diffMuI[rad <= radThreshold]) > diffThreshold:
                 contaminated = True
                 if verbose:
-                    print("## SBP of %d is contaminated by nearby object!")
+                    print("## %d is contaminated by nearby object!" % galID)
             else:
                 contaminated = False
         else:
