@@ -605,7 +605,7 @@ def cosmoScale(redshift, WMAP9=True, H0=69.3, Om0=0.287,
 
 
 def cosmoDistMod(redshift, WMAP9=True, H0=69.3, Om0=0.287,
-                 Planck15=True):
+                 Planck15=False):
     """
     Get the Distance Module at redshift=z.
 
@@ -626,7 +626,7 @@ def cosmoDistMod(redshift, WMAP9=True, H0=69.3, Om0=0.287,
 
 
 def cosmoComVol(redshift, WMAP9=True, H0=69.3, Om0=0.287,
-                Planck15=True, Gpc=False):
+                Planck15=False, Gpc=False):
     """
     Get the Comoving Volume at redshift=z.
 
@@ -650,7 +650,7 @@ def cosmoComVol(redshift, WMAP9=True, H0=69.3, Om0=0.287,
 
 
 def cosmodVol(redshift, WMAP9=True, H0=69.3, Om0=0.287,
-              Planck15=True):
+              Planck15=False):
     """
     Get the Differential Comoving Volume at redshift=z.
 
@@ -671,7 +671,7 @@ def cosmodVol(redshift, WMAP9=True, H0=69.3, Om0=0.287,
 
 
 def cosmoAge(redshift, WMAP9=True, H0=69.3, Om0=0.287,
-             Planck15=True, Myr=False):
+             Planck15=False, Myr=False):
     """
     Get the Age of the Universe at redshift=z.
 
@@ -695,7 +695,7 @@ def cosmoAge(redshift, WMAP9=True, H0=69.3, Om0=0.287,
 
 
 def cosmoLookBack(redshift, WMAP9=True, H0=69.3, Om0=0.287,
-                  Planck15=True, Myr=False):
+                  Planck15=False, Myr=False):
     """
     Get the Look-back Time at redshift=z.
 
