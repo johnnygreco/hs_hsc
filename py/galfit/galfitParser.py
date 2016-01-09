@@ -80,7 +80,7 @@ class GalfitResults(object):
     Currently only does one component
     """
 
-    def __init__(self, galfit_fits_file, hduLength=3):
+    def __init__(self, galfit_fits_file, hduLength=4):
         """
         Init method for GalfitResults.
 
