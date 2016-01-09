@@ -349,6 +349,8 @@ def generateSubcomp(readFile, root=None, galfit=None, separate=True,
     if not os.path.isfile(readFile):
         print WAR
         raise Exception("XXX Can not find the READIN file: %s", readFile)
+    """ Absolute path of the read in file """
+    readFile = os.path.abspath(readFile)
 
     """ GALFIT command """
     galfitCommand = galfit + ' -o3 ' + readFile
@@ -447,6 +449,8 @@ def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
     """ Check the Read-in File """
     if not os.path.isfile(readFile):
         raise Exception("XXX Can not find the READIN file: %s", readFile)
+    """ Absolute path of the read in file """
+    readFile = os.path.abspath(readFile)
 
     """ IMAX string """
     imaxStr = " -imax %4d" % imax
