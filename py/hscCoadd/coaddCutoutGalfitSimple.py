@@ -459,7 +459,7 @@ def getCenConstrFile(comps, location=None, name=None):
 def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
                    keepLog=True, show=True, expect=None, showZoom=False,
                    zoomSize=None, removePsf=True, verbose=False,
-                   abspath=False):
+                   abspath=False, deleteAfter=False):
     """Run GALFIT."""
     """ Find GALFIT """
     if galfit is None:
@@ -541,6 +541,9 @@ def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
                        showZoom=showZoom, showTitle=True, showChi2=True,
                        overComp=True, savePickle=True, maskRes=True,
                        zoomSize=zoomSize)
+        """ Delete After """
+        if deleteAfter:
+            os.remove(expect)
 
     return done
 
@@ -1163,7 +1166,8 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
     """ 1b. Execute the GALFIT run """
     if run1:
         model1Done = coaddRunGalfit(inFile, root=modRoot, imax=imax,
-                                    zoomSize=int(dimX/2.5))
+                                    zoomSize=int(dimX/2.5),
+                                    deleteAfter=deleteAfter)
         if model1Done:
             print "## Model for %s has finished !" % inFile
         else:
@@ -1183,7 +1187,8 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
         """ 2d. Execute the GALFIT run """
         if run2:
             model2Done = coaddRunGalfit(inFile2, root=modRoot, imax=imax,
-                                        zoomSize=int(dimX/2.5))
+                                        zoomSize=int(dimX/2.5),
+                                        deleteAfter=deleteAfter)
             if model2Done:
                 print "## Model for %s has finished !" % inFile2
             else:
@@ -1203,7 +1208,8 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
         """ 3d. Execute the GALFIT run """
         if run3:
             model3Done = coaddRunGalfit(inFile3, root=modRoot, imax=imax,
-                                        zoomSize=int(dimX/2.5))
+                                        zoomSize=int(dimX/2.5),
+                                        deleteAfter=deleteAfter)
             if model3Done:
                 print "## Model for %s has finished !" % inFile3
             else:
