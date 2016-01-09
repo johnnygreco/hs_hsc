@@ -145,7 +145,7 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
 
     if maskRes:
         maskFile = os.path.join(root, galOut.input_mask)
-        if os.path.isfile(maskFile):
+        if (os.path.isfile(maskFile)) or os.path.islink(maskFile):
             mskArr = fits.open(maskFile)[0].data
             imgMsk = mskArr[np.int(galOut.box_x0)-1:np.int(galOut.box_x1),
                             np.int(galOut.box_y0)-1:np.int(galOut.box_y1)]
@@ -533,12 +533,17 @@ def readSbpInput(prefix, root=None, maskType='mskfin', extMsk=None):
         imgFile = os.path.join(root, imgFile)
         mskFile = os.path.join(root, mskFile)
 
-    if not os.path.isfile(imgFile):
+    if (not os.path.isfile(imgFile)) and (not os.path.islink(imgFile)):
         raise Exception("### Can not find the input cutout image : %s !" %
                         imgFile)
-    if not os.path.isfile(mskFile):
+    if (not os.path.isfile(mskFile)) and (not os.path.islink(mskFile)):
         raise Exception("### Can not find the input mask image : %s !" %
                         mskFile)
+
+    if os.path.islink(imgFile):
+        imgFile = os.readlink(imgFile)
+    if os.path.islink(mskFile):
+        imgFile = os.readlink(mskFile)
 
     # Image
     imgHdu = fits.open(imgFile)
@@ -962,9 +967,11 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
         psfFile = prefix + '_psf.fits'
         if root is not None:
             psfFile = os.path.join(root, psfFile)
-        if not os.path.isfile(psfFile):
+        if (not os.path.isfile(psfFile)) and (not os.path.islink(psfFile)):
             print WAR
             raise Exception(" XXX Can not find the PSF image : %s", psfFile)
+        if os.path.islink(psfFile):
+            psfFile = os.readlink(psfFile)
     else:
         psfFile = ''
 
@@ -973,9 +980,11 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
         sigFile = prefix + '_sig.fits'
         if root is not None:
             sigFile = os.path.join(root, sigFile)
-        if not os.path.isfile(sigFile):
+        if (not os.path.isfile(sigFile)) and (not os.path.islink(sigFile)):
             print WAR
             raise Exception(" XXX Can not find the Sigma image : %s", sigFile)
+        if os.path.islink(sigFile):
+            psfFile = os.readlink(sigFile)
     else:
         sigFile = ''
 

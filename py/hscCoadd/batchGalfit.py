@@ -135,13 +135,13 @@ def run(args):
                                         ser2Comp=args.ser2Comp,
                                         ser3Comp=args.ser3Comp,
                                         useF4=args.useF4,
-                                        useF1=args.usfF1,
+                                        useF1=args.useF1,
                                         checkCenter=args.checkCenter,
                                         constrCen=args.constrCen,
                                         deleteAfter=args.deleteAfter,
                                         maskType=args.maskType,
                                         externalMask=galMsk)
-                logging.log('### The Galfit Run is DONE for %s' % galPrefix)
+                logging.info('### The Galfit Run is DONE for %s' % galPrefix)
                 print SEP
             except Exception, errMsg:
                 print str(errMsg)
@@ -151,7 +151,6 @@ def run(args):
                                 galPrefix)
                 print SEP + '\n'
 
-            print COM
             if psutilOk:
                 mem1 = proc.memory_info().rss
                 gc.collect()
@@ -159,7 +158,6 @@ def run(args):
                 print "@@@ Collect: %0.2f%%" % (100.0 * (mem2 - mem1) / mem0)
             else:
                 gc.collect()
-            print COM
 
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
@@ -180,7 +178,7 @@ if __name__ == '__main__':
                         help='Type of the mask use', default='mskfin')
     parser.add_argument('-r', '--rerun', dest='rerun',
                         help="Name of the rerun", default='default')
-    parser.add_argument('--verbose', dest='verbose', action="store_true",
+    parser.add_argument('-v', '--verbose', dest='verbose', action="store_true",
                         default=False)
     """ Optional """
     parser.add_argument('--model', dest='model',
