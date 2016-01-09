@@ -89,7 +89,7 @@ class GalfitResults(object):
         hdulist = fits.open(galfit_fits_file)
         # Now some checks to make sure the file is what we are expecting
         assert len(hdulist) == hduLength
-        galfitmodel = hdulist[2]
+        galfitmodel = hdulist[hduLength - 2]
         galfitheader = galfitmodel.header
         galfit_in_comments = False
         for i in galfitheader['COMMENT']:
