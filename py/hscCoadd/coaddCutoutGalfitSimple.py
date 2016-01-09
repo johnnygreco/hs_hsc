@@ -269,6 +269,10 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
 
     plt.close(fig)
 
+    """ Clean the large image file """
+    del imgOri, imgMod, imgRes
+    del mskArr
+
     return maxR
 
 
@@ -299,7 +303,7 @@ def removePSF(readin, root=None, verbose=True):
         outFile.write(line)
     outFile.close()
 
-    return
+    return readinNew
 
 
 def log2Readin(outFile, root=None, verbose=True):
@@ -328,7 +332,7 @@ def log2Readin(outFile, root=None, verbose=True):
     else:
         warnings.warn('XXX Can not find the log file: %s' % logFile)
 
-    return logFile
+    return iniFile
 
 
 def generateSubcomp(readFile, root=None, galfit=None, separate=True,
@@ -431,7 +435,7 @@ def getCenConstrFile(comps, location=None, name=None):
 
 def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
                    keepLog=True, show=True, expect=None, showZoom=False,
-                   zoomSize=None):
+                   zoomSize=None, removePsf=True, verbose=False):
     """Run GALFIT."""
     """ Find GALFIT """
     if galfit is None:
@@ -486,7 +490,17 @@ def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
 
         """ Update the read in file """
         if updateRead:
-            log2Readin(expect, root=None, verbose=True)
+            newReadIn = log2Readin(expect, root=None, verbose=True)
+            if verbose:
+                print "## Read-in file has been updated : %s" % newReadIn
+            """ Remove the PSF from the new readin file """
+            if removePSF:
+                noPsfReadIn = removePSF(readFile, root=None, verbose=True)
+                if verbose:
+                    print "## NoPSF read-in is available : %s" % noPsfReadIn
+
+        """ MORE CAN BE DONE HERE """
+
         """ Visualization of the model """
         if show:
             showModels(expect, verbose=True, vertical=False, showZoom=showZoom,
@@ -925,6 +939,10 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
                         "EXACTLY same dimensions!")
     dimX, dimY = imgArr.shape
 
+    """ Clean the large image file """
+    del imgArr
+    del mskArr
+
     if checkCenter:
         if mskHead['MSK_R20'] == 1:
             print WAR
@@ -1061,6 +1079,10 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
     if run1:
         model1Done = coaddRunGalfit(inFile, root=root, imax=120,
                                     zoomSize=int(dimX/2.5))
+        if model1Done:
+            print "## Model for %s has finished !" % inFile
+        else:
+            print "## Model for %s has failed !" % inFile
 
     """ Optional: 2-Sersic Model """
     if ser2Comp:
@@ -1077,6 +1099,10 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
         if run2:
             model2Done = coaddRunGalfit(inFile2, root=root, imax=150,
                                         zoomSize=int(dimX/2.5))
+            if model2Done:
+                print "## Model for %s has finished !" % inFile2
+            else:
+                print "## Model for %s has failed !" % inFile2
 
     """ Optional: 3-Sersic Model """
     if ser3Comp:
@@ -1093,6 +1119,10 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
         if run3:
             model3Done = coaddRunGalfit(inFile3, root=root, imax=200,
                                         zoomSize=int(dimX/2.5))
+            if model3Done:
+                print "## Model for %s has finished !" % inFile3
+            else:
+                print "## Model for %s has failed !" % inFile3
 
     return
 
