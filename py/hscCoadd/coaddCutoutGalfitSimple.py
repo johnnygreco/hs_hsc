@@ -932,7 +932,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
                             constrFile=None, verbose=True,
                             run1=False, run2=False, run3=False,
                             skyGrad=True, ser2Comp=True, ser3Comp=True,
-                            useF4=False, useF1=False,
+                            useF4=False, useF1=False, imax=150,
                             checkCenter=False, constrCen=True,
                             deleteAfter=False, maskType='mskfin',
                             externalMask=None, abspath=False):
@@ -1112,7 +1112,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
                     useF1=useF1, useF4=useF4)
     """ 1b. Execute the GALFIT run """
     if run1:
-        model1Done = coaddRunGalfit(inFile, root=root, imax=120,
+        model1Done = coaddRunGalfit(inFile, root=root, imax=imax,
                                     zoomSize=int(dimX/2.5))
         if model1Done:
             print "## Model for %s has finished !" % inFile
@@ -1132,7 +1132,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
                         useF1=useF1, useF4=useF4, constrCen=constrCen)
         """ 2d. Execute the GALFIT run """
         if run2:
-            model2Done = coaddRunGalfit(inFile2, root=root, imax=150,
+            model2Done = coaddRunGalfit(inFile2, root=root, imax=imax,
                                         zoomSize=int(dimX/2.5))
             if model2Done:
                 print "## Model for %s has finished !" % inFile2
@@ -1152,7 +1152,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
                         useF1=useF1, useF4=useF4, constrCen=constrCen)
         """ 3d. Execute the GALFIT run """
         if run3:
-            model3Done = coaddRunGalfit(inFile3, root=root, imax=200,
+            model3Done = coaddRunGalfit(inFile3, root=root, imax=imax,
                                         zoomSize=int(dimX/2.5))
             if model3Done:
                 print "## Model for %s has finished !" % inFile3
@@ -1192,6 +1192,9 @@ if __name__ == '__main__':
                         type=float, default=0.168)
     parser.add_argument('--zp', dest='zp', help='Photometric zeropoint',
                         type=float, default=27.0)
+    parser.add_argument('--imax', dest='imax',
+                        help='Maximum number of iterations',
+                        type=int, default=150)
     parser.add_argument('--mag', dest='mag', help='Total magnitude',
                         type=float, default=18.00)
     parser.add_argument('--galX0', dest='galX0', help='Galaxy Center: X',

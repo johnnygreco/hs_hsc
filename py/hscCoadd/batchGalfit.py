@@ -140,7 +140,9 @@ def run(args):
                                         constrCen=args.constrCen,
                                         deleteAfter=args.deleteAfter,
                                         maskType=args.maskType,
-                                        externalMask=galMsk)
+                                        externalMask=galMsk,
+                                        abspath=args.abspath,
+                                        imax=args.imax)
                 logging.info('### The Galfit Run is DONE for %s' % galPrefix)
                 print SEP
             except Exception, errMsg:
@@ -188,6 +190,9 @@ if __name__ == '__main__':
                         type=float, default=0.168)
     parser.add_argument('--zp', dest='zp', help='Photometric zeropoint',
                         type=float, default=27.0)
+    parser.add_argument('--imax', dest='imax',
+                        help='Maximum number of iterations',
+                        type=int, default=150)
     parser.add_argument('--mag', dest='mag', help='Total magnitude',
                         type=float, default=18.00)
     parser.add_argument('--noBkg', dest='useBkg', action="store_false",
@@ -217,6 +222,8 @@ if __name__ == '__main__':
     parser.add_argument('--noCheckCenter', dest='checkCenter',
                         action="store_false", default=True)
     parser.add_argument('--deleteAfter', dest='deleteAfter',
+                        action="store_true", default=False)
+    parser.add_argument('--abspath', dest='abspath',
                         action="store_true", default=False)
 
     args = parser.parse_args()
