@@ -64,6 +64,8 @@ def run(args):
             galID = str(galaxy[id]).strip()
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
             galRoot = os.path.join(galID, filter)
+            if args.root is not None:
+                galRoot = os.path.join(args.root, galRoot)
             print "## Deal with %s now : %i / %i" % (galID,
                                                      (index + 1),
                                                      len(data))
@@ -87,14 +89,16 @@ def run(args):
             """
             Set up a rerun
             """
-            galRoot = os.path.join(galRoot, rerun.strip())
-            if not os.path.isdir(galRoot):
-                os.makedirs(galRoot)
+            rerunRoot = os.path.join(galRoot, rerun)
+            if not os.path.isdir(rerunRoot):
+                os.makedirs(rerunRoot)
+            print "## Data Dir  : %s " % galRoot
+            print "## Rerun Dir : %s " % rerunRoot
 
             """ Link the necessary files to the rerun folder """
             for fitsFile in fitsList:
                 seg = fitsFile.split('/')
-                link = os.path.join(galRoot, seg[-1])
+                link = os.path.join(rerunRoot, seg[-1])
                 if (not os.path.islink(link)) and (not os.path.isfile(link)):
                     os.symlink(fitsFile, link)
 
@@ -109,6 +113,8 @@ def run(args):
                 print "###  Use %s filter for mask \n" % mskFilter
                 mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
                 mskRoot = os.path.join(galID, mskFilter, rerun)
+                if args.root is not None:
+                    mskRoot = os.path.join(args.root, mskRoot)
                 galMsk = os.path.join(mskRoot, mskPrefix + '_' +
                                       mskType + '.fits')
                 if not os.path.isfile(galMsk):
@@ -118,40 +124,41 @@ def run(args):
                 galMsk = None
 
             print '\n' + SEP
-            try:
-                coaddCutoutGalfitSimple(galPrefix, root=galRoot,
-                                        pix=args.pix,
-                                        zp=args.zp,
-                                        verbose=args.verbose,
-                                        useBkg=args.useBkg,
-                                        usePsf=args.usePsf,
-                                        useSig=args.useSig,
-                                        model=args.model,
-                                        mag=args.mag,
-                                        run1=args.run1,
-                                        run2=args.run2,
-                                        run3=args.run3,
-                                        skyGrad=args.skyGrad,
-                                        ser2Comp=args.ser2Comp,
-                                        ser3Comp=args.ser3Comp,
-                                        useF4=args.useF4,
-                                        useF1=args.useF1,
-                                        checkCenter=args.checkCenter,
-                                        constrCen=args.constrCen,
-                                        deleteAfter=args.deleteAfter,
-                                        maskType=args.maskType,
-                                        externalMask=galMsk,
-                                        abspath=args.abspath,
-                                        imax=args.imax)
-                logging.info('### The Galfit Run is DONE for %s' % galPrefix)
-                print SEP
-            except Exception, errMsg:
-                print str(errMsg)
-                warnings.warn('### The Galfit Run is failed for %s' %
-                              galPrefix)
-                logging.warning('### The Galfit Run is FAILED for %s' %
-                                galPrefix)
-                print SEP + '\n'
+            #try:
+            coaddCutoutGalfitSimple(galPrefix, root=galRoot,
+                                    rerun=rerun,
+                                    pix=args.pix,
+                                    zp=args.zp,
+                                    verbose=args.verbose,
+                                    useBkg=args.useBkg,
+                                    usePsf=args.usePsf,
+                                    useSig=args.useSig,
+                                    model=args.model,
+                                    mag=args.mag,
+                                    run1=args.run1,
+                                    run2=args.run2,
+                                    run3=args.run3,
+                                    skyGrad=args.skyGrad,
+                                    ser2Comp=args.ser2Comp,
+                                    ser3Comp=args.ser3Comp,
+                                    useF4=args.useF4,
+                                    useF1=args.useF1,
+                                    checkCenter=args.checkCenter,
+                                    constrCen=args.constrCen,
+                                    deleteAfter=args.deleteAfter,
+                                    maskType=args.maskType,
+                                    externalMask=galMsk,
+                                    abspath=args.abspath,
+                                    imax=args.imax)
+            logging.info('### The Galfit Run is DONE for %s' % galPrefix)
+            print SEP
+            #except Exception, errMsg:
+                #print str(errMsg)
+                #warnings.warn('### The Galfit Run is failed for %s' %
+                              #galPrefix)
+                #logging.warning('### The Galfit Run is FAILED for %s' %
+                                #galPrefix)
+                #print SEP + '\n'
 
             if psutilOk:
                 mem1 = proc.memory_info().rss
@@ -172,6 +179,8 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--id', dest='id',
                         help="Name of the column for galaxy ID",
                         default='ID')
+    parser.add_argument('--root', dest='root',
+                        help="Root of data", default=None)
     parser.add_argument('-f', '--filter', dest='filter', help="Filter",
                         default='HSC-I')
     parser.add_argument('-mf', '--maskFilter', dest='maskFilter',

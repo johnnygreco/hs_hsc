@@ -89,6 +89,8 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
         outFile = os.path.join(root, outFile)
     elif root is None:
         root = os.path.dirname(outFile)
+    else:
+        root = ''
 
     """  Read in the output file """
     galOut = gPar.GalfitResults(outFile)
@@ -141,7 +143,10 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
     imgMod = arrOut[2].data
     imgRes = arrOut[3].data
     imgX, imgY = imgOri.shape
-    imin1, imax1 = hUtil.zscale(np.arcsinh(imgOri), contrast=0.05, samples=500)
+    imin1, imax1 = hUtil.zscale(np.arcsinh(imgOri), contrast=0.02,
+                                samples=500)
+    imin2, imax2 = hUtil.zscale(np.arcsinh(imgMod), contrast=0.015,
+                                samples=500)
 
     if maskRes:
         maskFile = os.path.join(root, galOut.input_mask)
@@ -149,14 +154,16 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
             mskArr = fits.open(maskFile)[0].data
             imgMsk = mskArr[np.int(galOut.box_x0)-1:np.int(galOut.box_x1),
                             np.int(galOut.box_y0)-1:np.int(galOut.box_y1)]
-            resShow = np.arcsinh(imgRes)
+            resShow = imgRes
             resShow[imgMsk > 0] == np.nan
         else:
             print "XXX Can not find the mask file : %s" % maskFile
+            mskArr = None
             resShow = imgRes
     else:
         resShow = imgRes
-    imin2, imax2 = hUtil.zscale(resShow, contrast=0.20, samples=500)
+        mskArr = None
+    imin3, imax3 = hUtil.zscale(resShow, contrast=0.1, samples=500)
 
     maxR = (np.max(np.asarray(compR)) * zoomLimit)
     if zoomSize is not None:
@@ -165,8 +172,8 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
                         np.int(imgY/2.0 - zoomR):np.int(imgY/2.0 + zoomR)]
         imgMod = imgMod[np.int(imgX/2.0 - zoomR):np.int(imgY/2.0 + zoomR),
                         np.int(imgY/2.0 - zoomR):np.int(imgY/2.0 + zoomR)]
-        imgRes = imgRes[np.int(imgX/2.0 - zoomR):np.int(imgY/2.0 + zoomR),
-                        np.int(imgY/2.0 - zoomR):np.int(imgY/2.0 + zoomR)]
+        resShow = resShow[np.int(imgX/2.0 - zoomR):np.int(imgY/2.0 + zoomR),
+                          np.int(imgY/2.0 - zoomR):np.int(imgY/2.0 + zoomR)]
         xPad = np.int(imgX/2.0 - zoomR)
         yPad = np.int(imgY/2.0 - zoomR)
     elif (imgX/2.0 >= maxR) and (imgY/2.0 >= maxR) and showZoom:
@@ -174,8 +181,8 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
                         np.int(imgY/2.0 - maxR):np.int(imgY/2.0 + maxR)]
         imgMod = imgMod[np.int(imgX/2.0 - maxR):np.int(imgY/2.0 + maxR),
                         np.int(imgY/2.0 - maxR):np.int(imgY/2.0 + maxR)]
-        imgRes = imgRes[np.int(imgX/2.0 - maxR):np.int(imgY/2.0 + maxR),
-                        np.int(imgY/2.0 - maxR):np.int(imgY/2.0 + maxR)]
+        resShow = resShow[np.int(imgX/2.0 - maxR):np.int(imgY/2.0 + maxR),
+                          np.int(imgY/2.0 - maxR):np.int(imgY/2.0 + maxR)]
         xPad = np.int(imgX/2.0 - maxR)
         yPad = np.int(imgY/2.0 - maxR)
         print " ## Image has been truncated to highlight the galaxy !"
@@ -194,7 +201,7 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
     ax1.xaxis.set_major_formatter(NullFormatter())
     ax1.yaxis.set_major_formatter(NullFormatter())
     ax1.imshow(np.arcsinh(imgOri), interpolation="none",
-               vmax=imax1, cmap=cmap, vmin=-1.0E-4, origin='lower')
+               vmax=imax1, cmap=cmap, vmin=imin1, origin='lower')
 
     if overComp:
         for ii in range(len(compX)):
@@ -213,13 +220,14 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
         titleStr = ax1.text(0.50, 0.90, os.path.basename(outFile),
                             fontsize=14, transform=ax1.transAxes,
                             horizontalalignment='center')
-        titleStr.set_bbox(dict(color='white', alpha=0.6, edgecolor='white'))
+        titleStr.set_bbox(dict(facecolor='white', alpha=0.6,
+                          edgecolor='white'))
 
     """ 2. Model Image """
     ax2.xaxis.set_major_formatter(NullFormatter())
     ax2.yaxis.set_major_formatter(NullFormatter())
     ax2.imshow(np.arcsinh(imgMod), interpolation="none",
-               vmax=imax1, cmap=cmap, vmin=-1.0E-4, origin='lower')
+               vmax=imax2, cmap=cmap, vmin=1E-5, origin='lower')
     """ Contour """
     tam = np.size(imgMod, axis=0)
     contour_x = np.arange(tam)
@@ -248,8 +256,8 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
     """ 3. Residual Image """
     ax3.xaxis.set_major_formatter(NullFormatter())
     ax3.yaxis.set_major_formatter(NullFormatter())
-    ax3.imshow(np.arcsinh(imgRes), interpolation="none",
-               vmin=imin2, vmax=imax2, origin='lower')
+    ax3.imshow(np.arcsinh(resShow), interpolation="none",
+               vmin=imin3, vmax=imax3, origin='lower')
     ax3.contour(contour_x, contour_y, np.arcsinh(imgMod), colors='k',
                 linewidths=1.2)
     for ii in range(len(compX)):
@@ -270,20 +278,23 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
     plt.close(fig)
 
     """ Clean the large image file """
-    del imgOri, imgMod, imgRes
+    del imgOri, imgMod, imgRes, resShow
     del mskArr
 
     return maxR
 
 
-def removePSF(readin, root=None, verbose=True):
+def removePSF(readin, root=None, verbose=True, abspath=False, run=False):
     """
     Remove the PSF convolution from the GALFIT read in file.
 
     Parameters:
     """
-    if root is not None:
+    if abspath:
+        readin = readin
+    elif root is not None:
         readin = os.path.join(root, readin)
+
     if '.in' in readin:
         readinNew = readin.replace('.in', '_nopsf.in')
     else:
@@ -306,22 +317,27 @@ def removePSF(readin, root=None, verbose=True):
     return readinNew
 
 
-def log2Readin(outFile, root=None, verbose=True):
+def log2Readin(outFile, root=None, verbose=True, abspath=False):
     """
     Back up the original input file.
 
     Update the readin file using the output log file
     """
-    if (root is None) or (os.path.dirname(outFile) is not ''):
-        root = os.path.dirname(outFile)
-
     galOut = gPar.GalfitResults(outFile)
     logFile = galOut.logfile
-    logFile = os.path.join(root, logFile)
+    if root is not None:
+        logFile = os.path.join(root, logFile)
 
     if os.path.isfile(logFile):
-        iniFile = os.path.join(root, galOut.input_initfile)
-        if galOut.input_initfile in open(logFile).read():
+        if abspath:
+            iniFile = galOut.input_initfile
+        elif root is not None:
+            iniFile = os.path.join(root,
+                                   os.path.basename(galOut.input_initfile))
+        else:
+            iniFile = galOut.input_initfile
+
+        if os.path.basename(galOut.input_initfile) in open(logFile).read():
             if verbose:
                 print ' ## %s  ---> %s ' % (logFile, iniFile)
             shutil.copyfile(iniFile, iniFile + '_back')
@@ -332,7 +348,7 @@ def log2Readin(outFile, root=None, verbose=True):
     else:
         warnings.warn('XXX Can not find the log file: %s' % logFile)
 
-    return iniFile
+    return
 
 
 def generateSubcomp(readFile, root=None, galfit=None, separate=True,
@@ -455,11 +471,19 @@ def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
     if abspath:
         readFile = os.path.abspath(readFile)
 
+    """ Expected output model """
+    if expect is None:
+        expect = readFile.replace('.in', '.fits')
+    if os.path.isfile(expect):
+        os.remove(expect)
+
     """ IMAX string """
     imaxStr = " -imax %4d" % imax
 
     """ GALFIT command """
     galfitCommand = galfit + ' ' + imaxStr + ' ' + readFile
+    if verbose:
+        print " ## Command : %s" % galfitCommand
 
     """ Excecute the command """
     if (root is not None) and abspath:
@@ -481,28 +505,27 @@ def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
             print line
         proc.wait()
 
-    if expect is None:
-        expect = readFile.replace('.in', '.fits')
-
     if not os.path.isfile(expect):
         done = False
-        print "###################################################"
+        print COM
         print "### GALFIT run failed for : %s" % readFile
-        print "###################################################"
+        print COM
     else:
         done = True
-        print "###################################################"
+        print COM
         print "### GALFIT run finished : %s" % expect
-        print "###################################################"
+        print COM
 
         """ Update the read in file """
         if updateRead:
-            newReadIn = log2Readin(expect, root=None, verbose=True)
+            newReadIn = log2Readin(expect, root=None, verbose=True,
+                                   abspath=abspath)
             if verbose:
                 print "## Read-in file has been updated : %s" % newReadIn
             """ Remove the PSF from the new readin file """
             if removePSF:
-                noPsfReadIn = removePSF(readFile, root=None, verbose=True)
+                noPsfReadIn = removePSF(readFile, root=None, verbose=True,
+                                        abspath=abspath)
                 if verbose:
                     print "## NoPSF read-in is available : %s" % noPsfReadIn
 
@@ -510,9 +533,10 @@ def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
 
         """ Visualization of the model """
         if show:
-            showModels(expect, verbose=True, vertical=False, showZoom=showZoom,
-                       showTitle=True, showChi2=True, overComp=True,
-                       savePickle=True, maskRes=True, zoomSize=zoomSize)
+            showModels(expect, root=root, verbose=True, vertical=False,
+                       showZoom=showZoom, showTitle=True, showChi2=True,
+                       overComp=True, savePickle=True, maskRes=True,
+                       zoomSize=zoomSize)
 
     return done
 
@@ -527,7 +551,8 @@ def imgSameSize(img1, img2):
         return False
 
 
-def readSbpInput(prefix, root=None, maskType='mskfin', extMsk=None):
+def readSbpInput(prefix, root=None, rerun='default',
+                 maskType='mskfin', extMsk=None):
     """Parse input data."""
     # Get the names of necessary input images
     imgFile = prefix + '_img.fits'
@@ -538,7 +563,10 @@ def readSbpInput(prefix, root=None, maskType='mskfin', extMsk=None):
 
     if root is not None:
         imgFile = os.path.join(root, imgFile)
-        mskFile = os.path.join(root, mskFile)
+        mskFile = os.path.join(root, rerun, mskFile)
+    else:
+        imgFile = imgFile
+        mskFile = os.path.join(rerun, mskFile)
 
     if (not os.path.isfile(imgFile)) and (not os.path.islink(imgFile)):
         raise Exception("### Can not find the input cutout image : %s !" %
@@ -564,9 +592,14 @@ def readSbpInput(prefix, root=None, maskType='mskfin', extMsk=None):
     return imgFile, imgArr, imgHead, mskFile, mskArr, mskHead
 
 
-def readInputSky(prefix, root=None, rebin='rebin6'):
+def readInputSky(prefix, root=None, rerun='default', rebin='rebin6'):
     """Read sky estimation."""
     skyFile = prefix + '_' + rebin + '_sky.dat'
+    if rerun is not None:
+        skyFile = os.path.join(root, rerun, skyFile)
+    else:
+        skyFile = os.path.join(rerun, skyFile)
+
     if not os.path.isfile(skyFile):
         raise Exception("### Can not find the input sky summary : %s !" %
                         skyFile)
@@ -924,7 +957,8 @@ def getInput3Sersic(config, readinFile='cutout_3ser.in', constr=False,
     f.close()
 
 
-def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
+def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
+                            pix=0.168, useBkg=True,
                             zp=27.0, usePsf=True, galX0=None, galY0=None,
                             galQ0=None, galPA0=None, galRe=None,
                             galSer=2.0, model=None, inFile=None,
@@ -949,9 +983,11 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
     # Read in the input image, mask, psf, and their headers
     """ Allow using external mask """
     if externalMask is not None:
-        galInput = readSbpInput(prefix, root=root, extMsk=externalMask)
+        galInput = readSbpInput(prefix, root=root, rerun=rerun,
+                                extMsk=externalMask)
     else:
-        galInput = readSbpInput(prefix, root=root, maskType=maskType)
+        galInput = readSbpInput(prefix, root=root, rerun=rerun,
+                                maskType=maskType)
     imgFile, imgArr, imgHead, mskFile, mskArr, mskHead = galInput
     """ Absolute path of the image and mask """
     if abspath:
@@ -979,11 +1015,9 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
         psfFile = prefix + '_psf.fits'
         if root is not None:
             psfFile = os.path.join(root, psfFile)
-        if (not os.path.isfile(psfFile)) and (not os.path.islink(psfFile)):
+        if not os.path.isfile(psfFile):
             print WAR
             raise Exception(" XXX Can not find the PSF image : %s", psfFile)
-        if os.path.islink(psfFile):
-            psfFile = os.readlink(psfFile)
         """ Absolute path of the PSF file"""
         if abspath:
             psfFile = os.path.abspath(psfFile)
@@ -995,11 +1029,9 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
         sigFile = prefix + '_sig.fits'
         if root is not None:
             sigFile = os.path.join(root, sigFile)
-        if (not os.path.isfile(sigFile)) and (not os.path.islink(sigFile)):
+        if not os.path.isfile(sigFile):
             print WAR
             raise Exception(" XXX Can not find the Sigma image : %s", sigFile)
-        if os.path.islink(sigFile):
-            sigFile = os.readlink(sigFile)
         if abspath:
             sigFile = os.path.abspath(sigFile)
     else:
@@ -1008,7 +1040,8 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
     """ 0c. Background """
     if useBkg:
         try:
-            skyMed, skyAvg, skyStd = readInputSky(prefix, root=root)
+            skyMed, skyAvg, skyStd = readInputSky(prefix, root=root,
+                                                  rerun=rerun)
             bkg = skyAvg
             if verbose:
                 print "  # Average Background : ", bkg
@@ -1027,15 +1060,17 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
     if inFile is None:
         inFile = prefix + '_1ser' + suffix + '.in'
         if root is not None:
-            inFile = os.path.join(root, inFile)
+            inFile = os.path.join(root, rerun, inFile)
+        else:
+            inFile = os.path.join(rerun, inFile)
 
     """ 0e. Output File """
     if outFile is None:
         outModel = prefix + '_1ser' + suffix + '.fits'
         if root is not None:
-            outFile = os.path.join(root, outModel)
+            outFile = os.path.join(root, rerun, outModel)
         else:
-            outFile = outModel
+            outFile = os.path.join(rerun, outModel)
         if abspath:
             outFile = os.path.join(filePath, outModel)
 
@@ -1112,12 +1147,18 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
     else:
         galfitConfig['constr'] = constrFile
 
+    """ Directory for the output model """
+    if root is not None:
+        modRoot = os.path.join(root, rerun)
+    else:
+        modRoot = rerun
+
     """ 1a. Generate the Read-in File for 1Ser model"""
     getInput1Sersic(galfitConfig, readinFile=inFile, skyGrad=skyGrad,
                     useF1=useF1, useF4=useF4)
     """ 1b. Execute the GALFIT run """
     if run1:
-        model1Done = coaddRunGalfit(inFile, root=root, imax=imax,
+        model1Done = coaddRunGalfit(inFile, root=modRoot, imax=imax,
                                     zoomSize=int(dimX/2.5))
         if model1Done:
             print "## Model for %s has finished !" % inFile
@@ -1137,7 +1178,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
                         useF1=useF1, useF4=useF4, constrCen=constrCen)
         """ 2d. Execute the GALFIT run """
         if run2:
-            model2Done = coaddRunGalfit(inFile2, root=root, imax=imax,
+            model2Done = coaddRunGalfit(inFile2, root=modRoot, imax=imax,
                                         zoomSize=int(dimX/2.5))
             if model2Done:
                 print "## Model for %s has finished !" % inFile2
@@ -1157,7 +1198,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
                         useF1=useF1, useF4=useF4, constrCen=constrCen)
         """ 3d. Execute the GALFIT run """
         if run3:
-            model3Done = coaddRunGalfit(inFile3, root=root, imax=imax,
+            model3Done = coaddRunGalfit(inFile3, root=modRoot, imax=imax,
                                         zoomSize=int(dimX/2.5))
             if model3Done:
                 print "## Model for %s has finished !" % inFile3
@@ -1174,6 +1215,9 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--root', dest='root',
                         help='Path to the image files',
                         default=None)
+    parser.add_argument('--rerun', dest='rerun',
+                        help='Name of the rerun',
+                        default='default')
 
     parser.add_argument('--model', dest='model',
                         help='Suffix of the model',
@@ -1249,7 +1293,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    coaddCutoutGalfitSimple(args.prefix, root=args.root, pix=args.pix,
+    coaddCutoutGalfitSimple(args.prefix, root=args.root, rerun=args.rerun,
+                            pix=args.pix,
                             useBkg=args.useBkg, zp=args.zp,
                             usePsf=args.usePsf, galX0=args.galX0,
                             galY0=args.galY0, galQ0=args.galQ0,
