@@ -1143,19 +1143,23 @@ if __name__ == '__main__':
     parser.add_argument('-r', '--root', dest='root',
                         help='Path to the image files',
                         default=None)
-    parser.add_argument('-model', dest='model',
+
+    parser.add_argument('--model', dest='model',
                         help='Suffix of the model',
                         default=None)
-    parser.add_argument('-inFile', dest='inFile',
+    parser.add_argument('--inFile', dest='inFile',
                         help='Name of the read-in file',
                         default=None)
-    parser.add_argument('-outFile', dest='outFile',
+    parser.add_argument('--outFile', dest='outFile',
                         help='Name of the output model',
                         default=None)
-    parser.add_argument('-constrFile', dest='constrFile',
+    parser.add_argument('--constrFile', dest='constrFile',
                         help='Name of the constraint',
                         default=None)
-    parser.add_argument('-maskType', dest='maskType',
+    parser.add_argument('--externalMask', dest='externalMask',
+                        help='External mask file',
+                        default=None)
+    parser.add_argument('--maskType', dest='maskType',
                         help='Type of the mask use',
                         default=None)
     parser.add_argument('--pix', dest='pix', help='Pixel Scale',
@@ -1176,14 +1180,14 @@ if __name__ == '__main__':
                         type=float, default=None)
     parser.add_argument('--galSer', dest='galSer', help='Sersic Index',
                         type=float, default=2.0)
-    parser.add_argument('--useBkg', dest='useBkg', action="store_true",
+    parser.add_argument('--noBkg', dest='useBkg', action="store_false",
                         default=True)
-    parser.add_argument('--usePsf', dest='usePsf', action="store_true",
+    parser.add_argument('--noPsf', dest='usePsf', action="store_false",
                         default=True)
-    parser.add_argument('--useSig', dest='useSig', action="store_true",
+    parser.add_argument('--noSig', dest='useSig', action="store_false",
                         default=True)
     parser.add_argument('--verbose', dest='verbose', action="store_true",
-                        default=True)
+                        default=False)
     parser.add_argument('--run1', dest='run1', action="store_true",
                         default=False)
     parser.add_argument('--run2', dest='run2', action="store_true",
@@ -1195,15 +1199,15 @@ if __name__ == '__main__':
     parser.add_argument('--ser3Comp', dest='ser3Comp', action="store_true",
                         default=False)
     parser.add_argument('--skyGrad', dest='skyGrad', action="store_true",
-                        default=True)
+                        default=False)
     parser.add_argument('--useF1', dest='useF1', action="store_true",
                         default=False)
     parser.add_argument('--useF4', dest='useF4', action="store_true",
                         default=False)
-    parser.add_argument('--constrCen', dest='constrCen', action="store_true",
-                        default=True)
-    parser.add_argument('--checkCenter', dest='checkCenter',
-                        action="store_true", default=False)
+    parser.add_argument('--noConstrCen', dest='constrCen',
+                        action="store_false", default=True)
+    parser.add_argument('--noCheckCenter', dest='checkCenter',
+                        action="store_false", default=True)
     parser.add_argument('--deleteAfter', dest='deleteAfter',
                         action="store_true", default=False)
 
@@ -1223,4 +1227,5 @@ if __name__ == '__main__':
                             skyGrad=args.skyGrad, useF1=args.useF1,
                             useF4=args.useF4, constrCen=args.constrCen,
                             checkCenter=args.checkCenter,
-                            deleteAfter=args.deleteAfter)
+                            deleteAfter=args.deleteAfter,
+                            externalMask=args.externalMask)
