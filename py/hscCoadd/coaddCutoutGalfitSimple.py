@@ -56,8 +56,8 @@ WAR = '!' * 100
 
 
 def galfitAIC(galOut):
-    """
-    Rough estimation of AIC, BIC, and HQ for a GALFIT model.
+    u"""
+    Estimate the AIC, BIC, and HQ for a GALFIT model.
 
     AIC=-2 ln(L) + 2 k  中文名字：赤池信息量 akaike information criterion
     BIC=-2 ln(L) + ln(n)*k 中文名字：贝叶斯信息量 bayesian information criterion
@@ -66,10 +66,12 @@ def galfitAIC(galOut):
     chisq = np.float(galOut.chisq)
     ndof = np.float(galOut.ndof)
     nfree = np.float(galOut.nfree)
-
+    # AIC
     aic = chisq + 2.0 * nfree + (2.0 * nfree * (nfree + 1.0))/(ndof -
                                                                nfree - 1.0)
+    # BIC
     bic = chisq + np.log(ndof) * nfree
+    # Hannan-Quinn cirterion
     hq = chisq + np.log(np.log(ndof)) * nfree
 
     return aic, bic, hq
@@ -504,11 +506,11 @@ def imgSameSize(img1, img2):
         return False
 
 
-def readSbpInput(prefix, root=None):
+def readSbpInput(prefix, root=None, maskType='mskfin'):
     """Parse input data."""
     # Get the names of necessary input images
     imgFile = prefix + '_img.fits'
-    mskFile = prefix + '_mskfin.fits'
+    mskFile = prefix + '_' + maskType + '.fits'
 
     if root is not None:
         imgFile = os.path.join(root, imgFile)
@@ -902,17 +904,20 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
                             run1=False, run2=False, run3=False,
                             skyGrad=True, ser2Comp=True, ser3Comp=True,
                             useF4=False, useF1=False,
-                            checkCenter=False, constrCen=True):
+                            checkCenter=False, constrCen=True,
+                            deleteAfter=False, mskType='mskfin'):
     """
     Run 1-Sersic fitting on HSC cutout image.
 
     Parameters:
     """
-    print SEP
-    print "### Input Image: ", prefix
+    if verbose:
+        print SEP
+        print "### Input Image: ", prefix
+        print SEP
     """ 0. Organize Input Data """
     # Read in the input image, mask, psf, and their headers
-    galInput = readSbpInput(prefix, root=root)
+    galInput = readSbpInput(prefix, root=root, mskType='mskfin')
     imgFile, imgArr, imgHead, mskFile, mskArr, mskHead = galInput
     if not imgSameSize(imgArr, mskArr):
         print WAR
@@ -1111,6 +1116,9 @@ if __name__ == '__main__':
     parser.add_argument('-constrFile', dest='constrFile',
                         help='Name of the constraint',
                         default=None)
+    parser.add_argument('-maskType', dest='maskType',
+                        help='Type of the mask use',
+                        default=None)
     parser.add_argument('--pix', dest='pix', help='Pixel Scale',
                         type=float, default=0.168)
     parser.add_argument('--zp', dest='zp', help='Photometric zeropoint',
@@ -1157,6 +1165,8 @@ if __name__ == '__main__':
                         default=True)
     parser.add_argument('--checkCenter', dest='checkCenter',
                         action="store_true", default=False)
+    parser.add_argument('--deleteAfter', dest='deleteAfter',
+                        action="store_true", default=False)
 
     args = parser.parse_args()
 
@@ -1173,4 +1183,5 @@ if __name__ == '__main__':
                             ser2Comp=args.ser2Comp, ser3Comp=args.ser3Comp,
                             skyGrad=args.skyGrad, useF1=args.useF1,
                             useF4=args.useF4, constrCen=args.constrCen,
-                            checkCenter=args.checkCenter)
+                            checkCenter=args.checkCenter,
+                            deleteAfter=args.deleteAfter)
