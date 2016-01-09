@@ -42,6 +42,7 @@ import cubehelix
 cmap = cubehelix.cmap(start=-0.1, rot=-0.8, gamma=1.0, minSat=1.2, maxSat=1.2,
                       minLight=0.0, maxLight=1.0, reverse=True)
 cmap.set_bad('k', 1.)
+
 cmap2 = cubehelix.cmap(start=-0.2, rot=1., reverse=True)
 cmap2.set_bad('w', 1.)
 from palettable.colorbrewer.qualitative import Set1_9 as compColor
@@ -143,9 +144,9 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
     imgMod = arrOut[2].data
     imgRes = arrOut[3].data
     imgX, imgY = imgOri.shape
-    imin1, imax1 = hUtil.zscale(np.arcsinh(imgOri), contrast=0.02,
+    imin1, imax1 = hUtil.zscale(np.arcsinh(imgOri), contrast=0.04,
                                 samples=500)
-    imin2, imax2 = hUtil.zscale(np.arcsinh(imgMod), contrast=0.015,
+    imin2, imax2 = hUtil.zscale(np.arcsinh(imgMod), contrast=0.003,
                                 samples=500)
 
     if maskRes:
@@ -154,8 +155,10 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
             mskArr = fits.open(maskFile)[0].data
             imgMsk = mskArr[np.int(galOut.box_x0)-1:np.int(galOut.box_x1),
                             np.int(galOut.box_y0)-1:np.int(galOut.box_y1)]
-            resShow = imgRes
-            resShow[imgMsk > 0] == np.nan
+            resShow = copy.deepcopy(imgRes)
+            print resShow.shape
+            print imgMsk.shape
+            resShow[imgMsk > 0] = np.nan
         else:
             print "XXX Can not find the mask file : %s" % maskFile
             mskArr = None
@@ -163,7 +166,8 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
     else:
         resShow = imgRes
         mskArr = None
-    imin3, imax3 = hUtil.zscale(resShow, contrast=0.1, samples=500)
+    imin3, imax3 = hUtil.zscale(np.arcsinh(imgRes), contrast=0.5,
+                                samples=500)
 
     maxR = (np.max(np.asarray(compR)) * zoomLimit)
     if zoomSize is not None:
@@ -227,7 +231,7 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
     ax2.xaxis.set_major_formatter(NullFormatter())
     ax2.yaxis.set_major_formatter(NullFormatter())
     ax2.imshow(np.arcsinh(imgMod), interpolation="none",
-               vmax=imax2, cmap=cmap, vmin=1E-5, origin='lower')
+               vmax=imax2, cmap=cmap, vmin=1E-4, origin='lower')
     """ Contour """
     tam = np.size(imgMod, axis=0)
     contour_x = np.arange(tam)
