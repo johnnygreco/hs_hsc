@@ -1,27 +1,28 @@
 #!/usr/bin/env python
+"""
+Extract information from GALFIT output FITS file.
 
-# Extract information from GALFIT output FITS file
-#
-# This is based on astronomeralex's galfit-python-parser:
-#    https://github.com/astronomeralex/galfit-python-parser
-# Modified by Song Huang to include more features
-#
+This is based on astronomeralex's galfit-python-parser:
+    https://github.com/astronomeralex/galfit-python-parser
+Modified by Song Huang to include more features
+"""
 
 import re
 import numpy as np
 
 from astropy.io import fits
 
+
 class GalfitComponent(object):
-    """
-    stores results from one component of the fit
-    """
-    def __init__(self,galfitheader,component_number):
+    """Stores results from one component of the fit."""
+
+    def __init__(self, galfitheader, component_number):
         """
-        takes in the fits header from HDU 3 (the galfit model) from a galfit output file
-        and the component number to extract
+        Read GALFIT results from output file.
+
+        takes in the fits header from HDU 3 (the galfit model) from a
+        galfit output file and the component number to extract
         """
-        #checks
         assert component_number > 0
         assert "COMP_" + str(component_number) in galfitheader
 
@@ -38,50 +39,56 @@ class GalfitComponent(object):
         for param in comp_params:
             paramsplit = param.split('_')
             val = galfitheader[param]
-            #we know that val is a string formatted as 'result +/- uncertainty'
+            """
+            we know that val is a string formatted as 'result +/- uncertainty'
+            """
             if "{" in val and "}" in val:
                 print " ## One parameter is constrained !"
                 val = val.replace('{', '')
                 val = val.replace('}', '')
                 val = val.split()
                 print " ## Param - Value : ", param, val
-                setattr(self,paramsplit[1].lower(), float(val[0]))
-                setattr(self,paramsplit[1].lower() + '_err',np.nan)
+                setattr(self, paramsplit[1].lower(), float(val[0]))
+                setattr(self, paramsplit[1].lower() + '_err', np.nan)
             elif "[" in val and "]" in val:
                 print " ## One parameter is fixed !"
                 val = val.replace('[', '')
                 val = val.replace(']', '')
                 val = val.split()
                 print " ## Param - Value : ", param, val
-                setattr(self,paramsplit[1].lower(), float(val[0]))
-                setattr(self,paramsplit[1].lower() + '_err',np.nan)
+                setattr(self, paramsplit[1].lower(), float(val[0]))
+                setattr(self, paramsplit[1].lower() + '_err', np.nan)
             elif "*" in val:
                 print " ## One parameter is problematic !"
                 val = val.replace('*', '')
                 val = val.split()
                 print " ## Param - Value : ", param, val
-                setattr(self,paramsplit[1].lower(), float(val[0]))
-                setattr(self,paramsplit[1].lower() + '_err', -1.0)
+                setattr(self, paramsplit[1].lower(), float(val[0]))
+                setattr(self, paramsplit[1].lower() + '_err', -1.0)
                 setattr(self, 'good', True)
             else:
                 val = val.split()
-                setattr(self,paramsplit[1].lower(), float(val[0]))
-                setattr(self,paramsplit[1].lower() + '_err',float(val[2]))
+                setattr(self, paramsplit[1].lower(), float(val[0]))
+                setattr(self, paramsplit[1].lower() + '_err', float(val[2]))
 
 
 class GalfitResults(object):
+
     """
-    This class stores galfit results information
+    This class stores galfit results information.
+
     Currently only does one component
     """
-    def __init__(self, galfit_fits_file):
+
+    def __init__(self, galfit_fits_file, hduLength=3):
         """
-        init method for GalfitResults. Take in a string that is the name
-        of the galfit output fits file
+        Init method for GalfitResults.
+
+        Take in a string that is the name of the galfit output fits file
         """
         hdulist = fits.open(galfit_fits_file)
-        #now some checks to make sure the file is what we are expecting
-        assert len(hdulist) == 4
+        # Now some checks to make sure the file is what we are expecting
+        assert len(hdulist) == hduLength
         galfitmodel = hdulist[2]
         galfitheader = galfitmodel.header
         galfit_in_comments = False
@@ -89,10 +96,10 @@ class GalfitResults(object):
             galfit_in_comments = galfit_in_comments or "GALFIT" in i
         assert True == galfit_in_comments
         assert "COMP_1" in galfitheader
-        #now we've convinced ourselves that this is probably a galfit file
+        # Now we've convinced ourselves that this is probably a galfit file
 
         self.galfit_fits_file = galfit_fits_file
-        #read in the input parameters
+        # Read in the input parameters
         self.input_initfile = galfitheader['INITFILE']
         self.input_datain = galfitheader["DATAIN"]
         self.input_sigma = galfitheader["SIGMA"]
@@ -115,15 +122,15 @@ class GalfitResults(object):
         self.convbox_x = convbox[0]
         self.convbox_y = convbox[1]
 
-        #read in the chi-square value
+        # Read in the chi-square value
         self.chisq = galfitheader["CHISQ"]
         self.ndof = galfitheader["NDOF"]
         self.nfree = galfitheader["NFREE"]
         self.reduced_chisq = galfitheader["CHI2NU"]
         self.logfile = galfitheader["LOGFILE"]
 
-        #find the number of components
-        num_components = 1 #already verified above
+        # Find the number of components
+        num_components = 1
         while True:
             if "COMP_" + str(num_components + 1) in galfitheader:
                 num_components = num_components + 1
@@ -132,7 +139,7 @@ class GalfitResults(object):
         self.num_components = num_components
 
         for i in range(1, self.num_components + 1):
-            setattr(self,"component_" + str(i),GalfitComponent(galfitheader,i))
+            setattr(self, "component_" + str(i),
+                    GalfitComponent(galfitheader, i))
 
         hdulist.close()
-
