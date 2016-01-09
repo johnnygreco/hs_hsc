@@ -520,11 +520,14 @@ def imgSameSize(img1, img2):
         return False
 
 
-def readSbpInput(prefix, root=None, maskType='mskfin'):
+def readSbpInput(prefix, root=None, maskType='mskfin', extMsk=None):
     """Parse input data."""
     # Get the names of necessary input images
     imgFile = prefix + '_img.fits'
-    mskFile = prefix + '_' + maskType + '.fits'
+    if extMsk is not None:
+        mskFile = extMsk
+    else:
+        mskFile = prefix + '_' + maskType + '.fits'
 
     if root is not None:
         imgFile = os.path.join(root, imgFile)
@@ -919,7 +922,8 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
                             skyGrad=True, ser2Comp=True, ser3Comp=True,
                             useF4=False, useF1=False,
                             checkCenter=False, constrCen=True,
-                            deleteAfter=False, mskType='mskfin'):
+                            deleteAfter=False, maskType='mskfin',
+                            externalMask=None):
     """
     Run 1-Sersic fitting on HSC cutout image.
 
@@ -931,8 +935,13 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
         print SEP
     """ 0. Organize Input Data """
     # Read in the input image, mask, psf, and their headers
-    galInput = readSbpInput(prefix, root=root, mskType='mskfin')
+    """ Allow using external mask """
+    if externalMask is not None:
+        galInput = readSbpInput(prefix, root=root, extMsk=externalMask)
+    else:
+        galInput = readSbpInput(prefix, root=root, maskType=maskType)
     imgFile, imgArr, imgHead, mskFile, mskArr, mskHead = galInput
+
     if not imgSameSize(imgArr, mskArr):
         print WAR
         raise Exception("### The Image and Mask need to have " +
