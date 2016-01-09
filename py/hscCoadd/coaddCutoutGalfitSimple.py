@@ -946,6 +946,9 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
     else:
         galInput = readSbpInput(prefix, root=root, maskType=maskType)
     imgFile, imgArr, imgHead, mskFile, mskArr, mskHead = galInput
+    """ Absolute path of the image and mask """
+    imgFile = os.path.abspath(imgFile)
+    mskFile = os.path.abspath(mskFile)
 
     if not imgSameSize(imgArr, mskArr):
         print WAR
@@ -972,6 +975,8 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
             raise Exception(" XXX Can not find the PSF image : %s", psfFile)
         if os.path.islink(psfFile):
             psfFile = os.readlink(psfFile)
+        """ Absolute path of the PSF file"""
+        psfFile = os.path.abspath(psfFile)
     else:
         psfFile = ''
 
@@ -984,7 +989,8 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
             print WAR
             raise Exception(" XXX Can not find the Sigma image : %s", sigFile)
         if os.path.islink(sigFile):
-            psfFile = os.readlink(sigFile)
+            sigFile = os.readlink(sigFile)
+        sigFile = os.path.abspath(sigFile)
     else:
         sigFile = ''
 
