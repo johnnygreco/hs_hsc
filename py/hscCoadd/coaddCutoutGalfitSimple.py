@@ -336,7 +336,7 @@ def log2Readin(outFile, root=None, verbose=True):
 
 
 def generateSubcomp(readFile, root=None, galfit=None, separate=True,
-                    verbose=True):
+                    verbose=True, abspath=False):
     """Run Galfit -o3 to generate the model image of each component."""
     """ Find GALFIT """
     if galfit is None:
@@ -350,7 +350,8 @@ def generateSubcomp(readFile, root=None, galfit=None, separate=True,
         print WAR
         raise Exception("XXX Can not find the READIN file: %s", readFile)
     """ Absolute path of the read in file """
-    readFile = os.path.abspath(readFile)
+    if abspath:
+        readFile = os.path.abspath(readFile)
 
     """ GALFIT command """
     galfitCommand = galfit + ' -o3 ' + readFile
@@ -437,7 +438,8 @@ def getCenConstrFile(comps, location=None, name=None):
 
 def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
                    keepLog=True, show=True, expect=None, showZoom=False,
-                   zoomSize=None, removePsf=True, verbose=False):
+                   zoomSize=None, removePsf=True, verbose=False,
+                   abspath=False):
     """Run GALFIT."""
     """ Find GALFIT """
     if galfit is None:
@@ -450,7 +452,8 @@ def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
     if not os.path.isfile(readFile):
         raise Exception("XXX Can not find the READIN file: %s", readFile)
     """ Absolute path of the read in file """
-    readFile = os.path.abspath(readFile)
+    if abspath:
+        readFile = os.path.abspath(readFile)
 
     """ IMAX string """
     imaxStr = " -imax %4d" % imax
@@ -459,7 +462,7 @@ def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
     galfitCommand = galfit + ' ' + imaxStr + ' ' + readFile
 
     """ Excecute the command """
-    if root is not None:
+    if (root is not None) and abspath:
         proc = subprocess.Popen([galfitCommand], cwd=root, shell=True,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT)
@@ -932,7 +935,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
                             useF4=False, useF1=False,
                             checkCenter=False, constrCen=True,
                             deleteAfter=False, maskType='mskfin',
-                            externalMask=None):
+                            externalMask=None, abspath=False):
     """
     Run 1-Sersic fitting on HSC cutout image.
 
@@ -951,8 +954,9 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
         galInput = readSbpInput(prefix, root=root, maskType=maskType)
     imgFile, imgArr, imgHead, mskFile, mskArr, mskHead = galInput
     """ Absolute path of the image and mask """
-    imgFile = os.path.abspath(imgFile)
-    mskFile = os.path.abspath(mskFile)
+    if abspath:
+        imgFile = os.path.abspath(imgFile)
+        mskFile = os.path.abspath(mskFile)
 
     if not imgSameSize(imgArr, mskArr):
         print WAR
@@ -980,7 +984,8 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
         if os.path.islink(psfFile):
             psfFile = os.readlink(psfFile)
         """ Absolute path of the PSF file"""
-        psfFile = os.path.abspath(psfFile)
+        if abspath:
+            psfFile = os.path.abspath(psfFile)
     else:
         psfFile = ''
 
@@ -994,7 +999,8 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
             raise Exception(" XXX Can not find the Sigma image : %s", sigFile)
         if os.path.islink(sigFile):
             sigFile = os.readlink(sigFile)
-        sigFile = os.path.abspath(sigFile)
+        if abspath:
+            sigFile = os.path.abspath(sigFile)
     else:
         sigFile = ''
 
@@ -1230,6 +1236,8 @@ if __name__ == '__main__':
                         action="store_false", default=True)
     parser.add_argument('--deleteAfter', dest='deleteAfter',
                         action="store_true", default=False)
+    parser.add_argument('--abspath', dest='abspath',
+                        action="store_true", default=False)
 
     args = parser.parse_args()
 
@@ -1248,4 +1256,5 @@ if __name__ == '__main__':
                             useF4=args.useF4, constrCen=args.constrCen,
                             checkCenter=args.checkCenter,
                             deleteAfter=args.deleteAfter,
-                            externalMask=args.externalMask)
+                            externalMask=args.externalMask,
+                            abspath=args.abspath)
