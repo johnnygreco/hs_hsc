@@ -124,41 +124,41 @@ def run(args):
                 galMsk = None
 
             print '\n' + SEP
-            #try:
-            coaddCutoutGalfitSimple(galPrefix, root=galRoot,
-                                    rerun=rerun,
-                                    pix=args.pix,
-                                    zp=args.zp,
-                                    verbose=args.verbose,
-                                    useBkg=args.useBkg,
-                                    usePsf=args.usePsf,
-                                    useSig=args.useSig,
-                                    model=args.model,
-                                    mag=args.mag,
-                                    run1=args.run1,
-                                    run2=args.run2,
-                                    run3=args.run3,
-                                    skyGrad=args.skyGrad,
-                                    ser2Comp=args.ser2Comp,
-                                    ser3Comp=args.ser3Comp,
-                                    useF4=args.useF4,
-                                    useF1=args.useF1,
-                                    checkCenter=args.checkCenter,
-                                    constrCen=args.constrCen,
-                                    deleteAfter=args.deleteAfter,
-                                    maskType=args.maskType,
-                                    externalMask=galMsk,
-                                    abspath=args.abspath,
-                                    imax=args.imax)
-            logging.info('### The Galfit Run is DONE for %s' % galPrefix)
-            print SEP
-            #except Exception, errMsg:
-                #print str(errMsg)
-                #warnings.warn('### The Galfit Run is failed for %s' %
-                              #galPrefix)
-                #logging.warning('### The Galfit Run is FAILED for %s' %
-                                #galPrefix)
-                #print SEP + '\n'
+            try:
+                coaddCutoutGalfitSimple(galPrefix, root=galRoot,
+                                        rerun=rerun,
+                                        pix=args.pix,
+                                        zp=args.zp,
+                                        verbose=args.verbose,
+                                        useBkg=args.useBkg,
+                                        usePsf=args.usePsf,
+                                        useSig=args.useSig,
+                                        model=args.model,
+                                        mag=args.mag,
+                                        run1=args.run1,
+                                        run2=args.run2,
+                                        run3=args.run3,
+                                        skyGrad=args.skyGrad,
+                                        ser2Comp=args.ser2Comp,
+                                        ser3Comp=args.ser3Comp,
+                                        useF4=args.useF4,
+                                        useF1=args.useF1,
+                                        checkCenter=args.checkCenter,
+                                        constrCen=args.constrCen,
+                                        deleteAfter=args.deleteAfter,
+                                        maskType=args.maskType,
+                                        externalMask=galMsk,
+                                        abspath=args.abspath,
+                                        imax=args.imax)
+                logging.info('### The Galfit Run is DONE for %s' % galPrefix)
+                print SEP
+            except Exception, errMsg:
+                print str(errMsg)
+                warnings.warn('### The Galfit Run is failed for %s' %
+                              galPrefix)
+                logging.warning('### The Galfit Run is FAILED for %s' %
+                                galPrefix)
+                print SEP + '\n'
 
             if psutilOk:
                 mem1 = proc.memory_info().rss
