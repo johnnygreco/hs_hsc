@@ -1036,7 +1036,8 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
         galR50 = galRe
 
     """ 0g. Convolution Box Size """
-    convbox = int(galR50 * 26.0)
+    convbox = int(galR50 * 32.0)
+    convbox = convbox if convbox >= 600 else 600
     convbox = convbox if convbox <= int(dimX*0.9) else int(dimX*0.9)
 
     if verbose:
