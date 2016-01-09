@@ -957,6 +957,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
     if abspath:
         imgFile = os.path.abspath(imgFile)
         mskFile = os.path.abspath(mskFile)
+        filePath = os.path.dirname(os.path.abspath(mskFile))
 
     if not imgSameSize(imgArr, mskArr):
         print WAR
@@ -1030,9 +1031,13 @@ def coaddCutoutGalfitSimple(prefix, root=None, pix=0.168, useBkg=True,
 
     """ 0e. Output File """
     if outFile is None:
-        outFile = prefix + '_1ser' + suffix + '.fits'
+        outModel = prefix + '_1ser' + suffix + '.fits'
         if root is not None:
-            outFile = os.path.join(root, outFile)
+            outFile = os.path.join(root, outModel)
+        else:
+            outFile = outModel
+        if abspath:
+            outFile = os.path.join(filePath, outModel)
 
     """ 0f. Prepare the Input for SBP """
     if (galX0 is None) or (galY0 is None):
