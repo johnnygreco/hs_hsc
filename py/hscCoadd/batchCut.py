@@ -69,7 +69,7 @@ if __name__ == '__main__':
                         default=False)
     parser.add_argument('-v', '--verbose', action="store_true", dest='verbose',
                         default=False)
-    parser.add_argument('-src', '--src', action="store_true", dest='saveSrc',
+    parser.add_argument('-ns', '--noSrc', action="store_false", dest='saveSrc',
                         default=True)
     parser.add_argument('-makeDir', '--makeDir', action="store_true",
                         dest='makeDir', default=True)
