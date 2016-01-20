@@ -1784,7 +1784,8 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     """
     Combine them into the final mask
     """
-    mskFinal = (mskG1 | mskG2 | mskG3 | segMsk)
+    #mskFinal = (mskG1 | mskG2 | mskG3 | segMsk)
+    mskFinal = (mskG1 | mskG2 | mskG3)
     if multiMask:
         mskSmall = (mskSG1 | mskSG2 | mskSG3 | segSMsk)
         mskLarge = (mskLG1 | mskLG2 | mskLG3 | segLMsk)
@@ -1815,7 +1816,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         if verbose:
             print SEP
             print "###    Combine the final mask with the HSC DETECTION MASK!"
-        #mskFinal = combMskImage(mskFinal, detMskConv)
+        mskFinal = combMskImage(mskFinal, detMskConv)
         if multiMask:
             mskSmall = combMskImage(mskSmall, detSMskConv)
             mskLarge = combMskImage(mskLarge, detLMskConv)
