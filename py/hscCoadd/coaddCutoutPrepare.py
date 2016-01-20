@@ -1301,7 +1301,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         detMsk = copy.deepcopy(detArr).astype(int)
         detMsk[mskGal > 0] = 0
         detMsk[detMsk > 0] = 1
-        detMskConv = seg2Mask(detMsk, sigma=6.0, mskThr=0.02)
+        detMskConv = seg2Mask(detMsk, sigma=sigma, mskThr=sigthr)
 
     """
     Estimate the distance to the central galaxies in the elliptical coordinates
@@ -1815,7 +1815,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         if verbose:
             print SEP
             print "###    Combine the final mask with the HSC DETECTION MASK!"
-        mskFinal = combMskImage(mskFinal, detMskConv)
+        #mskFinal = combMskImage(mskFinal, detMskConv)
         if multiMask:
             mskSmall = combMskImage(mskSmall, detSMskConv)
             mskLarge = combMskImage(mskLarge, detLMskConv)
