@@ -1745,9 +1745,9 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         sep.mask_ellipse(mskLG1, objLG1['x'], objLG1['y'], objLG1['a'],
                          objLG1['b'], objLG1['theta'], r=2.5)
         sep.mask_ellipse(mskLG2, objLG2['x'], objLG2['y'], objLG2['a'],
-                         objLG2['b'], objLG2['theta'], r=5.0)
+                         objLG2['b'], objLG2['theta'], r=5.5)
         sep.mask_ellipse(mskLG3, objLG3['x'], objLG3['y'], objLG3['a'],
-                         objLG3['b'], objLG3['theta'], r=7.0)
+                         objLG3['b'], objLG3['theta'], r=7.5)
         segLOut = copy.deepcopy(segH)
         objExclude = (np.where(cenDistH <= galR2)[0] + 1)
         for index in objExclude:
@@ -1775,12 +1775,12 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         objExclude = (np.where(cenDistH <= galR2)[0] + 1)
         for index in objExclude:
             segSOut[segH == index] = 0
-        segSMsk = seg2Mask(segSOut, sigma=6.0, mskThr=0.020)
+        segSMsk = seg2Mask(segSOut, sigma=6.0, mskThr=0.01)
         if detFound:
             detSMsk = copy.deepcopy(detArr).astype(int)
             detSMsk[mskGal > 0] = 0
             detSMsk[detSMsk > 0] = 1
-            detSMskConv = seg2Mask(detSMsk, sigma=5.0, mskThr=0.02)
+            detSMskConv = seg2Mask(detSMsk, sigma=6.0, mskThr=0.01)
     """
     Combine them into the final mask
     """
