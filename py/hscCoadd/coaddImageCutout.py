@@ -202,36 +202,36 @@ def getCoaddBadMsk(calExp, pipeNew=False):
 
     badMsk = copy.deepcopy(mskImg)
     # Clear the "DETECTED" plane
-    badMsk.clearMaskPlane('DETECTED', True)
+    badMsk.removeAndClearMaskPlane('DETECTED', True)
     try:
         # Clear the "EDGE" plane
-        badMsk.clearMaskPlane('EDGE', True)
+        badMsk.removeAndClearMaskPlane('EDGE', True)
     except Exception:
         pass
     try:
         # Clear the "DETECTED_NEGATIVE" plane
-        badMsk.clearMaskPlane('DETECTED_NEGATIVE', True)
+        badMsk.removeAndClearMaskPlane('DETECTED_NEGATIVE', True)
     except Exception:
         pass
     try:
         # Clear the "CLIPPED" plane
-        badMsk.clearMaskPlane('CLIPPED', True)
+        badMsk.removeAndClearMaskPlane('CLIPPED', True)
     except Exception:
         pass
     try:
         # Clear the "CROSSTALK" plane
-        badMsk.clearMaskPlane('CROSSTALK', True)
+        badMsk.removeAndClearMaskPlane('CROSSTALK', True)
     except Exception:
         pass
     if pipeNew:
         try:
             # Clear the "NOT_DEBLENDED" plane
-            badMsk.clearMaskPlane('NOT_DEBLENDED', True)
+            badMsk.removeAndClearMaskPlane('NOT_DEBLENDED', True)
         except Exception:
             pass
         try:
             # Clear the "BRIGHT_OBJECT" plane
-            badMsk.clearMaskPlane('BRIGHT_OBJECT', True)
+            badMsk.removeAndClearMaskPlane('BRIGHT_OBJECT', True)
         except Exception:
             pass
 
@@ -768,18 +768,19 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
             else:
                 # Extract the image array
                 imgArr.append(subImage.getMaskedImage().getImage().getArray())
-                # Extract the bad mask array
-                mskBad = getCoaddBadMsk(subImage, pipeNew=pipeNew)
-                mskArr.append(mskBad.getArray())
                 # Extract the detect mask array
                 mskDet = getCoaddMskPlane(subImage, 'DETECTED')
                 detArr.append(mskDet.getArray())
                 # Extract the variance array
                 imgVar = subImage.getMaskedImage().getVariance().getArray()
                 varArr.append(imgVar)
+
+                # Extract the bad mask array
+                mskBad = getCoaddBadMsk(subImage, pipeNew=pipeNew)
+                mskArr.append(mskBad.getArray())
                 # Get the source catalog
-                noFootprint = afwTable.SOURCE_IO_NO_FOOTPRINTS
                 if saveSrc:
+                    noFootprint = afwTable.SOURCE_IO_NO_FOOTPRINTS
                     print SEP
                     print "### Search the source catalog...."
                     """
