@@ -1757,7 +1757,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
             detLMsk = copy.deepcopy(detArr).astype(int)
             detLMsk[mskGal > 0] = 0
             detLMsk[detLMsk > 0] = 1
-            detLMskConv = seg2Mask(detLMsk, sigma=8.0, mskThr=0.02)
+            detLMskConv = seg2Mask(detLMsk, sigma=9.0, mskThr=0.02)
         # Loose one
         objSG1 = objNoCen[indG1]
         objSG2 = objNoCen[indG2]
@@ -1768,9 +1768,9 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         sep.mask_ellipse(mskSG1, objSG1['x'], objSG1['y'], objSG1['a'],
                          objSG1['b'], objSG1['theta'], r=1.5)
         sep.mask_ellipse(mskSG2, objSG2['x'], objSG2['y'], objSG2['a'],
-                         objSG2['b'], objSG2['theta'], r=3.0)
+                         objSG2['b'], objSG2['theta'], r=3.5)
         sep.mask_ellipse(mskSG3, objSG3['x'], objSG3['y'], objSG3['a'],
-                         objSG3['b'], objSG3['theta'], r=5.0)
+                         objSG3['b'], objSG3['theta'], r=5.5)
         segSOut = copy.deepcopy(segH)
         objExclude = (np.where(cenDistH <= galR2)[0] + 1)
         for index in objExclude:
