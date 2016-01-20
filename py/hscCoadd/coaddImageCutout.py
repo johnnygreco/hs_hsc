@@ -192,25 +192,47 @@ def getCoaddMskPlane(calExp, bitmask):
     return newMsk
 
 
-def getCoaddBadMsk(calExp):
+def getCoaddBadMsk(calExp, pipeNew=False):
     """Get the BAD mask plane."""
     mskImg = calExp.getMaskedImage().getMask()
 
     badMsk = copy.deepcopy(mskImg)
-    # Clear the "EDGE" plane
-    badMsk.removeAndClearMaskPlane('EDGE', True)
-    # Clear the "DETECTED" plane
-    badMsk.removeAndClearMaskPlane('DETECTED', True)
-    # Clear the "DETECTED_NEGATIVE" plane
-    badMsk.removeAndClearMaskPlane('DETECTED_NEGATIVE', True)
-    # Clear the "CLIPPED" plane
-    badMsk.removeAndClearMaskPlane('CLIPPED', True)
-    # Clear the "CROSSTALK" plane
-    badMsk.removeAndClearMaskPlane('CROSSTALK', True)
-    # Clear the "NOT_DEBLENDED" plane
-    badMsk.removeAndClearMaskPlane('NOT_DEBLENDED', True)
-    # Clear the "BRIGHT_OBJECT" plane
-    badMsk.removeAndClearMaskPlane('BRIGHT_OBJECT', True)
+    try:
+        # Clear the "EDGE" plane
+        badMsk.removeAndClearMaskPlane('EDGE', True)
+    except Exception:
+        pass
+    try:
+        # Clear the "DETECTED" plane
+        badMsk.removeAndClearMaskPlane('DETECTED', True)
+    except Exception:
+        pass
+    try:
+        # Clear the "DETECTED_NEGATIVE" plane
+        badMsk.removeAndClearMaskPlane('DETECTED_NEGATIVE', True)
+    except Exception:
+        pass
+    try:
+        # Clear the "CLIPPED" plane
+        badMsk.removeAndClearMaskPlane('CLIPPED', True)
+    except Exception:
+        pass
+    try:
+        # Clear the "CROSSTALK" plane
+        badMsk.removeAndClearMaskPlane('CROSSTALK', True)
+    except Exception:
+        pass
+    if pipeNew:
+        try:
+            # Clear the "NOT_DEBLENDED" plane
+            badMsk.removeAndClearMaskPlane('NOT_DEBLENDED', True)
+        except Exception:
+            pass
+        try:
+            # Clear the "BRIGHT_OBJECT" plane
+            badMsk.removeAndClearMaskPlane('BRIGHT_OBJECT', True)
+        except Exception:
+            pass
 
     return badMsk
 
@@ -579,8 +601,10 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
     print "### hscPipe Version: %s" % pipeVersion
     if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
         coaddData = "deepCoadd_calexp"
+        pipeNew = True
     else:
         coaddData = "deepCoadd"
+        pipeNew = False
 
     # Get the SkyMap of the database
     if butler is None:
@@ -744,7 +768,7 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                 # Extract the image array
                 imgArr.append(subImage.getMaskedImage().getImage().getArray())
                 # Extract the bad mask array
-                mskBad = getCoaddBadMsk(subImage)
+                mskBad = getCoaddBadMsk(subImage, pipeNew=pipeNew)
                 mskArr.append(mskBad.getArray())
                 # Extract the detect mask array
                 mskDet = getCoaddMskPlane(subImage, 'DETECTED')
