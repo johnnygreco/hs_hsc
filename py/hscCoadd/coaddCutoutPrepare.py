@@ -1784,8 +1784,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     """
     Combine them into the final mask
     """
-    #mskFinal = (mskG1 | mskG2 | mskG3 | segMsk)
-    mskFinal = (mskG1 | mskG2 | mskG3)
+    mskFinal = (mskG1 | mskG2 | mskG3 | segMsk)
     if multiMask:
         mskSmall = (mskSG1 | mskSG2 | mskSG3 | segSMsk)
         mskLarge = (mskLG1 | mskLG2 | mskLG3 | segLMsk)

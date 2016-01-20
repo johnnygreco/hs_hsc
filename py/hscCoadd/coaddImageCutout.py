@@ -201,40 +201,37 @@ def getCoaddBadMsk(calExp, pipeNew=False):
     mskImg = calExp.getMaskedImage().getMask()
 
     badMsk = copy.deepcopy(mskImg)
+    # Clear the "DETECTED" plane
+    badMsk.clearMaskPlane('DETECTED', True)
     try:
         # Clear the "EDGE" plane
-        badMsk.removeMaskPlane('EDGE', True)
-    except Exception:
-        pass
-    try:
-        # Clear the "DETECTED" plane
-        badMsk.removeMaskPlane('DETECTED', True)
+        badMsk.clearMaskPlane('EDGE', True)
     except Exception:
         pass
     try:
         # Clear the "DETECTED_NEGATIVE" plane
-        badMsk.removeMaskPlane('DETECTED_NEGATIVE', True)
+        badMsk.clearMaskPlane('DETECTED_NEGATIVE', True)
     except Exception:
         pass
     try:
         # Clear the "CLIPPED" plane
-        badMsk.removeMaskPlane('CLIPPED', True)
+        badMsk.clearMaskPlane('CLIPPED', True)
     except Exception:
         pass
     try:
         # Clear the "CROSSTALK" plane
-        badMsk.removeMaskPlane('CROSSTALK', True)
+        badMsk.clearMaskPlane('CROSSTALK', True)
     except Exception:
         pass
     if pipeNew:
         try:
             # Clear the "NOT_DEBLENDED" plane
-            badMsk.removeMaskPlane('NOT_DEBLENDED', True)
+            badMsk.clearMaskPlane('NOT_DEBLENDED', True)
         except Exception:
             pass
         try:
             # Clear the "BRIGHT_OBJECT" plane
-            badMsk.removeMaskPlane('BRIGHT_OBJECT', True)
+            badMsk.clearMaskPlane('BRIGHT_OBJECT', True)
         except Exception:
             pass
 
