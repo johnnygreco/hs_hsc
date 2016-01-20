@@ -1745,14 +1745,14 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         sep.mask_ellipse(mskLG1, objLG1['x'], objLG1['y'], objLG1['a'],
                          objLG1['b'], objLG1['theta'], r=2.5)
         sep.mask_ellipse(mskLG2, objLG2['x'], objLG2['y'], objLG2['a'],
-                         objLG2['b'], objLG2['theta'], r=5.5)
+                         objLG2['b'], objLG2['theta'], r=4.0)
         sep.mask_ellipse(mskLG3, objLG3['x'], objLG3['y'], objLG3['a'],
-                         objLG3['b'], objLG3['theta'], r=7.5)
+                         objLG3['b'], objLG3['theta'], r=6.8)
         segLOut = copy.deepcopy(segH)
         objExclude = (np.where(cenDistH <= galR2)[0] + 1)
         for index in objExclude:
             segLOut[segH == index] = 0
-        segLMsk = seg2Mask(segLOut, sigma=9.0, mskThr=0.012)
+        segLMsk = seg2Mask(segLOut, sigma=9.0, mskThr=0.01)
         if detFound:
             detLMsk = copy.deepcopy(detArr).astype(int)
             detLMsk[mskGal > 0] = 0
@@ -1768,19 +1768,19 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         sep.mask_ellipse(mskSG1, objSG1['x'], objSG1['y'], objSG1['a'],
                          objSG1['b'], objSG1['theta'], r=1.5)
         sep.mask_ellipse(mskSG2, objSG2['x'], objSG2['y'], objSG2['a'],
-                         objSG2['b'], objSG2['theta'], r=3.5)
+                         objSG2['b'], objSG2['theta'], r=2.5)
         sep.mask_ellipse(mskSG3, objSG3['x'], objSG3['y'], objSG3['a'],
                          objSG3['b'], objSG3['theta'], r=5.5)
         segSOut = copy.deepcopy(segH)
         objExclude = (np.where(cenDistH <= galR2)[0] + 1)
         for index in objExclude:
             segSOut[segH == index] = 0
-        segSMsk = seg2Mask(segSOut, sigma=6.0, mskThr=0.01)
+        segSMsk = seg2Mask(segSOut, sigma=6.5, mskThr=0.01)
         if detFound:
             detSMsk = copy.deepcopy(detArr).astype(int)
             detSMsk[mskGal > 0] = 0
             detSMsk[detSMsk > 0] = 1
-            detSMskConv = seg2Mask(detSMsk, sigma=6.0, mskThr=0.01)
+            detSMskConv = seg2Mask(detSMsk, sigma=6.5, mskThr=0.01)
     """
     Combine them into the final mask
     """
