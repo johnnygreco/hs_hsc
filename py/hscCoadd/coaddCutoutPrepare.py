@@ -1743,21 +1743,21 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         mskLG2 = np.zeros(imgArr.shape, dtype='uint8')
         mskLG3 = np.zeros(imgArr.shape, dtype='uint8')
         sep.mask_ellipse(mskLG1, objLG1['x'], objLG1['y'], objLG1['a'],
-                         objLG1['b'], objLG1['theta'], r=2.5)
+                         objLG1['b'], objLG1['theta'], r=2.4)
         sep.mask_ellipse(mskLG2, objLG2['x'], objLG2['y'], objLG2['a'],
-                         objLG2['b'], objLG2['theta'], r=4.0)
+                         objLG2['b'], objLG2['theta'], r=3.5)
         sep.mask_ellipse(mskLG3, objLG3['x'], objLG3['y'], objLG3['a'],
-                         objLG3['b'], objLG3['theta'], r=6.8)
+                         objLG3['b'], objLG3['theta'], r=6.5)
         segLOut = copy.deepcopy(segH)
         objExclude = (np.where(cenDistH <= galR2)[0] + 1)
         for index in objExclude:
             segLOut[segH == index] = 0
-        segLMsk = seg2Mask(segLOut, sigma=9.0, mskThr=0.01)
+        segLMsk = seg2Mask(segLOut, sigma=9.2, mskThr=0.01)
         if detFound:
             detLMsk = copy.deepcopy(detArr).astype(int)
             detLMsk[mskGal > 0] = 0
             detLMsk[detLMsk > 0] = 1
-            detLMskConv = seg2Mask(detLMsk, sigma=9.0, mskThr=0.02)
+            detLMskConv = seg2Mask(detLMsk, sigma=9.2, mskThr=0.01)
         # Loose one
         objSG1 = objNoCen[indG1]
         objSG2 = objNoCen[indG2]
@@ -1770,7 +1770,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         sep.mask_ellipse(mskSG2, objSG2['x'], objSG2['y'], objSG2['a'],
                          objSG2['b'], objSG2['theta'], r=2.5)
         sep.mask_ellipse(mskSG3, objSG3['x'], objSG3['y'], objSG3['a'],
-                         objSG3['b'], objSG3['theta'], r=5.5)
+                         objSG3['b'], objSG3['theta'], r=5.0)
         segSOut = copy.deepcopy(segH)
         objExclude = (np.where(cenDistH <= galR2)[0] + 1)
         for index in objExclude:
