@@ -1305,7 +1305,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         detMsk = copy.deepcopy(detArr).astype(int)
         detMsk[mskGal > 0] = 0
         detMsk[detMsk > 0] = 1
-        detMskConv = seg2Mask(detMsk, sigma=sigma, mskThr=sigthr)
+        detMskConv = seg2Mask(detMsk, sigma=2.0, mskThr=sigthr)
 
     """
     Estimate the distance to the central galaxies in the elliptical coordinates
@@ -1733,6 +1733,12 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     objExclude = (np.where(cenDistH <= galR1)[0] + 1)
     for index in objExclude:
         segOut[segH == index] = 0
+    """
+    Remove the faint objects from the segmentation map
+    """
+    for index, obj in enumerate(objH):
+        if (-2.5 * np.log10(obj['cflux']) + photZP) >= 19.5:
+            segOut[segH == (index + 1)] = 0
     segMsk = seg2Mask(segOut, sigma=sigma, mskThr=sigthr)
 
     """
