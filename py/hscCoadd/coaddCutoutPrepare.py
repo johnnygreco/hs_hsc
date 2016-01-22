@@ -295,8 +295,8 @@ def showSEPImage(image, contrast=0.2, size=10, cmap=cmap1,
                  title='Image', pngName='sep.png', titleInside=True,
                  ellList1=None, ellList2=None, ellList3=None,
                  ellColor1='b', ellColor2='r', ellColor3='g',
-                 ell1=None, ell2=None, ell3=None,
-                 ax=None, mask=None):
+                 ell1=None, ell2=None, ell3=None, ellColor4='k',
+                 ax=None, mask=None, mskAlpha=0.4):
     """
     Visualization of the results.
 
@@ -323,11 +323,14 @@ def showSEPImage(image, contrast=0.2, size=10, cmap=cmap1,
 
     imcopy = copy.deepcopy(image)
     imin, imax = hUtil.zscale(imcopy, contrast=contrast, samples=500)
-    if mask is not None:
-        imcopy[mask > 0] = np.nan
 
     ax.imshow(np.arcsinh(imcopy), interpolation="none",
               vmin=imin, vmax=imax, cmap=cmap, origin='lower')
+
+    if mask is not None:
+        # imcopy[mask > 0] = np.nan
+        ax.imshow(mask, interpolation="none", vmin=0, vmax=1, origin='lower',
+                  alpha=mskAlpha, cmap='gray_r')
 
     if ellList1 is not None:
         for e in ellList1:
@@ -369,18 +372,18 @@ def showSEPImage(image, contrast=0.2, size=10, cmap=cmap1,
         ax.add_artist(ell2)
         ell2.set_clip_box(ax.bbox)
         ell2.set_alpha(0.8)
-        ell2.set_edgecolor('k')
+        ell2.set_edgecolor(ellColor4)
         ell2.set_facecolor('none')
-        ell2.set_linewidth(2.0)
+        ell2.set_linewidth(2.5)
         ell2.set_linestyle('dashed')
 
     if ell3 is not None:
         ax.add_artist(ell3)
         ell3.set_clip_box(ax.bbox)
         ell3.set_alpha(0.8)
-        ell3.set_edgecolor('k')
+        ell3.set_edgecolor(ellColor4)
         ell3.set_facecolor('none')
-        ell3.set_linewidth(2.0)
+        ell3.set_linewidth(2.5)
         ell3.set_linestyle('dashed')
 
     fig.savefig(pngName)
@@ -1289,10 +1292,11 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         sepFlags = addFlag(sepFlags, 'R3_BIG', False)
     """
     Define a region that encloses the entire galaxy
+
     """
     mskGal = np.zeros(imgSubC.shape, dtype='uint8')
-    sep.mask_ellipse(mskGal, galX, galY, (galR3 * 1.2),
-                     (galR3 * 1.2 * galQ),
+    sep.mask_ellipse(mskGal, galX, galY, galR3,
+                     (galR3 * galQ),
                      (galPA * np.pi / 180.0), r=1.1)
     """
     Clear up the DETECTION mask plane in this region
@@ -1722,7 +1726,11 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
                    pkl=False, reg=True)
 
     segOut = copy.deepcopy(segH)
-    objExclude = (np.where(cenDistH <= galR2)[0] + 1)
+    """
+    Remove the segmentations of objects inside a radius:
+        R1 will be more aggressive
+    """
+    objExclude = (np.where(cenDistH <= galR1)[0] + 1)
     for index in objExclude:
         segOut[segH == index] = 0
     segMsk = seg2Mask(segOut, sigma=sigma, mskThr=sigthr)
@@ -1899,15 +1907,52 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         """ Fig.g """
         mskPNG2 = os.path.join(
             rerunDir, (prefix + '_' + suffix + 'mskfin.png'))
+        ellA = Ellipse(xy=(galX, galY),
+                       width=(2.0 * galR2 * galQ),
+                       height=(2.0 * galR2),
+                       angle=(galPA + 90.0))
+        ellB = Ellipse(xy=(galX, galY),
+                       width=(2.0 * galR3 * galQ),
+                       height=(2.0 * galR3),
+                       angle=(galPA + 90.0))
+        objEllG1 = getEll2Plot(objG1)
+        objEllG2 = getEll2Plot(objG2)
+        objEllG3 = getEll2Plot(objG3)
         showSEPImage(imgArr, contrast=0.75, title='Mask - Final',
-                     pngName=mskPNG2, mask=mskFinal)
+                     pngName=mskPNG2, mask=mskFinal,
+                     ellList1=objEllG1, ellColor1='green',
+                     ellList2=objEllG2, ellColor2='orange',
+                     ellList3=objEllG3, ellColor3='m',
+                     ell2=ellA, ell3=ellB, ellColor4='b')
         if multiMask:
             mskPNG3 = mskPNG2.replace('mskfin', 'msksmall')
             mskPNG4 = mskPNG2.replace('mskfin', 'msklarge')
+            ellA = Ellipse(xy=(galX, galY),
+                           width=(2.0 * galR2 * galQ),
+                           height=(2.0 * galR2),
+                           angle=(galPA + 90.0))
+            ellB = Ellipse(xy=(galX, galY),
+                           width=(2.0 * galR3 * galQ),
+                           height=(2.0 * galR3),
+                           angle=(galPA + 90.0))
+            objEllAll = getEll2Plot(objComb, radius=r90)
             showSEPImage(imgArr, contrast=0.75, title='Mask - Small',
-                         pngName=mskPNG3, mask=mskSmall)
+                         pngName=mskPNG3, mask=mskSmall,
+                         ellList1=objEllAll, ellColor1='m',
+                         ell2=ellA, ell3=ellB, ellColor4='b')
+            ellA = Ellipse(xy=(galX, galY),
+                           width=(2.0 * galR2 * galQ),
+                           height=(2.0 * galR2),
+                           angle=(galPA + 90.0))
+            ellB = Ellipse(xy=(galX, galY),
+                           width=(2.0 * galR3 * galQ),
+                           height=(2.0 * galR3),
+                           angle=(galPA + 90.0))
+            objEllAll = getEll2Plot(objComb, radius=r90)
             showSEPImage(imgArr, contrast=0.75, title='Mask - Large',
-                         pngName=mskPNG4, mask=mskLarge)
+                         pngName=mskPNG4, mask=mskLarge,
+                         ellList1=objEllAll, ellColor1='m',
+                         ell2=ellA, ell3=ellB, ellColor4='b')
     """
     9. Visualize the detected objects, and find the ones need to be fit
     Make a few plots
