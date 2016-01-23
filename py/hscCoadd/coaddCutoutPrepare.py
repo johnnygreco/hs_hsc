@@ -1212,6 +1212,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Get their shapes and sizes
     """
     galFlux = objC[cenObjIndexC]['cflux']
+    galA = objC[cenObjIndexC]['a']
     galCenX = objC[cenObjIndexC]['x']
     galCenY = objC[cenObjIndexC]['y']
     if verbose:
@@ -1304,7 +1305,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         detMsk = copy.deepcopy(detArr).astype(int)
         detMsk[mskGal > 0] = 0
         detMsk[detMsk > 0] = 1
-        detMskConv = seg2Mask(detMsk, sigma=3.0, mskThr=sigthr)
+        detMskConv = seg2Mask(detMsk, sigma=3.5, mskThr=sigthr)
 
     """
     Estimate the distance to the central galaxies in the elliptical coordinates
@@ -1395,6 +1396,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     """
     cenDistComb = objDistTo(objComb, galX, galY, pa=galPA, q=galQ)
     cenObjIndex = np.argmin(cenDistComb)
+
     if verbose:
         print "###    %d objects are left in the combined list" % len(objComb)
     if visual and showAll:
@@ -1475,8 +1477,8 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         """
         Convolve the segmentations into a masks
         """
-        segMskAC = seg2Mask(segC, sigma=9.0, mskThr=0.01)
-        segMskAH = seg2Mask(segH, sigma=sigma, mskThr=0.01)
+        segMskAC = seg2Mask(segC, sigma=(sigma + 2.0), mskThr=sigthr)
+        segMskAH = seg2Mask(segH, sigma=sigma, mskThr=sigthr)
         mskAll = combMskImage(segMskAC, segMskAH)
         objMskAll['a'] = growMsk * rMajor
         objMskAll['b'] = growMsk * rMinor
@@ -1511,7 +1513,10 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     if combBad and badFound:
         mskAll = combMskImage(mskAll, mskArr)
     if combDet and detFound:
-        mskAll = combMskImage(mskAll, detArr)
+        detAll = copy.deepcopy(detArr).astype(int)
+        detMskAll = seg2Mask(detAll, sigma=(sigma - 2.0), mskThr=sigthr)
+        mskAll = combMskImage(mskAll, detMskAll)
+
     """
     Also mask out the NaN pixels
     """
@@ -1572,8 +1577,13 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         distNoCen = np.delete(distNoCen, indCen)
     if len(indCen[0]) > 1:
         sepFlags = addFlag(sepFlags, 'MULTICEN', True)
+        objCen = objComb[indCen[0][0]]
     else:
         sepFlags = addFlag(sepFlags, 'MULTICEN', False)
+        objCen = objComb[indCen]
+    """
+    Properties of the central object
+    """
 
     """
     7. Convert the list of SEP detections to initial guess of 1-Comp
@@ -1735,6 +1745,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     """
     radLimit = 20.0  # pixel
     magLimit = 20.5
+
     segHnew = copy.deepcopy(segH)
     objExcludeH = (np.where(cenDistH <= radLimit)[0] + 1)
     for index in objExcludeH:
@@ -1758,9 +1769,27 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Remove the faint objects from the segmentation map
     """
     for index, obj in enumerate(objC):
-        if (-2.5 * np.log10(obj['cflux']) + photZP) >= (magLimit - 0.5):
+        if (-2.5 * np.log10(obj['cflux']) + photZP) >= (magLimit - 1.5):
             segCnew[segC == (index + 1)] = 0
-    segMskC = seg2Mask(segCnew, sigma=(sigma + 2.5), mskThr=sigthr)
+    segMskC = seg2Mask(segCnew, sigma=(sigma + 3.5), mskThr=sigthr)
+
+    """
+    Isolate the bright and/or big objects that are not too close
+    to the center
+
+    * A few more moving parts
+    """
+    segBig = copy.deepcopy(segC)
+    indBig = []
+    for index, obj in enumerate(objC):
+        if ((cenDistC[index] <= (galR2 / 2.0)) or
+           (obj['flux'] <= galFlux * 0.3) or
+           (obj['a'] <= galA * 0.3)):
+            segBig[segC == (index + 1)] = 0
+        else:
+            indBig.append(index)
+    segMskBig = seg2Mask(segBig, sigma=14.0, mskThr=sigthr)
+    objBig = objC[indBig]
 
     """
     MultiMask Mode
@@ -1779,16 +1808,16 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         sep.mask_ellipse(mskLG1, objLG1['x'], objLG1['y'], objLG1['a'],
                          objLG1['b'], objLG1['theta'], r=(growH + 0.2))
         sep.mask_ellipse(mskLG2, objLG2['x'], objLG2['y'], objLG2['a'],
-                         objLG2['b'], objLG2['theta'], r=(growW + 0.4))
+                         objLG2['b'], objLG2['theta'], r=(growW + 0.5))
         sep.mask_ellipse(mskLG3, objLG3['x'], objLG3['y'], objLG3['a'],
-                         objLG3['b'], objLG3['theta'], r=(growC + 0.8))
+                         objLG3['b'], objLG3['theta'], r=(growC + 1.0))
         segMskLH = seg2Mask(segHnew, sigma=(sigma + 1.0), mskThr=sigthr)
-        segMskLC = seg2Mask(segCnew, sigma=(sigma + 1.5), mskThr=sigthr)
+        segMskLC = seg2Mask(segCnew, sigma=(sigma + 3.0), mskThr=sigthr)
         if detFound:
             detLMsk = copy.deepcopy(detArr).astype(int)
             detLMsk[mskGal > 0] = 0
             detLMsk[detLMsk > 0] = 1
-            detLMskConv = seg2Mask(detLMsk, sigma=4.0, mskThr=0.01)
+            detLMskConv = seg2Mask(detLMsk, sigma=5.0, mskThr=0.01)
         # Loose one
         objSG1 = objNoCen[indG1]
         objSG2 = objNoCen[indG2]
@@ -1799,11 +1828,11 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         sep.mask_ellipse(mskSG1, objSG1['x'], objSG1['y'], objSG1['a'],
                          objSG1['b'], objSG1['theta'], r=(growH - 0.2))
         sep.mask_ellipse(mskSG2, objSG2['x'], objSG2['y'], objSG2['a'],
-                         objSG2['b'], objSG2['theta'], r=(growW - 0.4))
+                         objSG2['b'], objSG2['theta'], r=(growW - 0.5))
         sep.mask_ellipse(mskSG3, objSG3['x'], objSG3['y'], objSG3['a'],
-                         objSG3['b'], objSG3['theta'], r=(growC - 0.8))
-        segMskSH = seg2Mask(segHnew, sigma=(sigma - 1.5), mskThr=sigthr)
-        segMskSC = seg2Mask(segCnew, sigma=(sigma - 1.0), mskThr=sigthr)
+                         objSG3['b'], objSG3['theta'], r=(growC - 1.0))
+        segMskSH = seg2Mask(segHnew, sigma=(sigma - 1.0), mskThr=sigthr)
+        segMskSC = seg2Mask(segCnew, sigma=(sigma + 1.5), mskThr=sigthr)
         if detFound:
             detSMsk = copy.deepcopy(detArr).astype(int)
             detSMsk[mskGal > 0] = 0
@@ -1812,8 +1841,8 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     """
     Combine them into the final mask
     """
-    mskFinal = (mskG1 | mskG2 | mskG3 | segMskC | segMskH)
-    # mskFinal = (mskG1 | mskG2 | mskG3)
+    mskFinal = (mskG1 | mskG2 | mskG3 | segMskC | segMskH | segMskBig)
+    # mskFinal = (mskG1 | mskG2 | mskG3 | segMskBig)
     if multiMask:
         mskSmall = (mskSG1 | mskSG2 | mskSG3 | segMskSH | segMskSC)
         mskLarge = (mskLG1 | mskLG2 | mskLG3 | segMskLH | segMskLC)
@@ -1901,6 +1930,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     mskHead.set('GAL_CENY', galCenY)
     mskHead.set('GAL_FLUX', galFlux)
     mskHead.set('GAL_Q', galQ)
+    mskHead.set('GAL_A', galA)
     mskHead.set('GAL_PA', galPA)
     mskHead.set('GAL_R20', galR20)
     mskHead.set('GAL_R50', galR50)
@@ -1939,12 +1969,15 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         objEllG1 = getEll2Plot(objG1)
         objEllG2 = getEll2Plot(objG2)
         objEllG3 = getEll2Plot(objG3)
+        objEllBig = getEll2Plot(objBig)
+
         showSEPImage(imgArr, contrast=0.75, title='Mask - Final',
                      pngName=mskPNG2, mask=mskFinal,
-                     ellList1=objEllG1, ellColor1='green',
+                     ellList1=objEllBig, ellColor1='green',
                      ellList2=objEllG2, ellColor2='orange',
                      ellList3=objEllG3, ellColor3='m',
                      ell2=ellA, ell3=ellB, ellColor4='b')
+
         if multiMask:
             mskPNG3 = mskPNG2.replace('mskfin', 'msksmall')
             mskPNG4 = mskPNG2.replace('mskfin', 'msklarge')

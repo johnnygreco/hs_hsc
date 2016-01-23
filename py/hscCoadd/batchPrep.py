@@ -52,6 +52,7 @@ def run(args):
 
             if not os.path.isdir(galRoot):
                 print WAR
+                print galRoot
                 raise Exception('### Can not find the root folder for the \
                         galaxy data !')
             if not os.path.isfile(os.path.join(galRoot, galImg)):
@@ -68,11 +69,11 @@ def run(args):
                                            thrH=2.5,
                                            thrC=1.1,
                                            galR1=1.5,
-                                           galR2=4.0,
+                                           galR2=4.5,
                                            galR3=5.5,
                                            growH=2.2,
                                            growW=3.5,
-                                           growC=5.0,
+                                           growC=5.5,
                                            sigma=7.0,
                                            sigthr=0.01,
                                            minDetH=5,
@@ -88,7 +89,7 @@ def run(args):
                                            useSigArr=False,
                                            noBkgC=False,
                                            noBkgH=False,
-                                           combBad=True,
+                                           combBad=False,
                                            combDet=True,
                                            multiMask=args.multiMask)
                 elif rerun == 'smallR1':
