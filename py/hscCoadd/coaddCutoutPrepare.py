@@ -1793,7 +1793,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     for index, obj in enumerate(objC):
         if ((cenDistC[index] <= galR1 * 1.2) or
            (obj['flux'] <= galFlux * 0.20) or
-           (obj['a'] <= galA * 0.30)):
+           (obj['a'] <= galA * 0.20)):
             segBig2[segC == (index + 1)] = 0
         else:
             indBig2.append(index)
