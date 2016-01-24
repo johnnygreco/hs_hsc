@@ -70,7 +70,8 @@ def run(args):
                 for fitsFile in fitsList:
                     seg = fitsFile.split('/')
                     link = os.path.join(galRoot, seg[-1])
-                    if (not os.path.islink(link)) and (not os.path.isfile(link)):
+                    if (not os.path.islink(link)) and (
+                       not os.path.isfile(link)):
                         os.symlink(fitsFile, link)
                 """
                 External mask
@@ -78,12 +79,14 @@ def run(args):
                 if args.maskFilter is not None:
                     mskFilter = (args.maskFilter).strip().upper()
                     print "###  Use %s filter for mask \n" % mskFilter
-                    mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
+                    mskPrefix = (prefix + '_' + galID + '_' + mskFilter +
+                                 '_full')
                     mskRoot = os.path.join(galID, mskFilter, rerun)
                     galMsk = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
                     if not os.path.isfile(galMsk):
                         print(WAR)
-                        print('### Can not find the final mask : %s !' % galMsk)
+                        print('### Can not find the final mask : %s !' %
+                              galMsk)
                         print(WAR)
                 else:
                     galMsk = None
@@ -95,7 +98,9 @@ def run(args):
                                    skyClip=args.skyClip,
                                    verbose=args.verbose,
                                    visual=args.visual,
-                                   exMask=galMsk)
+                                   exMask=galMsk,
+                                   bkgSize=args.bkgSize,
+                                   bkgFilter=args.bkgFilter)
             except Exception, errMsg:
                 print WAR
                 print str(errMsg)
@@ -125,6 +130,12 @@ if __name__ == '__main__':
     parser.add_argument('--skyclip', dest='skyClip',
                         help='Sigma for pixel clipping',
                         type=float, default=3.0)
+    parser.add_argument('--bkgSize', dest='bkgSize',
+                        help='Background size for SEP',
+                        type=int, default=40)
+    parser.add_argument('--bkgFilter', dest='bkgFilter',
+                        help='Background filter size for SEP',
+                        type=int, default=5)
     parser.add_argument('--rebin', dest='rebin',
                         help='Rebin the image by N x N pixels',
                         type=int, default=6)

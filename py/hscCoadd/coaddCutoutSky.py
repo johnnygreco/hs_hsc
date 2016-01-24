@@ -48,6 +48,9 @@ mpl.rc('axes', linewidth=2)
 import matplotlib.pyplot as plt
 plt.ioff()
 
+# SEP
+import sep
+
 # Personal
 import hscUtils as hUtil
 import coaddCutoutPrepare as cdPrep
@@ -98,7 +101,7 @@ def readCutout(prefix, root=None, exMask=None):
 
 def showSkyHist(skypix, skypix2=None, skypix3=None,
                 sbExpt=None, pngName='skyhist.png', skyAvg=None, skyStd=None,
-                skyMed=None, skySkw=None):
+                skyMed=None, skySkw=None, savePng=True):
     """
     Plot the distribution of sky pixels.
 
@@ -164,8 +167,9 @@ def showSkyHist(skypix, skypix2=None, skypix3=None,
         ax.text(0.7, 0.3, "S.B : %8.5f" %
                 sbExpt, fontsize=21, transform=ax.transAxes)
 
-    fig.savefig(pngName, dpi=70)
-    plt.close(fig)
+    if savePng:
+        fig.savefig(pngName, dpi=70)
+        plt.close(fig)
 
 
 def getIsophoteSky(imgArr, mskArr):
@@ -188,8 +192,60 @@ def getRadBoxSky(imgArr, mskArr):
     pass
 
 
+def getSEPSky(imgArr, mskArr, imgHead, skyClip=3, zp=27.0, pix=0.168,
+              rebin=4, prefix='sep_sky', suffix='imgsub',
+              verbose=True, visual=True, bkgSize=40, bkgFilter=5):
+    """
+    Estimating the background using SEP.
+
+    Parameters:
+    """
+    if verbose:
+        print SEP
+        print "### ESTIMATING THE GLOBAL BACKGROUND AND SURFACE \
+                BRIGHTNESS LIMIT"
+    dimX, dimY = imgArr.shape
+
+    imgArr = imgArr.byteswap().newbyteorder()
+    sepBkg = sep.Background(imgArr, mask=mskArr, bw=bkgSize,
+                            bh=bkgSize, fw=bkgFilter, fh=bkgFilter)
+    avgBkg = sepBkg.globalback
+    rmsBkg = sepBkg.globalrms
+    if verbose:
+        print SEP
+        print "### SEP BKG AVG, RMS : %10.7f, %10.7f" % (avgBkg, rmsBkg)
+
+    # Subtract the sky model from the image
+    imgBkg = sepBkg.back()
+    imgSub = (imgArr - imgBkg)
+    fitsSub = prefix + '_' + suffix + '.fits'
+
+    # Save the new image
+    hdu = fits.PrimaryHDU(imgSub)
+    hdu.header = imgHead
+    hdulist = fits.HDUList([hdu])
+    hdulist.writeto(fitsSub, clobber=True)
+
+    # Rebin image
+    dimBinX = int((dimX - 1) / rebin)
+    dimBinY = int((dimY - 1) / rebin)
+    imgBin = hUtil.congrid(imgArr, (dimBinX, dimBinY), method='nearest')
+    subBin = hUtil.congrid(imgSub, (dimBinX, dimBinY), method='nearest')
+    mskBin = hUtil.congrid(mskArr, (dimBinX, dimBinY), method='neighbour')
+    pixSky1 = imgBin[mskBin == 0].flatten()
+    pixSky1 = sigma_clip(pixSky1, sigma=skyClip, iters=3)
+    pixSky2 = subBin[mskBin == 0].flatten()
+    pixSky2 = sigma_clip(pixSky2, sigma=skyClip, iters=3)
+
+    if visual:
+        sepPNG = prefix + '_' + suffix + '_skyhist.png'
+        showSkyHist(pixSky2, skypix2=pixSky1, pngName=sepPNG)
+
+    return imgSub
+
+
 def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
-                 rebin=4, prefix='coadd_sky', suffix=None,
+                 rebin=4, prefix='coadd_sky', suffix='global_',
                  verbose=True, visual=True):
     """
     Estimate the Global Sky.
@@ -221,8 +277,6 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
     pixNoMskBin = sigma_clip(pixels, sigma=skyClip, iters=3)
     numSkyPix = pixNoMskBin.shape[0]
     if verbose:
-        print "###   REBIN MASK "
-        print "###   REBIN IMAGE "
         print "###   Global Background After Rebin the Image "
         print "###          N Pixels: %10d" % numSkyPix
     # Get the basic statistics of the global sky
@@ -257,7 +311,7 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
 
 def coaddCutoutSky(prefix, root=None, verbose=True, skyClip=3.0,
                    pix=0.168, zp=27.0, rebin=6, visual=True,
-                   exMask=None):
+                   exMask=None, bkgSize=40, bkgFilter=5):
     """
     Estimate the Sky Background for Coadd Image.
 
@@ -282,9 +336,16 @@ def coaddCutoutSky(prefix, root=None, verbose=True, skyClip=3.0,
     # Get rid of the NaN pixels, if there is any
     mskArr[np.isnan(imgArr)] = 1
 
-    # 1. Global Background Estimation
+    # 1. SEP Sky
+    imgSub = getSEPSky(imgArr, mskArr, imgHead,
+                       skyClip=skyClip, zp=zp, pix=pix,
+                       rebin=rebin, prefix=(root + prefix), suffix='imgsub',
+                       verbose=True, visual=True, bkgSize=bkgSize,
+                       bkgFilter=bkgFilter)
+
+    # 2. Global Background Estimation
     suffixGlob = 'rebin' + str(rebin).strip() + '_'
-    getGlobalSky(imgArr, mskArr, skyClip=skyClip, zp=zp, pix=pix,
+    getGlobalSky(imgSub, mskArr, skyClip=skyClip, zp=zp, pix=pix,
                  rebin=rebin, prefix=(root + prefix), suffix=suffixGlob,
                  visual=visual, verbose=verbose)
 
@@ -303,6 +364,12 @@ if __name__ == '__main__':
     parser.add_argument('--rebin', dest='rebin',
                         help='Rebin the image by N x N pixels',
                         type=int, default=6)
+    parser.add_argument('--bkgSize', dest='bkgSize',
+                        help='Background size for SEP',
+                        type=int, default=40)
+    parser.add_argument('--bkgFilter', dest='bkgFilter',
+                        help='Background filter size for SEP',
+                        type=int, default=5)
     parser.add_argument('--pix', dest='pix', help='Pixel scale of the iamge',
                         type=float, default=0.168)
     parser.add_argument('--zp', dest='zp',
@@ -318,4 +385,5 @@ if __name__ == '__main__':
     coaddCutoutSky(args.prefix, root=args.root, pix=args.pix, zp=args.zp,
                    rebin=args.rebin, skyClip=args.skyClip,
                    verbose=args.verbose, visual=args.visual,
-                   exMask=args.mask)
+                   exMask=args.mask, bkgSize=args.bkgSize,
+                   bkgFilter=args.bkgFilter)
