@@ -5,6 +5,7 @@
 from __future__ import division
 
 import os
+import copy
 import argparse
 
 import numpy as np
@@ -206,9 +207,16 @@ def getSEPSky(imgArr, mskArr, imgHead, skyClip=3, zp=27.0, pix=0.168,
                 BRIGHTNESS LIMIT"
     dimX, dimY = imgArr.shape
 
-    imgArr = imgArr.byteswap().newbyteorder()
-    sepBkg = sep.Background(imgArr, mask=mskArr, bw=bkgSize,
-                            bh=bkgSize, fw=bkgFilter, fh=bkgFilter)
+    imgArr[mskArr > 0] = np.nan
+    try:
+        sepBkg = sep.Background(imgArr, bw=bkgSize, bh=bkgSize,
+                                fw=bkgFilter, fh=bkgFilter)
+    except ValueError:
+        imgTemp = copy.deepcopy(imgArr)
+        imgTemp = imgTemp.byteswap(True).newbyteorder()
+        sepBkg = sep.Background(imgTemp, bw=bkgSize, bh=bkgSize,
+                                fw=bkgFilter, fh=bkgFilter)
+
     avgBkg = sepBkg.globalback
     rmsBkg = sepBkg.globalrms
     if verbose:
