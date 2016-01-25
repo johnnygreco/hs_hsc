@@ -54,14 +54,17 @@ SEP = '-' * 100
 WAR = '!' * 100
 
 
-def readSbpInput(prefix, root=None, exMask=None):
+def readSbpInput(prefix, root=None, exMask=None, imgSub=True):
     """
     Read in necessary files for Ellipse run.
 
     Parameters:
     """
     # Get the names of necessary input images
-    imgFile = prefix + '_img.fits'
+    if imgSub:
+        imgFile = prefix + '_imgsub.fits'
+    else:
+        imgFile = prefix + '_img.fits'
     """ Root DIR """
     if root is not None:
         imgFile = os.path.join(root, imgFile)
@@ -711,7 +714,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                    olthresh=0.5, intMode='mean', lowClip=3.0, uppClip=3.0,
                    nClip=2, fracBad=0.5, minIt=20, maxIt=150, outRatio=1.2,
                    exMask=None, suffix='', plMask=False, noMask=False,
-                   multiEllipse=False):
+                   multiEllipse=False, imgSub=True):
     """
     Generate 1-D SBP Plot.
 
@@ -734,7 +737,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
 
     """ 0. Organize Input Data """
     # Read in the input image, mask, psf, and their headers
-    sbpInput = readSbpInput(prefix, root=root, exMask=exMask)
+    sbpInput = readSbpInput(prefix, root=root, exMask=exMask, imgSub=imgSub)
     imgFile, imgArr, imgHead, mskFile, mskArr, mskHead = sbpInput
     if (root is not None) and (root[-1] != '/'):
         root += '/'
@@ -1128,7 +1131,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                           suffix=suffixMulti4)
                 ellMulti4, binMulti4 = resMulti4
 
-                """ 5. Use Median instead of Mean """
+                """ 5. Use Mean instead of Median """
                 suffixMulti5 = 'multi5'
                 print SEP
                 print "##   Ellipse Run with Median integration mode "
@@ -1153,7 +1156,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                           uppClip=uppClip,
                                           nClip=nClip,
                                           fracBad=fracBad,
-                                          intMode='median',
+                                          intMode='mean',
                                           plMask=plMask,
                                           suffix=suffixMulti5)
                 ellMulti5, binMulti5 = resMulti5
@@ -1298,6 +1301,8 @@ if __name__ == '__main__':
                         default=True)
     parser.add_argument('--nomask', dest='nomask', action="store_true",
                         default=False)
+    parser.add_argument('--imgSub', dest='imgSub', action="store_true",
+                        default=False)
 
     args = parser.parse_args()
 
@@ -1332,4 +1337,5 @@ if __name__ == '__main__':
                    plMask=args.plmask,
                    exMask=args.exMask,
                    noMask=args.noMask,
-                   multiEllipse=args.multiEllipse)
+                   multiEllipse=args.multiEllipse,
+                   imgSub=args.imgSub)

@@ -145,7 +145,8 @@ def run(args):
                                     multiEllipse=args.multiEllipse,
                                     suffix=ellipSuffix,
                                     plMask=args.plmask,
-                                    noMask=args.nomask)
+                                    noMask=args.nomask,
+                                    imgSub=args.imgSub)
 
                 logging.warning('### The 1-D SBP is DONE for %s' % galPrefix)
                 print SEP
@@ -188,14 +189,14 @@ if __name__ == '__main__':
     """ Optional """
     parser.add_argument("--intMode", dest='intMode',
                         help="Method for integration",
-                        default='mean')
+                        default='median')
     parser.add_argument('--inEllip', dest='inEllip',
                         help='Input Ellipse table',
                         default=None)
     parser.add_argument('--pix', dest='pix', help='Pixel Scale',
                         type=float, default=0.168)
     parser.add_argument('--step', dest='step', help='Step size',
-                        type=float, default=0.14)
+                        type=float, default=0.16)
     parser.add_argument('--zp', dest='zp', help='Photometric zeropoint',
                         type=float, default=27.0)
     parser.add_argument('--redshift', dest='redshift',
@@ -209,7 +210,7 @@ if __name__ == '__main__':
                         type=float, default=2.5)
     parser.add_argument('--lowClip', dest='lowClip',
                         help='Upper limit for clipping',
-                        type=float, default=3.0)
+                        type=float, default=2.5)
     parser.add_argument('--nClip', dest='nClip',
                         help='Upper limit for clipping',
                         type=int, default=3)
@@ -221,7 +222,7 @@ if __name__ == '__main__':
                         type=int, default=25)
     parser.add_argument('--maxIt', dest='maxIt',
                         help='Maximum number of iterations',
-                        type=int, default=120)
+                        type=int, default=140)
     parser.add_argument('--maxTry', dest='maxTry',
                         help='Maximum number of attempts of ellipse run',
                         type=int, default=4)
@@ -261,6 +262,9 @@ if __name__ == '__main__':
                         default=True)
     parser.add_argument('--nomask', dest='nomask', action="store_true",
                         default=False)
+    parser.add_argument('--imgSub', dest='imgSub', action="store_true",
+                        default=True)
+
     args = parser.parse_args()
 
     run(args)
