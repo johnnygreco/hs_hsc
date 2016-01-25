@@ -65,9 +65,11 @@ def readSbpInput(prefix, root=None, exMask=None, imgSub=True):
         imgFile = prefix + '_imgsub.fits'
     else:
         imgFile = prefix + '_img.fits'
+
     """ Root DIR """
     if root is not None:
         imgFile = os.path.join(root, imgFile)
+
     """ External mask"""
     if exMask is None:
         if root is not None:
@@ -75,24 +77,34 @@ def readSbpInput(prefix, root=None, exMask=None, imgSub=True):
             mskFile = os.path.join(root, mskFile)
     else:
         mskFile = exMask
+
     """ Input Image """
+    if imgSub and (not os.path.isfile(imgFile)):
+        # Fall back to original image
+        warnings.warn("# Can not find the background subtracted image!")
+        imgFile = os.path.join(root, (prefix + '_img.fits'))
+
     if os.path.islink(imgFile):
         imgOri = os.readlink(imgFile)
     else:
         imgOri = imgFile
+
     """ Mask Image """
     if os.path.islink(mskFile):
         mskOri = os.readlink(mskFile)
     else:
         mskOri = mskFile
+
     if not os.path.isfile(imgOri):
         print WAR
         raise Exception("### Can not find the input \
                 cutout image : %s !" % imgOri)
+
     if not os.path.isfile(mskOri):
         print WAR
         raise Exception("### Can not find the input \
                 mask image : %s !" % mskOri)
+
     # Image
     imgHdu = fits.open(imgOri)
     imgArr = imgHdu[0].data
