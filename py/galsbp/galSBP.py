@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""Wrapper of ELLIPSE."""
 
 from __future__ import division
 
 import os
 import gc
 import copy
+import string
+import random
 import argparse
 import subprocess
 import numpy as np
@@ -51,6 +54,15 @@ import hscUtils as hUtil
 COM = '#' * 100
 SEP = '-' * 100
 WAR = '!' * 100
+
+def randomStr(size=4, chars=string.ascii_uppercase + string.digits):
+    """
+    Random string generator.
+
+    Based on:
+    http://stackoverflow.com/questions/2257441/random-string-generation-with-upper-case-letters-and-digits-in-python
+    """
+    return ''.join(random.choice(chars) for _ in range(size))
 
 
 def correctPositionAngle(ellipOut, paNorm=False, dPA=75.0):
@@ -1157,7 +1169,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
            plMask=True, conver=0.05, recenter=True,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
            olthresh=0.5, harmonics='1 2', outerThreshold=None,
-           updateIntens=True, psfSma=6.0, suffix='', useZscale=True):
+           updateIntens=True, psfSma=6.0, suffix='', useZscale=True,
+           hdu=0):
     """
     Running Ellipse to Extract 1-D profile.
 
