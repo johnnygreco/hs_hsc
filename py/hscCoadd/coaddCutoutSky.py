@@ -210,7 +210,7 @@ def getSEPSky(imgArr, mskArr, imgHead, skyClip=3, zp=27.0, pix=0.168,
     if (dimX != mskX) or (dimY != mskY):
         raise Exception("## The image and mask don't have the same size!")
 
-    # XXX
+    # What if there is no useful masked pixel
     imgArr[mskArr > 0] = np.nan
     try:
         sepBkg = sep.Background(imgArr, bw=bkgSize, bh=bkgSize,
@@ -223,20 +223,26 @@ def getSEPSky(imgArr, mskArr, imgHead, skyClip=3, zp=27.0, pix=0.168,
 
     avgBkg = sepBkg.globalback
     rmsBkg = sepBkg.globalrms
+    if (not np.isfinite(avgBkg)) or (not np.isfinite(rmsBkg)):
+        print WAR
+        warnings.warn("## The average or rms of SEP background is infinite")
     if verbose:
         print SEP
         print "### SEP BKG AVG, RMS : %10.7f, %10.7f" % (avgBkg, rmsBkg)
 
     # Subtract the sky model from the image
-    imgBkg = sepBkg.back()
-    imgSub = (imgArr - imgBkg)
-    fitsSub = prefix + '_' + suffix + '.fits'
-
-    # Save the new image
-    hdu = fits.PrimaryHDU(imgSub)
-    hdu.header = imgHead
-    hdulist = fits.HDUList([hdu])
-    hdulist.writeto(fitsSub, clobber=True)
+    try:
+        imgBkg = sepBkg.back()
+        imgSub = (imgArr - imgBkg)
+        fitsSub = prefix + '_' + suffix + '.fits'
+        # Save the new image
+        hdu = fits.PrimaryHDU(imgSub)
+        hdu.header = imgHead
+        hdulist = fits.HDUList([hdu])
+        hdulist.writeto(fitsSub, clobber=True)
+    except Exception:
+        print WAR
+        warnings.warn("## Something wrong with the SEP background subtraction")
 
     # Rebin image
     dimBinX = int((dimX - 1) / rebin)
@@ -245,10 +251,17 @@ def getSEPSky(imgArr, mskArr, imgHead, skyClip=3, zp=27.0, pix=0.168,
     subBin = hUtil.congrid(imgSub, (dimBinX, dimBinY), method='nearest')
     mskBin = hUtil.congrid(mskArr, (dimBinX, dimBinY), method='neighbour')
     pixSky1 = imgBin[mskBin == 0].flatten()
-    # XXX
-    pixSky1 = sigma_clip(pixSky1, sigma=skyClip, iters=3)
+    try:
+        pixSky1 = sigma_clip(pixSky1, sigma=skyClip, iters=3)
+    except Exception:
+        print WAR
+        warnings.warn("Sigma clip fails for imgBin")
     pixSky2 = subBin[mskBin == 0].flatten()
-    pixSky2 = sigma_clip(pixSky2, sigma=skyClip, iters=3)
+    try:
+        pixSky2 = sigma_clip(pixSky2, sigma=skyClip, iters=3)
+    except Exception:
+        print WAR
+        warnings.warn("Sigma clip fails for mskBin")
 
     if visual:
         sepPNG = prefix + '_' + suffix + '_skyhist.png'
