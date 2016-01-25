@@ -2035,14 +2035,18 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     """
     mskAllFile = os.path.join(
         rerunDir, (prefix + '_' + suffix + 'mskall.fits'))
+    mskAll = mskAll.astype(np.int16)
     saveFits(mskAll, mskAllFile, head=imgHead)
 
     """
     Save the final mask to FITS
     """
+    mskFinal = mskFinal.astype(np.int16)
     saveFits(mskFinal, mskFinFile, head=mskHead)
     if multiMask:
+        mskSmall = mskSmall.astype(np.int16)
         saveFits(mskSmall, mskSmallFile, head=mskHead)
+        mskLarge = mskLarge.astype(np.int16)
         saveFits(mskLarge, mskLargeFile, head=mskHead)
     if visual:
         """ Fig.g """

@@ -211,12 +211,13 @@ def getSEPSky(imgArr, mskArr, imgHead, skyClip=3, zp=27.0, pix=0.168,
         raise Exception("## The image and mask don't have the same size!")
 
     # What if there is no useful masked pixel
-    imgArr[mskArr > 0] = np.nan
+    imgMasked = copy.deepcopy(imgArr)
+    imgMasked[mskArr > 0] = np.nan
     try:
-        sepBkg = sep.Background(imgArr, bw=bkgSize, bh=bkgSize,
+        sepBkg = sep.Background(imgMasked, bw=bkgSize, bh=bkgSize,
                                 fw=bkgFilter, fh=bkgFilter)
     except ValueError:
-        imgTemp = copy.deepcopy(imgArr)
+        imgTemp = copy.deepcopy(imgMasked)
         imgTemp = imgTemp.byteswap(True).newbyteorder()
         sepBkg = sep.Background(imgTemp, bw=bkgSize, bh=bkgSize,
                                 fw=bkgFilter, fh=bkgFilter)
@@ -236,7 +237,9 @@ def getSEPSky(imgArr, mskArr, imgHead, skyClip=3, zp=27.0, pix=0.168,
         imgSub = (imgArr - imgBkg)
         fitsSub = prefix + '_' + suffix + '.fits'
         # Save the new image
-        hdu = fits.PrimaryHDU(imgSub)
+        imgSave = copy.deepcopy(imgSub)
+        imgSave = imgSave.byteswap(True).newbyteorder()
+        hdu = fits.PrimaryHDU(imgSave)
         hdu.header = imgHead
         hdulist = fits.HDUList([hdu])
         hdulist.writeto(fitsSub, clobber=True)
@@ -247,9 +250,16 @@ def getSEPSky(imgArr, mskArr, imgHead, skyClip=3, zp=27.0, pix=0.168,
     # Rebin image
     dimBinX = int((dimX - 1) / rebin)
     dimBinY = int((dimY - 1) / rebin)
-    imgBin = hUtil.congrid(imgArr, (dimBinX, dimBinY), method='nearest')
-    subBin = hUtil.congrid(imgSub, (dimBinX, dimBinY), method='nearest')
-    mskBin = hUtil.congrid(mskArr, (dimBinX, dimBinY), method='neighbour')
+    try:
+        imgBin = hUtil.congrid(imgArr, (dimBinX, dimBinY), method='nearest')
+        subBin = hUtil.congrid(imgSub, (dimBinX, dimBinY), method='nearest')
+        mskBin = hUtil.congrid(mskArr, (dimBinX, dimBinY), method='neighbour')
+    except Exception:
+        print WAR
+        warnings.warn("congrid fails!")
+        imgBin = imgArr
+        subBin = imgSub
+        mskBin = mskArr
     pixSky1 = imgBin[mskBin == 0].flatten()
     try:
         pixSky1 = sigma_clip(pixSky1, sigma=skyClip, iters=3)
