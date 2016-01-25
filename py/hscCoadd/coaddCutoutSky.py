@@ -206,7 +206,11 @@ def getSEPSky(imgArr, mskArr, imgHead, skyClip=3, zp=27.0, pix=0.168,
         print "### ESTIMATING THE GLOBAL BACKGROUND AND SURFACE \
                 BRIGHTNESS LIMIT"
     dimX, dimY = imgArr.shape
+    mskX, mskY = mskArr.shape
+    if (dimX != mskX) or (dimY != mskY):
+        raise Exception("## The image and mask don't have the same size!")
 
+    # XXX
     imgArr[mskArr > 0] = np.nan
     try:
         sepBkg = sep.Background(imgArr, bw=bkgSize, bh=bkgSize,
@@ -241,6 +245,7 @@ def getSEPSky(imgArr, mskArr, imgHead, skyClip=3, zp=27.0, pix=0.168,
     subBin = hUtil.congrid(imgSub, (dimBinX, dimBinY), method='nearest')
     mskBin = hUtil.congrid(mskArr, (dimBinX, dimBinY), method='neighbour')
     pixSky1 = imgBin[mskBin == 0].flatten()
+    # XXX
     pixSky1 = sigma_clip(pixSky1, sigma=skyClip, iters=3)
     pixSky2 = subBin[mskBin == 0].flatten()
     pixSky2 = sigma_clip(pixSky2, sigma=skyClip, iters=3)
