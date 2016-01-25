@@ -89,7 +89,7 @@ def run(args):
                                            useSigArr=False,
                                            noBkgC=False,
                                            noBkgH=False,
-                                           combBad=False,
+                                           combBad=True,
                                            combDet=True,
                                            multiMask=args.multiMask)
                 elif rerun == 'smallR1':

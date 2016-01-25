@@ -15,6 +15,7 @@ from astropy.io import fits
 
 # SEP
 import sep
+
 from distutils.version import StrictVersion
 sepVersion = sep.__version__
 if StrictVersion(sepVersion) < StrictVersion('0.5.0'):
@@ -966,6 +967,8 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
                        mskReg=None, excludeReg=None, tol=10.0,
                        regMask=None, regKeep=None, sigma=6.0, sigthr=0.02,
                        showAll=False, multiMask=False):
+
+    sep.set_extract_pixstack(500000)
     """
     The structure of the cutout has been changed.
 
@@ -1022,17 +1025,12 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
 
     """
     Sometimes NaN pixels exist for the image.
-    Replace them, and make sure that they are masked out
     """
     indImgNaN = np.isnan(imgArr)
     nNaNPix = len(np.where(indImgNaN)[0])
-    if verbose:
-        print WAR
-        print "###   %6d NaN pixels have been \
-                replaced and masked out!" % nNaNPix
-    if nNaNPix > 0:
+    if nNaNPix > 81:
         sepFlags = addFlag(sepFlags, 'NAN_PIX', True)
-        imgArr[indImgNaN] = 0.0
+        imgArr[indImgNaN] = np.nan
     else:
         sepFlags = addFlag(sepFlags, 'NAN_PIX', False)
 
@@ -1172,22 +1170,41 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         if verbose:
             print "###     Using an external sigma array!"
         errArr = imgByteSwap(sigArr)
-        detThrC = thrC
-        objC, segC = sep.extract(imgSubC, detThrC, minarea=minDetC,
-                                 filter_kernel=convKerC,
-                                 deblend_nthresh=debThrC,
-                                 deblend_cont=debConC,
-                                 err=errArr,
-                                 filter_type='matched',
-                                 segmentation_map=True)
+        try:
+            detThrC = thrC
+            objC, segC = sep.extract(imgSubC, detThrC, minarea=minDetC,
+                                     filter_kernel=convKerC,
+                                     deblend_nthresh=debThrC,
+                                     deblend_cont=debConC,
+                                     err=errArr,
+                                     filter_type='matched',
+                                     segmentation_map=True)
+        except Exception:
+            detThrC = (thrC + 2)
+            objC, segC = sep.extract(imgSubC, detThrC, minarea=minDetC,
+                                     filter_kernel=convKerC,
+                                     deblend_nthresh=int(debThrC / 2),
+                                     deblend_cont=debConC,
+                                     err=errArr,
+                                     filter_type='matched',
+                                     segmentation_map=True)
     else:
-        detThrC = rmsC * thrC
-        objC, segC = sep.extract(imgSubC, detThrC, minarea=minDetC,
-                                 filter_kernel=convKerC,
-                                 deblend_nthresh=debThrC,
-                                 deblend_cont=debConC,
-                                 filter_type='conv',
-                                 segmentation_map=True)
+        try:
+            detThrC = rmsC * thrC
+            objC, segC = sep.extract(imgSubC, detThrC, minarea=minDetC,
+                                     filter_kernel=convKerC,
+                                     deblend_nthresh=debThrC,
+                                     deblend_cont=debConC,
+                                     filter_type='conv',
+                                     segmentation_map=True)
+        except Exception:
+            detThrC = rmsC * (thrC + 2)
+            objC, segC = sep.extract(imgSubC, detThrC, minarea=minDetC,
+                                     filter_kernel=convKerC,
+                                     deblend_nthresh=int(debThrC / 2),
+                                     deblend_cont=debConC,
+                                     filter_type='conv',
+                                     segmentation_map=True)
     if verbose:
         print SEP
         print "###    %d objects have been detected in the \
@@ -1209,7 +1226,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Get first estimations of basic parameters for central galaxy
     Center; Add a flag about this
     """
-    cenObjIndexC = np.argmin(cenDistC)
+    cenObjIndexC = np.nanargmin(cenDistC)
     """
     Get their shapes and sizes
     """
@@ -1217,12 +1234,27 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     galA = objC[cenObjIndexC]['a']
     galCenX = objC[cenObjIndexC]['x']
     galCenY = objC[cenObjIndexC]['y']
+    """
+    In case there is something wrong with the measurements of the
+    central object, fall back to certain safe values
+    """
+    if not np.isfinite(galA):
+        galA = 10.0
+    if not np.isfinite(galCenX):
+        galCenX = galX
+    if not np.isfinite(galCenY):
+        galCenY = galY
+
     if verbose:
         print "###  2.2. ESTIMATE THE B/A AND PA OF THE GALAXY"
     if galQ is None:
         galQ = (objC[cenObjIndexC]['b'] / objC[cenObjIndexC]['a'])
+        if not np.isfinite(galQ):
+            galQ = 0.99
     if galPA is None:
         galPA = (objC[cenObjIndexC]['theta'] * 180.0 / np.pi)
+        if not np.isfinite(galPA):
+            galPA = 0.0
     if verbose:
         print "###    (b/a) of the galaxy: %6.2f" % galQ
         print "###      PA  of the galaxy: %6.1f" % galPA
@@ -1243,19 +1275,19 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     galR20, galR50, galR90 = getFluxRadius(imgSubC, objC[cenObjIndexC],
                                            maxSize=30.0, subpix=5,
                                            byteswap=False)
-    if np.isnan(galR20):
+    if not np.isfinite(galR20):
         sepFlags = addFlag(sepFlags, 'R20_FAIL', True)
-        galR20 = objC[cenObjIndexC]['a']
+        galR20 = galA if np.isfinite(galA) else 30.0
     else:
         sepFlags = addFlag(sepFlags, 'R20_FAIL', False)
-    if np.isnan(galR50):
+    if not np.isfinite(galR50):
         sepFlags = addFlag(sepFlags, 'R50_FAIL', True)
-        galR50 = objC[cenObjIndexC]['a'] * 1.5
+        galR50 = (galA * 1.5) if np.isfinite(galA) else 50.0
     else:
         sepFlags = addFlag(sepFlags, 'R50_FAIL', False)
-    if np.isnan(galR90):
+    if not np.isfinite(galR90):
         sepFlags = addFlag(sepFlags, 'R90_FAIL', True)
-        galR90 = objC[cenObjIndexC]['a'] * 3.0
+        galR90 = (galA * 3.0) if np.isfinite(galA) else 100.0
     else:
         sepFlags = addFlag(sepFlags, 'R90_FAIL', False)
     if verbose:
@@ -1300,6 +1332,9 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     mskGal = np.zeros(imgSubC.shape, dtype='uint8')
     sep.mask_ellipse(mskGal, galX, galY, galR3,
                      (galR3 * galQ), (galPA * np.pi / 180.0), r=1.1)
+    mskR2 = np.zeros(imgSubC.shape, dtype='uint8')
+    sep.mask_ellipse(mskR2, galX, galY, galR2,
+                     (galR2 * galQ), (galPA * np.pi / 180.0), r=1.1)
     """
     Clear up the DETECTION mask plane in this region
     """
@@ -1327,24 +1362,45 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     if useSigArr and (sigArr is not None):
         if verbose:
             print "###     Using an external sigma array!"
-        detThrH = thrH
-        objH, segH = sep.extract(imgSubH, detThrH,
-                                 minarea=minDetH,
-                                 filter_kernel=convKerH,
-                                 deblend_nthresh=debThrH,
-                                 deblend_cont=debConH,
-                                 err=errArr,
-                                 filter_type='matched',
-                                 segmentation_map=True)
+        try:
+            detThrH = thrH
+            objH, segH = sep.extract(imgSubH, detThrH,
+                                     minarea=minDetH,
+                                     filter_kernel=convKerH,
+                                     deblend_nthresh=debThrH,
+                                     deblend_cont=debConH,
+                                     err=errArr,
+                                     filter_type='matched',
+                                     segmentation_map=True)
+        except Exception:
+            detThrH = (thrH + 2)
+            objH, segH = sep.extract(imgSubH, detThrH,
+                                     minarea=minDetH,
+                                     filter_kernel=convKerH,
+                                     deblend_nthresh=int(debThrH / 2),
+                                     deblend_cont=debConH,
+                                     err=errArr,
+                                     filter_type='matched',
+                                     segmentation_map=True)
     else:
-        detThrH = rmsH * thrH
-        objH, segH = sep.extract(imgSubH, detThrH,
-                                 minarea=minDetH,
-                                 filter_kernel=convKerH,
-                                 deblend_nthresh=debThrH,
-                                 deblend_cont=debConH,
-                                 filter_type='conv',
-                                 segmentation_map=True)
+        try:
+            detThrH = rmsH * thrH
+            objH, segH = sep.extract(imgSubH, detThrH,
+                                     minarea=minDetH,
+                                     filter_kernel=convKerH,
+                                     deblend_nthresh=debThrH,
+                                     deblend_cont=debConH,
+                                     filter_type='conv',
+                                     segmentation_map=True)
+        except Exception:
+            detThrH = rmsH * (thrH + 2)
+            objH, segH = sep.extract(imgSubH, detThrH,
+                                     minarea=minDetH,
+                                     filter_kernel=convKerH,
+                                     deblend_nthresh=int(debThrH / 2),
+                                     deblend_cont=debConH,
+                                     filter_type='conv',
+                                     segmentation_map=True)
     if verbose:
         print "###    %d objects have been detected in the \
                 Hot Run" % objH['x'].shape[0]
@@ -1397,7 +1453,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     Calculate the object-galaxy center distance...Again
     """
     cenDistComb = objDistTo(objComb, galX, galY, pa=galPA, q=galQ)
-    cenObjIndex = np.argmin(cenDistComb)
+    cenObjIndex = np.nanargmin(cenDistComb)
 
     if verbose:
         print "###    %d objects are left in the combined list" % len(objComb)
@@ -1479,8 +1535,8 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         """
         Convolve the segmentations into a masks
         """
-        segMskAC = seg2Mask(segC, sigma=(sigma + 2.0), mskThr=sigthr)
-        segMskAH = seg2Mask(segH, sigma=sigma, mskThr=sigthr)
+        segMskAC = seg2Mask(segC, sigma=(sigma + 4.0), mskThr=sigthr)
+        segMskAH = seg2Mask(segH, sigma=(sigma + 2.0), mskThr=sigthr)
         mskAll = combMskImage(segMskAC, segMskAH)
         objMskAll['a'] = growMsk * rMajor
         objMskAll['b'] = growMsk * rMinor
@@ -1516,19 +1572,14 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         mskAll = combMskImage(mskAll, mskArr)
     if combDet and detFound:
         detAll = copy.deepcopy(detArr).astype(int)
-        detMskAll = seg2Mask(detAll, sigma=(sigma - 1.0), mskThr=sigthr)
+        detMskAll = seg2Mask(detAll, sigma=sigma, mskThr=sigthr)
         mskAll = combMskImage(mskAll, detMskAll)
 
     """
     Also mask out the NaN pixels
     """
     mskAll[indImgNaN] = 1
-    """
-    Save the all object mask to FITS
-    """
-    mskAllFile = os.path.join(
-        rerunDir, (prefix + '_' + suffix + 'mskall.fits'))
-    saveFits(mskAll, mskAllFile, head=imgHead)
+
     """
     Save the Objlist using the growed size
     """
@@ -1875,12 +1926,15 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
                     segMskSB1 | segMskSB2)
         mskLarge = (mskLG1 | mskLG2 | mskLG3 | segMskLC | segMskLH |
                     segMskLB1 | segMskLB2)
+    mskAll = (mskAll | mskR2 | segMskC | segMskH | segMskBig1 |
+              segMskBig2)
 
     """
     if extMask is provided, combine them
     """
     if extMask is not None:
         mskFinal = (mskFinal | extMask)
+        mskAll = (mskAll | extMask)
         if multiMask:
             mskSmall = (mskSmall | extMask)
             mskLarge = (mskLarge | extMask)
@@ -1975,6 +2029,13 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
         if visual:
             print "###      %s : %1d" % (flag['name'], flag['value'])
         mskHead.set(flag['name'], flag['value'])
+
+    """
+    Save the all object mask to FITS
+    """
+    mskAllFile = os.path.join(
+        rerunDir, (prefix + '_' + suffix + 'mskall.fits'))
+    saveFits(mskAll, mskAllFile, head=imgHead)
 
     """
     Save the final mask to FITS
