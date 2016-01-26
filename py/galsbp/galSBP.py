@@ -375,7 +375,8 @@ def ellipRemoveIndef(outTabName, replace='NaN'):
 
 
 def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
-                   harmonics='none', galR=None, minSma=2.0, dPA=75.0):
+                   harmonics='none', galR=None, minSma=2.0, dPA=75.0,
+                   rFactor=0.2):
     """
     Read the Ellipse output into a structure.
 
@@ -482,7 +483,7 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     The choice is pretty random
     """
     if galR is None:
-        galR = np.max(ellipseOut['sma']) * 0.18
+        galR = np.max(ellipseOut['sma']) * rFactor
     avgX, avgY = ellipseGetAvgCen(ellipseOut, galR, minSma=minSma)
     avgQ, avgPA = ellipseGetAvgGeometry(ellipseOut, galR, minSma=minSma)
     # Save as new column
@@ -1194,6 +1195,17 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
         print WAR
         raise Exception("### Can not find the input image: %s !" % imgOri)
 
+    """
+    New approach, save the HDU into a temp fits file
+    """
+    imgTemp = 'temp_' + randomStr() + '.fits'
+    data = (fits.open(imgOri))[hdu].data
+    head = (fits.open(imgOri))[hdu].header
+    imgHdu = fits.PrimaryHDU(data)
+    imgHdu.header = head
+    imgHduList = fits.HDUList([imgHdu])
+    imgHduList.writeto(imgTemp, clobber=True)
+
     """ Conver the .fits mask to .pl file if necessary """
     if mask is not None:
         if os.path.islink(mask):
@@ -1207,28 +1219,28 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             print COM
             print "###  Will use the *.pl Mask"
             print COM
-            plFile = maskFits2Pl(imgOri, mask)
+            # plFile = maskFits2Pl(imgOri, mask)
+            plFile = maskFits2Pl(imgTemp, mskOri)
             if not os.path.isfile(plFile):
                 print WAR
                 raise Exception("### Can not find the .pl mask: %s !" % plFile)
-            imageUse = imgOri
+            imageUse = imgTemp
         else:
             print COM
             print "###  Will use the *nan.fits Mask"
             print COM
-            imageNew = imageMaskNaN(imgOri, mask)
+            imageNew = imageMaskNaN(imgTemp, mskOri)
             if not os.path.isfile(imageNew):
                 print WAR
                 raise Exception(
                     "### Can not find the NaN-Masked image: %s" % imageNew)
             imageUse = imageNew
     else:
-        imageUse = imgOri
+        imageUse = imgTemp
         mskOri = None
 
     """ Estimate the maxSMA if none is provided """
     if (maxSma is None) or (galX is None) or (galY is None):
-        data = (fits.open(imgOri))[0].data
         dimX, dimY = data.shape
         imgSize = dimX if (dimX >= dimY) else dimY
         imgR = (imgSize / 2.0)
@@ -1325,6 +1337,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 os.remove(outCdf)
             # Start the Ellipse fitting
             print SEP
+            print "###      Origin Image  : %s" % imgOri
             print "###      Input Image   : %s" % imageUse
             print "###      Output Binary : %s" % outBin
             if stage != 4:
@@ -1446,6 +1459,13 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     outPre = image.replace('.fits', suffix)
                     saveEllipOut(ellipOut, outPre, ellipCfg=ellipCfg,
                                  verbose=verbose, csv=False)
+
+                """ Remove the temp files """
+                try:
+                    os.remove(imgTemp)
+                    os.remove(plFile)
+                except Exception:
+                    pass
                 gc.collect()
                 break
         except Exception as error:
@@ -1509,6 +1529,9 @@ if __name__ == '__main__':
     parser.add_argument('--stage', dest='stage',
                         help='Stage of Ellipse Run',
                         type=int, default=3, choices=range(1, 4))
+    parser.add_argument('--hdu', dest='hdu',
+                        help='HDU of data to run on',
+                        type=int, default=0)
     parser.add_argument('--pix', dest='pix',
                         help='Pixel Scale',
                         type=float, default=0.168)
