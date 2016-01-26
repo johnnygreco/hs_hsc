@@ -82,7 +82,7 @@ def run(args):
                     mskPrefix = (prefix + '_' + galID + '_' + mskFilter +
                                  '_full')
                     mskRoot = os.path.join(galID, mskFilter, rerun)
-                    galMsk = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
+                    galMsk = os.path.join(mskRoot, mskPrefix + '_mskall.fits')
                     if not os.path.isfile(galMsk):
                         print(WAR)
                         print('### Can not find the final mask : %s !' %
@@ -90,6 +90,7 @@ def run(args):
                         print(WAR)
                 else:
                     galMsk = None
+
                 """Estimate the Sky Background"""
                 ccs.coaddCutoutSky(galPrefix, root=galRoot,
                                    pix=args.pix,
