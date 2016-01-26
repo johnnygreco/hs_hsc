@@ -227,7 +227,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                  outPng='ellipse_summary.png', zp=27.0, threshold=None,
                  psfOut=None, useKpc=None, pix=0.168,
                  showZoom=True, exptime=1.0, bkg=0.0, outRatio=1.2,
-                 pngSize=16):
+                 pngSize=16, imgType='_imgsub'):
     """
     Make a summary plot for the ellipse run.
 
@@ -663,7 +663,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     """ ax8 IsoPlot """
     imgFile = os.path.basename(image)
     imgTitle = imgFile.replace('.fits', '')
-    imgTitle = imgTitle.replace('_img', '')
+    imgTitle = imgTitle.replace(imgType, '')
 
     ax8.tick_params(axis='both', which='major', labelsize=20)
     ax8.yaxis.set_major_locator(MaxNLocator(prune='lower'))
@@ -1036,7 +1036,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                              maxRad=maxR, mask=mskOri, radMode='rsma',
                              outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
                              showZoom=showZoom, exptime=exptime, bkg=bkg,
-                             outRatio=outRatio)
+                             outRatio=outRatio, imgType=imgType)
             if multiEllipse:
                 """
                 Run Ellipse using different mask and configuration

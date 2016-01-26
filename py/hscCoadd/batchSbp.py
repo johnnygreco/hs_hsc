@@ -204,7 +204,7 @@ if __name__ == '__main__':
                         type=float, default=None)
     parser.add_argument('--olthresh', dest='olthresh',
                         help='Central locator threshold',
-                        type=float, default=0.30)
+                        type=float, default=0.50)
     parser.add_argument('--uppClip', dest='uppClip',
                         help='Upper limit for clipping',
                         type=float, default=2.5)

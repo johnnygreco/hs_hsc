@@ -376,7 +376,7 @@ def ellipRemoveIndef(outTabName, replace='NaN'):
 
 def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
                    harmonics='none', galR=None, minSma=2.0, dPA=75.0,
-                   rFactor=0.2):
+                   rFactor=0.2, fRatio1=0.4, fRatio2=0.7):
     """
     Read the Ellipse output into a structure.
 
@@ -494,12 +494,8 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     """
     Try to select a region around R50 to get the average geometry
     """
-    radTemp = ellipseOut['sma'][(cogSub >= (maxFlux * 0.3)) &
-                                (cogSub <= (maxFlux * 0.6))]
-    print WAR
-    print "XXXXXXX"
-    print np.nanmin(radTemp), np.nanmax(radTemp)
-    print WAR
+    radTemp = ellipseOut['sma'][(cogSub >= (maxFlux * fRatio1)) &
+                                (cogSub <= (maxFlux * fRatio2))]
     avgQ, avgPA = ellipseGetAvgGeometry(ellipseOut, np.nanmax(radTemp),
                                         minSma=np.nanmin(radTemp))
     # Save as new column
@@ -1082,9 +1078,6 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
         yPad = 0
 
     # Show the image
-    print WAR
-    print imin, imax
-    print WAR
     ax8.imshow(np.arcsinh(zoomReg), interpolation="none",
                vmin=imin, vmax=imax, cmap=cmap, origin='lower')
     # Get the Shapes
@@ -1500,6 +1493,9 @@ if __name__ == '__main__':
     parser.add_argument('--inEllip', dest='inEllip',
                         help='Input Ellipse table',
                         default=None)
+    parser.add_argument('--expTime', dest='expTime',
+                        help='Exposure time of the image',
+                        type=float, default=1.0)
     parser.add_argument('--minSma', dest='minSma',
                         help='Minimum radius for Ellipse Run',
                         type=float, default=0.0)
@@ -1544,7 +1540,7 @@ if __name__ == '__main__':
                         type=int, default=2)
     parser.add_argument('--olthresh', dest='olthresh',
                         help='Central locator threshold',
-                        type=float, default=0.30)
+                        type=float, default=0.50)
     parser.add_argument('--zpPhoto', dest='zpPhoto',
                         help='Photometric zeropoint',
                         type=float, default=27.0)
@@ -1593,7 +1589,7 @@ if __name__ == '__main__':
            stage=args.stage,
            minSma=args.minSma,
            gain=3.0,
-           expTime=1.0,
+           expTime=args.expTime,
            zpPhoto=args.zpPhoto,
            maxTry=args.maxTry,
            minIt=args.minIt,
