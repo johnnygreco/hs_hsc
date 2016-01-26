@@ -682,7 +682,7 @@ def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
 def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
                        outPng='ellipse_summary.png', zp=27.0, threshold=None,
                        showZoom=False, useZscale=True, pngSize=16,
-                       outRatio=1.2):
+                       outRatio=1.2, oriName=None, imgType='_imgsub'):
     """
     Make a summary plot of the ellipse run.
 
@@ -1054,8 +1054,12 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     """ ax8 IsoPlot """
 
     imgFile = os.path.basename(image)
-    imgTitle = imgFile.replace('.fits', '')
-    imgTitle = imgTitle.replace('_img', '')
+    if oriName is not None:
+        imgTitle = oriName.replace('.fits', '')
+    else:
+        imgTitle = imgFile.replace('.fits', '')
+    if imgType is not None:
+        imgTitle = imgTitle.replace(imgType, '')
 
     ax8.tick_params(axis='both', which='major', labelsize=20)
     ax8.yaxis.set_major_locator(MaxNLocator(prune='lower'))
@@ -1158,7 +1162,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
            olthresh=0.5, harmonics='1 2', outerThreshold=None,
            updateIntens=True, psfSma=6.0, suffix='', useZscale=True,
-           hdu=0, saveCsv=False):
+           hdu=0, saveCsv=False, imgType='_imgsub'):
     """
     Running Ellipse to Extract 1-D profile.
 
@@ -1440,7 +1444,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     ellipsePlotSummary(ellipOut, imgTemp, maxRad=None,
                                        mask=mskOri, outPng=outPng,
                                        threshold=outerThreshold,
-                                       useZscale=useZscale)
+                                       useZscale=useZscale, oriName=image,
+                                       imgType=imgType)
                 """ Save the results """
                 if saveOut:
                     outPre = image.replace('.fits', suffix)

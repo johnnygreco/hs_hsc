@@ -757,6 +757,11 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     if not imgSameSize(imgArr, mskArr):
         raise Exception("### The Image and Mask need to have EXACTLY \
                 same dimensions!")
+    if imgSub:
+        imgType = '_imgsub'
+    else:
+        imgType = '_img'
+
     """
     Delete image and mask array
     TODO Test
@@ -770,7 +775,6 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         memA = proc.memory_info().rss
         print "@@@ Reduce : %5.2f" % ((memA - memB) / memB)
         print WAR
-    """"""
 
     if os.path.islink(imgFile):
         imgOri = os.readlink(imgFile)
@@ -883,7 +887,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                    useZscale=False,
                                    savePng=False,
                                    bkg=0.0,
-                                   updateIntens=False)
+                                   updateIntens=False,
+                                   imgType=imgType)
             psfOut, psfBin = psfRes
         else:
             psfOut = None
@@ -920,7 +925,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     minIt=minIt,
                                     maxIt=maxIt,
                                     plMask=plMask,
-                                    suffix=suffix)
+                                    suffix=suffix,
+                                    imgType=imgType)
             ellOut1, ellBin1 = ellRes1
 
             if ellOut1 is None:
@@ -966,7 +972,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     minIt=minIt,
                                     maxIt=maxIt,
                                     plMask=plMask,
-                                    suffix=suffix)
+                                    suffix=suffix,
+                                    imgType=imgType)
             ellOut2, ellBin2 = ellRes2
 
             if ellOut2 is None:
@@ -1008,7 +1015,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     fracBad=fracBad,
                                     intMode=intMode,
                                     plMask=plMask,
-                                    suffix=suffix)
+                                    suffix=suffix,
+                                    imgType=imgType)
             ellOut3, ellBin3 = ellRes3
 
             if ellOut3 is None:
@@ -1055,7 +1063,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                              maxTry=1,
                                              updateIntens=updateIntens,
                                              inEllip=inputSmall,
-                                             suffix=suffixSmall)
+                                             suffix=suffixSmall,
+                                             imgType=imgType)
                     smallEll, smallBin = smallOut
                 else:
                     smallEll = None
@@ -1079,7 +1088,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                              maxTry=1,
                                              updateIntens=updateIntens,
                                              inEllip=inputLarge,
-                                             suffix=suffixLarge)
+                                             suffix=suffixLarge,
+                                             imgType=imgType)
                     largeEll, largeBin = largeOut
                 else:
                     largeEll = None
@@ -1111,7 +1121,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                           fracBad=0.5,
                                           intMode=intMode,
                                           plMask=plMask,
-                                          suffix=suffixMulti3)
+                                          suffix=suffixMulti3,
+                                          imgType=imgType)
                 ellMulti3, binMulti3 = resMulti3
 
                 """ 4. Larger step size """
@@ -1141,7 +1152,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                           fracBad=fracBad,
                                           intMode=intMode,
                                           plMask=plMask,
-                                          suffix=suffixMulti4)
+                                          suffix=suffixMulti4,
+                                          imgType=imgType)
                 ellMulti4, binMulti4 = resMulti4
 
                 """ 5. Use Mean instead of Median """
@@ -1171,7 +1183,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                           fracBad=fracBad,
                                           intMode='mean',
                                           plMask=plMask,
-                                          suffix=suffixMulti5)
+                                          suffix=suffixMulti5,
+                                          imgType=imgType)
                 ellMulti5, binMulti5 = resMulti5
 
                 """ """
@@ -1204,7 +1217,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     updateIntens=updateIntens,
                                     intMode=intMode,
                                     plMask=plMask,
-                                    suffix=suffix)
+                                    suffix=suffix,
+                                    imgType=imgType)
             if ellOut4 is None:
                 print WAR
                 raise Exception("!!!!! FORCED ELLIPSE RUN FAILED !!!!")
