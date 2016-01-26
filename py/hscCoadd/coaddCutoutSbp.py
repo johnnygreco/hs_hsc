@@ -7,6 +7,7 @@ from __future__ import division
 import os
 import gc
 import copy
+import warnings
 import argparse
 
 try:
@@ -1057,7 +1058,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                              suffix=suffixSmall)
                     smallEll, smallBin = smallOut
                 else:
-                    smallEll, temp = None, None
+                    smallEll = None
 
                 """ 2. Large Mask """
                 if not noMask:
@@ -1081,7 +1082,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                              suffix=suffixLarge)
                     largeEll, largeBin = largeOut
                 else:
-                    largeEll, temp = None, None
+                    largeEll = None
 
                 """ 3. Strick clipping """
                 suffixMulti3 = 'multi3'
