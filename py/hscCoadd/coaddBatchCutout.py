@@ -246,7 +246,10 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
                                          info1=info1, info2=info2, info3=info3,
                                          min=min, max=max, Q=Q)
         elif (matchStatus is 'Full') or (matchStatus is 'Part'):
-            name = str(id[i])
+            if noName:
+                name = None
+            else:
+                name = str(id[i])
             if stitch:
                 cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
                                              filt=colorFilters,
@@ -271,7 +274,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                       verbose=True, noColor=False, onlyColor=False,
                       infoField1=None, infoField2=None, clean=False,
                       min=-0.0, max=0.72, Q=15, safe=False, saveSrc=False,
-                      makeDir=False):
+                      makeDir=False, noName=False):
     """
     Generate HSC coadd cutout images.
 
@@ -375,7 +378,10 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
             info3 = None
 
         if onlyColor:
-            name = str(id[i])
+            if noName:
+                name = None
+            else:
+                name = str(id[i])
             if verbose:
                 print "### Generate Color Image !"
             if clean:
@@ -395,7 +401,10 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                                              min=min, max=max, Q=Q,
                                              butler=butler)
         elif (matchStatus is 'Found' and not noColor):
-            name = str(id[i])
+            if noName:
+                name = None
+            else:
+                name = str(id[i])
             if verbose:
                 print "### Generate Color Image !"
             cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
