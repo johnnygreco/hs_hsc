@@ -376,7 +376,7 @@ def ellipRemoveIndef(outTabName, replace='NaN'):
 
 def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
                    harmonics='none', galR=None, minSma=2.0, dPA=75.0,
-                   rFactor=0.2, fRatio1=0.4, fRatio2=0.7):
+                   rFactor=0.2, fRatio1=0.2, fRatio2=0.6):
     """
     Read the Ellipse output into a structure.
 
