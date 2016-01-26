@@ -32,7 +32,8 @@ def run(args):
                               decField=args.decField,
                               infoField1=args.infoField1,
                               infoField2=args.infoField2,
-                              clean=args.clean)
+                              clean=args.clean,
+                              noName=args.noName)
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 
@@ -74,21 +75,23 @@ if __name__ == '__main__':
                         dest='noZCutout', default=False)
     parser.add_argument('-nc', '--noColor', action="store_true",
                         dest='noColor', default=False)
+    parser.add_argument('-nn', '--noName', action="store_true",
+                        dest='noName', default=False)
     parser.add_argument('-p', '--prefix', dest='prefix',
                         help='Prefix of the output file',
-                        default='redBCG')
+                        default='hscCutout')
     parser.add_argument('-id', '--id', dest='idField',
                         help="Column name for ID",
-                        default='ID_CLUSTER')
+                        default='ID')
     parser.add_argument('-ra', '--ra', dest='raField',
                         help="Column name for RA",
-                        default='RA_BCG')
+                        default='RA')
     parser.add_argument('-dec', '--dec', dest='decField',
                         help="Column name for DEC",
-                        default='DEC_BCG')
+                        default='DEC')
     parser.add_argument('-z', '--redshift', dest='zField',
                         help="Column name for z",
-                        default='Z_LAMBDA')
+                        default='Z')
     args = parser.parse_args()
 
     run(args)

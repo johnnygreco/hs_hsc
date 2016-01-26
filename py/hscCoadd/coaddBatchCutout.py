@@ -86,7 +86,7 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
     except KeyError:
         raise Exception('Can not find the DEC field')
 
-    if zCutoutSize and (zField is not None):
+    if zField is not None:
         try:
             redshift = cat.field(zField)
         except KeyError:
@@ -143,7 +143,8 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
                      sizeField='cutout_size', zCutoutSize=False,
                      zField=None, verbose=True, noColor=False,
                      onlyColor=False, infoField1=None, infoField2=None,
-                     clean=False, min=-0.0, max=0.72, Q=15, stitch=False):
+                     clean=False, min=-0.0, max=0.72, Q=15, stitch=False,
+                     noName=False):
     """
     Generate HSC coadd cutout images in batch mode.
 
@@ -217,7 +218,10 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
             info3 = None
 
         if onlyColor:
-            name = str(id[i])
+            if noName:
+                name = None
+            else:
+                name = str(id[i])
             if stitch:
                 if not clean:
                     cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
@@ -448,6 +452,8 @@ if __name__ == '__main__':
                         default=False)
     parser.add_argument('-clean', '--clean', action="store_true", dest='clean',
                         default=False)
+    parser.add_argument('-nn', '--noName', action="store_true",
+                        dest='noName', default=False)
     parser.add_argument('-v', '--verbose', action="store_true", dest='verbose',
                         default=False)
     parser.add_argument('-src', '--src', action="store_true", dest='saveSrc',
@@ -465,4 +471,4 @@ if __name__ == '__main__':
                       onlyColor=args.onlyColor, infoField1=args.infoField1,
                       infoField2=args.infoField2, safe=args.safe,
                       verbose=args.verbose, clean=args.clean, saveSrc=args.src,
-                      makeDir=args.makeDir)
+                      makeDir=args.makeDir, noName=args.noName)
