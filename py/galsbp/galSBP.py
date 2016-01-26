@@ -478,14 +478,30 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
                                  data=(ellipseOut['sma'] * pix)))
     ellipseOut.add_column(Column(name='rsma_asec',
                                  data=(ellipseOut['sma'] * pix) ** 0.25))
+    # Curve of Growth
+    cogOri, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut)
+    ellipseOut.add_column(Column(name='growth_ori', data=cogOri))
+
+    cogSub, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut,
+                                                    bkgCor=True)
+    ellipseOut.add_column(Column(name='growth_sub', data=cogSub))
+
     # Get the average X0, Y0, Q, and PA
-    """
-    The choice is pretty random
-    """
     if galR is None:
         galR = np.max(ellipseOut['sma']) * rFactor
     avgX, avgY = ellipseGetAvgCen(ellipseOut, galR, minSma=minSma)
-    avgQ, avgPA = ellipseGetAvgGeometry(ellipseOut, galR, minSma=minSma)
+
+    """
+    Try to select a region around R50 to get the average geometry
+    """
+    radTemp = ellipseOut['sma'][(cogSub >= (maxFlux * 0.3)) &
+                                (cogSub <= (maxFlux * 0.6))]
+    print WAR
+    print "XXXXXXX"
+    print np.nanmin(radTemp), np.nanmax(radTemp)
+    print WAR
+    avgQ, avgPA = ellipseGetAvgGeometry(ellipseOut, np.nanmax(radTemp),
+                                        minSma=np.nanmin(radTemp))
     # Save as new column
     ellipseOut.add_column(Column(name='avg_x0',
                                  data=(ellipseOut['sma'] * 0.0 + avgX)))
@@ -495,40 +511,8 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
                                  data=(ellipseOut['sma'] * 0.0 + avgQ)))
     ellipseOut.add_column(Column(name='avg_pa',
                                  data=(ellipseOut['sma'] * 0.0 + avgPA)))
-    # Curve of Growth
-    cogOri, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut)
-    ellipseOut.add_column(Column(name='growth_ori', data=cogOri))
-
-    cogSub, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut,
-                                                    bkgCor=True)
-    ellipseOut.add_column(Column(name='growth_sub', data=cogSub))
 
     return ellipseOut
-
-
-def zscale(img, contrast=0.25, samples=500):
-    """zScale the image."""
-    # Image scaling function form
-    # http://hsca.ipmu.jp/hscsphinx/scripts/psfMosaic.html
-    ravel = img.ravel()
-    if len(ravel) > samples:
-        imsort = np.sort(np.random.choice(ravel, size=samples))
-    else:
-        imsort = np.sort(ravel)
-    n = len(imsort)
-    idx = np.arange(n)
-    med = np.nanmedian(imsort)
-    w = 0.25
-    i_lo, i_hi = int((0.5 - w) * n), int((0.5 + w) * n)
-    try:
-        p = np.polyfit(idx[i_lo:i_hi], imsort[i_lo:i_hi], 1)
-        slope, intercept = p
-    except Exception:
-        slope = 2.5
-    z1 = med - (slope / contrast) * (n / 2 - n * w)
-    z2 = med + (slope / contrast) * (n / 2 - n * w)
-
-    return z1, z2
 
 
 def ellipseGetGrowthCurve(ellipOut, bkgCor=False, intensArr=None):
@@ -733,7 +717,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     imgMsk = copy.deepcopy(img)
     if useZscale:
         try:
-            imin, imax = zscale(imgMsk, contrast=0.6, samples=500)
+            imin, imax = hUtil.zscale(imgMsk, contrast=0.6, samples=500)
         except Exception:
             imin, imax = np.nanmin(imgMsk), np.nanmax(imgMsk)
     else:
@@ -1094,6 +1078,9 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
         yPad = 0
 
     # Show the image
+    print WAR
+    print imin, imax
+    print WAR
     ax8.imshow(np.arcsinh(zoomReg), interpolation="none",
                vmin=imin, vmax=imax, cmap=cmap, origin='lower')
     # Get the Shapes
@@ -1171,7 +1158,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
            olthresh=0.5, harmonics='1 2', outerThreshold=None,
            updateIntens=True, psfSma=6.0, suffix='', useZscale=True,
-           hdu=0):
+           hdu=0, saveCsv=False):
     """
     Running Ellipse to Extract 1-D profile.
 
@@ -1202,7 +1189,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
     data = (fits.open(imgOri))[hdu].data
     head = (fits.open(imgOri))[hdu].header
     imgHdu = fits.PrimaryHDU(data)
-    imgHdu.header = head
+    # imgHdu.header = head
     imgHduList = fits.HDUList([imgHdu])
     imgHduList.writeto(imgTemp, clobber=True)
 
@@ -1450,7 +1437,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 """ Save a summary figure """
                 if savePng:
                     outPng = image.replace('.fits', suffix + '.png')
-                    ellipsePlotSummary(ellipOut, imgOri, maxRad=None,
+                    ellipsePlotSummary(ellipOut, imgTemp, maxRad=None,
                                        mask=mskOri, outPng=outPng,
                                        threshold=outerThreshold,
                                        useZscale=useZscale)
@@ -1458,7 +1445,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 if saveOut:
                     outPre = image.replace('.fits', suffix)
                     saveEllipOut(ellipOut, outPre, ellipCfg=ellipCfg,
-                                 verbose=verbose, csv=False)
+                                 verbose=verbose, csv=saveCsv)
 
                 """ Remove the temp files """
                 try:
@@ -1528,7 +1515,7 @@ if __name__ == '__main__':
                         type=float, default=0.0)
     parser.add_argument('--stage', dest='stage',
                         help='Stage of Ellipse Run',
-                        type=int, default=3, choices=range(1, 4))
+                        type=int, default=3, choices=range(1, 5))
     parser.add_argument('--hdu', dest='hdu',
                         help='HDU of data to run on',
                         type=int, default=0)
@@ -1579,6 +1566,8 @@ if __name__ == '__main__':
                         default=False)
     parser.add_argument('--save', dest='save', action="store_true",
                         default=True)
+    parser.add_argument('--csv', dest='saveCsv', action="store_true",
+                        default=False)
     parser.add_argument('--plmask', dest='plmask', action="store_true",
                         default=True)
     parser.add_argument('--updateIntens', dest='updateIntens',
@@ -1621,4 +1610,6 @@ if __name__ == '__main__':
            olthresh=args.olthresh,
            harmonics='none',
            outerThreshold=args.outerThreshold,
-           updateIntens=args.updateIntens)
+           updateIntens=args.updateIntens,
+           hdu=args.hdu,
+           saveCsv=args.saveCsv)
