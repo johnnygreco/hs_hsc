@@ -101,9 +101,13 @@ def run(args):
             else:
                 refRerun = rerun
             """ Location and Prefix """
+            if args.imgSub:
+                imgType = 'imgsub'
+            else:
+                imgType = 'img'
             galRefRoot = os.path.join(galID, refFilter, refRerun)
             galRefPrefix = (prefix + '_' + galID + '_' + refFilter +
-                            '_full_img_ellip_' + refRerun + '_')
+                            '_full_' + imgType + '_ellip_' + refRerun + '_')
             """ The reference model """
             inEllipPrefix = os.path.join(galRefRoot, galRefPrefix)
             """  """
@@ -162,8 +166,8 @@ def run(args):
                                     plMask=args.plmask,
                                     imgSub=args.imgSub)
 
-                logging.log('### The 1-D SBP is DONE for %s in %s' %
-                            (galPrefix, filter))
+                logging.info('### The 1-D SBP is DONE for %s in %s' %
+                             (galPrefix, filter))
                 gc.collect()
                 """ Forced photoetry using small """
                 if (galMsk is not None) and args.multiMask:
@@ -206,7 +210,8 @@ def run(args):
                                                 outRatio=args.outRatio,
                                                 exMask=mskSmall,
                                                 suffix=suffixSmall,
-                                                plMask=args.plmask)
+                                                plMask=args.plmask,
+                                                imgSub=args.imgSub)
                             logging.info('### SMALLMASK is DONE for %s' %
                                          galPrefix)
                             gc.collect()
@@ -253,7 +258,8 @@ def run(args):
                                                 outRatio=args.outRatio,
                                                 exMask=mskLarge,
                                                 suffix=suffixLarge,
-                                                plMask=args.plmask)
+                                                plMask=args.plmask,
+                                                imgSub=args.imgSub)
                             logging.info('### LARGEMASK is DONE for %s' %
                                          galPrefix)
                             gc.collect()

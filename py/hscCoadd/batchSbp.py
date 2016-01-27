@@ -148,8 +148,8 @@ def run(args):
                                     noMask=args.nomask,
                                     imgSub=args.imgSub)
 
-                logging.warning('### The 1-D SBP is DONE for %s in %s' %
-                                (galPrefix, filter))
+                logging.info('### The 1-D SBP is DONE for %s in %s' %
+                             (galPrefix, filter))
                 print SEP
             except Exception, errMsg:
                 print str(errMsg)
@@ -199,7 +199,7 @@ if __name__ == '__main__':
     parser.add_argument('--pix', dest='pix', help='Pixel Scale',
                         type=float, default=0.168)
     parser.add_argument('--step', dest='step', help='Step size',
-                        type=float, default=0.16)
+                        type=float, default=0.20)
     parser.add_argument('--zp', dest='zp', help='Photometric zeropoint',
                         type=float, default=27.0)
     parser.add_argument('--redshift', dest='redshift',
