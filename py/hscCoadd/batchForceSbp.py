@@ -159,9 +159,11 @@ def run(args):
                                     outRatio=args.outRatio,
                                     exMask=galMsk,
                                     suffix=ellipSuffix,
-                                    plMask=args.plmask)
+                                    plMask=args.plmask,
+                                    imgSub=args.imgSub)
 
-                logging.warning('### The 1-D SBP is DONE for %s' % galPrefix)
+                logging.log('### The 1-D SBP is DONE for %s in %s' %
+                            (galPrefix, filter))
                 gc.collect()
                 """ Forced photoetry using small """
                 if (galMsk is not None) and args.multiMask:
@@ -205,8 +207,8 @@ def run(args):
                                                 exMask=mskSmall,
                                                 suffix=suffixSmall,
                                                 plMask=args.plmask)
-                            logging.warning('### SMALLMASK is DONE for %s' %
-                                            galPrefix)
+                            logging.info('### SMALLMASK is DONE for %s' %
+                                         galPrefix)
                             gc.collect()
                         except Exception, errMsg:
                             print str(errMsg)
@@ -252,8 +254,8 @@ def run(args):
                                                 exMask=mskLarge,
                                                 suffix=suffixLarge,
                                                 plMask=args.plmask)
-                            logging.warning('### LARGEMASK is DONE for %s' %
-                                            galPrefix)
+                            logging.info('### LARGEMASK is DONE for %s' %
+                                         galPrefix)
                             gc.collect()
                         except Exception, errMsg:
                             print str(errMsg)
@@ -266,8 +268,10 @@ def run(args):
                                         galPrefix)
             except Exception, errMsg:
                 print str(errMsg)
-                warnings.warn('### The 1-D SBP is failed for %s' % galPrefix)
-                logging.warning('### The 1-D SBP is FAILED for %s' % galPrefix)
+                warnings.warn('### The 1-D SBP is failed for %s in %s' %
+                              (galPrefix, filter))
+                logging.warning('### The 1-D SBP is FAILED for %s in %s' %
+                                (galPrefix, filter))
                 gc.collect()
             print SEP
     else:
@@ -369,6 +373,8 @@ if __name__ == '__main__':
                         action="store_true",
                         default=True)
     parser.add_argument('--plmask', dest='plmask', action="store_true",
+                        default=True)
+    parser.add_argument('--imgSub', dest='imgSub', action="store_true",
                         default=True)
 
     args = parser.parse_args()

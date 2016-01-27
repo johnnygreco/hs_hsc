@@ -148,12 +148,15 @@ def run(args):
                                     noMask=args.nomask,
                                     imgSub=args.imgSub)
 
-                logging.warning('### The 1-D SBP is DONE for %s' % galPrefix)
+                logging.warning('### The 1-D SBP is DONE for %s in %s' %
+                                (galPrefix, filter))
                 print SEP
             except Exception, errMsg:
                 print str(errMsg)
-                warnings.warn('### The 1-D SBP is failed for %s' % galPrefix)
-                logging.warning('### The 1-D SBP is FAILED for %s' % galPrefix)
+                warnings.warn('### The 1-D SBP is failed for %s in %s' %
+                              (galPrefix, filter))
+                logging.warning('### The 1-D SBP is FAILED for %s in %s' %
+                                (galPrefix, filter))
                 print SEP + '\n'
 
             print COM

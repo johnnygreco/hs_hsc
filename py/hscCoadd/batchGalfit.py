@@ -150,14 +150,15 @@ def run(args):
                                         externalMask=galMsk,
                                         abspath=args.abspath,
                                         imax=args.imax)
-                logging.info('### The Galfit Run is DONE for %s' % galPrefix)
+                logging.info('### The Galfit Run is DONE for %s in %s' %
+                             (galPrefix, filter))
                 print SEP
             except Exception, errMsg:
                 print str(errMsg)
-                warnings.warn('### The Galfit Run is failed for %s' %
-                              galPrefix)
-                logging.warning('### The Galfit Run is FAILED for %s' %
-                                galPrefix)
+                warnings.warn('### The Galfit Run is failed for %s in %s' %
+                              (galPrefix, filter))
+                logging.warning('### The Galfit Run is FAILED for %s in %s' %
+                                (galPrefix, filter))
                 print SEP + '\n'
 
             if psutilOk:

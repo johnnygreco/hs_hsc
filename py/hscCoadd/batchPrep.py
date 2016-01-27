@@ -183,10 +183,10 @@ def run(args):
             except Exception, errMsg:
                 print WAR
                 print str(errMsg)
-                warnings.warn('### The cutout preparation is failed for %s' %
-                              galPrefix)
-                logging.warning('### The cutout preparation is failed for %s' %
-                                galPrefix)
+                warnings.warn('### The preparation is failed for %s in %s' %
+                              (galPrefix, filter))
+                logging.warning('### The preparation is failed for %s in %s' %
+                                (galPrefix, filter))
             print COM
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
