@@ -218,14 +218,14 @@ if __name__ == '__main__':
                         help='Upper limit for clipping',
                         type=int, default=3)
     parser.add_argument('--fracBad', dest='fracBad',
-                        help='Outer threshold',
+                        help='Fraction of bad pixels allowed',
                         type=float, default=0.7)
     parser.add_argument('--minIt', dest='minIt',
                         help='Minimum number of iterations',
-                        type=int, default=25)
+                        type=int, default=30)
     parser.add_argument('--maxIt', dest='maxIt',
                         help='Maximum number of iterations',
-                        type=int, default=140)
+                        type=int, default=150)
     parser.add_argument('--maxTry', dest='maxTry',
                         help='Maximum number of attempts of ellipse run',
                         type=int, default=4)
@@ -266,7 +266,7 @@ if __name__ == '__main__':
     parser.add_argument('--nomask', dest='nomask', action="store_true",
                         default=False)
     parser.add_argument('--imgSub', dest='imgSub', action="store_true",
-                        default=True)
+                        default=False)
 
     args = parser.parse_args()
 

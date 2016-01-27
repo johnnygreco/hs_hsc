@@ -727,7 +727,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                    olthresh=0.5, intMode='mean', lowClip=3.0, uppClip=3.0,
                    nClip=2, fracBad=0.5, minIt=20, maxIt=150, outRatio=1.2,
                    exMask=None, suffix='', plMask=False, noMask=False,
-                   multiEllipse=False, imgSub=True):
+                   multiEllipse=False, imgSub=False):
     """
     Generate 1-D SBP Plot.
 
