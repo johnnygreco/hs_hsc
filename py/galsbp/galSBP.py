@@ -719,6 +719,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     else:
         imin = np.percentile(np.ravel(imgMsk), 0.01)
         imax = np.percentile(np.ravel(imgMsk), 0.95)
+
     if mask is not None:
         msk = fits.open(mask)[0].data
         imgMsk[msk > 0] = np.nan
@@ -1153,7 +1154,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
            nClip=2, fracBad=0.5, intMode="mean",
            plMask=True, conver=0.05, recenter=True,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
-           olthresh=0.5, harmonics='1 2', outerThreshold=None,
+           olthresh=0.5, harmonics=None, outerThreshold=None,
            updateIntens=True, psfSma=6.0, suffix='', useZscale=True,
            hdu=0, saveCsv=False, imgType='_imgsub'):
     """
@@ -1306,6 +1307,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             print '\n' + SEP
             print "##       Start the Ellipse Run: Attempt ", (attempts + 1)
             print SEP
+
         try:
             """ Config the parameters for ellipse """
             unlearnEllipse()
@@ -1455,6 +1457,11 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 break
         except Exception as error:
             attempts += 1
+            try:
+                os.remove(imgTemp)
+                os.remove(plFile)
+            except Exception:
+                pass
             print WAR
             print "###  Error Information : ", error
             print "###  !!! Make the Ellipse Run A Little Bit Easier !"
