@@ -101,7 +101,9 @@ def run(args):
                                    visual=args.visual,
                                    exMask=galMsk,
                                    bkgSize=args.bkgSize,
-                                   bkgFilter=args.bkgFilter)
+                                   bkgFilter=args.bkgFilter,
+                                   saveBkg=args.saveBkg,
+                                   nClip=args.nClip)
             except Exception, errMsg:
                 print WAR
                 print str(errMsg)
@@ -150,6 +152,11 @@ if __name__ == '__main__':
                         action="store_true", default=True)
     parser.add_argument('--visual', dest='visual',
                         action="store_true", default=True)
+    parser.add_argument('--nClip', dest='nClip',
+                        help='Number of iterations for clipping',
+                        type=int, default=2)
+    parser.add_argument('--saveBkg', dest='saveBkg',
+                        action="store_true", default=False)
 
     args = parser.parse_args()
 
