@@ -108,9 +108,9 @@ def run(args):
                 print WAR
                 print str(errMsg)
                 warnings.warn('### The sky estimate is failed ' +
-                              'for %s' % galID)
+                              'for %s in %s' % (galID, filter))
                 logging.warning('### The sky estimate is failed ' +
-                                'for %s' % galID)
+                                'for %s in %s' % (galID, filter))
             print COM
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)

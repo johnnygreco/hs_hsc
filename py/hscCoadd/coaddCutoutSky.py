@@ -15,7 +15,6 @@ from scipy.stats import sigmaclip
 
 # Astropy
 from astropy.io import fits
-# from astropy.stats import sigmaclip
 # AstroML
 from astroML.plotting import hist
 
@@ -278,6 +277,7 @@ def getSEPSky(imgArr, mskArr, imgHead, skyClip=3, zp=27.0, pix=0.168,
         mskBin = mskArr
 
     pixSky1 = imgBin[mskBin == 0].flatten()
+    pixSky1 = pixSky1[np.isfinite(pixSky1)]
     try:
         pixSky1, low1, upp1 = sigmaclip(pixSky1, low=skyClip, high=skyClip)
         print "### %d pixels left for sky of origin image" % len(pixSky1)
@@ -287,6 +287,7 @@ def getSEPSky(imgArr, mskArr, imgHead, skyClip=3, zp=27.0, pix=0.168,
         warnings.warn("Sigma clip fails for imgBin")
 
     pixSky2 = subBin[mskBin == 0].flatten()
+    pixSky2 = pixSky2[np.isfinite(pixSky2)]
     try:
         pixSky2, low2, upp2 = sigmaclip(pixSky2, low=skyClip, high=skyClip)
         print "### %d pixels left for sky of bkg subtracted image" % len(pixSky2)
@@ -323,6 +324,7 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
     dimX, dimY = imgArr.shape
     # Pixel values of all pixels that are not masked out (before rebinned)
     pixels = imgArr[mskAll == 0].flatten()
+    pixels = pixels[np.isfinite(pixels)]
     try:
         pixNoMsk, low3, upp3 = sigmaclip(pixels, low=skyClip, high=skyClip)
         print "### %d pixels left for sky of origin image" % len(pixNoMsk)
@@ -347,6 +349,7 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
 
     # Get all the pixels that are not masked out
     pixels = imgBin[mskBin == 0].flatten()
+    pixels = pixels[np.isfinite(pixels)]
     try:
         pixNoMskBin, low4, upp4 = sigmaclip(pixels, low=skyClip, high=skyClip)
         print "### %d pixels left for sky of binned image" % len(pixNoMskBin)
@@ -423,7 +426,7 @@ def coaddCutoutSky(prefix, root=None, verbose=True, skyClip=3.0,
         print "###    A %3d x %3d binning will be applied" % (rebin, rebin)
         print "###    A %4.1f sigma-clipping will be applied" % skyClip
     # Get rid of the NaN pixels, if there is any
-    # mskArr[np.isnan(imgArr)] = 1
+    mskArr[np.isnan(imgArr)] = 1
 
     # 1. SEP Sky
     imgSub = getSEPSky(imgArr, mskArr, imgHead,
