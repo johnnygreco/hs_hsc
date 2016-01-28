@@ -184,7 +184,7 @@ def defaultEllipse(x0, y0, maxsma, ellip0=0.05, pa0=0.0, sma0=6.0, minsma=0.0,
                    linear=False, step=0.08, recenter=True, conver=0.05,
                    hcenter=True, hellip=True, hpa=True, minit=10, maxit=250,
                    olthresh=1.00, mag0=27.0, integrmode='median', usclip=3.0,
-                   lsclip=3.0, nclip=2, fflag=0.5, harmonics='none'):
+                   lsclip=3.0, nclip=2, fflag=0.5, harmonics="none"):
     """
     The default settings for Ellipse.
 
@@ -229,7 +229,7 @@ def defaultEllipse(x0, y0, maxsma, ellip0=0.05, pa0=0.0, sma0=6.0, minsma=0.0,
     ellipConfig['lsclip'] = lsclip
     ellipConfig['nclip'] = nclip
     ellipConfig['fflag'] = fflag
-    ellipConfig['harmonics'] = harmonics
+    ellipConfig['harmonics'] = "none"
 
     return ellipConfig
 
@@ -426,7 +426,7 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     ellipseOut.rename_column('col38', 'stop')
     ellipseOut.rename_column('col39', 'a_big')
     ellipseOut.rename_column('col40', 'sarea')
-    if harmonics is not "none":
+    if harmonics != "none":
         # TODO: Read as many harmonics as necessary
         ellipseOut.rename_column('col41', 'a1')
         ellipseOut.rename_column('col42', 'a1_err')
