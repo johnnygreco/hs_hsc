@@ -1013,6 +1013,12 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 print WAR
                 raise Exception("!!!!! ELLIPSE RUN FAILED AT STAGE 3 !!!!")
                 print WAR
+            else:
+                """
+                Should update the maxR
+                """
+                maxR = np.nanmax(ellOut3['sma'])
+
 
             if plot:
                 print SEP

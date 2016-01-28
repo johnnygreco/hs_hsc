@@ -131,7 +131,6 @@ def maskFits2Pl(inputImage, inputMask):
     print SEP
     iraf.unlearn('imcopy')
     iraf.imcopy(input=inputMask, output=outputMask, verbose=True)
-    print SEP
 
     return outputMask
 
@@ -145,7 +144,6 @@ def imageMaskNaN(inputImage, inputMask):
     newImage = inputImage.replace('.fits', '_nan.fits')
     print SEP
     print " ## %s ---> %s " % (inputImage, newImage)
-    print SEP
 
     if os.path.islink(inputImage):
         imgOri = os.readlink(inputImage)
@@ -229,7 +227,7 @@ def defaultEllipse(x0, y0, maxsma, ellip0=0.05, pa0=0.0, sma0=6.0, minsma=0.0,
     ellipConfig['lsclip'] = lsclip
     ellipConfig['nclip'] = nclip
     ellipConfig['fflag'] = fflag
-    ellipConfig['harmonics'] = "none"
+    ellipConfig['harmonics'] = harmonics
 
     return ellipConfig
 
@@ -244,7 +242,7 @@ def unlearnEllipse():
 
 
 def easierEllipse(ellipConfig, verbose=True,
-                  dRad=0.9, dStep=0.03, dFlag=0.05):
+                  dRad=0.92, dStep=0.01, dFlag=0.05):
     """Make the Ellipse run easier."""
     if verbose:
         print SEP
@@ -258,6 +256,7 @@ def easierEllipse(ellipConfig, verbose=True,
                                                ellipConfig['fflag'] +
                                                dFlag)
         print SEP
+
     ellipConfig['maxsma'] *= dRad
     ellipConfig['step'] += dStep
     ellipConfig['fflag'] += dFlag
@@ -390,6 +389,7 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     ellipseOut.rename_column('col2',  'intens')
     ellipseOut.rename_column('col3',  'int_err')
     ellipseOut.rename_column('col4',  'pix_var')
+
     ellipseOut.rename_column('col5',  'rms')
     ellipseOut.rename_column('col6',  'ell')
     ellipseOut.rename_column('col7',  'ell_err')
@@ -427,11 +427,8 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     ellipseOut.rename_column('col39', 'a_big')
     ellipseOut.rename_column('col40', 'sarea')
     if harmonics != "none":
-        print WAR
-        print "#### READ HARMONICS"
-        print WAR
         # TODO: Read as many harmonics as necessary
-        ellipseOut.rename_column('rcol41', 'a1')
+        ellipseOut.rename_column('col41', 'a1')
         ellipseOut.rename_column('col42', 'a1_err')
         ellipseOut.rename_column('col43', 'b1')
         ellipseOut.rename_column('col44', 'b1_err')
@@ -1157,7 +1154,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
            nClip=2, fracBad=0.5, intMode="mean",
            plMask=True, conver=0.05, recenter=True,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
-           olthresh=0.5, harmonics='none', outerThreshold=None,
+           olthresh=0.5, harmonics='1 2', outerThreshold=None,
            updateIntens=True, psfSma=6.0, suffix='', useZscale=True,
            hdu=0, saveCsv=False, imgType='_imgsub'):
     """
@@ -1200,25 +1197,32 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             mskOri = os.readlink(mask)
         else:
             mskOri = mask
+
         if not os.path.isfile(mskOri):
             print WAR
+            try:
+                os.remove(imgTemp)
+            except Exception:
+                pass
             raise Exception("### Can not find the input mask: %s !" % mskOri)
         if plMask:
-            print COM
-            print "###  Will use the *.pl Mask"
-            print COM
             plFile = maskFits2Pl(imgTemp, mskOri)
             if not os.path.isfile(plFile):
                 print WAR
+                try:
+                    os.remove(imgTemp)
+                except Exception:
+                    pass
                 raise Exception("### Can not find the .pl mask: %s !" % plFile)
             imageUse = imgTemp
         else:
-            print COM
-            print "###  Will use the *nan.fits Mask"
-            print COM
             imageNew = imageMaskNaN(imgTemp, mskOri)
             if not os.path.isfile(imageNew):
                 print WAR
+                try:
+                    os.remove(imgTemp)
+                except Exception:
+                    pass
                 raise Exception(
                     "### Can not find the NaN-Masked image: %s" % imageNew)
             imageUse = imageNew
@@ -1249,7 +1253,6 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
         print "###      iniSma, maxSma : ", iniSma, maxSma
         print "###      Stage : ", stage
         print "###      Step : ", ellipStep
-        print SEP
 
     """ Check the stage """
     if stage == 1:
@@ -1262,9 +1265,25 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
         hcenter, hellip, hpa = True, True, True
         if (inEllip is None) or (not os.path.isfile(inEllip)):
             print WAR
+            try:
+                os.remove(imgTemp)
+            except Exception:
+                pass
+            try:
+                os.remove(plFile)
+            except Exception:
+                pass
             raise Exception(
                 "### Can not find the input ellip file: %s !" % inEllip)
     else:
+        try:
+            os.remove(imgTemp)
+        except Exception:
+            pass
+        try:
+            os.remove(plFile)
+        except Exception:
+            pass
         raise Exception("### Available step: 1 , 2 , 3 , 4")
 
     """ Get the default Ellipse settings """
@@ -1335,10 +1354,10 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 iraf.ellipse(input=imageUse, output=outBin, inellip=inEllip,
                              verbose=verStr)
             print SEP
+
             # Check if the Ellipse run is finished
             if not os.path.isfile(outBin):
-                print WAR
-                raise Exception("XXX Ellipse not done !")
+                raise Exception("XXX Can not find the outBin: %s!" % outBin)
             else:
                 # Remove the existed .tab and .cdf file
                 if os.path.isfile(outTab):
@@ -1448,16 +1467,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     outPre = image.replace('.fits', suffix)
                     saveEllipOut(ellipOut, outPre, ellipCfg=ellipCfg,
                                  verbose=verbose, csv=saveCsv)
-
                 gc.collect()
                 break
-
-            """ Remove the temp files """
-            try:
-                os.remove(imgTemp)
-                os.remove(plFile)
-            except Exception:
-                pass
 
         except Exception as error:
             attempts += 1
@@ -1467,18 +1478,24 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             print WAR
             ellipCfg = easierEllipse(ellipCfg)
 
-        try:
-            os.remove(imgTemp)
-            os.remove(plFile)
-        except Exception:
-            pass
 
         if not os.path.isfile(outBin):
             ellipOut = None
             print WAR
             print "###  ELLIPSE RUN FAILED AFTER %3d ATTEMPTS!!!" % maxTry
             print WAR
+
         gc.collect()
+
+    # Remove the temp files
+    try:
+        os.remove(imgTemp)
+    except Exception:
+        pass
+    try:
+        os.remove(plFile)
+    except Exception:
+        pass
 
     return ellipOut, outBin
 
@@ -1621,7 +1638,7 @@ if __name__ == '__main__':
            saveOut=args.save,
            savePng=args.plot,
            olthresh=args.olthresh,
-           harmonics='none',
+           harmonics='1 2',
            outerThreshold=args.outerThreshold,
            updateIntens=args.updateIntens,
            hdu=args.hdu,
