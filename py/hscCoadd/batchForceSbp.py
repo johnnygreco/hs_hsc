@@ -119,7 +119,7 @@ def run(args):
             if not os.path.isfile(inEllipBin):
                 logging.warning('### Can not find ' +
                                 'INPUT BINARY for : %s' % galPrefix)
-                logging.warning('###  File Name : %s' % inEllipBin)
+                logging.warning('###     File Name : %s' % inEllipBin)
                 continue
             """
             Suffix of the output file
@@ -219,11 +219,15 @@ def run(args):
                             print str(errMsg)
                             logging.warning('### SMALLMASK is FAILED for %s' %
                                             galPrefix)
+                            logging.warning('###    Err: %s - %s' %
+                                            (galPrefix, errMsg))
                             gc.collect()
                     else:
                         print "##    Can not find %s" % mskSmall
                         logging.warning('### SMALLMASK is FAILED for %s' %
                                         galPrefix)
+                        logging.warning('###    Err: %s - Can not find %s' %
+                                        (galPrefix, mskSmall))
                     """ Large Mask """
                     if os.path.isfile(mskLarge):
                         print "##     Input MaskLarge : %s" % mskLarge
@@ -260,24 +264,29 @@ def run(args):
                                                 suffix=suffixLarge,
                                                 plMask=args.plmask,
                                                 imgSub=args.imgSub)
-                            logging.info('### LARGEMASK is DONE for %s' %
-                                         galPrefix)
+                            logging.info('### LARGEMASK is DONE for %s in %s' %
+                                         (galPrefix, filter))
                             gc.collect()
                         except Exception, errMsg:
                             print str(errMsg)
-                            logging.warning('### LARGEMASK is FAILED for %s' %
-                                            galPrefix)
+                            logging.warning('### LARGEMASK is FAILED for %s in %s' %
+                                            (galPrefix, filter))
+                            logging.warning('###    Err: %s - %s' %
+                                            (galPrefix, errMsg))
                             gc.collect()
                     else:
                         print "##    Can not find %s" % mskLarge
                         logging.warning('### LARGEMASK is FAILED for %s' %
                                         galPrefix)
+                        logging.warning('###    Err: %s - Can not find %s' %
+                                        (galPrefix, mskLarge))
             except Exception, errMsg:
                 print str(errMsg)
                 warnings.warn('### The 1-D SBP is failed for %s in %s' %
                               (galPrefix, filter))
                 logging.warning('### The 1-D SBP is FAILED for %s in %s' %
                                 (galPrefix, filter))
+                logging.warning('###    Err: %s - %s' % (galPrefix, errMsg))
                 gc.collect()
             print SEP
     else:

@@ -426,7 +426,7 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     ellipseOut.rename_column('col38', 'stop')
     ellipseOut.rename_column('col39', 'a_big')
     ellipseOut.rename_column('col40', 'sarea')
-    if harmonics != "none":
+    if harmonics is not "none":
         # TODO: Read as many harmonics as necessary
         ellipseOut.rename_column('col41', 'a1')
         ellipseOut.rename_column('col42', 'a1_err')
@@ -1154,7 +1154,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
            nClip=2, fracBad=0.5, intMode="mean",
            plMask=True, conver=0.05, recenter=True,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
-           olthresh=0.5, harmonics=None, outerThreshold=None,
+           olthresh=0.5, harmonics='none', outerThreshold=None,
            updateIntens=True, psfSma=6.0, suffix='', useZscale=True,
            hdu=0, saveCsv=False, imgType='_imgsub'):
     """
@@ -1447,14 +1447,16 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     saveEllipOut(ellipOut, outPre, ellipCfg=ellipCfg,
                                  verbose=verbose, csv=saveCsv)
 
-                """ Remove the temp files """
-                try:
-                    os.remove(imgTemp)
-                    os.remove(plFile)
-                except Exception:
-                    pass
                 gc.collect()
                 break
+
+            """ Remove the temp files """
+            try:
+                os.remove(imgTemp)
+                os.remove(plFile)
+            except Exception:
+                pass
+
         except Exception as error:
             attempts += 1
             try:

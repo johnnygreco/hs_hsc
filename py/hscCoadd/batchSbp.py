@@ -33,9 +33,6 @@ def run(args):
         proc = psutil.Process(os.getpid())
         gc.collect()
         mem0 = proc.memory_info().rss
-        print SEP
-        print "@@@ Initial: %i" % mem0
-        print SEP
     else:
         gc.collect()
 
@@ -70,14 +67,15 @@ def run(args):
                 continue
             fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
             if len(fitsList) < 2:
-                logging.warning('### MISSING DAta in %s' % galRoot)
+                logging.warning('### MISSING Data in %s' % galRoot)
                 continue
 
             galImg = galPrefix + '_img.fits'
             if (not os.path.isfile(os.path.join(galRoot, galImg)) and not
                     os.path.islink(os.path.join(galRoot, galImg))):
                 logging.warning('### Can not find ' +
-                                'CUTOUT IMAGE for %s' % galPrefix)
+                                'CUTOUT IMAGE for %s in %s' %
+                                (galPrefix, filter))
                 continue
             """
             Set up a rerun
@@ -102,7 +100,8 @@ def run(args):
                 galMsk = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
                 if not os.path.isfile(galMsk):
                     logging.warning('### Can not find ' +
-                                    'MASK for  %s ' % galPrefix)
+                                    'MASK for  %s in %s' %
+                                    (galPrefix, filter))
                     continue
             else:
                 galMsk = None
@@ -157,17 +156,15 @@ def run(args):
                               (galPrefix, filter))
                 logging.warning('### The 1-D SBP is FAILED for %s in %s' %
                                 (galPrefix, filter))
+                logging.warning('###     Error :%s' % errMsg)
                 print SEP + '\n'
 
-            print COM
             if psutilOk:
                 mem1 = proc.memory_info().rss
                 gc.collect()
                 mem2 = proc.memory_info().rss
-                print "@@@ Collect: %0.2f%%" % (100.0 * (mem2 - mem1) / mem0)
             else:
                 gc.collect()
-            print COM
 
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)

@@ -738,12 +738,10 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         print "#  CoaddCutoutSbp Start "
         print "##       Input Image: ", prefix
         print "##       Root Directory: ", root
-    print SEP
     if psutilOk:
         proc = psutil.Process(os.getpid())
         gc.collect()
         mem0 = proc.memory_info().rss
-        print "@@@ Initial: %i" % mem0
     else:
         gc.collect()
     print SEP
@@ -767,14 +765,11 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     TODO Test
     """
     if psutilOk:
-        print WAR
         memB = proc.memory_info().rss
     del imgArr
     del mskArr
     if psutilOk:
         memA = proc.memory_info().rss
-        print "@@@ Reduce : %5.2f" % ((memA - memB) / memB)
-        print WAR
 
     if os.path.islink(imgFile):
         imgOri = os.readlink(imgFile)
@@ -849,15 +844,10 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     Actually start to run
     """
     if psutilOk:
-        print SEP
         mem1 = proc.memory_info().rss
-        print "@@@ Increase: %0.2f%%" % (100.0 * (mem1 - mem0) / mem0)
-        print SEP
 
     if checkCenter and mskHead['MSK_R20'] == 1:
-        print WAR
-        print "### The central region is masked out"
-        print WAR
+        raise Exception("### The central region is masked out : %s" % imgFile)
     else:
         """ Ellipse run for the PSF """
         if psf:
@@ -1037,6 +1027,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                              outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
                              showZoom=showZoom, exptime=exptime, bkg=bkg,
                              outRatio=outRatio, imgType=imgType)
+
             if multiEllipse:
                 """
                 Run Ellipse using different mask and configuration
@@ -1224,15 +1215,12 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 raise Exception("!!!!! FORCED ELLIPSE RUN FAILED !!!!")
                 print WAR
 
-            print SEP
             if psutilOk:
                 mem1 = proc.memory_info().rss
                 gc.collect()
                 mem2 = proc.memory_info().rss
-                print "@@@ Collect: %0.2f%%" % (100.0 * (mem2 - mem1) / mem0)
             else:
                 gc.collect()
-            print SEP
 
 if __name__ == '__main__':
 
