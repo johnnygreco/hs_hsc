@@ -427,8 +427,11 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     ellipseOut.rename_column('col39', 'a_big')
     ellipseOut.rename_column('col40', 'sarea')
     if harmonics != "none":
+        print WAR
+        print "#### READ HARMONICS"
+        print WAR
         # TODO: Read as many harmonics as necessary
-        ellipseOut.rename_column('col41', 'a1')
+        ellipseOut.rename_column('rcol41', 'a1')
         ellipseOut.rename_column('col42', 'a1_err')
         ellipseOut.rename_column('col43', 'b1')
         ellipseOut.rename_column('col44', 'b1_err')
@@ -1204,7 +1207,6 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             print COM
             print "###  Will use the *.pl Mask"
             print COM
-            # plFile = maskFits2Pl(imgOri, mask)
             plFile = maskFits2Pl(imgTemp, mskOri)
             if not os.path.isfile(plFile):
                 print WAR
@@ -1459,16 +1461,17 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
 
         except Exception as error:
             attempts += 1
-            try:
-                os.remove(imgTemp)
-                os.remove(plFile)
-            except Exception:
-                pass
             print WAR
             print "###  Error Information : ", error
             print "###  !!! Make the Ellipse Run A Little Bit Easier !"
             print WAR
             ellipCfg = easierEllipse(ellipCfg)
+
+        try:
+            os.remove(imgTemp)
+            os.remove(plFile)
+        except Exception:
+            pass
 
         if not os.path.isfile(outBin):
             ellipOut = None
