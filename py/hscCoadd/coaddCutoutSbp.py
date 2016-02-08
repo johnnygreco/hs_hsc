@@ -303,8 +303,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax1.text(0.55, 0.71, 'mag$_{tot,cor}=%5.2f$' % magFlux100, fontsize=24,
              transform=ax1.transAxes)
 
-    indMaxFlux = np.nanargmax(curveSub[indexUse3])
-    maxIsoSbp = ellipOut3['sbp_upp'][indMaxFlux]
+    sbpTest = ellipOut3['sbp_cor'][indexUse3]
+    maxIsoSbp = np.nanmax(sbpTest)
     print "###     MaxIsoSbp : ", maxIsoSbp
 
     """ Type of Radius """
