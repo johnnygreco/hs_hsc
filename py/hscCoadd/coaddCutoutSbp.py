@@ -10,12 +10,6 @@ import copy
 import warnings
 import argparse
 
-try:
-    import psutil
-    psutilOk = True
-except Exception:
-    psutilOk = False
-
 import numpy as np
 # Astropy
 from astropy.io import fits
@@ -738,12 +732,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         print "#  CoaddCutoutSbp Start "
         print "##       Input Image: ", prefix
         print "##       Root Directory: ", root
-    if psutilOk:
-        proc = psutil.Process(os.getpid())
-        gc.collect()
-        mem0 = proc.memory_info().rss
-    else:
-        gc.collect()
+    gc.collect()
     print SEP
 
     """ 0. Organize Input Data """
@@ -764,12 +753,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     Delete image and mask array
     TODO Test
     """
-    if psutilOk:
-        memB = proc.memory_info().rss
     del imgArr
     del mskArr
-    if psutilOk:
-        memA = proc.memory_info().rss
 
     if os.path.islink(imgFile):
         imgOri = os.readlink(imgFile)
@@ -843,9 +828,6 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     """
     Actually start to run
     """
-    if psutilOk:
-        mem1 = proc.memory_info().rss
-
     if checkCenter and mskHead['MSK_R20'] == 1:
         raise Exception("### The central region is masked out : %s" % imgFile)
     else:
@@ -1018,7 +1000,6 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 Should update the maxR
                 """
                 maxR = np.nanmax(ellOut3['sma'])
-
 
             if plot:
                 print SEP
@@ -1221,12 +1202,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 raise Exception("!!!!! FORCED ELLIPSE RUN FAILED !!!!")
                 print WAR
 
-            if psutilOk:
-                mem1 = proc.memory_info().rss
-                gc.collect()
-                mem2 = proc.memory_info().rss
-            else:
-                gc.collect()
+            gc.collect()
 
 if __name__ == '__main__':
 

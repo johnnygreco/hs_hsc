@@ -9,11 +9,6 @@ import logging
 import warnings
 import argparse
 
-try:
-    import psutil
-    psutilOk = True
-except Exception:
-    psutilOk = False
 from astropy.io import fits
 
 import coaddCutoutSbp as cSbp
@@ -29,12 +24,7 @@ def run(args):
 
     Parameters
     """
-    if psutilOk:
-        proc = psutil.Process(os.getpid())
-        gc.collect()
-        mem0 = proc.memory_info().rss
-    else:
-        gc.collect()
+    gc.collect()
 
     if os.path.isfile(args.incat):
         data = fits.open(args.incat)[1].data
@@ -159,12 +149,7 @@ def run(args):
                 logging.warning('###     Error :%s' % errMsg)
                 print SEP + '\n'
 
-            if psutilOk:
-                mem1 = proc.memory_info().rss
-                gc.collect()
-                mem2 = proc.memory_info().rss
-            else:
-                gc.collect()
+            gc.collect()
 
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
@@ -204,7 +189,7 @@ if __name__ == '__main__':
                         type=float, default=None)
     parser.add_argument('--olthresh', dest='olthresh',
                         help='Central locator threshold',
-                        type=float, default=0.50)
+                        type=float, default=0.30)
     parser.add_argument('--uppClip', dest='uppClip',
                         help='Upper limit for clipping',
                         type=float, default=2.5)
