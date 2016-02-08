@@ -1982,6 +1982,16 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     """
     See if the center of the image has been masked out
     """
+    sumMskCen, dump1, dump2 = sep.sum_ellipse(np.float32(mskFinal),
+                                              galCenX, galCenY,
+                                              20.0, 20.0,
+                                              (galPA * np.pi / 180.0), r=1.0)
+    if sumMskCen > 0:
+        sepFlags = addFlag(sepFlags, 'MSK_CEN', True)
+        print SEP
+        print "###    %d pixels within R20 have been masked out" % sumMskCen
+    else:
+        sepFlags = addFlag(sepFlags, 'MSK_CEN', False)
     sumMskR20, dump1, dump2 = sep.sum_ellipse(np.float32(mskFinal),
                                               galCenX, galCenY,
                                               galR20, (galR20 * galQ),
