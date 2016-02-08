@@ -1007,7 +1007,12 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 print SEP
                 if suffix[-1] != '_':
                     suffix = suffix + '_'
-                sumPng = root + prefix + '_ellip_' + suffix + 'sum.png'
+                if imgSub:
+                    temp = '_imgsub_ellip_'
+                    sumPng = root + prefix + temp + suffix + 'sum.png'
+                else:
+                    temp = '_img_ellip_'
+                    sumPng = root + prefix + temp + suffix + 'sum.png'
                 ellipSummary(ellOut1, ellOut2, ellOut3, imgOri,
                              psfOut=psfOut,
                              maxRad=maxR, mask=mskOri, radMode='rsma',
@@ -1173,8 +1178,12 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                             'Large nClip',
                             'Large Step',
                             'intMode=Mean']
-                comparePng = (root + prefix + '_ellip_' + suffix +
-                              'compare.png')
+                if imgSub:
+                    comparePng = (root + prefix + '_imgsub_ellip_' + suffix +
+                                  'compare.png')
+                else:
+                    comparePng = (root + prefix + '_img_ellip_' + suffix +
+                                  'compare.png')
                 ellipCompare(ellStack, outPng=comparePng, zp=27.0,
                              ellipLabel=ellLabel)
         else:

@@ -382,7 +382,8 @@ def findProfile(pattern, loc, verbose=False):
 
 
 def getEllipProfile(galid, base, prefix, model, psf=False,
-                    filter='HSC-I', rerun='default', verbose=False):
+                    filter='HSC-I', rerun='default',
+                    verbose=False, imgSub=True):
     """
     Find and load the Ellipse output.
 
@@ -392,6 +393,8 @@ def getEllipProfile(galid, base, prefix, model, psf=False,
     location = os.path.join(base, galid, filter, rerun)
     if psf:
         ellType = 'psf'
+    elif imgSub:
+        ellType = 'imgsub'
     else:
         ellType = 'img'
     """Ellipse result file name"""
@@ -410,7 +413,7 @@ def getEllipProfile(galid, base, prefix, model, psf=False,
 
 
 def geomExtract(loc, galID, redshift, filter,
-                prefix, rerun, model,
+                prefix, rerun, model, imgSub=True,
                 verbose=False, interp=True):
     """
     Return geometric information.
@@ -419,7 +422,7 @@ def geomExtract(loc, galID, redshift, filter,
     """
     prof = getEllipProfile(galID, loc, prefix, model,
                            filter=filter, rerun=rerun,
-                           verbose=verbose)
+                           verbose=verbose, imgSub=imgSub)
     if prof is not None:
         """ Get physical pixel scale and distant module """
         scale = hUtil.cosmoScale(redshift)
@@ -455,7 +458,7 @@ def geomExtract(loc, galID, redshift, filter,
 
 def sbpExtract(loc, galID, redshift, filter,
                prefix, rerun, model,
-               zp=27.0, extinction=0.0,
+               zp=27.0, extinction=0.0, imgSub=True,
                amag_sun=None, m2l=None, psf=False,
                origin=False, verbose=False, interp=True):
     """
@@ -465,7 +468,8 @@ def sbpExtract(loc, galID, redshift, filter,
     """
     prof = getEllipProfile(galID, loc, prefix, model,
                            filter=filter, rerun=rerun,
-                           verbose=verbose, psf=psf)
+                           verbose=verbose, psf=psf,
+                           imgSub=imgSub)
     if prof is not None:
         ell = correctProf(prof, redshift,
                           extinction=extinction,
@@ -485,7 +489,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                a_g=0.0, a_r=0.0, a_i=0.0,
                a_z=0.0, a_y=0.0, suffix=None,
                m2l_g=None, m2l_r=None, m2l_i=None,
-               m2l_z=None, m2l_y=None,
+               m2l_z=None, m2l_y=None, imgSub=True,
                verbose=False, save=True, interp=True,
                sumFolder='sbp_sum', sample=None):
     """
@@ -522,7 +526,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                          prefix, rerun, 'default_3',
                          extinction=a_i, m2l=m2l_i,
                          amag_sun=SUN_I, verbose=verbose,
-                         interp=interp)
+                         interp=interp, imgSub=imgSub)
 
     if refEllI is not None:
         """ Reference profile in I-band """
@@ -540,7 +544,8 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
         """
         refGeomI = geomExtract(loc, galID, redshift, 'HSC-I',
                                prefix, rerun, 'default_2',
-                               verbose=verbose, interp=interp)
+                               verbose=verbose, interp=interp,
+                               imgSub=imgSub)
         if refGeomI is not None:
             r, ell, ellErr, pa, paErr = refGeomI
             isGeom = True
@@ -578,7 +583,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-I', prefix, rerun, 'multi1_4',
                            m2l=m2l_i, extinction=a_i,
                            amag_sun=SUN_I, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellI2 is not None:
             r, muI2, lumI2, errI2 = ellI2
             isMuI2 = True
@@ -597,7 +602,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-I', prefix, rerun, 'multi2_4',
                            m2l=m2l_i, extinction=a_i,
                            amag_sun=SUN_I, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellI3 is not None:
             r, muI3, lumI3, errI3 = ellI3
             isMuI3 = True
@@ -634,7 +639,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-I', prefix, rerun, 'multi3_3',
                            m2l=m2l_i, extinction=a_i,
                            amag_sun=SUN_I, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellI4 is not None:
             r, muI4, lumI4, errI4 = ellI4
             isMuI4 = True
@@ -653,7 +658,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-I', prefix, rerun, 'multi4_3',
                            m2l=m2l_i, extinction=a_i,
                            amag_sun=SUN_I, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellI5 is not None:
             r, muI5, lumI5, errI5 = ellI5
             isMuI5 = True
@@ -672,7 +677,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-I', prefix, rerun, 'multi5_3',
                            m2l=m2l_i, extinction=a_i,
                            amag_sun=SUN_I, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellI6 is not None:
             r, muI6, lumI6, errI6 = ellI6
             isMuI6 = True
@@ -691,7 +696,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-G', prefix, rerun, 'default_4',
                            m2l=m2l_g, extinction=a_g,
                            amag_sun=SUN_G, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellG1 is not None:
             r, muG1, lumG1, errG1 = ellG1
             isMuG1 = True
@@ -729,7 +734,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-G', prefix, rerun, 'default_msksmall_4',
                            m2l=m2l_g, extinction=a_g,
                            amag_sun=SUN_G, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellG2 is not None:
             r, muG2, lumG2, errG2 = ellG2
             isMuG2 = True
@@ -748,7 +753,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-G', prefix, rerun, 'default_msklarge_4',
                            m2l=m2l_g, extinction=a_g,
                            amag_sun=SUN_G, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellG3 is not None:
             r, muG3, lumG3, errG3 = ellG3
             isMuG3 = True
@@ -766,7 +771,8 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
         ellR1 = sbpExtract(loc, galID, redshift,
                            'HSC-R', prefix, rerun, 'default_4',
                            m2l=m2l_r, extinction=a_r,
-                           amag_sun=SUN_R, verbose=verbose)
+                           amag_sun=SUN_R, verbose=verbose,
+                           interp=interp, imgSub=imgSub)
         if ellR1 is not None:
             r, muR1, lumR1, errR1 = ellR1
             isMuR1 = True
@@ -804,7 +810,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-R', prefix, rerun, 'default_msksmall_4',
                            m2l=m2l_r, extinction=a_r,
                            amag_sun=SUN_R, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellR2 is not None:
             r, muR2, lumR2, errR2 = ellR2
             isMuR2 = True
@@ -823,7 +829,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-R', prefix, rerun, 'default_msklarge_4',
                            m2l=m2l_r, extinction=a_r,
                            amag_sun=SUN_R, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellR3 is not None:
             r, muR3, lumR3, errR3 = ellR3
             isMuR3 = True
@@ -842,7 +848,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-Z', prefix, rerun, 'default_4',
                            m2l=m2l_z, extinction=a_z,
                            amag_sun=SUN_Z, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellZ1 is not None:
             r, muZ1, lumZ1, errZ1 = ellZ1
             isMuZ1 = True
@@ -880,7 +886,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-Z', prefix, rerun, 'default_msksmall_4',
                            m2l=m2l_z, extinction=a_z,
                            amag_sun=SUN_Z, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellZ2 is not None:
             r, muZ2, lumZ2, errZ2 = ellZ2
             isMuZ2 = True
@@ -899,7 +905,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-Z', prefix, rerun, 'default_msklarge_4',
                            m2l=m2l_z, extinction=a_z,
                            amag_sun=SUN_Z, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellZ3 is not None:
             r, muZ3, lumZ3, errZ3 = ellZ3
             isMuZ3 = True
@@ -918,7 +924,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-Y', prefix, rerun, 'default_4',
                            m2l=m2l_y, extinction=a_y,
                            amag_sun=SUN_Y, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellY1 is not None:
             r, muY1, lumY1, errY1 = ellY1
             isMuY1 = True
@@ -956,7 +962,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-Y', prefix, rerun, 'default_msksmall_4',
                            m2l=m2l_y, extinction=a_y,
                            amag_sun=SUN_Y, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellY2 is not None:
             r, muY2, lumY2, errY2 = ellY2
             isMuY2 = True
@@ -975,7 +981,7 @@ def sbpCollect(loc, prefix, galID, redshift, rerun='default',
                            'HSC-Y', prefix, rerun, 'default_msklarge_4',
                            m2l=m2l_y, extinction=a_y,
                            amag_sun=SUN_Y, verbose=verbose,
-                           interp=interp)
+                           interp=interp, imgSub=imgSub)
         if ellY3 is not None:
             r, muY3, lumY3, errY3 = ellY3
             isMuY3 = True
@@ -1178,7 +1184,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                           ymagCol='zmag_cmodel', refFilter='HSC-I',
                           verbose=False, interp=True, sbpRef='lumI1',
                           sumFolder='sbp_sum', suffix=None, sample=None,
-                          plot=True):
+                          plot=True, imgSub=False):
     """
     Summarize the Ellipse results.
 
@@ -1413,7 +1419,8 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                                 verbose=verbose, save=False,
                                 sumFolder=sumFolder,
                                 sample=sample,
-                                suffix=suffix)
+                                suffix=suffix,
+                                imgSub=imgSub)
 
             if galTab is not None:
                 """Radius KPc"""
@@ -1630,6 +1637,9 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--plot', dest='plot',
                         action="store_true",
                         default=False)
+    parser.add_argument('--imgSub', dest='imgSub',
+                        action="store_true",
+                        default=False)
 
     args = parser.parse_args()
 
@@ -1647,4 +1657,5 @@ if __name__ == '__main__':
                           sbpRef=args.sbpRef,
                           suffix=args.suffix,
                           sample=args.sample,
-                          plot=args.plot)
+                          plot=args.plot,
+                          imgSub=args.imgSub)
