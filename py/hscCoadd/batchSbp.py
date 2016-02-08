@@ -189,13 +189,13 @@ if __name__ == '__main__':
                         type=float, default=None)
     parser.add_argument('--olthresh', dest='olthresh',
                         help='Central locator threshold',
-                        type=float, default=0.30)
+                        type=float, default=0.50)
     parser.add_argument('--uppClip', dest='uppClip',
                         help='Upper limit for clipping',
                         type=float, default=2.5)
     parser.add_argument('--lowClip', dest='lowClip',
-                        help='Upper limit for clipping',
-                        type=float, default=2.5)
+                        help='Lower limit for clipping',
+                        type=float, default=2.7)
     parser.add_argument('--nClip', dest='nClip',
                         help='Upper limit for clipping',
                         type=int, default=3)
@@ -210,7 +210,7 @@ if __name__ == '__main__':
                         type=int, default=150)
     parser.add_argument('--maxTry', dest='maxTry',
                         help='Maximum number of attempts of ellipse run',
-                        type=int, default=4)
+                        type=int, default=7)
     parser.add_argument('--galX0', dest='galX0',
                         help='Center X0',
                         type=float, default=None)

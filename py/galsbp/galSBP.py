@@ -242,7 +242,7 @@ def unlearnEllipse():
 
 
 def easierEllipse(ellipConfig, verbose=True,
-                  dRad=0.92, dStep=0.01, dFlag=0.05):
+                  dRad=0.90, dStep=0.008, dFlag=0.03):
     """Make the Ellipse run easier."""
     if verbose:
         print SEP

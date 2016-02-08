@@ -303,10 +303,6 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax1.text(0.55, 0.71, 'mag$_{tot,cor}=%5.2f$' % magFlux100, fontsize=24,
              transform=ax1.transAxes)
 
-    sbpTest = ellipOut3['sbp_cor'][indexUse3]
-    maxIsoSbp = np.nanmax(sbpTest)
-    print "###     MaxIsoSbp : ", maxIsoSbp
-
     """ Type of Radius """
     if radMode is 'rsma':
         if useKpc is None:
@@ -411,6 +407,9 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     sbp_cor = ellipOut3['sbp_cor']
     sbp_low = ellipOut3['sbp_low']
     sbp_upp = ellipOut3['sbp_upp']
+
+    maxIsoSbp = np.nanmax(sbp_sub)
+    print "###     MaxIsoSbp : ", maxIsoSbp
 
     ax1.fill_between(rad3[indexUse3], sbp_upp[indexUse3], sbp_low[indexUse3],
                      facecolor='r', alpha=0.2)
