@@ -1335,7 +1335,30 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
     col6 = Column(name='lum_50', data=colTemp)
     col7 = Column(name='lum_25', data=colTemp)
     col8 = Column(name='lum_10', data=colTemp)
-    outTab.add_columns([col1, col2, col3, col4, col5, col6, col7, col8])
+    col9 = Column(name='lum_5', data=colTemp)
+    col10 = Column(name='lum_15', data=colTemp)
+    col11 = Column(name='lum_30', data=colTemp)
+    col12 = Column(name='lum_40', data=colTemp)
+    col13 = Column(name='lum_60', data=colTemp)
+    col14 = Column(name='r20_max', data=colTemp)
+    col15 = Column(name='r50_max', data=colTemp)
+    col16 = Column(name='r80_max', data=colTemp)
+    col17 = Column(name='r90_max', data=colTemp)
+    col18 = Column(name='r20_120', data=colTemp)
+    col19 = Column(name='r50_120', data=colTemp)
+    col20 = Column(name='r80_120', data=colTemp)
+    col21 = Column(name='r90_120', data=colTemp)
+    col22 = Column(name='r20_100', data=colTemp)
+    col23 = Column(name='r50_100', data=colTemp)
+    col24 = Column(name='r80_100', data=colTemp)
+    col25 = Column(name='r90_100', data=colTemp)
+    col26 = Column(name='c82_max', data=colTemp)
+    col27 = Column(name='c82_120', data=colTemp)
+    col28 = Column(name='c82_100', data=colTemp)
+    outTab.add_columns([col1, col2, col3, col4, col5, col6, col7, col8,
+                        col9, col10, col11, col12, col13, col14, col15,
+                        col16, col17, col18, col19, col20, col21, col22,
+                        col23, col24, col25, col26, col27, col28])
 
     """Start a ProgressBar"""
     sbpSum = []
@@ -1397,17 +1420,60 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                 rKpc = galTab['rKpc']
                 """Maximum luminosity from certain model"""
                 lumRef = galTab[sbpRef]
-
+                """Get the 1-D interpolation function"""
+                radInterp = interp1d(rKpc, lumRef)
+                """Maximum intergrated 1-d luminosity"""
                 lumMax = np.nanmax(lumRef).astype(np.float32)
+                """Out to 150 Kpc"""
                 lum150 = np.nanmax(lumRef[rKpc <= 150.0]).astype(np.float32)
+                lum150i = radInterp(150.0)
+                lum150 = lum150 if (lum150 >= lum150i) else lum150i
+                """Out to 120 Kpc"""
                 lum120 = np.nanmax(lumRef[rKpc <= 120.0]).astype(np.float32)
+                lum120i = radInterp(120.0)
+                lum120 = lum120 if (lum120 >= lum120i) else lum120i
+                """Out to 100 Kpc"""
                 lum100 = np.nanmax(lumRef[rKpc <= 100.0]).astype(np.float32)
+                lum100i = radInterp(100.0)
+                lum100 = lum100 if (lum100 >= lum100i) else lum100i
+                """Out to 75 Kpc"""
                 lum75 = np.nanmax(lumRef[rKpc <= 75.0]).astype(np.float32)
+                lum75i = radInterp(75.0)
+                lum75 = lum75 if (lum75 >= lum75i) else lum75i
+                """Out to 60 Kpc"""
+                lum60 = np.nanmax(lumRef[rKpc <= 60.0]).astype(np.float32)
+                lum60i = radInterp(60.0)
+                lum60 = lum60 if (lum60 >= lum60i) else lum60i
+                """Out to 50 Kpc"""
                 lum50 = np.nanmax(lumRef[rKpc <= 50.0]).astype(np.float32)
+                lum50i = radInterp(50.0)
+                lum50 = lum50 if (lum50 >= lum50i) else lum50i
+                """Out to 40 Kpc"""
+                lum40 = np.nanmax(lumRef[rKpc <= 40.0]).astype(np.float32)
+                lum40i = radInterp(40.0)
+                lum40 = lum40 if (lum40 >= lum40i) else lum40i
+                """Out to 30 Kpc"""
+                lum30 = np.nanmax(lumRef[rKpc <= 30.0]).astype(np.float32)
+                lum30i = radInterp(30.0)
+                lum30 = lum30 if (lum30 >= lum30i) else lum30i
+                """Out to 25 Kpc"""
                 lum25 = np.nanmax(lumRef[rKpc <= 25.0]).astype(np.float32)
+                lum25i = radInterp(25.0)
+                lum25 = lum25 if (lum25 >= lum25i) else lum25i
+                """Out to 15 Kpc"""
+                lum15 = np.nanmax(lumRef[rKpc <= 15.0]).astype(np.float32)
+                lum15i = radInterp(15.0)
+                lum15 = lum15 if (lum15 >= lum15i) else lum15i
+                """Out to 10 Kpc"""
                 lum10 = np.nanmax(lumRef[rKpc <= 10.0]).astype(np.float32)
+                lum10i = radInterp(10.0)
+                lum10 = lum10 if (lum10 >= lum10i) else lum10i
+                """Out to 5 Kpc"""
+                lum5 = np.nanmax(lumRef[rKpc <= 5.0]).astype(np.float32)
+                lum5i = radInterp(5.0)
+                lum5 = lum5 if (lum5 >= lum5i) else lum5i
 
-                if not np.isfinite(lumMax):
+                if not np.isfinite(lum120):
                     if verbose:
                         print(WAR)
                         print("## Problematic SBP for %s !" % galStr)
@@ -1416,18 +1482,28 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                     lum120 = -9999.0
                     lum100 = -9999.0
                     lum75 = -9999.0
+                    lum60 = -9999.0
                     lum50 = -9999.0
+                    lum40 = -9999.0
+                    lum30 = -9999.0
                     lum25 = -9999.0
+                    lum15 = -9999.0
                     lum10 = -9999.0
+                    lum5 = -9999.0
 
                 galTab.meta['LUM_MAX'] = lumMax
                 galTab.meta['LUM_150'] = lum150
                 galTab.meta['LUM_120'] = lum120
                 galTab.meta['LUM_100'] = lum100
                 galTab.meta['LUM_75'] = lum75
+                galTab.meta['LUM_60'] = lum60
                 galTab.meta['LUM_50'] = lum50
+                galTab.meta['LUM_40'] = lum40
+                galTab.meta['LUM_30'] = lum30
                 galTab.meta['LUM_25'] = lum25
+                galTab.meta['LUM_15'] = lum15
                 galTab.meta['LUM_10'] = lum10
+                galTab.meta['LUM_5'] = lum5
 
                 """M2L"""
                 galTab.meta['LOGM2L_G'] = galaxy['logm2l_g']
@@ -1445,9 +1521,39 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                 outTab['lum_120'][ii] = lum120
                 outTab['lum_100'][ii] = lum100
                 outTab['lum_75'][ii] = lum75
+                outTab['lum_60'][ii] = lum60
                 outTab['lum_50'][ii] = lum50
+                outTab['lum_40'][ii] = lum40
+                outTab['lum_30'][ii] = lum30
                 outTab['lum_25'][ii] = lum25
+                outTab['lum_15'][ii] = lum15
                 outTab['lum_10'][ii] = lum10
+                outTab['lum_5'][ii] = lum5
+
+                """Get the R20, R50, R80 and R90"""
+                fracMax = (10.0 ** lumRef) / (10.0 ** lumMax)
+                fracInterp1 = interp1d(fracMax, rKpc)
+                outTab['r20_max'] = fracInterp1(0.20)
+                outTab['r50_max'] = fracInterp1(0.50)
+                outTab['r80_max'] = fracInterp1(0.80)
+                outTab['r90_max'] = fracInterp1(0.80)
+                outTab['c82_max'] = (outTab['r80_max'] / outTab['r20_max'])
+
+                frac120 = (10.0 ** lumRef) / (10.0 ** lum120)
+                fracInterp2 = interp1d(frac120, rKpc)
+                outTab['r20_120'] = fracInterp2(0.20)
+                outTab['r50_120'] = fracInterp2(0.50)
+                outTab['r80_120'] = fracInterp2(0.80)
+                outTab['r90_120'] = fracInterp2(0.80)
+                outTab['c82_120'] = (outTab['r80_120'] / outTab['r20_120'])
+
+                frac100 = (10.0 ** lumRef) / (10.0 ** lum100)
+                fracInterp3 = interp1d(frac100, rKpc)
+                outTab['r20_100'] = fracInterp3(0.20)
+                outTab['r50_100'] = fracInterp3(0.50)
+                outTab['r80_100'] = fracInterp3(0.80)
+                outTab['r90_100'] = fracInterp3(0.80)
+                outTab['c82_100'] = (outTab['r80_100'] / outTab['r20_100'])
 
                 """"""
                 sbpSum.append(galTab)
