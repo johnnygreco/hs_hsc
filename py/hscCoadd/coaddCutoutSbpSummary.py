@@ -1200,6 +1200,10 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
         strTemp = '_sbpsum'
     else:
         strTemp = '_sbpsum_' + str(suffix).strip()
+    if imgSub:
+        strTemp += '_imgsub'
+    else:
+        strTemp += '_img'
     outCat = inCat.replace('.fits', strTemp + '.fits')
     outPkl = inCat.replace('.fits', strTemp + '.pkl')
 
@@ -1393,9 +1397,13 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
 
             """Summary table"""
             if sample is None:
-                sumCat = galStr + '_sbp_sum'
+                sumCat = galStr + '_sbpsum'
             else:
-                sumCat = str(sample).strip() + '_' + galStr + '_sbp_sum'
+                sumCat = str(sample).strip() + '_' + galStr + '_sbpsum'
+            if imgSub:
+                sumCat += '_imgsub'
+            else:
+                sumCat += '_img'
             if suffix is None:
                 sumCat = sumCat + '.fits'
             else:
