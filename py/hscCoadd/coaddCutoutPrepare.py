@@ -1989,7 +1989,7 @@ def coaddCutoutPrepare(prefix, root=None, verbose=True,
     if sumMskCen > 0:
         sepFlags = addFlag(sepFlags, 'MSK_CEN', True)
         print SEP
-        print "###    %d pixels within R20 have been masked out" % sumMskCen
+        print "###    %d pixels around center have been masked out" % sumMskCen
     else:
         sepFlags = addFlag(sepFlags, 'MSK_CEN', False)
     sumMskR20, dump1, dump2 = sep.sum_ellipse(np.float32(mskFinal),
