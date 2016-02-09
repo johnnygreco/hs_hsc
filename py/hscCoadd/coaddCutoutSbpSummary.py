@@ -1548,27 +1548,46 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                 """Get the R20, R50, R80 and R90"""
                 fracMax = (10.0 ** lumRef) / (10.0 ** lumMax)
                 fracInterp1 = interp1d(fracMax, rKpc)
-                outTab['r20_max'] = fracInterp1(0.20)
-                outTab['r50_max'] = fracInterp1(0.50)
-                outTab['r80_max'] = fracInterp1(0.80)
-                outTab['r90_max'] = fracInterp1(0.80)
-                outTab['c82_max'] = (outTab['r80_max'] / outTab['r20_max'])
+                outTab['r20_max'][ii] = fracInterp1(0.20)
+                outTab['r50_max'][ii] = fracInterp1(0.50)
+                outTab['r80_max'][ii] = fracInterp1(0.80)
+                outTab['r90_max'][ii] = fracInterp1(0.80)
+                outTab['c82_max'][ii] = (outTab['r80_max'] / outTab['r20_max'])
 
                 frac120 = (10.0 ** lumRef) / (10.0 ** lum120)
                 fracInterp2 = interp1d(frac120, rKpc)
-                outTab['r20_120'] = fracInterp2(0.20)
-                outTab['r50_120'] = fracInterp2(0.50)
-                outTab['r80_120'] = fracInterp2(0.80)
-                outTab['r90_120'] = fracInterp2(0.80)
-                outTab['c82_120'] = (outTab['r80_120'] / outTab['r20_120'])
+                outTab['r20_120'][ii] = fracInterp2(0.20)
+                outTab['r50_120'][ii] = fracInterp2(0.50)
+                outTab['r80_120'][ii] = fracInterp2(0.80)
+                outTab['r90_120'][ii] = fracInterp2(0.80)
+                outTab['c82_120'][ii] = (outTab['r80_120'] / outTab['r20_120'])
 
                 frac100 = (10.0 ** lumRef) / (10.0 ** lum100)
                 fracInterp3 = interp1d(frac100, rKpc)
-                outTab['r20_100'] = fracInterp3(0.20)
-                outTab['r50_100'] = fracInterp3(0.50)
-                outTab['r80_100'] = fracInterp3(0.80)
-                outTab['r90_100'] = fracInterp3(0.80)
-                outTab['c82_100'] = (outTab['r80_100'] / outTab['r20_100'])
+                outTab['r20_100'][ii] = fracInterp3(0.20)
+                outTab['r50_100'][ii] = fracInterp3(0.50)
+                outTab['r80_100'][ii] = fracInterp3(0.80)
+                outTab['r90_100'][ii] = fracInterp3(0.80)
+                outTab['c82_100'][ii] = (outTab['r80_100'] / outTab['r20_100'])
+
+                """Extra meta information"""
+                galTab.meta['R20_MAX'] = outTab['r20_max'][ii]
+                galTab.meta['R50_MAX'] = outTab['r50_max'][ii]
+                galTab.meta['R80_MAX'] = outTab['r80_max'][ii]
+                galTab.meta['R90_MAX'] = outTab['r90_max'][ii]
+                galTab.meta['C82_MAX'] = outTab['c82_max'][ii]
+
+                galTab.meta['R20_120'] = outTab['r20_120'][ii]
+                galTab.meta['R50_120'] = outTab['r50_120'][ii]
+                galTab.meta['R80_120'] = outTab['r80_120'][ii]
+                galTab.meta['R90_120'] = outTab['r90_120'][ii]
+                galTab.meta['C82_120'] = outTab['c82_120'][ii]
+
+                galTab.meta['R20_100'] = outTab['r20_100'][ii]
+                galTab.meta['R50_100'] = outTab['r50_100'][ii]
+                galTab.meta['R80_100'] = outTab['r80_100'][ii]
+                galTab.meta['R90_100'] = outTab['r90_100'][ii]
+                galTab.meta['C82_100'] = outTab['c82_100'][ii]
 
                 """"""
                 sbpSum.append(galTab)
