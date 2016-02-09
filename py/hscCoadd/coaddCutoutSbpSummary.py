@@ -1441,51 +1441,51 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                 lumMax = np.nanmax(lumRef).astype(np.float32)
                 """Out to 150 Kpc"""
                 lum150 = np.nanmax(lumRef[rKpc <= 150.0]).astype(np.float32)
-                lum150i = radInterp(150.0)[0]
+                lum150i = radInterp(150.0)
                 lum150 = lum150 if (lum150 >= lum150i) else lum150i
                 """Out to 120 Kpc"""
                 lum120 = np.nanmax(lumRef[rKpc <= 120.0]).astype(np.float32)
-                lum120i = radInterp(120.0)[0]
+                lum120i = radInterp(120.0)
                 lum120 = lum120 if (lum120 >= lum120i) else lum120i
                 """Out to 100 Kpc"""
                 lum100 = np.nanmax(lumRef[rKpc <= 100.0]).astype(np.float32)
-                lum100i = radInterp(100.0)[0]
+                lum100i = radInterp(100.0)
                 lum100 = lum100 if (lum100 >= lum100i) else lum100i
                 """Out to 75 Kpc"""
                 lum75 = np.nanmax(lumRef[rKpc <= 75.0]).astype(np.float32)
-                lum75i = radInterp(75.0)[0]
+                lum75i = radInterp(75.0)
                 lum75 = lum75 if (lum75 >= lum75i) else lum75i
                 """Out to 60 Kpc"""
                 lum60 = np.nanmax(lumRef[rKpc <= 60.0]).astype(np.float32)
-                lum60i = radInterp(60.0)[0]
+                lum60i = radInterp(60.0)
                 lum60 = lum60 if (lum60 >= lum60i) else lum60i
                 """Out to 50 Kpc"""
                 lum50 = np.nanmax(lumRef[rKpc <= 50.0]).astype(np.float32)
-                lum50i = radInterp(50.0)[0]
+                lum50i = radInterp(50.0)
                 lum50 = lum50 if (lum50 >= lum50i) else lum50i
                 """Out to 40 Kpc"""
                 lum40 = np.nanmax(lumRef[rKpc <= 40.0]).astype(np.float32)
-                lum40i = radInterp(40.0)[0]
+                lum40i = radInterp(40.0)
                 lum40 = lum40 if (lum40 >= lum40i) else lum40i
                 """Out to 30 Kpc"""
                 lum30 = np.nanmax(lumRef[rKpc <= 30.0]).astype(np.float32)
-                lum30i = radInterp(30.0)[0]
+                lum30i = radInterp(30.0)
                 lum30 = lum30 if (lum30 >= lum30i) else lum30i
                 """Out to 25 Kpc"""
                 lum25 = np.nanmax(lumRef[rKpc <= 25.0]).astype(np.float32)
-                lum25i = radInterp(25.0)[0]
+                lum25i = radInterp(25.0)
                 lum25 = lum25 if (lum25 >= lum25i) else lum25i
                 """Out to 15 Kpc"""
                 lum15 = np.nanmax(lumRef[rKpc <= 15.0]).astype(np.float32)
-                lum15i = radInterp(15.0)[0]
+                lum15i = radInterp(15.0)
                 lum15 = lum15 if (lum15 >= lum15i) else lum15i
                 """Out to 10 Kpc"""
                 lum10 = np.nanmax(lumRef[rKpc <= 10.0]).astype(np.float32)
-                lum10i = radInterp(10.0)[0]
+                lum10i = radInterp(10.0)
                 lum10 = lum10 if (lum10 >= lum10i) else lum10i
                 """Out to 5 Kpc"""
                 lum5 = np.nanmax(lumRef[rKpc <= 5.0]).astype(np.float32)
-                lum5i = radInterp(5.0)[0]
+                lum5i = radInterp(5.0)
                 lum5 = lum5 if (lum5 >= lum5i) else lum5i
 
                 if not np.isfinite(lum120):
@@ -1506,19 +1506,19 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                     lum10 = -9999.0
                     lum5 = -9999.0
 
-                galTab.meta['LUM_MAX'] = lumMax
-                galTab.meta['LUM_150'] = lum150
-                galTab.meta['LUM_120'] = lum120
-                galTab.meta['LUM_100'] = lum100
-                galTab.meta['LUM_75'] = lum75
-                galTab.meta['LUM_60'] = lum60
-                galTab.meta['LUM_50'] = lum50
-                galTab.meta['LUM_40'] = lum40
-                galTab.meta['LUM_30'] = lum30
-                galTab.meta['LUM_25'] = lum25
-                galTab.meta['LUM_15'] = lum15
-                galTab.meta['LUM_10'] = lum10
-                galTab.meta['LUM_5'] = lum5
+                galTab.meta['LUM_MAX'] = float(lumMax)
+                galTab.meta['LUM_150'] = float(lum150)
+                galTab.meta['LUM_120'] = float(lum120)
+                galTab.meta['LUM_100'] = float(lum100)
+                galTab.meta['LUM_75'] = float(lum75)
+                galTab.meta['LUM_60'] = float(lum60)
+                galTab.meta['LUM_50'] = float(lum50)
+                galTab.meta['LUM_40'] = float(lum40)
+                galTab.meta['LUM_30'] = float(lum30)
+                galTab.meta['LUM_25'] = float(lum25)
+                galTab.meta['LUM_15'] = float(lum15)
+                galTab.meta['LUM_10'] = float(lum10)
+                galTab.meta['LUM_5'] = float(lum5)
 
                 """M2L"""
                 galTab.meta['LOGM2L_G'] = galaxy['logm2l_g']
