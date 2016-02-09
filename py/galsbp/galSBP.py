@@ -55,6 +55,7 @@ COM = '#' * 100
 SEP = '-' * 100
 WAR = '!' * 100
 
+
 def randomStr(size=4, chars=string.ascii_uppercase + string.digits):
     """
     Random string generator.
@@ -1185,7 +1186,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
     """
     imgTemp = 'temp_' + randomStr() + '.fits'
     data = (fits.open(imgOri))[hdu].data
-    head = (fits.open(imgOri))[hdu].header
+    # head = (fits.open(imgOri))[hdu].header
     imgHdu = fits.PrimaryHDU(data)
     # imgHdu.header = head
     imgHduList = fits.HDUList([imgHdu])
@@ -1471,21 +1472,21 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 break
 
         except Exception as error:
-            attempts += 1
             print WAR
+            print "###  ELLIPSE RUN FAILED IN ATTEMPT: %2d" % attempts
             print "###  Error Information : ", error
             print "###  !!! Make the Ellipse Run A Little Bit Easier !"
             print WAR
+            attempts += 1
             ellipCfg = easierEllipse(ellipCfg)
 
-
-        if not os.path.isfile(outBin):
-            ellipOut = None
-            print WAR
-            print "###  ELLIPSE RUN FAILED AFTER %3d ATTEMPTS!!!" % maxTry
-            print WAR
-
         gc.collect()
+
+    if not os.path.isfile(outBin):
+        ellipOut = None
+        print WAR
+        print "###  ELLIPSE RUN FAILED AFTER %3d ATTEMPTS!!!" % maxTry
+        print WAR
 
     # Remove the temp files
     try:
