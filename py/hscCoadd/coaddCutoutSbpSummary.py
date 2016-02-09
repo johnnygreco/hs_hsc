@@ -1439,6 +1439,8 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                 radInterp = interp1d(rKpc, lumRef)
                 """Maximum intergrated 1-d luminosity"""
                 lumMax = np.nanmax(lumRef).astype(np.float32)
+                if not np.isfinite(lumMax):
+                    lumMax = radInterp(150.0)
                 """Out to 150 Kpc"""
                 lum150 = np.nanmax(lumRef[rKpc <= 150.0]).astype(np.float32)
                 lum150i = radInterp(150.0)
@@ -1546,32 +1548,74 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                 outTab['lum_5'][ii] = lum5
 
                 """Get the R20, R50, R80 and R90"""
-                fracMax = (10.0 ** lumRef) / (10.0 ** lumMax)
-                fracInterp1 = interp1d(fracMax, rKpc)
-                outTab['r20_max'][ii] = fracInterp1(0.20)
-                outTab['r50_max'][ii] = fracInterp1(0.50)
-                outTab['r80_max'][ii] = fracInterp1(0.80)
-                outTab['r90_max'][ii] = fracInterp1(0.80)
-                outTab['c82_max'][ii] = (outTab['r80_max'][ii] /
-                                         outTab['r20_max'][ii])
+                if np.isfinite(lumMax):
+                    try:
+                        fracMax = (10.0 ** lumRef) / (10.0 ** lumMax)
+                        fracInterp1 = interp1d(fracMax, rKpc)
+                        outTab['r20_max'][ii] = fracInterp1(0.20)
+                        outTab['r50_max'][ii] = fracInterp1(0.50)
+                        outTab['r80_max'][ii] = fracInterp1(0.80)
+                        outTab['r90_max'][ii] = fracInterp1(0.80)
+                        outTab['c82_max'][ii] = (outTab['r80_max'][ii] /
+                                                 outTab['r20_max'][ii])
+                    except Exception:
+                        outTab['r20_max'][ii] = -9999.0
+                        outTab['r50_max'][ii] = -9999.0
+                        outTab['r80_max'][ii] = -9999.0
+                        outTab['r90_max'][ii] = -9999.0
+                        outTab['c82_max'][ii] = -9999.0
+                else:
+                    outTab['r20_max'][ii] = -9999.0
+                    outTab['r50_max'][ii] = -9999.0
+                    outTab['r80_max'][ii] = -9999.0
+                    outTab['r90_max'][ii] = -9999.0
+                    outTab['c82_max'][ii] = -9999.0
 
-                frac120 = (10.0 ** lumRef) / (10.0 ** lum120)
-                fracInterp2 = interp1d(frac120, rKpc)
-                outTab['r20_120'][ii] = fracInterp2(0.20)
-                outTab['r50_120'][ii] = fracInterp2(0.50)
-                outTab['r80_120'][ii] = fracInterp2(0.80)
-                outTab['r90_120'][ii] = fracInterp2(0.80)
-                outTab['c82_120'][ii] = (outTab['r80_120'][ii] /
-                                         outTab['r20_120'][ii])
+                if np.isfinite(lum120):
+                    try:
+                        frac120 = (10.0 ** lumRef) / (10.0 ** lum120)
+                        fracInterp2 = interp1d(frac120, rKpc)
+                        outTab['r20_120'][ii] = fracInterp2(0.20)
+                        outTab['r50_120'][ii] = fracInterp2(0.50)
+                        outTab['r80_120'][ii] = fracInterp2(0.80)
+                        outTab['r90_120'][ii] = fracInterp2(0.80)
+                        outTab['c82_120'][ii] = (outTab['r80_120'][ii] /
+                                                 outTab['r20_120'][ii])
+                    except Exception:
+                        outTab['r20_120'][ii] = -9999.0
+                        outTab['r50_120'][ii] = -9999.0
+                        outTab['r80_120'][ii] = -9999.0
+                        outTab['r90_120'][ii] = -9999.0
+                        outTab['c82_120'][ii] = -9999.0
+                else:
+                    outTab['r20_120'][ii] = -9999.0
+                    outTab['r50_120'][ii] = -9999.0
+                    outTab['r80_120'][ii] = -9999.0
+                    outTab['r90_120'][ii] = -9999.0
+                    outTab['c82_120'][ii] = -9999.0
 
-                frac100 = (10.0 ** lumRef) / (10.0 ** lum100)
-                fracInterp3 = interp1d(frac100, rKpc)
-                outTab['r20_100'][ii] = fracInterp3(0.20)
-                outTab['r50_100'][ii] = fracInterp3(0.50)
-                outTab['r80_100'][ii] = fracInterp3(0.80)
-                outTab['r90_100'][ii] = fracInterp3(0.80)
-                outTab['c82_100'][ii] = (outTab['r80_100'][ii] /
-                                         outTab['r20_100'][ii])
+                if np.isfinite(lum100):
+                    try:
+                        frac100 = (10.0 ** lumRef) / (10.0 ** lum100)
+                        fracInterp3 = interp1d(frac100, rKpc)
+                        outTab['r20_100'][ii] = fracInterp3(0.20)
+                        outTab['r50_100'][ii] = fracInterp3(0.50)
+                        outTab['r80_100'][ii] = fracInterp3(0.80)
+                        outTab['r90_100'][ii] = fracInterp3(0.80)
+                        outTab['c82_100'][ii] = (outTab['r80_100'][ii] /
+                                                 outTab['r20_100'][ii])
+                    except Exception:
+                        outTab['r20_100'][ii] = -9999.0
+                        outTab['r50_100'][ii] = -9999.0
+                        outTab['r80_100'][ii] = -9999.0
+                        outTab['r90_100'][ii] = -9999.0
+                        outTab['c82_100'][ii] = -9999.0
+                else:
+                    outTab['r20_100'][ii] = -9999.0
+                    outTab['r50_100'][ii] = -9999.0
+                    outTab['r80_100'][ii] = -9999.0
+                    outTab['r90_100'][ii] = -9999.0
+                    outTab['c82_100'][ii] = -9999.0
 
                 """Extra meta information"""
                 galTab.meta['R20_MAX'] = outTab['r20_max'][ii]
