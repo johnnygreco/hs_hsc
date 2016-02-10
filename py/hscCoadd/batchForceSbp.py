@@ -35,9 +35,9 @@ def run(args):
 
         """ Keep a log """
         if args.imgSub:
-            logSuffix = '_%s_%s_imgsub_sbp.log' % (filter, rerun)
+            logSuffix = '_%s_%s_imgsub_forcesbp.log' % (filter, rerun)
         else:
-            logSuffix = '_%s_%s_img_sbp.log' % (filter, rerun)
+            logSuffix = '_%s_%s_img_forcesbp.log' % (filter, rerun)
         logFile = (args.incat).replace('.fits', logSuffix)
         logging.basicConfig(filename=logFile)
 
