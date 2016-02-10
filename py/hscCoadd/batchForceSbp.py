@@ -220,8 +220,8 @@ def run(args):
                             gc.collect()
                         except Exception, errMsg:
                             print str(errMsg)
-                            logging.warning('### SMALLMASK is FAILED for %s' %
-                                            galPrefix)
+                            logging.warning('### SMALLMASK FAILED: %s in %s' %
+                                            (galPrefix, filter))
                             logging.warning('###    Err: %s - %s' %
                                             (galPrefix, errMsg))
                             gc.collect()
@@ -272,7 +272,7 @@ def run(args):
                             gc.collect()
                         except Exception, errMsg:
                             print str(errMsg)
-                            logging.warning('### LARGEMASK is FAILED for %s in %s' %
+                            logging.warning('### LARGEMASK FAILED: %s in %s' %
                                             (galPrefix, filter))
                             logging.warning('###    Err: %s - %s' %
                                             (galPrefix, errMsg))
