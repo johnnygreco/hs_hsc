@@ -130,7 +130,7 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
         try:
             size = cat.field(sizeField)
         except KeyError:
-            warnings.warn("### No field name for cutout size is provided !")
+            # warnings.warn("### No field name for cutout size is provided !")
             nObjs = len(id)
             size = numpy.empty(nObjs)
             size.fill(sizeDefault)
@@ -371,6 +371,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                                str(npatch) + '\n')
             else:
                 for filterUse in HSC_FILTERS:
+                    print "## Working on %s now" % filterUse
                     if saveSrc:
                         tempOut = cdCutout.coaddImageCutFull(root,
                                                              ra[i], dec[i],
@@ -504,7 +505,7 @@ if __name__ == '__main__':
     parser.add_argument('-img', '--imgOnly', action="store_true",
                         dest='imgOnly', default=False)
     parser.add_argument('-zc', '--zCutoutSize', action="store_true",
-                        dest='zCutout', default=True)
+                        dest='zCutoutSize', default=True)
     parser.add_argument('-nc', '--noColor', action="store_true",
                         dest='noColor', default=True)
     parser.add_argument('-oc', '--onlyColor', action="store_true",
@@ -531,6 +532,7 @@ if __name__ == '__main__':
                       zCutoutSize=args.zCutoutSize, noColor=args.noColor,
                       onlyColor=args.onlyColor, infoField1=args.infoField1,
                       infoField2=args.infoField2, safe=args.safe,
-                      verbose=args.verbose, clean=args.clean, saveSrc=args.src,
+                      verbose=args.verbose, clean=args.clean,
+                      saveSrc=args.saveSrc,
                       makeDir=args.makeDir, noName=args.noName,
                       imgOnly=args.imgOnly, allFilters=args.allFilters)

@@ -864,7 +864,7 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                 zpList.append(2.5 * np.log10(
                               coadd.getCalib().getFluxMag0()[0]))
                 # If necessary, save the psf images
-                if savePsf:
+                if savePsf and (not imgOnly):
                     psfImg = getCoaddPsfImage(coadd, raDec)
                     psfArr.append(psfImg)
                 # Get the new (X,Y) coordinate of the galaxy center
@@ -907,15 +907,18 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                 # This is the largest available sub-image
                 phoZp = zpList[ind]
                 # Save the psf image if necessary
-                if savePsf:
-                    psfOut = outPre + '_psf.fits'
-                    if psfArr[ind] is not None:
-                        psfUse = psfArr[ind]
-                        psfUse.writeFits(psfOut)
-                        noPsf = False
-                    else:
-                        warnings.warn("## Can not compute useful PSF image !!")
-                        noPsf = True
+                if not imgOnly:
+                    if savePsf:
+                        psfOut = outPre + '_psf.fits'
+                        if psfArr[ind] is not None:
+                            psfUse = psfArr[ind]
+                            psfUse.writeFits(psfOut)
+                            noPsf = False
+                        else:
+                            warnings.warn("## Can not compute useful PSF image !!")
+                            noPsf = True
+                else:
+                    noPsf = True
         # See if all the cutout region is covered by data
         nanPix = np.sum(np.isnan(imgEmpty))
         if nanPix < (sizeExpect * 0.1):
@@ -967,18 +970,19 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
             saveImageArr(detEmpty, outHead, outPre + '_det.fits')
 
         # If necessary, save the source catalog
-        if saveSrc and srcFound and (not imgOnly):
-            srcUse = flatSrcArr(srcArr)
-            refUse = flatSrcArr(refArr)
-            forceUse = flatSrcArr(forceArr)
-            # Write out the catalogs
-            srcUse.writeFits(outPre + '_meas.fits')
-            refUse.writeFits(outPre + '_ref.fits')
-            forceUse.writeFits(outPre + '_forced.fits')
-        else:
-            print "### Can not find the useful source catalog !!"
+        if not imgOnly:
+            if saveSrc and srcFound:
+                srcUse = flatSrcArr(srcArr)
+                refUse = flatSrcArr(refArr)
+                forceUse = flatSrcArr(forceArr)
+                # Write out the catalogs
+                srcUse.writeFits(outPre + '_meas.fits')
+                refUse.writeFits(outPre + '_ref.fits')
+                forceUse.writeFits(outPre + '_forced.fits')
+            else:
+                print "### Can not find the useful source catalog !!"
 
-        if (nReturn > 0 and not noPsf):
+        if nReturn > 0:
             cutFound = True
             # Save a preview image
             if visual:
