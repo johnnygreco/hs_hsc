@@ -595,7 +595,7 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
 def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                       filt='HSC-I', prefix='hsc_coadd_cutout', verbose=True,
                       extraField1=None, extraValue1=None, butler=None,
-                      visual=True):
+                      visual=True, imgOnly=False):
     """Get the cutout around a location."""
     # Deal with the Pipeline Version
     pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
@@ -646,14 +646,14 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
 
     # Create empty arrays
     imgEmpty = np.empty((dimExpect, dimExpect), dtype="float")
-    mskEmpty = np.empty((dimExpect, dimExpect), dtype="uint8")
-    varEmpty = np.empty((dimExpect, dimExpect), dtype="float")
-    detEmpty = np.empty((dimExpect, dimExpect), dtype="float")
-    # Fill it with NaN
     imgEmpty.fill(np.nan)
-    mskEmpty.fill(np.nan)
-    varEmpty.fill(np.nan)
-    detEmpty.fill(np.nan)
+    if not imgOnly:
+        mskEmpty = np.empty((dimExpect, dimExpect), dtype="uint8")
+        varEmpty = np.empty((dimExpect, dimExpect), dtype="float")
+        detEmpty = np.empty((dimExpect, dimExpect), dtype="float")
+        mskEmpty.fill(np.nan)
+        varEmpty.fill(np.nan)
+        detEmpty.fill(np.nan)
 
     # Figure out the area we want, and read the data.
     # For coadds the WCS is the same in all bands,
@@ -768,83 +768,86 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
             else:
                 # Extract the image array
                 imgArr.append(subImage.getMaskedImage().getImage().getArray())
-                # Extract the detect mask array
-                mskDet = getCoaddMskPlane(subImage, 'DETECTED')
-                detArr.append(mskDet.getArray())
-                # Extract the variance array
-                imgVar = subImage.getMaskedImage().getVariance().getArray()
-                varArr.append(imgVar)
 
-                # Extract the bad mask array
-                mskBad = getCoaddBadMsk(subImage, pipeNew=pipeNew)
-                mskArr.append(mskBad.getArray())
-                # Get the source catalog
-                if saveSrc:
-                    noFootprint = afwTable.SOURCE_IO_NO_FOOTPRINTS
-                    print SEP
-                    print "### Search the source catalog...."
-                    """
-                    !!! Sometimes the forced photometry catalog
-                        might not be available
-                    """
-                    try:
-                        print "    !!!! TRY deepCoadd_meas"
-                        srcCat = butler.get('deepCoadd_meas', tract=tract,
-                                            patch=patch, filter=filt,
-                                            immediate=True,
-                                            flags=noFootprint)
-                        # Get the pixel coordinates for all objects
-                        srcRa = np.array(map(lambda x:
-                                         x.get('coord').getRa().asDegrees(),
-                                         srcCat))
-                        srcDec = np.array(map(lambda x:
-                                          x.get('coord').getDec().asDegrees(),
-                                          srcCat))
-                        # Simple Box match
-                        indMatch = ((srcRa > (ra - sizeDegree)) &
-                                    (srcRa < (ra + sizeDegree)) &
-                                    (srcDec > (dec - sizeDegree)) &
-                                    (srcDec < (dec + sizeDegree)) &
-                                    (srcCat.get('detect.is-patch-inner')))
-                        # Extract the matched subset
-                        srcArr.append(srcCat.subset(indMatch))
-                        srcFound = True
+                if not imgOnly:
+                    # Extract the detect mask array
+                    mskDet = getCoaddMskPlane(subImage, 'DETECTED')
+                    detArr.append(mskDet.getArray())
+                    # Extract the variance array
+                    imgVar = subImage.getMaskedImage().getVariance().getArray()
+                    varArr.append(imgVar)
 
-                        # Try other catalogs
-                        # 1. Reference
+                    # Extract the bad mask array
+                    mskBad = getCoaddBadMsk(subImage, pipeNew=pipeNew)
+                    mskArr.append(mskBad.getArray())
+                    # Get the source catalog
+                    if saveSrc:
+                        noFootprint = afwTable.SOURCE_IO_NO_FOOTPRINTS
+                        print SEP
+                        print "### Search the source catalog...."
+                        """
+                        !!! Sometimes the forced photometry catalog
+                            might not be available
+                        """
                         try:
-                            print "    !!!! TRY deepCoadd_ref"
-                            refCat = butler.get('deepCoadd_ref', tract=tract,
+                            print "    !!!! TRY deepCoadd_meas"
+                            srcCat = butler.get('deepCoadd_meas', tract=tract,
                                                 patch=patch, filter=filt,
                                                 immediate=True,
                                                 flags=noFootprint)
-                            refArr.append(refCat.subset(indMatch))
+                            # Get the pixel coordinates for all objects
+                            srcRa = np.array(map(lambda x:
+                                             x.get('coord').getRa().asDegrees(),
+                                             srcCat))
+                            srcDec = np.array(map(lambda x:
+                                              x.get('coord').getDec().asDegrees(),
+                                              srcCat))
+                            # Simple Box match
+                            indMatch = ((srcRa > (ra - sizeDegree)) &
+                                        (srcRa < (ra + sizeDegree)) &
+                                        (srcDec > (dec - sizeDegree)) &
+                                        (srcDec < (dec + sizeDegree)) &
+                                        (srcCat.get('detect.is-patch-inner')))
+                            # Extract the matched subset
+                            srcArr.append(srcCat.subset(indMatch))
+                            srcFound = True
+
+                            # Try other catalogs
+                            # 1. Reference
+                            try:
+                                print "    !!!! TRY deepCoadd_ref"
+                                refCat = butler.get('deepCoadd_ref',
+                                                    tract=tract,
+                                                    patch=patch, filter=filt,
+                                                    immediate=True,
+                                                    flags=noFootprint)
+                                refArr.append(refCat.subset(indMatch))
+                            except:
+                                warnings.warn('### No *ref catalog!')
+                            # 2. Forced Photometry
+                            try:
+                                print "    !!!! TRY deepCoadd_forced_src"
+                                forceCat = butler.get('deepCoadd_forced_src',
+                                                      tract=tract,
+                                                      patch=patch, filter=filt,
+                                                      immediate=True,
+                                                      flags=noFootprint)
+                                forceArr.append(forceCat.subset(indMatch))
+                            except:
+                                warnings.warn('### No *force catalog!')
                         except:
-                            warnings.warn('### Can not find the *ref catalog!')
-                        # 2. Forced Photometry
-                        try:
-                            print "    !!!! TRY deepCoadd_forced_src"
-                            forceCat = butler.get('deepCoadd_forced_src',
-                                                  tract=tract,
-                                                  patch=patch, filter=filt,
-                                                  immediate=True,
-                                                  flags=noFootprint)
-                            forceArr.append(forceCat.subset(indMatch))
-                        except:
-                            warnings.warn('### Not find the *force catalog!')
-                    except:
-                        print WAR
-                        print "### Tract: %d  Patch: %s" % (tract, patch)
-                        warnings.warn("### Not find the photometry catalog!")
-                        if not os.path.isfile('no_src.lis'):
-                            noSrc = open('no_src.lis', 'w')
-                            noSrc.write("%d  %s \n" % (tract, patch))
-                            noSrc.close()
-                        else:
-                            noSrc = open('no_src.lis', 'a+')
-                            noSrc.write("%d  %s \n" % (tract, patch))
-                            noSrc.close()
-                        srcFound = False
+                            print WAR
+                            print "### Tract: %d  Patch: %s" % (tract, patch)
+                            warnings.warn("### No photometry catalog!")
+                            if not os.path.isfile('no_src.lis'):
+                                noSrc = open('no_src.lis', 'w')
+                                noSrc.write("%d  %s \n" % (tract, patch))
+                                noSrc.close()
+                            else:
+                                noSrc = open('no_src.lis', 'a+')
+                                noSrc.write("%d  %s \n" % (tract, patch))
+                                noSrc.close()
+                            srcFound = False
                 # Save the width of the BBox
                 boxX.append(bbox.getWidth())
                 # Save the heigth of the BBox
@@ -886,19 +889,20 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
             imgEmpty[newY[ind]:(newY[ind] + boxY[ind]),
                      newX[ind]:(newX[ind] + boxX[ind])] = imgUse[:, :]
             # Put in the mask array
-            mskUse = mskArr[ind]
-            mskEmpty[newY[ind]:(newY[ind] + boxY[ind]),
-                     newX[ind]:(newX[ind] + boxX[ind])] = mskUse[:, :]
-            # Put in the variance array
-            varUse = varArr[ind]
-            varEmpty[newY[ind]:(newY[ind] + boxY[ind]),
-                     newX[ind]:(newX[ind] + boxX[ind])] = varUse[:, :]
-            # Convert it into sigma array
-            sigEmpty = np.sqrt(varEmpty)
-            # Put in the detection mask array
-            detUse = detArr[ind]
-            detEmpty[newY[ind]:(newY[ind] + boxY[ind]),
-                     newX[ind]:(newX[ind] + boxX[ind])] = detUse[:, :]
+            if not imgOnly:
+                mskUse = mskArr[ind]
+                mskEmpty[newY[ind]:(newY[ind] + boxY[ind]),
+                         newX[ind]:(newX[ind] + boxX[ind])] = mskUse[:, :]
+                # Put in the variance array
+                varUse = varArr[ind]
+                varEmpty[newY[ind]:(newY[ind] + boxY[ind]),
+                         newX[ind]:(newX[ind] + boxX[ind])] = varUse[:, :]
+                # Convert it into sigma array
+                sigEmpty = np.sqrt(varEmpty)
+                # Put in the detection mask array
+                detUse = detArr[ind]
+                detEmpty[newY[ind]:(newY[ind] + boxY[ind]),
+                         newX[ind]:(newX[ind] + boxX[ind])] = detUse[:, :]
             if n is (nReturn - 1):
                 # This is the largest available sub-image
                 phoZp = zpList[ind]
@@ -922,10 +926,11 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
             cutFull = False
             if verbose:
                 print "## There are still %d NaN pixels!" % nanPix
-        # For mask images, replace NaN with a large value: 999
-        mskEmpty[np.isnan(mskEmpty)] = 999
-        # For detections, replace NaN with 0
-        detEmpty[np.isnan(detEmpty)] = 0
+        if not imgOnly:
+            # For mask images, replace NaN with a large value: 999
+            mskEmpty[np.isnan(mskEmpty)] = 999
+            # For detections, replace NaN with 0
+            detEmpty[np.isnan(detEmpty)] = 0
         # Create a WCS for the combined image
         outWcs = apWcs.WCS(naxis=2)
         outWcs.wcs.crpix = [newCenX + 1, newCenY + 1]
@@ -950,18 +955,19 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
             print "### Generate Outputs"
         # Save the image array
         saveImageArr(imgEmpty, outHead, outPre + '_img.fits')
-        # Save the mask array
-        saveImageArr(mskEmpty, outHead, outPre + '_bad.fits')
-        """ 15/12/12 Stop saving the variance plane"""
-        # Save the variance array
-        # saveImageArr(varEmpty, outHead, outPre + '_var.fits')
-        # Save the sigma array
-        saveImageArr(sigEmpty, outHead, outPre + '_sig.fits')
-        # Save the detection mask array
-        saveImageArr(detEmpty, outHead, outPre + '_det.fits')
+        if not imgOnly:
+            # Save the mask array
+            saveImageArr(mskEmpty, outHead, outPre + '_bad.fits')
+            """ 15/12/12 Stop saving the variance plane"""
+            # Save the variance array
+            # saveImageArr(varEmpty, outHead, outPre + '_var.fits')
+            # Save the sigma array
+            saveImageArr(sigEmpty, outHead, outPre + '_sig.fits')
+            # Save the detection mask array
+            saveImageArr(detEmpty, outHead, outPre + '_det.fits')
 
         # If necessary, save the source catalog
-        if saveSrc and srcFound:
+        if saveSrc and srcFound and (not imgOnly):
             srcUse = flatSrcArr(srcArr)
             refUse = flatSrcArr(refArr)
             forceUse = flatSrcArr(forceArr)
@@ -977,9 +983,10 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
             # Save a preview image
             if visual:
                 pngOut = outPre + '_pre.png'
-                previewCoaddImage(imgEmpty, mskEmpty, varEmpty, detEmpty,
-                                  oriX=newX, oriY=newY, boxW=boxX, boxH=boxY,
-                                  outPNG=pngOut)
+                if not imgOnly:
+                    previewCoaddImage(imgEmpty, mskEmpty, varEmpty, detEmpty,
+                                      oriX=newX, oriY=newY, boxW=boxX,
+                                      boxH=boxY, outPNG=pngOut)
         else:
             cutFound = False
             print WAR
@@ -1006,7 +1013,10 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--prefix', dest='outfile',
                         help='Prefix of the output file',
                         default='hsc_coadd_cutout')
+    parser.add_argument('-i', '--imgOnly', action="store_true",
+                        dest='imgOnly', default=False)
     args = parser.parse_args()
 
     coaddImageCutFull(args.root, args.ra, args.dec, args.size,
-                      filt=args.filt, prefix=args.outfile)
+                      filt=args.filt, prefix=args.outfile,
+                      imgOnly=args.imgOnly)

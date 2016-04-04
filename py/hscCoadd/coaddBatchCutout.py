@@ -16,6 +16,7 @@ import coaddColourImage as cdColor
 COM = '#' * 100
 SEP = '-' * 100
 WAR = '!' * 100
+HSC_FILTERS = ['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y']
 
 
 def decideCutoutSize(z, safe=False):
@@ -274,7 +275,8 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                       verbose=True, noColor=False, onlyColor=False,
                       infoField1=None, infoField2=None, clean=False,
                       min=-0.0, max=0.72, Q=15, safe=False, saveSrc=False,
-                      makeDir=False, noName=False):
+                      makeDir=False, noName=False,
+                      imgOnly=False, allFilters=False):
     """
     Generate HSC coadd cutout images.
 
@@ -331,35 +333,81 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
         if not onlyColor:
             if verbose:
                 print "### Make the Cutout Fits Files!  "
-            if saveSrc:
-                tempOut = cdCutout.coaddImageCutFull(root, ra[i], dec[i],
-                                                     size[i], savePsf=True,
-                                                     saveSrc=True, visual=True,
-                                                     filt=filter,
-                                                     prefix=newPrefix,
-                                                     butler=butler)
-                found, full, npatch = tempOut
-            else:
-                tempOut = cdCutout.coaddImageCutFull(root, ra[i], dec[i],
-                                                     size[i], savePsf=True,
-                                                     saveSrc=False,
-                                                     visual=True,
-                                                     filt=filter,
-                                                     prefix=newPrefix,
-                                                     butler=butler)
-                found, full, npatch = tempOut
-            if found:
-                matchStatus = 'Found'
-                if full:
-                    full = 'Full'
+            if not allFilters:
+                filterUse = filter.strip()
+                if saveSrc:
+                    tempOut = cdCutout.coaddImageCutFull(root, ra[i], dec[i],
+                                                         size[i], savePsf=True,
+                                                         saveSrc=True,
+                                                         visual=True,
+                                                         filt=filterUse,
+                                                         prefix=newPrefix,
+                                                         butler=butler,
+                                                         imgOnly=imgOnly)
+                    found, full, npatch = tempOut
                 else:
-                    full = 'Part'
-            else:
-                matchStatus = 'NoData'
-                full = 'None'
+                    tempOut = cdCutout.coaddImageCutFull(root, ra[i], dec[i],
+                                                         size[i], savePsf=True,
+                                                         saveSrc=False,
+                                                         visual=True,
+                                                         filt=filterUse,
+                                                         prefix=newPrefix,
+                                                         butler=butler,
+                                                         imgOnly=imgOnly)
+                    found, full, npatch = tempOut
+                if found:
+                    matchStatus = 'Found'
+                    if full:
+                        full = 'Full'
+                    else:
+                        full = 'Part'
+                else:
+                    matchStatus = 'NoData'
+                    full = 'None'
 
-            logMatch.write(str(id[i]) + '   ' + matchStatus +
-                           '   ' + full + '   ' + str(npatch) + '\n')
+                logMatch.write(str(id[i]) + '    ' + filterUse +
+                               '   ' + matchStatus +
+                               '   ' + full + '   ' +
+                               str(npatch) + '\n')
+            else:
+                for filterUse in HSC_FILTERS:
+                    if saveSrc:
+                        tempOut = cdCutout.coaddImageCutFull(root,
+                                                             ra[i], dec[i],
+                                                             size[i],
+                                                             savePsf=True,
+                                                             saveSrc=True,
+                                                             visual=True,
+                                                             filt=filterUse,
+                                                             prefix=newPrefix,
+                                                             butler=butler,
+                                                             imgOnly=imgOnly)
+                        found, full, npatch = tempOut
+                    else:
+                        tempOut = cdCutout.coaddImageCutFull(root,
+                                                             ra[i], dec[i],
+                                                             size[i],
+                                                             savePsf=True,
+                                                             saveSrc=False,
+                                                             visual=True,
+                                                             filt=filterUse,
+                                                             prefix=newPrefix,
+                                                             butler=butler,
+                                                             imgOnly=imgOnly)
+                        found, full, npatch = tempOut
+                    if found:
+                        matchStatus = 'Found'
+                        if full:
+                            full = 'Full'
+                        else:
+                            full = 'Part'
+                    else:
+                        matchStatus = 'NoData'
+                        full = 'None'
+                    logMatch.write(str(id[i]) + '    ' + filterUse +
+                                   '   ' + matchStatus +
+                                   '   ' + full + '   ' +
+                                   str(npatch) + '\n')
 
         # Color Image
         # Whether put redshift on the image
@@ -451,6 +499,10 @@ if __name__ == '__main__':
     parser.add_argument('-info2', '--infoField2', dest='infoField2',
                         help="Column name for second extra information",
                         default=None)
+    parser.add_argument('-af', '--allFilters', action="store_true",
+                        dest='allFilters', default=False)
+    parser.add_argument('-img', '--imgOnly', action="store_true",
+                        dest='imgOnly', default=False)
     parser.add_argument('-zc', '--zCutoutSize', action="store_true",
                         dest='zCutout', default=True)
     parser.add_argument('-nc', '--noColor', action="store_true",
@@ -480,4 +532,5 @@ if __name__ == '__main__':
                       onlyColor=args.onlyColor, infoField1=args.infoField1,
                       infoField2=args.infoField2, safe=args.safe,
                       verbose=args.verbose, clean=args.clean, saveSrc=args.src,
-                      makeDir=args.makeDir, noName=args.noName)
+                      makeDir=args.makeDir, noName=args.noName,
+                      imgOnly=args.imgOnly, allFilters=args.allFilters)
