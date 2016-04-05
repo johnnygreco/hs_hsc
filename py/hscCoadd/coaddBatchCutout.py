@@ -323,18 +323,20 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                   "RA: %10.5f DEC %10.5f ; Size: %d" % (ra[i], dec[i], size[i])
         # New prefix
         newPrefix = prefix + '_' + str(id[i]).strip()
-        if makeDir:
-            dirLoc = str(id[i]).strip() + '/' + str(filter).strip() + '/'
-            if not os.path.exists(dirLoc):
-                os.makedirs(dirLoc)
-            newPrefix = dirLoc + newPrefix
-
         # Cutout Image
         if not onlyColor:
             if verbose:
                 print "### Make the Cutout Fits Files!  "
             if not allFilters:
                 filterUse = filter.strip()
+
+                if makeDir:
+                    dirLoc = (str(id[i]).strip() + '/' +
+                              str(filter).strip() + '/')
+                    if not os.path.exists(dirLoc):
+                        os.makedirs(dirLoc)
+                    newPrefix = dirLoc + newPrefix
+
                 if saveSrc:
                     tempOut = cdCutout.coaddImageCutFull(root, ra[i], dec[i],
                                                          size[i], savePsf=True,
@@ -372,6 +374,14 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
             else:
                 for filterUse in HSC_FILTERS:
                     print "## Working on %s now" % filterUse
+
+                    if makeDir:
+                        dirLoc = (str(id[i]).strip() + '/' +
+                                  str(filter).strip() + '/')
+                        if not os.path.exists(dirLoc):
+                            os.makedirs(dirLoc)
+                        newPrefix = dirLoc + newPrefix
+
                     if saveSrc:
                         tempOut = cdCutout.coaddImageCutFull(root,
                                                              ra[i], dec[i],
