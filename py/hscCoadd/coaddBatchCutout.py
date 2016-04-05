@@ -329,10 +329,9 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                 print "### Make the Cutout Fits Files!  "
             if not allFilters:
                 filterUse = filter.strip()
-
                 if makeDir:
                     dirLoc = (str(id[i]).strip() + '/' +
-                              str(filter).strip() + '/')
+                              str(filterUse).strip() + '/')
                     if not os.path.exists(dirLoc):
                         os.makedirs(dirLoc)
                     filterPrefix = dirLoc + newPrefix
@@ -377,7 +376,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
 
                     if makeDir:
                         dirLoc = (str(id[i]).strip() + '/' +
-                                  str(filter).strip() + '/')
+                                  str(filterUse).strip() + '/')
                         if not os.path.exists(dirLoc):
                             os.makedirs(dirLoc)
                         filterPrefix = dirLoc + newPrefix
