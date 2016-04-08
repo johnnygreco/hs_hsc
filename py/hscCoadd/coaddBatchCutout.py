@@ -335,6 +335,8 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                     if not os.path.exists(dirLoc):
                         os.makedirs(dirLoc)
                     filterPrefix = dirLoc + newPrefix
+                else:
+                    filterPrefix = newPrefix
 
                 if saveSrc:
                     tempOut = cdCutout.coaddImageCutFull(root, ra[i], dec[i],
@@ -380,6 +382,8 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                         if not os.path.exists(dirLoc):
                             os.makedirs(dirLoc)
                         filterPrefix = dirLoc + newPrefix
+                    else:
+                        filterPrefix = newPrefix
 
                     if saveSrc:
                         tempOut = cdCutout.coaddImageCutFull(root,
