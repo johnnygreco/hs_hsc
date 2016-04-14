@@ -58,7 +58,7 @@ def saveRgbPng(outRgb, imgRgb, cenMark=False, xCen=None, yCen=None,
 
     # Show the image
     ax = fig.add_axes([0, 0, 1, 1])
-    ax.imshow(imgRgb, interpolation='none')
+    ax.imshow(imgRgb, interpolation='none', origin='lower')
     ax.set_aspect('equal')
 
     # Suppress all the ticks and tick labels
