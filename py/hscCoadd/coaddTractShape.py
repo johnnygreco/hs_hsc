@@ -57,12 +57,12 @@ def fourCornerRaDec(tractWcs, xDim, yDim):
     return corners
 
 
-def getTractList(rootDir, filter, imgType='deepCoadd_calexp', toInt=True,
+def getTractList(rootDir, filter, imgType='deepCoadd', toInt=True,
                  prefix='hsc_coadd', toFile=True):
     """Get all the tractID from certain rootDir."""
     if rootDir[-1] is not '/':
         rootDir += '/'
-    tractDir = rootDir + imgType + '/' + filter + '/'
+    tractDir = rootDir + 'deepCoadd/' + filter + '/'
 
     if not os.path.exists(tractDir):
         raise Exception("Can not find the directory: %s" % tractDir)
