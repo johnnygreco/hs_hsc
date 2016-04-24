@@ -4,12 +4,11 @@
 from __future__ import division
 
 import os
-import copy
 import argparse
 import numpy as np
 from distutils.version import StrictVersion
 
-import lsst.daf.persistence   as dafPersist
+import lsst.daf.persistence as dafPersist
 
 # Matplotlib default settings
 import matplotlib as mpl
@@ -27,29 +26,27 @@ mpl.rc('axes', linewidth=2)
 
 # Shapely related imports
 from shapely.geometry import Polygon
-from shapely.ops      import cascaded_union
-from descartes        import PolygonPatch
+from shapely.ops import cascaded_union
+from descartes import PolygonPatch
 
-import coaddPatchShape  as coaddPS
-#getPolyUnion, polySaveWkb, polyReadWkb
+import coaddPatchShape as coaddPS
 import coaddPatchNoData as coaddND
-#polySaveReg
 
-""" Get a (RA, DEC) pair from WCS [NOT USED] """
+
 def wcsGetRaDecPair(wcsInfo, xpos, ypos):
-
+    """Get a (RA, DEC) pair from WCS [NOT USED]."""
     raRad, decRad = wcsInfo.pixelToSky(xpos, ypos)
     return raRad.asDegrees(), decRad.asDegrees()
 
-""" Get the dimension of a tract [NOT USED] """
-def getTractXYDim(tractInfo):
 
+def getTractXYDim(tractInfo):
+    """Get the dimension of a tract [NOT USED]."""
     tractExtent = tractInfo.getBBox().getDimensions()
     return tractExtent.getX(), tractExtent.getY()
 
-""" Get the Corner RA, DEC based on tract's WCS [NOT WORKING] """
-def fourCornerRaDec(tractWcs, xDim, yDim):
 
+def fourCornerRaDec(tractWcs, xDim, yDim):
+    """Get the Corner RA, DEC based on tract's WCS [NOT WORKING]."""
     xCorners = [1, 1, xDim, xDim]
     yCorners = [1, yDim, yDim, 1]
 
@@ -59,12 +56,10 @@ def fourCornerRaDec(tractWcs, xDim, yDim):
 
     return corners
 
+
 def getTractList(rootDir, filter, imgType='deepCoadd_calexp', toInt=True,
                  prefix='hsc_coadd', toFile=True):
-    """
-    Get all the tractID from certain rootDir
-    """
-
+    """Get all the tractID from certain rootDir."""
     if rootDir[-1] is not '/':
         rootDir += '/'
     tractDir = rootDir + imgType + '/' + filter + '/'
@@ -88,24 +83,17 @@ def getTractList(rootDir, filter, imgType='deepCoadd_calexp', toInt=True,
 
     return tractList
 
-""" Plot a list of polygons and its outline """
+
 def plotListPoly(polyList, outPNG='polyList.png', outer=None,
                  color=None, minX=None, minY=None, maxX=None,
                  maxY=None, xSize=20, ySize=16, dpi=120):
+    """Plot a list of polygons and its outline."""
+    # Right now, have to make sure that every Polygon in the list is
+    # simple and valid TODO
 
-    """
-    Right now, have to make sure that every Polygon in the list is
-    simple and valid TODO
-    """
-
-    """ Set up the color """
-    BLUE = '#6699cc'
+    # Set up the color
+    # BLUE = '#6699cc'
     GRAY = '#999999'
-    ec = GRAY
-    if color is None:
-        fc = BLUE
-    else:
-        fc = color
 
     fig = plt.figure(figsize=(xSize, ySize), dpi=dpi)
     ax = fig.add_subplot(111)
@@ -116,7 +104,7 @@ def plotListPoly(polyList, outPNG='polyList.png', outer=None,
         ax.add_patch(partShow)
     else:
         for poly in polyList:
-            partShow = PolygonPatch(poly, fc=np.random.rand(3,1),
+            partShow = PolygonPatch(poly, fc=np.random.rand(3, 1),
                                     ec=GRAY, alpha=0.8, zorder=1)
             ax.add_patch(partShow)
 
@@ -137,7 +125,7 @@ def plotListPoly(polyList, outPNG='polyList.png', outer=None,
     if (minX is None) or (minY is None) or (maxX is None) or (maxY is None):
         ax.margins(0.02, 0.02, tight=True)
     else:
-        raRange  = [(minX-0.1), (maxX+0.1)]
+        raRange = [(minX-0.1), (maxX+0.1)]
         decRange = [(minY-0.1), (maxY+0.1)]
         ax.set_xlim(*raRange)
         ax.set_ylim(*decRange)
@@ -155,7 +143,7 @@ def plotListPoly(polyList, outPNG='polyList.png', outer=None,
     plt.tick_params(which='major', width=2.0, length=8.0, labelsize=20)
     plt.tick_params(which='minor', width=1.8, length=6.0)
 
-    for axis in ['top','bottom','left','right']:
+    for axis in ['top', 'bottom', 'left', 'right']:
         ax.spines[axis].set_linewidth(2.5)
 
     ax.grid(alpha=0.6, color='k', linewidth=1.5)
@@ -167,18 +155,16 @@ def plotListPoly(polyList, outPNG='polyList.png', outer=None,
     plt.close(fig)
 
 
-""" Get the (RA, DEC) pairs of the four corners for certain Tract """
 def coaddTractGetCorners(skyMap, tractId):
-
-    """ Try to get the right tract information """
+    """Get the (RA, DEC) pairs of the four corners for certain Tract."""
     numTract = len(skyMap)
     if tractId > numTract:
         raise Exception("The tractId is not correct: %d" % tractId)
 
     tractInfo = skyMap[tractId]
     if tractInfo.getId() != tractId:
-        raise Exception("Something wrong with the SkyMap: %d - %d" % (tractId,
-                                                                      tractInfo.getId()))
+        raise Exception("Something wrong: %d - %d" % (tractId,
+                                                      tractInfo.getId()))
     else:
         corners = tractInfo.getVertexList()
         cornerRaDec = []
@@ -194,10 +180,10 @@ def coaddTractGetCorners(skyMap, tractId):
     """ Return this Polygon """
     return cornerPoly
 
-""" Main Function """
+
 def coaddTractShape(rootDir, filter, verbose=True, prefix='hsc_tract',
                     savePNG=True, xSize=18, ySize=16):
-
+    """Extract the shape of the tract."""
     pipeVersion = dafPersist.eupsVersions.EupsVersions().versions['hscPipe']
     if StrictVersion(pipeVersion) >= StrictVersion('3.9.0'):
         coaddData = "deepCoadd_calexp"
@@ -226,7 +212,7 @@ def coaddTractShape(rootDir, filter, verbose=True, prefix='hsc_tract',
         """ Get the Polygon for the tract """
         tractPoly = coaddTractGetCorners(skyMap, tractId)
 
-        preFile2 = preFile1  + '_' + str(tractId)
+        preFile2 = preFile1 + '_' + str(tractId)
         """ Save a .WKB file """
         tractWkb = preFile2 + '.wkb'
         coaddPS.polySaveWkb(tractPoly, tractWkb)
@@ -254,8 +240,10 @@ def coaddTractShape(rootDir, filter, verbose=True, prefix='hsc_tract',
                 combPart = combParts[ii]
                 min1, min2, max1, max2 = combPart.bounds
                 """ Save .wkb and .reg file for each part """
-                coaddPS.polySaveWkb(combPart, preFile1 + '_part_' + str(ii+1) + '.wkb')
-                coaddND.polySaveReg(combPart, preFile1 + '_part_' + str(ii+1) + '.reg',
+                coaddPS.polySaveWkb(combPart, preFile1 + '_part_' +
+                                    str(ii+1) + '.wkb')
+                coaddND.polySaveReg(combPart, preFile1 + '_part_' +
+                                    str(ii+1) + '.reg',
                                     color='blue')
                 """ Make a plot """
                 plotListPoly(polyList, outer=combPart,
@@ -276,9 +264,10 @@ def coaddTractShape(rootDir, filter, verbose=True, prefix='hsc_tract',
                      minX=minX, minY=minY, maxX=maxX, maxY=maxY,
                      xSize=xSize, ySize=ySize)
 
+
 def batchTractShapes(rootDir, xSize=20, ySize=20, prefix='hsc_tract',
                      verbose=False, savePNG=True):
-
+    """Run Tract Shape in batch mode."""
     hscFilters = ['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y']
 
     for filter in hscFilters:
