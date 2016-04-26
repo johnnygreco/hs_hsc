@@ -1071,19 +1071,19 @@ def tractNoData(rootDir, tractUse, filter='HSC-I', prefix='hsc_coadd',
                     if tr.getId() == tractUse:
                         print "#### Find the tract we want : %d" % tractUse
                         tractMap = tr
-                tractNoDataCombine(prefix, tractUse, filter='HSC-I',
+                tractNoDataCombine(prefix, tractUse, filter=filter,
                                    location='.', big=True, showComb=True,
                                    verbose=True, check=False,
                                    tractMap=tractMap)
-                tractNoDataCombine(prefix, tractUse, filter='HSC-I',
+                tractNoDataCombine(prefix, tractUse, filter=filter,
                                    location='.', big=False, showComb=True,
                                    verbose=True, check=False,
                                    tractMap=tractMap)
             else:
-                tractNoDataCombine(prefix, tractUse, filter='HSC-I',
+                tractNoDataCombine(prefix, tractUse, filter=filter,
                                    location='.', big=True, showComb=True,
                                    verbose=True, check=False)
-                tractNoDataCombine(prefix, tractUse, filter='HSC-I',
+                tractNoDataCombine(prefix, tractUse, filter=filter,
                                    location='.', big=False, showComb=True,
                                    verbose=True, check=False)
 
@@ -1205,12 +1205,12 @@ def tractShape(rootDir, tractId, filter='HSC-I', prefix='hsc_coadd',
                     if tr.getId() == tractId:
                         print "#### Find the tract we want : %d" % tractId
                         tractMap = tr
-                tractShapeCombine(prefix, tractId, filter='HSC-I',
+                tractShapeCombine(prefix, tractId, filter=filter,
                                   location='.',
                                   showComb=True, verbose=True, check=False,
                                   tractMap=tractMap)
             else:
-                tractShapeCombine(prefix, tractId, filter='HSC-I',
+                tractShapeCombine(prefix, tractId, filter=filter,
                                   location='.',
                                   showComb=True, verbose=True, check=False)
 
