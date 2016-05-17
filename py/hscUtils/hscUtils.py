@@ -27,6 +27,7 @@ except:
     scoreatpercentile = False
 # Astropy
 import astropy.units as u
+from astropy.io import fits
 from astropy.utils.misc import isiterable
 from astropy.coordinates import SkyCoord
 
@@ -1049,3 +1050,57 @@ def confidence_interval(A, axis=None, alpha=.05, metric=np.mean,
                                    metric, numResamples, interpolate)
 
     return outA
+
+
+def songPlotSetup(ax, border=4.5,
+                  xlabel=30, ylabel=30,
+                  majorTickL=12, minorTickL=8,
+                  majorTickW=4.5, minorTickW=4.0):
+    """Setup the format of the figure."""
+    # Axes setup
+    #  Minor Ticks on
+    ax.minorticks_on()
+    #  Axes Thickness
+    for axis in ['top', 'bottom', 'left', 'right']:
+        ax.spines[axis].set_linewidth(border)
+
+    #  Tick Label Size
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(xlabel)
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontsize(ylabel)
+
+    #  Tick Length and Width
+    ax.tick_params('both', length=majorTickL, width=majorTickW,
+                   which='major')
+    ax.tick_params('both', length=minorTickL, width=minorTickW,
+                   which='minor')
+
+    return ax
+
+
+"""
+* HSC Catalog related functions.
+"""
+
+
+def removeIsNullCol(cat, output=None, catHdu=1,
+                    string='isnull'):
+    """Remove the xxx_isnull columns from the catalog."""
+    if not os.path.isfile(cat):
+        raise Exception("Can not find catalog: %s" % cat)
+
+    if output is None:
+        output = cat
+
+    hdulist = fits.open(cat)
+    colnames = hdulist[catHdu].columns.names
+    data = hdulist[catHdu].data
+
+    for col in colnames:
+        if string in col:
+            data.columns.del_col(col)
+
+    hdulist[catHdu].data = data
+
+    hdulist.writeto(output, clobber=True)
