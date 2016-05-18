@@ -1027,8 +1027,7 @@ def tractNoData(rootDir, tractUse, filter='HSC-I', prefix='hsc_coadd',
         imgList, catList = listAllCatalog(rootDir, filter, tract=tractUse)
     else:
         imgList = listAllImages(rootDir, filter, tract=tractUse,
-                                checkSize=True,
-                                minSize=100)
+                                checkSize=True, minSize=100)
     nImg = len(imgList)
     print '### Will go through %d images !' % nImg
 
@@ -1154,7 +1153,7 @@ def tractNoDataCombine(prefix, tractId, filter='HSC-I', location='.', big=True,
 
 
 def tractShape(rootDir, tractId, filter='HSC-I', prefix='hsc_coadd',
-               saveList=True, notRun=False, minSize=110, combine=True,
+               saveList=True, notRun=False, minSize=70, combine=True,
                showPatch=True, checkCat=True):
     """
     Get the shape of patches in batch mode.
