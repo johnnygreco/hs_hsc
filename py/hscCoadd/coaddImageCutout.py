@@ -456,7 +456,6 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                     noSrcFile = prefix + '_nosrc_' + filt + '.lis'
                     if not os.path.isfile(noSrcFile):
                         dum = os.system('touch ' + noSrcFile)
-
                     with open(noSrcFile, "a") as noSrc:
                         try:
                             noSrc.write("%d  %s \n" % (tractId, patchId))
