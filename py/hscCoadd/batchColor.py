@@ -55,10 +55,10 @@ if __name__ == '__main__':
                         default='cutout_size')
     parser.add_argument('-info1', '--infoField1', dest='infoField1',
                         help="Column name for first extra information",
-                        default='LAMBDA')
+                        default='lamda_redm')
     parser.add_argument('-info2', '--infoField2', dest='infoField2',
                         help="Column name for second extra information",
-                        default='P_CEN_1')
+                        default='p_cen_1_redm')
     parser.add_argument('-oc', '--onlyColor', action="store_true",
                         dest='onlyColor', default=True)
     parser.add_argument('-safe', '--safe', action="store_true",
@@ -82,16 +82,16 @@ if __name__ == '__main__':
                         default='hscCutout')
     parser.add_argument('-id', '--id', dest='idField',
                         help="Column name for ID",
-                        default='ID')
+                        default='index')
     parser.add_argument('-ra', '--ra', dest='raField',
                         help="Column name for RA",
-                        default='RA')
+                        default='ra_hsc')
     parser.add_argument('-dec', '--dec', dest='decField',
                         help="Column name for DEC",
-                        default='DEC')
+                        default='dec_hsc')
     parser.add_argument('-z', '--redshift', dest='zField',
                         help="Column name for z",
-                        default='Z')
+                        default='z_use')
     args = parser.parse_args()
 
     run(args)
