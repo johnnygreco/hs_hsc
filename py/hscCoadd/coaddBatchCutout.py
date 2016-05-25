@@ -166,7 +166,7 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
         raise Exception("### Can not find the input catalog: %s" % inCat)
 
     if not onlyColor:
-        logFile = prefix + '_match_status.lis'
+        logFile = prefix + '_match_status_' + filter.strip() + '.lis'
         logMatch = open(logFile, 'w')
 
     nObjs = len(id)
@@ -491,16 +491,16 @@ if __name__ == '__main__':
                         help='Prefix of the output file',
                         default='hsc_coadd_cutout')
     parser.add_argument('-id', '--id', dest='idField',
-                        help="Column name for ID", default='id')
+                        help="Column name for ID", default='index')
     parser.add_argument('-ra', '--ra', dest='raField',
                         help="Column name for RA",
-                        default='ra')
+                        default='ra_hsc')
     parser.add_argument('-dec', '--dec', dest='decField',
                         help="Column name for DEC",
-                        default='dec')
+                        default='dec_hsc')
     parser.add_argument('-z', '--redshift', dest='zField',
                         help="Column name for z",
-                        default=None)
+                        default='z_use')
     parser.add_argument('-cf', '--color-filters', dest='colorFilters',
                         help="Choice of filters for color images",
                         default='riz')

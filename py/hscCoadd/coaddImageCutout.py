@@ -452,12 +452,13 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                 except:
                     print "### Tract: %d  Patch: %s" % (tractId, patchId)
                     warnings.warn("### Can not find the *force catalog !")
-                    if not os.path.isfile('no_src.lis'):
-                        noSrc = open('no_src.lis', 'w')
+                    noSrcFile = prefix.strip() + '_nosrc_' + filt.strip() + '.lis'
+                    if not os.path.isfile(noSrcFile):
+                        noSrc = open(noSrcFile, 'w')
                         noSrc.write("%d  %s \n" % (tractId, patchId))
                         noSrc.close()
                     else:
-                        noSrc = open('no_src.lis', 'a+')
+                        noSrc = open(noSrcFile, 'a+')
                         noSrc.write("%d  %s \n" % (tractId, patchId))
                         noSrc.close()
 

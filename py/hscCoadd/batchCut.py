@@ -51,7 +51,7 @@ if __name__ == '__main__':
                         default='HSC-I')
     parser.add_argument('-cf', '--color-filters', dest='colorFilters',
                         help="Choice of filters for color images",
-                        default='riz')
+                        default='gri')
     parser.add_argument('-sf', '--size-field', dest='sizeField',
                         help="Column name for cutout size",
                         default='cutout_size')
@@ -79,15 +79,15 @@ if __name__ == '__main__':
                         dest='noColor', default=True)
     parser.add_argument('-p', '--prefix', dest='prefix',
                         help='Prefix of the output file',
-                        default='sl')
+                        default='hsc')
     parser.add_argument('-id', '--id', dest='idField',
-                        help="Column name for ID", default='ID')
+                        help="Column name for ID", default='index')
     parser.add_argument('-ra', '--ra', dest='raField',
-                        help="Column name for RA", default='RA')
+                        help="Column name for RA", default='ra_hsc')
     parser.add_argument('-dec', '--dec', dest='decField',
-                        help="Column name for DEC", default='DEC')
+                        help="Column name for DEC", default='dec_hsc')
     parser.add_argument('-z', '--redshift', dest='zField',
-                        help="Column name for z", default='Z')
+                        help="Column name for z", default='z_use')
     args = parser.parse_args()
 
     run(args)
