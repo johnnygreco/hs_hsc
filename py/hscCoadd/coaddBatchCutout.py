@@ -2,6 +2,7 @@
 """Generate HSC full cutout in batch mode."""
 
 import os
+import fcntl
 import numpy
 import argparse
 import warnings
@@ -166,8 +167,9 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
         raise Exception("### Can not find the input catalog: %s" % inCat)
 
     if not onlyColor:
-        logFile = prefix + '_match_status_' + filter.strip() + '.lis'
-        logMatch = open(logFile, 'w')
+        logFile = prefix + '_match_' + filter.strip() + '.lis'
+        if not os.path.isfile(logFile):
+            dum = os.system('touch ' + logFile)
 
     nObjs = len(id)
     if verbose:
@@ -200,7 +202,14 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
                     matchStatus = 'NoData'
             else:
                 matchStatus = 'Outside'
-            logMatch.write(str(id[i]) + '   ' + matchStatus + '\n')
+
+            with open(logFile, "a") as logMatch:
+                try:
+                    logMatch.write(str(id[i]) + '    ' + filter +
+                                   '   ' + matchStatus + '\n')
+                    fcntl.flock(logMatch, fcntl.LOCK_UN)
+                except IOError:
+                    pass
 
         # Color Image
         # Whether put redshift on the image
@@ -264,8 +273,6 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
                                          prefix=newPrefix, name=name,
                                          info1=info1, info2=info2, info3=info3,
                                          min=min, max=max, Q=Q)
-    if not onlyColor:
-        logMatch.close()
 
 
 def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
@@ -307,10 +314,6 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
     else:
         raise Exception("### Can not find the input catalog: %s" % inCat)
 
-    if not onlyColor:
-        logFile = prefix + '_match_status.lis'
-        logMatch = open(logFile, 'w')
-
     nObjs = len(id)
     if verbose:
         print SEP
@@ -329,14 +332,20 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                 print "### Make the Cutout Fits Files!  "
             if not allFilters:
                 filterUse = filter.strip()
+
+                if not onlyColor:
+                    logFile = prefix + '_match_' + filterUse + '.lis'
+                    if not os.path.isfile(logFile):
+                        dum = os.system('touch ' + logFile)
+
                 if makeDir:
                     dirLoc = (str(id[i]).strip() + '/' +
                               str(filterUse).strip() + '/')
                     if not os.path.exists(dirLoc):
                         os.makedirs(dirLoc)
-                    filterPrefix = dirLoc + newPrefix
+                    filterPre = dirLoc + newPrefix
                 else:
-                    filterPrefix = newPrefix
+                    filterPre = newPrefix
 
                 if saveSrc:
                     tempOut = cdCutout.coaddImageCutFull(root, ra[i], dec[i],
@@ -344,7 +353,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                                                          saveSrc=True,
                                                          visual=True,
                                                          filt=filterUse,
-                                                         prefix=filterPrefix,
+                                                         prefix=filterPre,
                                                          butler=butler,
                                                          imgOnly=imgOnly)
                     found, full, npatch = tempOut
@@ -354,7 +363,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                                                          saveSrc=False,
                                                          visual=True,
                                                          filt=filterUse,
-                                                         prefix=filterPrefix,
+                                                         prefix=filterPre,
                                                          butler=butler,
                                                          imgOnly=imgOnly)
                     found, full, npatch = tempOut
@@ -368,22 +377,32 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                     matchStatus = 'NoData'
                     full = 'None'
 
-                logMatch.write(str(id[i]) + '    ' + filterUse +
-                               '   ' + matchStatus +
-                               '   ' + full + '   ' +
-                               str(npatch) + '\n')
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logMatch.write(str(id[i]) + '    ' + filterUse +
+                                       '   ' + matchStatus +
+                                       '   ' + full + '   ' +
+                                       str(npatch) + '\n')
+                        fcntl.flock(logMatch, fcntl.lock_un)
+                    except IOError:
+                        pass
             else:
                 for filterUse in HSC_FILTERS:
                     print "## Working on %s now" % filterUse
+
+                    if not onlyColor:
+                        logFilter = prefix + '_match_' + filterUse + '.lis'
+                        if not os.path.isfile(logFilter):
+                            dum = os.system('touch ' + logFilter)
 
                     if makeDir:
                         dirLoc = (str(id[i]).strip() + '/' +
                                   str(filterUse).strip() + '/')
                         if not os.path.exists(dirLoc):
                             os.makedirs(dirLoc)
-                        filterPrefix = dirLoc + newPrefix
+                        filterPre = dirLoc + newPrefix
                     else:
-                        filterPrefix = newPrefix
+                        filterPre = newPrefix
 
                     if saveSrc:
                         tempOut = cdCutout.coaddImageCutFull(root,
@@ -393,7 +412,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                                                              saveSrc=True,
                                                              visual=True,
                                                              filt=filterUse,
-                                                             prefix=filterPrefix,
+                                                             prefix=filterPre,
                                                              butler=butler,
                                                              imgOnly=imgOnly)
                         found, full, npatch = tempOut
@@ -405,7 +424,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                                                              saveSrc=False,
                                                              visual=True,
                                                              filt=filterUse,
-                                                             prefix=filterPrefix,
+                                                             prefix=filterPre,
                                                              butler=butler,
                                                              imgOnly=imgOnly)
                         found, full, npatch = tempOut
@@ -418,10 +437,16 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                     else:
                         matchStatus = 'NoData'
                         full = 'None'
-                    logMatch.write(str(id[i]) + '    ' + filterUse +
-                                   '   ' + matchStatus +
-                                   '   ' + full + '   ' +
-                                   str(npatch) + '\n')
+
+                    with open(logFilter, "a") as logMatch:
+                        try:
+                            logMatch.write(str(id[i]) + '    ' + filterUse +
+                                           '   ' + matchStatus +
+                                           '   ' + full + '   ' +
+                                           str(npatch) + '\n')
+                            fcntl.flock(logMatch, fcntl.lock_un)
+                        except IOError:
+                            pass
 
         # Color Image
         # Whether put redshift on the image
@@ -474,8 +499,6 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                                          prefix=newPrefix, name=name,
                                          info1=info1, info2=info2, info3=info3,
                                          min=min, max=max, Q=Q, butler=butler)
-    if not onlyColor:
-        logMatch.close()
 
 
 if __name__ == '__main__':

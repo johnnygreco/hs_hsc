@@ -4,6 +4,7 @@
 
 import os
 import copy
+import fcntl
 import argparse
 import warnings
 import numpy as np
@@ -452,15 +453,16 @@ def coaddImageCutout(root, ra, dec, size, saveMsk=True, saveSrc=True,
                 except:
                     print "### Tract: %d  Patch: %s" % (tractId, patchId)
                     warnings.warn("### Can not find the *force catalog !")
-                    noSrcFile = prefix.strip() + '_nosrc_' + filt.strip() + '.lis'
+                    noSrcFile = prefix + '_nosrc_' + filt + '.lis'
                     if not os.path.isfile(noSrcFile):
-                        noSrc = open(noSrcFile, 'w')
-                        noSrc.write("%d  %s \n" % (tractId, patchId))
-                        noSrc.close()
-                    else:
-                        noSrc = open(noSrcFile, 'a+')
-                        noSrc.write("%d  %s \n" % (tractId, patchId))
-                        noSrc.close()
+                        dum = os.system('touch ' + noSrcFile)
+
+                    with open(noSrcFile, "a") as noSrc:
+                        try:
+                            noSrc.write("%d  %s \n" % (tractId, patchId))
+                            fcntl.flock(noSrc, fcntl.LOCK_UN)
+                        except IOError:
+                            pass
 
     # If only part of the desired cutout region is covered, and the circleMatch
     # Flag is set, find all the Patches that overlap with a circle region
@@ -840,14 +842,17 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                             print WAR
                             print "### Tract: %d  Patch: %s" % (tract, patch)
                             warnings.warn("### No photometry catalog!")
-                            if not os.path.isfile('no_src.lis'):
-                                noSrc = open('no_src.lis', 'w')
-                                noSrc.write("%d  %s \n" % (tract, patch))
-                                noSrc.close()
-                            else:
-                                noSrc = open('no_src.lis', 'a+')
-                                noSrc.write("%d  %s \n" % (tract, patch))
-                                noSrc.close()
+                            noSrcFile = prefix + '_nosrc_' + filt + '.lis'
+                            if not os.path.isfile(noSrcFile):
+                                dum = os.system('touch ' + noSrcFile)
+
+                            with open(noSrcFile, "a") as noSrc:
+                                try:
+                                    noSrc.write("%d  %s \n" % (tract, patch))
+                                    fcntl.flock(noSrc, fcntl.LOCK_UN)
+                                except IOError:
+                                    pass
+
                             srcFound = False
                 # Save the width of the BBox
                 boxX.append(bbox.getWidth())
@@ -916,7 +921,7 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
                             psfUse.writeFits(psfOut)
                             noPsf = False
                         else:
-                            warnings.warn("## Can not compute useful PSF image !!")
+                            warnings.warn("## Can not compute PSF image !!")
                             noPsf = True
                 else:
                     noPsf = True
