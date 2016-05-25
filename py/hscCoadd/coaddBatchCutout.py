@@ -205,8 +205,9 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
 
             with open(logFile, "a") as logMatch:
                 try:
-                    logMatch.write(str(id[i]) + '    ' + filter +
-                                   '   ' + matchStatus + '\n')
+                    logFormat = "%5d    %s    %s \n"
+                    logMatch.write(logFormat % (id[i], filter,
+                                                matchStatus))
                     fcntl.flock(logMatch, fcntl.LOCK_UN)
                 except IOError:
                     pass
@@ -378,12 +379,13 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                     full = 'None'
 
                 with open(logFile, "a") as logMatch:
+                    logStr = "%5d   %s   %6s   %4s   %3d \n"
                     try:
-                        logMatch.write(str(id[i]) + '    ' + filterUse +
-                                       '   ' + matchStatus +
-                                       '   ' + full + '   ' +
-                                       str(npatch) + '\n')
-                        fcntl.flock(logMatch, fcntl.lock_un)
+                        logMatch.write(logStr % (id[i],
+                                                 filterUse,
+                                                 matchStatus,
+                                                 full, npatch))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
                     except IOError:
                         pass
             else:
@@ -439,12 +441,13 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                         full = 'None'
 
                     with open(logFilter, "a") as logMatch:
+                        logStr = "%5d   %s   %6s   %4s   %3d \n"
                         try:
-                            logMatch.write(str(id[i]) + '    ' + filterUse +
-                                           '   ' + matchStatus +
-                                           '   ' + full + '   ' +
-                                           str(npatch) + '\n')
-                            fcntl.flock(logMatch, fcntl.lock_un)
+                            logMatch.write(logStr % (id[i],
+                                                     filterUse,
+                                                     matchStatus,
+                                                     full, npatch))
+                            fcntl.flock(logMatch, fcntl.LOCK_UN)
                         except IOError:
                             pass
 
