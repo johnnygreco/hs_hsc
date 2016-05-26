@@ -48,7 +48,7 @@ def run(args):
         else:
             logFile = args.prefix + '_force_img_' + filter.strip() + '.log'
         if not os.path.isfile(logFile):
-            dum = os.system('touch ' + logFile)
+            os.system('touch ' + logFile)
 
         print COM
         print "## Will deal with %d galaxies ! " % len(data)

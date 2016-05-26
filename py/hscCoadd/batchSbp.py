@@ -45,11 +45,11 @@ def run(args):
 
         """ New log """
         if args.imgSub:
-            logFile = prefix + '_sbp_imgsub_' + filter.strip() + '.lis'
+            logFile = args.prefix + '_sbp_imgsub_' + filter.strip() + '.log'
         else:
-            logFile = prefix + '_sbp_img_' + filter.strip() + '.lis'
+            logFile = args.prefix + '_sbp_img_' + filter.strip() + '.log'
         if not os.path.isfile(logFile):
-            dum = os.system('touch ' + logFile)
+            os.system('touch ' + logFile)
 
         print COM
         print "## Will deal with %d galaxies ! " % len(data)
