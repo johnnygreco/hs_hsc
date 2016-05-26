@@ -197,11 +197,14 @@ if __name__ == '__main__':
     parser.add_argument("prefix", help="Prefix of the galaxy image files")
     parser.add_argument("incat", help="The input catalog for cutout")
     parser.add_argument('-i', '--id', dest='id',
-                        help="Name of the column for galaxy ID", default='ID')
+                        help="Name of the column for galaxy ID",
+                        default='index')
     parser.add_argument('-f', '--filter', dest='filter', help="Filter",
                         default='HSC-I')
     parser.add_argument('-r', '--rerun', dest='rerun',
                         help="Name of the rerun", default='default')
+    parser.add_argument('--multiMask', dest='multiMask',
+                        action="store_true", default=False)
     """ Optional """
     parser.add_argument('-k', dest='kernel',
                         help='SExtractor detection kernel',
@@ -266,8 +269,6 @@ if __name__ == '__main__':
     parser.add_argument('--sigma', dest='sigma',
                         help='Sigma to Gaussian smooth the segmentation image',
                         type=float, default=6.0)
-    parser.add_argument('--multiMask', dest='multiMask',
-                        action="store_true", default=False)
     parser.add_argument('--noBkgC', dest='noBkgC',
                         action="store_true", default=False)
     parser.add_argument('--noBkgH', dest='noBkgH',
