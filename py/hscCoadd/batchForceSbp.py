@@ -5,6 +5,7 @@
 import os
 import gc
 import glob
+import fcntl
 import logging
 import warnings
 import argparse
@@ -40,6 +41,14 @@ def run(args):
             logSuffix = '_%s_%s_img_forcesbp.log' % (filter, rerun)
         logFile = (args.incat).replace('.fits', logSuffix)
         logging.basicConfig(filename=logFile)
+
+        """ New log """
+        if args.imgSub:
+            logFile = args.prefix + '_force_imgsub_' + filter.strip() + '.log'
+        else:
+            logFile = args.prefix + '_force_img_' + filter.strip() + '.log'
+        if not os.path.isfile(logFile):
+            dum = os.system('touch ' + logFile)
 
         print COM
         print "## Will deal with %d galaxies ! " % len(data)
@@ -171,7 +180,19 @@ def run(args):
 
                 logging.info('### The 1-D SBP is DONE for %s in %s' %
                              (galPrefix, filter))
+
+                print SEP + '\n'
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logFormat = "%25s  %20s  %s  DONE \n"
+                        logMatch.write(logFormat % (galPrefix,
+                                                    ellipSuffix,
+                                                    filter))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
                 gc.collect()
+
                 """ Forced photoetry using small """
                 if (galMsk is not None) and args.multiMask:
                     mskSmall = galMsk.replace('mskfin', 'msksmall')
@@ -215,8 +236,21 @@ def run(args):
                                                 suffix=suffixSmall,
                                                 plMask=args.plmask,
                                                 imgSub=args.imgSub)
+
                             logging.info('### SMALLMASK is DONE for %s' %
                                          galPrefix)
+
+                            print SEP + '\n'
+                            with open(logFile, "a") as logMatch:
+                                try:
+                                    logFormat = "%25s  %20s  %s  DONE \n"
+                                    logMatch.write(logFormat % (galPrefix,
+                                                                suffixSmall,
+                                                                filter))
+                                    fcntl.flock(logMatch, fcntl.LOCK_UN)
+                                except IOError:
+                                    pass
+
                             gc.collect()
                         except Exception, errMsg:
                             print str(errMsg)
@@ -224,6 +258,18 @@ def run(args):
                                             (galPrefix, filter))
                             logging.warning('###    Err: %s - %s' %
                                             (galPrefix, errMsg))
+
+                            print SEP + '\n'
+                            with open(logFile, "a") as logMatch:
+                                try:
+                                    logFormat = "%25s  %20s  %s  FAIL \n"
+                                    logMatch.write(logFormat % (galPrefix,
+                                                                suffixSmall,
+                                                                filter))
+                                    fcntl.flock(logMatch, fcntl.LOCK_UN)
+                                except IOError:
+                                    pass
+
                             gc.collect()
                     else:
                         print "##    Can not find %s" % mskSmall
@@ -231,6 +277,17 @@ def run(args):
                                         galPrefix)
                         logging.warning('###    Err: %s - Can not find %s' %
                                         (galPrefix, mskSmall))
+                        print SEP + '\n'
+                        with open(logFile, "a") as logMatch:
+                            try:
+                                logFormat = "%25s  %20s  %s  FAIL \n"
+                                logMatch.write(logFormat % (galPrefix,
+                                                            suffixSmall,
+                                                            filter))
+                                fcntl.flock(logMatch, fcntl.LOCK_UN)
+                            except IOError:
+                                pass
+
                     """ Large Mask """
                     if os.path.isfile(mskLarge):
                         print "##     Input MaskLarge : %s" % mskLarge
@@ -267,8 +324,21 @@ def run(args):
                                                 suffix=suffixLarge,
                                                 plMask=args.plmask,
                                                 imgSub=args.imgSub)
+
                             logging.info('### LARGEMASK is DONE for %s in %s' %
                                          (galPrefix, filter))
+
+                            print SEP + '\n'
+                            with open(logFile, "a") as logMatch:
+                                try:
+                                    logFormat = "%25s  %20s  %s  DONE \n"
+                                    logMatch.write(logFormat % (galPrefix,
+                                                                suffixLarge,
+                                                                filter))
+                                    fcntl.flock(logMatch, fcntl.LOCK_UN)
+                                except IOError:
+                                    pass
+
                             gc.collect()
                         except Exception, errMsg:
                             print str(errMsg)
@@ -276,6 +346,18 @@ def run(args):
                                             (galPrefix, filter))
                             logging.warning('###    Err: %s - %s' %
                                             (galPrefix, errMsg))
+
+                            print SEP + '\n'
+                            with open(logFile, "a") as logMatch:
+                                try:
+                                    logFormat = "%25s  %20s  %s  FAIL \n"
+                                    logMatch.write(logFormat % (galPrefix,
+                                                                suffixLarge,
+                                                                filter))
+                                    fcntl.flock(logMatch, fcntl.LOCK_UN)
+                                except IOError:
+                                    pass
+
                             gc.collect()
                     else:
                         print "##    Can not find %s" % mskLarge
@@ -283,6 +365,18 @@ def run(args):
                                         galPrefix)
                         logging.warning('###    Err: %s - Can not find %s' %
                                         (galPrefix, mskLarge))
+
+                        print SEP + '\n'
+                        with open(logFile, "a") as logMatch:
+                            try:
+                                logFormat = "%25s  %20s  %s  FAIL \n"
+                                logMatch.write(logFormat % (galPrefix,
+                                                            suffixLarge,
+                                                            filter))
+                                fcntl.flock(logMatch, fcntl.LOCK_UN)
+                            except IOError:
+                                pass
+
             except Exception, errMsg:
                 print str(errMsg)
                 warnings.warn('### The 1-D SBP is failed for %s in %s' %
@@ -290,8 +384,21 @@ def run(args):
                 logging.warning('### The 1-D SBP is FAILED for %s in %s' %
                                 (galPrefix, filter))
                 logging.warning('###    Err: %s - %s' % (galPrefix, errMsg))
+
+                print SEP + '\n'
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logFormat = "%25s  %20s  %s  FAIL \n"
+                        logMatch.write(logFormat % (galPrefix,
+                                                    ellipSuffix,
+                                                    filter))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
+
                 gc.collect()
-            print SEP
+
+            print SEP + '\n'
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 
