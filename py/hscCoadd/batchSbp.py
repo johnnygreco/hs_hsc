@@ -5,6 +5,7 @@
 import os
 import gc
 import glob
+import fcntl
 import logging
 import warnings
 import argparse
@@ -41,6 +42,14 @@ def run(args):
             logSuffix = '_%s_%s_img_sbp.log' % (filter, rerun)
         logFile = (args.incat).replace('.fits', logSuffix)
         logging.basicConfig(filename=logFile)
+
+        """ New log """
+        if args.imgSub:
+            logFile = prefix + '_sbp_imgsub_' + filter.strip() + '.lis'
+        else:
+            logFile = prefix + '_sbp_img_' + filter.strip() + '.lis'
+        if not os.path.isfile(logFile):
+            dum = os.system('touch ' + logFile)
 
         print COM
         print "## Will deal with %d galaxies ! " % len(data)
@@ -142,7 +151,15 @@ def run(args):
 
                 logging.info('### The 1-D SBP is DONE for %s in %s' %
                              (galPrefix, filter))
-                print SEP
+                print SEP + '\n'
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logFormat = "%25s    %s    DONE \n"
+                        logMatch.write(logFormat % (galPrefix, filter))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
+
             except Exception, errMsg:
                 print str(errMsg)
                 warnings.warn('### The 1-D SBP is failed for %s in %s' %
@@ -151,6 +168,13 @@ def run(args):
                                 (galPrefix, filter))
                 logging.warning('###     Error :%s' % errMsg)
                 print SEP + '\n'
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logFormat = "%25s    %s    FAIL \n"
+                        logMatch.write(logFormat % (galPrefix, filter))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
 
             gc.collect()
 
