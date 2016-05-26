@@ -122,7 +122,7 @@ if __name__ == '__main__':
     parser.add_argument("incat", help="The input catalog for cutout")
     parser.add_argument('-i', '--id', dest='id',
                         help="Name of the column for galaxy ID",
-                        default='ID')
+                        default='index')
     parser.add_argument('-f', '--filter', dest='filter', help="Filter",
                         default='HSC-I')
     parser.add_argument('-mf', '--mFilter', dest='maskFilter',
