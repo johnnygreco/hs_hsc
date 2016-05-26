@@ -164,7 +164,7 @@ if __name__ == '__main__':
     parser.add_argument("incat", help="The input catalog for cutout")
     parser.add_argument('-i', '--id', dest='id',
                         help="Name of the column for galaxy ID",
-                        default='ID')
+                        default='index')
     parser.add_argument('-f', '--filter', dest='filter', help="Filter",
                         default='HSC-I')
     parser.add_argument('-mf', '--mFilter', dest='maskFilter',
@@ -174,6 +174,21 @@ if __name__ == '__main__':
     parser.add_argument("--suffix",
                         help="Suffix of the output file",
                         default='')
+    parser.add_argument('--multiEllipse', dest='multiEllipse',
+                        action="store_true",
+                        default=False)
+    parser.add_argument('--plmask', dest='plmask', action="store_true",
+                        default=True)
+    parser.add_argument('--nomask', dest='nomask', action="store_true",
+                        default=False)
+    parser.add_argument('--imgSub', dest='imgSub', action="store_true",
+                        default=False)
+    parser.add_argument('--noCheckCenter', dest='noCheckCenter',
+                        action="store_false",
+                        help='Check if the center is off', default=True)
+    parser.add_argument('--updateIntens', dest='updateIntens',
+                        action="store_true",
+                        default=True)
     """ Optional """
     parser.add_argument("--intMode", dest='intMode',
                         help="Method for integration",
@@ -237,21 +252,6 @@ if __name__ == '__main__':
                         help='Generate summary plot', default=True)
     parser.add_argument('--bkgCor', dest='bkgCor', action="store_true",
                         help='Background correction', default=True)
-    parser.add_argument('--noCheckCenter', dest='noCheckCenter',
-                        action="store_false",
-                        help='Check if the center is off', default=True)
-    parser.add_argument('--updateIntens', dest='updateIntens',
-                        action="store_true",
-                        default=True)
-    parser.add_argument('--multiEllipse', dest='multiEllipse',
-                        action="store_true",
-                        default=False)
-    parser.add_argument('--plmask', dest='plmask', action="store_true",
-                        default=True)
-    parser.add_argument('--nomask', dest='nomask', action="store_true",
-                        default=False)
-    parser.add_argument('--imgSub', dest='imgSub', action="store_true",
-                        default=False)
 
     args = parser.parse_args()
 
