@@ -60,7 +60,7 @@ def flatSrcArr(srcArr):
     return srcUse
 
 
-def previewCoaddImage(img, msk, var, det, sizeX=16, sizeY=16,
+def previewCoaddImage(img, msk, var, det, sizeX=10, sizeY=10,
                       prefix='hsc_cutout', outPNG=None,
                       oriX=None, oriY=None,
                       boxW=None, boxH=None):
@@ -162,7 +162,7 @@ def previewCoaddImage(img, msk, var, det, sizeX=16, sizeY=16,
     # Save a PNG file
     if outPNG is None:
         outPNG = prefix + '_pre.png'
-    plt.savefig(outPNG)
+    plt.savefig(outPNG, dpi=80)
     plt.close(fig)
 
 
