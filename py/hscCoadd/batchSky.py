@@ -4,9 +4,12 @@
 
 import os
 import glob
+import fcntl
 import logging
 import argparse
 import warnings
+
+import numpy as np
 
 from astropy.io import fits
 
@@ -32,10 +35,10 @@ def run(args):
         prefix = (args.prefix).strip()
         filter = (args.filter).strip().upper()
 
-        """ Keep a log """
-        logSuffix = '_%s_%s_sky.log' % (filter, rerun)
-        logFile = (args.incat).replace('.fits', logSuffix)
-        logging.basicConfig(filename=logFile)
+        """ New log """
+        logFile = args.prefix + '_sky_' + filter.strip() + '.log'
+        if not os.path.isfile(logFile):
+            os.system('touch ' + logFile)
 
         print COM
         print "## Will deal with %d galaxies ! " % len(data)
@@ -54,6 +57,7 @@ def run(args):
                     print WAR
                     print('### Can not find the root folder : %s !' % galRoot)
                     print WAR
+
                 """Collect the FITS file information"""
                 fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
                 if len(fitsList) <= 3:
@@ -92,18 +96,35 @@ def run(args):
                     galMsk = None
 
                 """Estimate the Sky Background"""
-                ccs.coaddCutoutSky(galPrefix, root=galRoot,
-                                   pix=args.pix,
-                                   zp=args.zp,
-                                   rebin=args.rebin,
-                                   skyClip=args.skyClip,
-                                   verbose=args.verbose,
-                                   visual=args.visual,
-                                   exMask=galMsk,
-                                   bkgSize=args.bkgSize,
-                                   bkgFilter=args.bkgFilter,
-                                   saveBkg=args.saveBkg,
-                                   nClip=args.nClip)
+                skyGlobal = ccs.coaddCutoutSky(galPrefix,
+                                               root=galRoot,
+                                               pix=args.pix,
+                                               zp=args.zp,
+                                               rebin=args.rebin,
+                                               skyClip=args.skyClip,
+                                               verbose=args.verbose,
+                                               visual=args.visual,
+                                               exMask=galMsk,
+                                               bkgSize=args.bkgSize,
+                                               bkgFilter=args.bkgFilter,
+                                               saveBkg=args.saveBkg,
+                                               nClip=args.nClip)
+
+                numSkyPix, skyMed, skyAvg, skyStd, skySkw, sbExpt = skyGlobal
+
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logFormat = "%25s  %5s  %6d  %7.4f  %7.4f" + \
+                                    "  %7.4f  %7.4f  %7.4f  \n"
+                        logMatch.write(logFormat % (galPrefix,
+                                                    filter, args.rebin,
+                                                    numSkyPix, skyMed,
+                                                    skyAvg, skyStd,
+                                                    skySkw, sbExpt))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
+
             except Exception, errMsg:
                 print WAR
                 print str(errMsg)
@@ -111,6 +132,20 @@ def run(args):
                               'for %s in %s' % (galID, filter))
                 logging.warning('### The sky estimate is failed ' +
                                 'for %s in %s' % (galID, filter))
+
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logFormat = "%25s  %5s  %6d  %7.4f  %7.4f" + \
+                                    "  %7.4f  %7.4f  %7.4f  \n"
+                        logMatch.write(logFormat % (galPrefix,
+                                                    filter, args.rebin,
+                                                    np.nan, np.nan,
+                                                    np.nan, np.nan,
+                                                    np.nan, np.nan))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
+
             print COM
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
