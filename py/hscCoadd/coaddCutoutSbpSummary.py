@@ -65,7 +65,7 @@ HSC_FILTERS = ['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y']
 """
 Common radius array
 """
-RSMA_COMMON = np.arange(0.4, 4.2, 0.02)
+RSMA_COMMON = np.arange(0.4, 4.2, 0.01)
 EMPTY = (RSMA_COMMON * np.nan)
 """
 For output
@@ -212,7 +212,7 @@ def sbpCompare(galTab, sumPng, pngSize=10):
     return
 
 
-def interpSbp(rad, data, radCommon=RSMA_COMMON, kind='slinear'):
+def interpSbp(rad, data, radCommon=RSMA_COMMON, kind='quadratic'):
     """
     Interpolate 1-D SBP data.
 
@@ -439,16 +439,16 @@ def geomExtract(loc, galID, redshift, filter,
         else:
             ell_i = interpSbp(rsma_kpc, ell,
                               radCommon=RSMA_COMMON,
-                              kind='slinear')
+                              kind='quadratic')
             ell_err_i = interpSbp(rsma_kpc, ell_err,
                                   radCommon=RSMA_COMMON,
-                                  kind='slinear')
+                                  kind='quadratic')
             pa_i = interpSbp(rsma_kpc, pa,
                              radCommon=RSMA_COMMON,
-                             kind='slinear')
+                             kind='quadratic')
             pa_err_i = interpSbp(rsma_kpc, pa_err,
                                  radCommon=RSMA_COMMON,
-                                 kind='slinear')
+                                 kind='quadratic')
             sma_common = (RSMA_COMMON ** 4.0)
 
             return sma_common, ell_i, ell_err_i, pa_i, pa_err_i
@@ -1131,6 +1131,7 @@ def correctProf(ellProf, redshift, extinction=0.0, zp=27.0,
             sbp_use = (ellProf['sbp_ori'] - extinction - dim)
         except KeyError:
             sbp_use = (ellProf['sbp'] - extinction - dim)
+
     sbp_cor_upp = (ellProf['sbp_upp'] - extinction - dim)
     sbp_err = (sbp_cor_upp - sbp_use)
 
@@ -1139,8 +1140,8 @@ def correctProf(ellProf, redshift, extinction=0.0, zp=27.0,
     Convert the SBP into physical unit of (L_sun/kpc**2)
     """
     if amag_sun is not None:
-        abs_sbp = ((amag_sun + 21.572 - sbp_use)/2.5 + 6.0)
-        abs_sbp_low = ((amag_sun + 21.572 - sbp_cor_upp)/2.5 + 6.0)
+        abs_sbp = ((amag_sun + 21.572 - sbp_use) / 2.5 + 6.0)
+        abs_sbp_low = ((amag_sun + 21.572 - sbp_cor_upp) / 2.5 + 6.0)
         err_sbp = (abs_sbp - abs_sbp_low)
         """
         Convert the absolute magnitude into log(L*/L_sun)
@@ -1163,13 +1164,13 @@ def correctProf(ellProf, redshift, extinction=0.0, zp=27.0,
         rsma_kpc = (sma_kpc ** 0.25)
         abs_sbp_interp = interpSbp(rsma_kpc, abs_sbp,
                                    radCommon=RSMA_COMMON,
-                                   kind='slinear')
+                                   kind='quadratic')
         abs_mag_interp = interpSbp(rsma_kpc, abs_mag,
                                    radCommon=RSMA_COMMON,
-                                   kind='slinear')
+                                   kind='quadratic')
         err_sbp_interp = interpSbp(rsma_kpc, err_sbp,
                                    radCommon=RSMA_COMMON,
-                                   kind='slinear')
+                                   kind='quadratic')
         smaKpc_common = (RSMA_COMMON ** 4.0)
         return smaKpc_common, abs_sbp_interp, abs_mag_interp, err_sbp_interp
 
@@ -1229,6 +1230,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
             aG = getExtinction(outTab[raCol], outTab[decCol], a_lambda=A_G)
             outTab.add_column(Column(name='a_g', data=aG))
             agCol = 'a_g'
+
     # HSC-R
     if arCol not in colNames:
         if (raCol not in colNames) or (decCol not in colNames):
@@ -1241,6 +1243,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
             aR = getExtinction(outTab[raCol], outTab[decCol], a_lambda=A_R)
             outTab.add_column(Column(name='a_r', data=aR))
             arCol = 'a_r'
+
     # HSC-I
     if aiCol not in colNames:
         if (raCol not in colNames) or (decCol not in colNames):
@@ -1253,6 +1256,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
             aI = getExtinction(outTab[raCol], outTab[decCol], a_lambda=A_I)
             outTab.add_column(Column(name='a_i', data=aI))
             aiCol = 'a_i'
+
     # HSC-Z
     if azCol not in colNames:
         if (raCol not in colNames) or (decCol not in colNames):
@@ -1265,6 +1269,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
             aZ = getExtinction(outTab[raCol], outTab[decCol], a_lambda=A_Z)
             outTab.add_column(Column(name='a_z', data=aZ))
             azCol = 'a_z'
+
     # HSC-Y
     if ayCol not in colNames:
         if (raCol not in colNames) or (decCol not in colNames):
@@ -1290,6 +1295,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                                                   outTab[zCol], amag_sun=SUN_G,
                                                   extinction=outTab[agCol])
         outTab.add_column(Column(name='logm2l_g', data=logm2lG))
+
     # HSC-R
     if (logmCol not in colNames) or (rmagCol not in colNames):
         if verbose:
@@ -1301,6 +1307,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                                                   outTab[zCol], amag_sun=SUN_R,
                                                   extinction=outTab[arCol])
         outTab.add_column(Column(name='logm2l_r', data=logm2lR))
+
     # HSC-I
     if (logmCol not in colNames) or (imagCol not in colNames):
         if verbose:
@@ -1323,6 +1330,7 @@ def coaddCutoutSbpSummary(inCat, prefix, root=None, idCol='ID', zCol='Z',
                                                   outTab[zCol], amag_sun=SUN_Z,
                                                   extinction=outTab[azCol])
         outTab.add_column(Column(name='logm2l_z', data=logm2lZ))
+
     # HSC-Y
     if (logmCol not in colNames) or (ymagCol not in colNames):
         if verbose:
