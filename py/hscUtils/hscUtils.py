@@ -538,8 +538,8 @@ Cosmology Related
 """
 
 
-def cosmoDL(redshift, WMAP9=True, H0=69.3, Om0=0.287,
-            Planck15=True, kpc=False):
+def cosmoDL(redshift, WMAP9=False, H0=70.0, Om0=0.30,
+            Planck15=False, kpc=False):
     """
     Get the Luminosity Distance at redshift=z.
 
@@ -562,8 +562,8 @@ def cosmoDL(redshift, WMAP9=True, H0=69.3, Om0=0.287,
         return dl.to(u.kpc).value
 
 
-def cosmoDA(redshift, WMAP9=True, H0=69.3, Om0=0.287,
-            Planck15=True, kpc=False):
+def cosmoDA(redshift, WMAP9=False, H0=70.0, Om0=0.30,
+            Planck15=False, kpc=False):
     """
     Get the Angular Diameter Distance at redshift=z.
 
@@ -586,8 +586,8 @@ def cosmoDA(redshift, WMAP9=True, H0=69.3, Om0=0.287,
         return da.to(u.kpc).value
 
 
-def cosmoScale(redshift, WMAP9=True, H0=69.3, Om0=0.287,
-               Planck15=True):
+def cosmoScale(redshift, WMAP9=False, H0=70.0, Om0=0.30,
+               Planck15=False):
     """
     Get the Angular Scale (kpc/") at redshift=z.
 
@@ -607,7 +607,7 @@ def cosmoScale(redshift, WMAP9=True, H0=69.3, Om0=0.287,
     return scale.value
 
 
-def cosmoDistMod(redshift, WMAP9=True, H0=69.3, Om0=0.287,
+def cosmoDistMod(redshift, WMAP9=False, H0=70.0, Om0=0.30,
                  Planck15=False):
     """
     Get the Distance Module at redshift=z.
@@ -628,7 +628,7 @@ def cosmoDistMod(redshift, WMAP9=True, H0=69.3, Om0=0.287,
     return dm.value
 
 
-def cosmoComVol(redshift, WMAP9=True, H0=69.3, Om0=0.287,
+def cosmoComVol(redshift, WMAP9=False, H0=70.0, Om0=0.30,
                 Planck15=False, Gpc=False):
     """
     Get the Comoving Volume at redshift=z.
@@ -652,7 +652,7 @@ def cosmoComVol(redshift, WMAP9=True, H0=69.3, Om0=0.287,
         return v.to(u.Gpc).value
 
 
-def cosmodVol(redshift, WMAP9=True, H0=69.3, Om0=0.287,
+def cosmodVol(redshift, WMAP9=False, H0=70.0, Om0=0.30,
               Planck15=False):
     """
     Get the Differential Comoving Volume at redshift=z.
@@ -673,7 +673,7 @@ def cosmodVol(redshift, WMAP9=True, H0=69.3, Om0=0.287,
     return dv.value
 
 
-def cosmoAge(redshift, WMAP9=True, H0=69.3, Om0=0.287,
+def cosmoAge(redshift, WMAP9=False, H0=70.0, Om0=0.30,
              Planck15=False, Myr=False):
     """
     Get the Age of the Universe at redshift=z.
@@ -697,7 +697,7 @@ def cosmoAge(redshift, WMAP9=True, H0=69.3, Om0=0.287,
         return age.to(u.Myr).value
 
 
-def cosmoLookBack(redshift, WMAP9=True, H0=69.3, Om0=0.287,
+def cosmoLookBack(redshift, WMAP9=False, H0=70.0, Om0=0.30,
                   Planck15=False, Myr=False):
     """
     Get the Look-back Time at redshift=z.
@@ -1087,20 +1087,21 @@ def songPlotSetup(ax, border=4.5,
 def removeIsNullCol(cat, output=None, catHdu=1,
                     string='isnull'):
     """Remove the xxx_isnull columns from the catalog."""
+    from astropy.table import Table
     if not os.path.isfile(cat):
         raise Exception("Can not find catalog: %s" % cat)
 
     if output is None:
-        output = cat
+        output = cat.replace('.fits', '_clean.fits')
 
-    hdulist = fits.open(cat)
-    colnames = hdulist[catHdu].columns.names
-    data = hdulist[catHdu].data
+    data = Table.read(cat, format='fits')
+    print "Reading the data"
+    colnames = data.colnames
 
-    for col in colnames:
-        if string in col:
-            data.columns.del_col(col)
+    colRemove = [col for col in colnames if string in col]
 
-    hdulist[catHdu].data = data
+    data.remove_columns(colRemove)
 
-    hdulist.writeto(output, clobber=True)
+    data.write(output, format='fits', overwrite=True)
+
+    print "Saving new data"
