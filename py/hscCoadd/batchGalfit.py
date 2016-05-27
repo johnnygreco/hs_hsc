@@ -28,7 +28,7 @@ def run(args):
     """
     Run coaddCutoutSbp in batch mode.
 
-    Parameters
+    Parameters
     """
     if psutilOk:
         proc = psutil.Process(os.getpid())
@@ -179,7 +179,7 @@ if __name__ == '__main__':
     parser.add_argument("incat", help="The input catalog for cutout")
     parser.add_argument('-i', '--id', dest='id',
                         help="Name of the column for galaxy ID",
-                        default='ID')
+                        default='index')
     parser.add_argument('--root', dest='root',
                         help="Root of data", default=None)
     parser.add_argument('-f', '--filter', dest='filter', help="Filter",
@@ -202,9 +202,9 @@ if __name__ == '__main__':
                         type=float, default=27.0)
     parser.add_argument('--imax', dest='imax',
                         help='Maximum number of iterations',
-                        type=int, default=150)
+                        type=int, default=200)
     parser.add_argument('--mag', dest='mag', help='Total magnitude',
-                        type=float, default=18.00)
+                        type=float, default=18.50)
     parser.add_argument('--noBkg', dest='useBkg', action="store_false",
                         default=True)
     parser.add_argument('--noPsf', dest='usePsf', action="store_false",
