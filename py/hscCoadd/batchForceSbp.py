@@ -34,14 +34,6 @@ def run(args):
         suffix = (args.suffix).strip()
         filter = (args.filter).strip().upper()
 
-        """ Keep a log """
-        if args.imgSub:
-            logSuffix = '_%s_%s_imgsub_forcesbp.log' % (filter, rerun)
-        else:
-            logSuffix = '_%s_%s_img_forcesbp.log' % (filter, rerun)
-        logFile = (args.incat).replace('.fits', logSuffix)
-        logging.basicConfig(filename=logFile)
-
         """ New log """
         if args.imgSub:
             logFile = args.prefix + '_force_imgsub_' + filter.strip() + '.log'
@@ -132,6 +124,17 @@ def run(args):
                 logging.warning('### Can not find ' +
                                 'INPUT BINARY for : %s' % galPrefix)
                 logging.warning('###     File Name : %s' % inEllipBin)
+
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logFormat = "%25s  %20s  %s  NELL \n"
+                        logMatch.write(logFormat % (galPrefix,
+                                                    inEllipPrefix,
+                                                    filter))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
+
                 continue
             """
             Suffix of the output file
@@ -280,7 +283,7 @@ def run(args):
                         print SEP + '\n'
                         with open(logFile, "a") as logMatch:
                             try:
-                                logFormat = "%25s  %20s  %s  FAIL \n"
+                                logFormat = "%25s  %20s  %s  NMSK \n"
                                 logMatch.write(logFormat % (galPrefix,
                                                             suffixSmall,
                                                             filter))
@@ -369,7 +372,7 @@ def run(args):
                         print SEP + '\n'
                         with open(logFile, "a") as logMatch:
                             try:
-                                logFormat = "%25s  %20s  %s  FAIL \n"
+                                logFormat = "%25s  %20s  %s  NMSK \n"
                                 logMatch.write(logFormat % (galPrefix,
                                                             suffixLarge,
                                                             filter))
