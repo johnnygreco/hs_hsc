@@ -265,7 +265,7 @@ def easierEllipse(ellipConfig, verbose=True,
     return ellipConfig
 
 
-def setupEllipse(ellipConfig):
+def setupEllipse(ellipConfig, savePar=False, filePar='ellipse.par'):
     """
     Setup the configuration for Ellipse.
 
@@ -376,7 +376,7 @@ def ellipRemoveIndef(outTabName, replace='NaN'):
 
 def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
                    harmonics='none', galR=None, minSma=2.0, dPA=75.0,
-                   rFactor=0.2, fRatio1=0.2, fRatio2=0.6):
+                   rFactor=0.2, fRatio1=0.2, fRatio2=0.6, useTflux=False):
     """
     Read the Ellipse output into a structure.
 
@@ -480,7 +480,8 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     ellipseOut.add_column(Column(name='rsma_asec',
                                  data=(ellipseOut['sma'] * pix) ** 0.25))
     # Curve of Growth
-    cogOri, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut)
+    cogOri, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut,
+                                                    useTflux=useTflux)
     ellipseOut.add_column(Column(name='growth_ori', data=cogOri))
 
     cogSub, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut,
@@ -512,42 +513,47 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     return ellipseOut
 
 
-def ellipseGetGrowthCurve(ellipOut, bkgCor=False, intensArr=None):
+def ellipseGetGrowthCurve(ellipOut, bkgCor=False, intensArr=None,
+                          useTflux=False):
     """
     Extract growth curve from Ellipse output.
 
     Parameters:
     """
-    # The area in unit of pixels covered by an elliptical isophote
-    ellArea = np.pi * (ellipOut['sma'] ** 2.0 * (1.0 - ellipOut['ell']))
-    # The area in unit covered by the "ring"
-    # isoArea = np.append(ellArea[0], [ellArea[1:] - ellArea[:-1]])
-    # The total flux inside the "ring"
-    if intensArr is None:
-        if bkgCor:
-            intensUse = ellipOut['intens_sub']
+    if not useTflux:
+        # The area in unit of pixels covered by an elliptical isophote
+        ellArea = np.pi * ((ellipOut['sma'] ** 2.0) * (1.0 - ellipOut['ell']))
+        # The area in unit covered by the "ring"
+        # isoArea = np.append(ellArea[0], [ellArea[1:] - ellArea[:-1]])
+        # The total flux inside the "ring"
+        if intensArr is None:
+            if bkgCor:
+                intensUse = ellipOut['intens_sub']
+            else:
+                intensUse = ellipOut['intens']
         else:
-            intensUse = ellipOut['intens']
+            intensUse = intensArr
+        try:
+            isoFlux = np.append(
+                ellArea[0], [ellArea[1:] - ellArea[:-1]]) * intensUse
+        except Exception:
+            isoFlux = np.append(
+                ellArea[0], [ellArea[1:] - ellArea[:-1]]) * ellipOut['intens']
+        # Get the growth Curve
+        curveOfGrowth = np.asarray(map(lambda x: np.nansum(isoFlux[0:x + 1]),
+                                   range(isoFlux.shape[0])))
     else:
-        intensUse = intensArr
-    try:
-        isoFlux = np.append(
-            ellArea[0], [ellArea[1:] - ellArea[:-1]]) * intensUse
-    except Exception:
-        isoFlux = np.append(
-            ellArea[0], [ellArea[1:] - ellArea[:-1]]) * ellipOut['intens']
-    # Get the growth Curve
-    cog = np.asarray(map(lambda x: np.nansum(isoFlux[0:x + 1]),
-                     range(isoFlux.shape[0])))
-    indexMax = np.argmax(cog)
-    maxIsoSma = ellipOut['sma'][indexMax]
-    maxIsoFlux = cog[indexMax]
+        curveOfGrowth = ellipOut['tflux_e']
 
-    return cog, maxIsoSma, maxIsoFlux
+    indexMax = np.argmax(curveOfGrowth)
+    maxIsoSma = ellipOut['sma'][indexMax]
+    maxIsoFlux = curveOfGrowth[indexMax]
+
+    return curveOfGrowth, maxIsoSma, maxIsoFlux
 
 
 def ellipseGetR50(ellipseRsma, isoGrowthCurve, simple=True):
-    """Estimate R50 from Ellipse output."""
+    """Estimate R50 fom Ellipse output."""
     if len(ellipseRsma) != len(isoGrowthCurve):
         raise "The x and y should have the same size!", (len(ellipseRsma),
                                                          len(isoGrowthCurve))
@@ -1157,7 +1163,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
            verbose=True, linearStep=False, saveOut=True, savePng=True,
            olthresh=0.5, harmonics='1 2', outerThreshold=None,
            updateIntens=True, psfSma=6.0, suffix='', useZscale=True,
-           hdu=0, saveCsv=False, imgType='_imgsub'):
+           hdu=0, saveCsv=False, imgType='_imgsub', useTflux=False,
+           isophote=None):
     """
     Running Ellipse to Extract 1-D profile.
 
@@ -1373,7 +1380,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 ellipOut = readEllipseOut(outTab, zp=zpPhoto, pix=pix,
                                           exptime=expTime, bkg=bkg,
                                           harmonics=harmonics,
-                                          minSma=psfSma)
+                                          minSma=psfSma, useTflux=useTflux)
                 # Get the outer boundary of the isophotes
                 radOuter = ellipseGetOuterBoundary(ellipOut,
                                                    ratio=outRatio)
@@ -1428,7 +1435,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 ellipOut.add_column(Column(name='sbp_cor', data=sbpCor))
                 """ Update the curve of growth """
                 cogCor, mm, ff = ellipseGetGrowthCurve(ellipOut,
-                                                       intensArr=intensCor)
+                                                       intensArr=intensCor,
+                                                       useTflux=useTflux)
                 ellipOut.add_column(Column(name='growth_cor', data=(cogCor)))
                 """ Update the outer radius """
                 radOuter = ellipseGetOuterBoundary(ellipOut, ratio=outRatio)
@@ -1603,6 +1611,9 @@ if __name__ == '__main__':
                         default=True)
     parser.add_argument('--updateIntens', dest='updateIntens',
                         action="store_true", default=True)
+    parser.add_argument("--isophote", dest='isophote',
+                        help="Location of the x_isophote.e file",
+                        default=None)
 
     args = parser.parse_args()
 
@@ -1643,4 +1654,5 @@ if __name__ == '__main__':
            outerThreshold=args.outerThreshold,
            updateIntens=args.updateIntens,
            hdu=args.hdu,
-           saveCsv=args.saveCsv)
+           saveCsv=args.saveCsv,
+           isophote=args.isophote)

@@ -150,7 +150,8 @@ def run(args):
                                     suffix=ellipSuffix,
                                     plMask=args.plmask,
                                     noMask=args.nomask,
-                                    imgSub=args.imgSub)
+                                    imgSub=args.imgSub,
+                                    isophote=args.isophote)
 
                 logging.info('### The 1-D SBP is DONE for %s in %s' %
                              (galPrefix, filter))
@@ -279,6 +280,9 @@ if __name__ == '__main__':
                         help='Generate summary plot', default=True)
     parser.add_argument('--bkgCor', dest='bkgCor', action="store_true",
                         help='Background correction', default=True)
+    parser.add_argument("--isophote", dest='isophote',
+                        help="Location of the x_isophote.e file",
+                        default=None)
 
     args = parser.parse_args()
 

@@ -720,7 +720,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                    olthresh=0.5, intMode='mean', lowClip=3.0, uppClip=3.0,
                    nClip=2, fracBad=0.5, minIt=20, maxIt=150, outRatio=1.2,
                    exMask=None, suffix='', plMask=False, noMask=False,
-                   multiEllipse=False, imgSub=False):
+                   multiEllipse=False, imgSub=False, isophote=None):
     """
     Generate 1-D SBP Plot.
 
@@ -859,7 +859,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                    savePng=False,
                                    bkg=0.0,
                                    updateIntens=False,
-                                   imgType=imgType)
+                                   imgType=imgType,
+                                   isophote=isophote)
             psfOut, psfBin = psfRes
         else:
             psfOut = None
@@ -897,7 +898,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     maxIt=maxIt,
                                     plMask=plMask,
                                     suffix=suffix,
-                                    imgType=imgType)
+                                    imgType=imgType,
+                                    isophote=isophote)
             ellOut1, ellBin1 = ellRes1
 
             if ellOut1 is None:
@@ -944,7 +946,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     maxIt=maxIt,
                                     plMask=plMask,
                                     suffix=suffix,
-                                    imgType=imgType)
+                                    imgType=imgType,
+                                    isophote=isophote)
             ellOut2, ellBin2 = ellRes2
 
             if ellOut2 is None:
@@ -987,7 +990,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     intMode=intMode,
                                     plMask=plMask,
                                     suffix=suffix,
-                                    imgType=imgType)
+                                    imgType=imgType,
+                                    isophote=isophote)
             ellOut3, ellBin3 = ellRes3
 
             if ellOut3 is None:
@@ -1046,7 +1050,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                              updateIntens=updateIntens,
                                              inEllip=inputSmall,
                                              suffix=suffixSmall,
-                                             imgType=imgType)
+                                             imgType=imgType,
+                                             isophote=isophote)
                     smallEll, smallBin = smallOut
                 else:
                     smallEll = None
@@ -1071,7 +1076,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                              updateIntens=updateIntens,
                                              inEllip=inputLarge,
                                              suffix=suffixLarge,
-                                             imgType=imgType)
+                                             imgType=imgType,
+                                             isophote=isophote)
                     largeEll, largeBin = largeOut
                 else:
                     largeEll = None
@@ -1104,7 +1110,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                           intMode=intMode,
                                           plMask=plMask,
                                           suffix=suffixMulti3,
-                                          imgType=imgType)
+                                          imgType=imgType,
+                                          isophote=isophote)
                 ellMulti3, binMulti3 = resMulti3
 
                 """ 4. Larger step size """
@@ -1135,7 +1142,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                           intMode=intMode,
                                           plMask=plMask,
                                           suffix=suffixMulti4,
-                                          imgType=imgType)
+                                          imgType=imgType,
+                                          isophote=isophote)
                 ellMulti4, binMulti4 = resMulti4
 
                 """ 5. Use Mean instead of Median """
@@ -1166,7 +1174,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                           intMode='mean',
                                           plMask=plMask,
                                           suffix=suffixMulti5,
-                                          imgType=imgType)
+                                          imgType=imgType,
+                                          isophote=isophote)
                 ellMulti5, binMulti5 = resMulti5
 
                 """ """
@@ -1204,7 +1213,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     intMode=intMode,
                                     plMask=plMask,
                                     suffix=suffix,
-                                    imgType=imgType)
+                                    imgType=imgType,
+                                    isophote=isophote)
             if ellOut4 is None:
                 print WAR
                 raise Exception("!!!!! FORCED ELLIPSE RUN FAILED !!!!")
@@ -1308,6 +1318,9 @@ if __name__ == '__main__':
                         default=False)
     parser.add_argument('--imgSub', dest='imgSub', action="store_true",
                         default=False)
+    parser.add_argument("--isophote", dest='isophote',
+                        help="Location of the x_isophote.e file",
+                        default=None)
 
     args = parser.parse_args()
 
@@ -1343,4 +1356,5 @@ if __name__ == '__main__':
                    exMask=args.exMask,
                    noMask=args.noMask,
                    multiEllipse=args.multiEllipse,
-                   imgSub=args.imgSub)
+                   imgSub=args.imgSub,
+                   isophote=args.isophote)

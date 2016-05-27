@@ -179,7 +179,8 @@ def run(args):
                                     exMask=galMsk,
                                     suffix=ellipSuffix,
                                     plMask=args.plmask,
-                                    imgSub=args.imgSub)
+                                    imgSub=args.imgSub,
+                                    isophote=args.isophote)
 
                 logging.info('### The 1-D SBP is DONE for %s in %s' %
                              (galPrefix, filter))
@@ -238,7 +239,8 @@ def run(args):
                                                 exMask=mskSmall,
                                                 suffix=suffixSmall,
                                                 plMask=args.plmask,
-                                                imgSub=args.imgSub)
+                                                imgSub=args.imgSub,
+                                                isophote=args.isophote)
 
                             logging.info('### SMALLMASK is DONE for %s' %
                                          galPrefix)
@@ -326,7 +328,8 @@ def run(args):
                                                 exMask=mskLarge,
                                                 suffix=suffixLarge,
                                                 plMask=args.plmask,
-                                                imgSub=args.imgSub)
+                                                imgSub=args.imgSub,
+                                                isophote=args.isophote)
 
                             logging.info('### LARGEMASK is DONE for %s in %s' %
                                          (galPrefix, filter))
@@ -504,6 +507,9 @@ if __name__ == '__main__':
                         default=True)
     parser.add_argument('--imgSub', dest='imgSub', action="store_true",
                         default=False)
+    parser.add_argument("--isophote", dest='isophote',
+                        help="Location of the x_isophote.e file",
+                        default=None)
 
     args = parser.parse_args()
 
