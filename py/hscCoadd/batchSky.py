@@ -114,7 +114,7 @@ def run(args):
 
                 with open(logFile, "a") as logMatch:
                     try:
-                        logFormat = "%25s  %5s  %6d  %7.4f  %7.4f" + \
+                        logFormat = "%25s  %5s  %3d  %6d  %7.4f  %7.4f" + \
                                     "  %7.4f  %7.4f  %7.4f  \n"
                         logMatch.write(logFormat % (galPrefix,
                                                     filter, args.rebin,
@@ -135,7 +135,7 @@ def run(args):
 
                 with open(logFile, "a") as logMatch:
                     try:
-                        logFormat = "%25s  %5s  %6d  %7.4f  %7.4f" + \
+                        logFormat = "%25s  %5s  %3d  %6d  %7.4f  %7.4f" + \
                                     "  %7.4f  %7.4f  %7.4f  \n"
                         logMatch.write(logFormat % (galPrefix,
                                                     filter, args.rebin,
