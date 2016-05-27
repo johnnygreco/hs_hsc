@@ -290,7 +290,7 @@ def getSEPSky(imgArr, mskArr, imgHead, skyClip=3, zp=27.0, pix=0.168,
     pixSky2 = pixSky2[np.isfinite(pixSky2)]
     try:
         pixSky2, low2, upp2 = sigmaclip(pixSky2, low=skyClip, high=skyClip)
-        print "### %d pixels left for sky of bkg subtracted image" % len(pixSky2)
+        print "### %d sky pixels left on bkg subtracted image" % len(pixSky2)
         print "###      Boundary: %8.5f -- %8.5f" % (low2, upp2)
     except Exception:
         print WAR
@@ -345,7 +345,7 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
         print WAR
         warnings.warn('### congrid failed!')
         imgBin = imgArr
-        mskBin = mskArr
+        mskBin = mskAll
 
     # Get all the pixels that are not masked out
     pixels = imgBin[mskBin == 0].flatten()
@@ -366,7 +366,7 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
     # Get the basic statistics of the global sky
     skyAvg, skyStd = np.nanmean(pixNoMskBin), np.nanstd(pixNoMskBin)
     if not np.isfinite(skyAvg) or not np.isfinite(skyStd):
-        warnings.warn("###  No useful global skyAvg and skyStd for %s" % prefix)
+        warnings.warn("###  No useful global skyAvg / Std for %s" % prefix)
     skyMed = np.nanmedian(pixNoMskBin)
     if not np.isfinite(skyMed):
         warnings.warn("###  No useful global skyMed for %s" % prefix)
@@ -386,7 +386,8 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
         showSkyHist(pixNoMskBin, skypix2=pixNoMsk, sbExpt=sbExpt,
                     pngName=skyPNG, skyAvg=skyAvg, skyMed=skyMed,
                     skyStd=skyStd, skySkw=skySkw)
-    # Save a txt file summary
+
+    """Save a txt file summary"""
     skyTxt = prefix + '_' + suffix + 'sky.dat'
     text_file = open(skyTxt, "w")
     text_file.write("IMAGE: %s \n" % prefix)
@@ -398,6 +399,8 @@ def getGlobalSky(imgArr, mskAll, skyClip=3, zp=27.0, pix=0.168,
     text_file.write("SKYSKW: %10.6f \n" % skySkw)
     text_file.write("SBEXPT: %10.6f \n" % sbExpt)
     text_file.close()
+
+    return numSkyPix, skyMed, skyAvg, skyStd, skySkw, sbExpt
 
 
 def coaddCutoutSky(prefix, root=None, verbose=True, skyClip=3.0,
@@ -438,9 +441,12 @@ def coaddCutoutSky(prefix, root=None, verbose=True, skyClip=3.0,
 
     # 2. Global Background Estimation
     suffixGlob = 'rebin' + str(rebin).strip() + '_'
-    getGlobalSky(imgSub, mskArr, skyClip=skyClip, zp=zp, pix=pix,
-                 rebin=rebin, prefix=(root + prefix), suffix=suffixGlob,
-                 visual=visual, verbose=verbose, nClip=nClip)
+    skyGlobal = getGlobalSky(imgSub, mskArr, skyClip=skyClip,
+                             zp=zp, pix=pix, rebin=rebin,
+                             prefix=(root + prefix), suffix=suffixGlob,
+                             visual=visual, verbose=verbose, nClip=nClip)
+
+    return skyGlobal
 
 
 if __name__ == '__main__':
