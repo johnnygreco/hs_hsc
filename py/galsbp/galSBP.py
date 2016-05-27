@@ -1218,13 +1218,21 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             raise Exception("### Can not find the input mask: %s !" % mskOri)
         if plMask:
             plFile = maskFits2Pl(imgTemp, mskOri)
+            plFile2 = maskFits2Pl(imgTemp, mskOri, replace=True)
             if not os.path.isfile(plFile):
                 print WAR
                 try:
                     os.remove(imgTemp)
                 except Exception:
                     pass
-                raise Exception("### Can not find the .pl mask: %s !" % plFile)
+                raise Exception("### Can not find the mask: %s !" % plFile)
+            if not os.path.isfile(plFile2):
+                print WAR
+                try:
+                    os.remove(imgTemp)
+                except Exception:
+                    pass
+                raise Exception("### Can not find the mask: %s !" % plFile2)
             imageUse = imgTemp
         else:
             imageNew = imageMaskNaN(imgTemp, mskOri)
@@ -1282,8 +1290,10 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 pass
             try:
                 os.remove(plFile)
+                os.remove(plFile2)
             except Exception:
                 pass
+
             raise Exception(
                 "### Can not find the input ellip file: %s !" % inEllip)
     else:
@@ -1293,6 +1303,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             pass
         try:
             os.remove(plFile)
+            os.remove(plFile2)
         except Exception:
             pass
         raise Exception("### Available step: 1 , 2 , 3 , 4")
@@ -1358,12 +1369,16 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             print "###      Origin Image  : %s" % imgOri
             print "###      Input Image   : %s" % imageUse
             print "###      Output Binary : %s" % outBin
-            if stage != 4:
-                iraf.ellipse(input=imageUse, output=outBin, verbose=verStr)
+            if isophote is None:
+                if stage != 4:
+                    iraf.ellipse(input=imageUse, output=outBin, verbose=verStr)
+                else:
+                    print "###      Input Binary  : %s" % inEllip
+                    iraf.ellipse(input=imageUse, output=outBin,
+                                 inellip=inEllip, verbose=verStr)
             else:
-                print "###      Input Binary  : %s" % inEllip
-                iraf.ellipse(input=imageUse, output=outBin, inellip=inEllip,
-                             verbose=verStr)
+                """TODO: Place holder"""
+
             print SEP
 
             # Check if the Ellipse run is finished
@@ -1506,6 +1521,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
         pass
     try:
         os.remove(plFile)
+        os.remove(plFile2)
     except Exception:
         pass
 
