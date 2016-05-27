@@ -212,7 +212,7 @@ def sbpCompare(galTab, sumPng, pngSize=10):
     return
 
 
-def interpSbp(rad, data, radCommon=RSMA_COMMON, kind='quadratic'):
+def interpSbp(rad, data, radCommon=RSMA_COMMON, kind='slinear'):
     """
     Interpolate 1-D SBP data.
 
@@ -439,16 +439,16 @@ def geomExtract(loc, galID, redshift, filter,
         else:
             ell_i = interpSbp(rsma_kpc, ell,
                               radCommon=RSMA_COMMON,
-                              kind='quadratic')
+                              kind='slinear')
             ell_err_i = interpSbp(rsma_kpc, ell_err,
                                   radCommon=RSMA_COMMON,
-                                  kind='quadratic')
+                                  kind='slinear')
             pa_i = interpSbp(rsma_kpc, pa,
                              radCommon=RSMA_COMMON,
-                             kind='quadratic')
+                             kind='slinear')
             pa_err_i = interpSbp(rsma_kpc, pa_err,
                                  radCommon=RSMA_COMMON,
-                                 kind='quadratic')
+                                 kind='slinear')
             sma_common = (RSMA_COMMON ** 4.0)
 
             return sma_common, ell_i, ell_err_i, pa_i, pa_err_i
@@ -1164,13 +1164,13 @@ def correctProf(ellProf, redshift, extinction=0.0, zp=27.0,
         rsma_kpc = (sma_kpc ** 0.25)
         abs_sbp_interp = interpSbp(rsma_kpc, abs_sbp,
                                    radCommon=RSMA_COMMON,
-                                   kind='quadratic')
+                                   kind='slinear')
         abs_mag_interp = interpSbp(rsma_kpc, abs_mag,
                                    radCommon=RSMA_COMMON,
-                                   kind='quadratic')
+                                   kind='slinear')
         err_sbp_interp = interpSbp(rsma_kpc, err_sbp,
                                    radCommon=RSMA_COMMON,
-                                   kind='quadratic')
+                                   kind='slinear')
         smaKpc_common = (RSMA_COMMON ** 4.0)
         return smaKpc_common, abs_sbp_interp, abs_mag_interp, err_sbp_interp
 
