@@ -36,16 +36,25 @@ from matplotlib.patches import Ellipse
 # Astropy
 from astropy.io import fits
 
-# Cubehelix color scheme from https://github.com/jradavenport/cubehelixscheme
-import cubehelix
-# For high-contrast image
-cmap = cubehelix.cmap(start=-0.1, rot=-0.8, gamma=1.0, minSat=1.2, maxSat=1.2,
-                      minLight=0.0, maxLight=1.0, reverse=True)
-cmap.set_bad('k', 1.)
-
-cmap2 = cubehelix.cmap(start=-0.2, rot=1., reverse=True)
-cmap2.set_bad('w', 1.)
+# Colors and color maps
 from palettable.colorbrewer.qualitative import Set1_9 as compColor
+try:
+    """
+    Cubehelix color scheme from
+    https://github.com/jradavenport/cubehelixscheme
+    """
+    import cubehelix
+    cmap = cubehelix.cmap(start=-0.1, rot=-0.8, gamma=1.0,
+                          minSat=1.2, maxSat=1.2,
+                          minLight=0.0, maxLight=1.0, reverse=True)
+    cmap.set_bad('k', 1.)
+    cmap2 = cubehelix.cmap(start=-0.2, rot=1., reverse=True)
+    cmap2.set_bad('w', 1.)
+except ImportError:
+    cmap = plt.get_cmap('viridis')
+    cmap.set_bad('k', 1.)
+    cmap2 = plt.get_cmap('inferno')
+    cmap2.set_bad('w', 1.)
 
 # Personal
 import hscUtils as hUtil
@@ -78,9 +87,9 @@ def galfitAIC(galOut):
     return aic, bic, hq
 
 
-def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
-               zoomLimit=6.0, showTitle=True, showChi2=True, zoomSize=None,
-               overComp=True, maskRes=True, savePickle=True):
+def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
+               showZoom=True, zoomLimit=6.0, showTitle=True, showChi2=True,
+               zoomSize=None, overComp=True, maskRes=True):
     """
     Three columns view of the Galfit models.
 
@@ -92,16 +101,8 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
         root = os.path.dirname(outFile)
     else:
         root = ''
-
-    """  Read in the output file """
-    galOut = gPar.GalfitResults(outFile)
+    """  Read in the results fits file """
     arrOut = fits.open(outFile)
-
-    """ Save a Pickle version of the output parameters """
-    if savePickle:
-        outPkl = outFile.replace('.fits', '.pkl')
-        hUtil.saveToPickle(galOut, outPkl)
-
     """ Name of the output PNG figure """
     outPNG = outFile.replace('.fits', '.png')
 
@@ -321,27 +322,25 @@ def removePSF(readin, root=None, verbose=True, abspath=False, run=False):
     return readinNew
 
 
-def log2Readin(outFile, root=None, verbose=True, abspath=False):
+def log2Readin(outFile, logFile, iniFile, root=None,
+               verbose=True, abspath=False):
     """
     Back up the original input file.
 
     Update the readin file using the output log file
     """
-    galOut = gPar.GalfitResults(outFile)
-    logFile = galOut.logfile
     if root is not None:
         logFile = os.path.join(root, logFile)
-
     if os.path.isfile(logFile):
         if abspath:
-            iniFile = galOut.input_initfile
+            iniFile = iniFile
         elif root is not None:
             iniFile = os.path.join(root,
-                                   os.path.basename(galOut.input_initfile))
+                                   os.path.basename(iniFile))
         else:
-            iniFile = galOut.input_initfile
+            iniFile = iniFile
 
-        if os.path.basename(galOut.input_initfile) in open(logFile).read():
+        if os.path.basename(iniFile) in open(logFile).read():
             if verbose:
                 print ' ## %s  ---> %s ' % (logFile, iniFile)
             shutil.copyfile(iniFile, iniFile + '_back')
@@ -459,7 +458,7 @@ def getCenConstrFile(comps, location=None, name=None):
 def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
                    keepLog=True, show=True, expect=None, showZoom=False,
                    zoomSize=None, removePsf=True, verbose=False,
-                   abspath=False, deleteAfter=False):
+                   abspath=False, deleteAfter=False, savePkl=True):
     """Run GALFIT."""
     """ Find GALFIT """
     if galfit is None:
@@ -520,9 +519,15 @@ def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
         print "### GALFIT run finished : %s" % expect
         print COM
 
+        """  Read in the output file """
+        galOut = gPar.GalfitResults(expect)
+        galLog = galOut.logfile
+        iniFile = galOut.input_initfile
+
         """ Update the read in file """
         if updateRead:
-            newReadIn = log2Readin(expect, root=None, verbose=True,
+            newReadIn = log2Readin(expect, galLog, iniFile,
+                                   root=None, verbose=True,
                                    abspath=abspath)
             if verbose:
                 print "## Read-in file has been updated : %s" % newReadIn
@@ -535,11 +540,16 @@ def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
 
         """ MORE CAN BE DONE HERE """
 
+        """ Save a Pickle version of the output parameters """
+        if savePkl:
+            outPkl = expect.replace('.fits', '.pkl')
+            hUtil.saveToPickle(expect, outPkl)
+
         """ Visualization of the model """
         if show:
-            showModels(expect, root=root, verbose=True, vertical=False,
-                       showZoom=showZoom, showTitle=True, showChi2=True,
-                       overComp=True, savePickle=True, maskRes=True,
+            showModels(expect, galOut, root=root, verbose=True,
+                       vertical=False, showZoom=showZoom, showTitle=True,
+                       showChi2=True, overComp=True, maskRes=True,
                        zoomSize=zoomSize)
         """ Delete After """
         if deleteAfter:
