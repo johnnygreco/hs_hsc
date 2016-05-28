@@ -122,7 +122,8 @@ def singleGalfitRun(galaxy, idCol, rerun, prefix, filterUse, logFile):
                             maskType=args.maskType,
                             externalMask=galMsk,
                             abspath=args.abspath,
-                            imax=args.imax)
+                            imax=args.imax,
+                            show=args.show)
     logging.info('### The Galfit Run is DONE for %s in %s' %
                  (galPrefix, filterUse))
     # Keep a log
@@ -287,6 +288,8 @@ if __name__ == '__main__':
                         action="store_true", default=False)
     parser.add_argument('--abspath', dest='abspath',
                         action="store_true", default=False)
+    parser.add_argument('--show', dest='show', action="store_true",
+                        default=False)
 
     args = parser.parse_args()
 
