@@ -1189,13 +1189,19 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
                     useF1=useF1, useF4=useF4)
     """ 1b. Execute the GALFIT run """
     if run1:
-        model1Done = coaddRunGalfit(inFile, root=modRoot, imax=imax,
-                                    zoomSize=int(dimX/2.5),
-                                    deleteAfter=deleteAfter, show=show)
-        if model1Done:
-            print "## Model for %s has finished !" % inFile
+        done1, plot1 = coaddRunGalfit(inFile, root=modRoot, imax=imax,
+                                      zoomSize=int(dimX/2.5),
+                                      deleteAfter=deleteAfter, show=show)
+        if done1:
+            ser1Done = 'DONE'
         else:
-            print "## Model for %s has failed !" % inFile
+            ser1Done = 'FAIL'
+        if plot1:
+            ser1Plot = 'DONE'
+        else:
+            ser1Plot = 'FAIL'
+    else:
+        ser1Done, ser1Plot = 'NRUN', 'NRUN'
 
     """ Optional: 2-Sersic Model """
     if ser2Comp:
@@ -1210,13 +1216,21 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
                         useF1=useF1, useF4=useF4, constrCen=constrCen)
         """ 2d. Execute the GALFIT run """
         if run2:
-            model2Done = coaddRunGalfit(inFile2, root=modRoot, imax=imax,
-                                        zoomSize=int(dimX/2.5),
-                                        deleteAfter=deleteAfter, show=show)
-            if model2Done:
-                print "## Model for %s has finished !" % inFile2
+            done2, plot2 = coaddRunGalfit(inFile2, root=modRoot, imax=imax,
+                                          zoomSize=int(dimX/2.5),
+                                          deleteAfter=deleteAfter, show=show)
+            if done2:
+                ser2Done = 'DONE'
             else:
-                print "## Model for %s has failed !" % inFile2
+                ser2Done = 'FAIL'
+            if plot2:
+                ser2Plot = 'DONE'
+            else:
+                ser2Plot = 'FAIL'
+        else:
+            ser2Done, ser2Plot = 'NUSE', 'NUSE'
+    else:
+        ser2Done, ser2Plot = 'NUSE', 'NUSE'
 
     """ Optional: 3-Sersic Model """
     if ser3Comp:
@@ -1231,15 +1245,23 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
                         useF1=useF1, useF4=useF4, constrCen=constrCen)
         """ 3d. Execute the GALFIT run """
         if run3:
-            model3Done = coaddRunGalfit(inFile3, root=modRoot, imax=imax,
-                                        zoomSize=int(dimX/2.5),
-                                        deleteAfter=deleteAfter, show=show)
-            if model3Done:
-                print "## Model for %s has finished !" % inFile3
+            done3, plot3 = coaddRunGalfit(inFile3, root=modRoot, imax=imax,
+                                          zoomSize=int(dimX/2.5),
+                                          deleteAfter=deleteAfter, show=show)
+            if done3:
+                ser3Done = 'DONE'
             else:
-                print "## Model for %s has failed !" % inFile3
+                ser3Done = 'FAIL'
+            if plot3:
+                ser3Plot = 'DONE'
+            else:
+                ser3Plot = 'FAIL'
+        else:
+            ser3Done, ser3Plot = 'NUSE', 'NUSE'
+    else:
+        ser3Done, ser3Plot = 'NUSE', 'NUSE'
 
-    return
+    return ser1Done, ser1Plot, ser2Done, ser2Plot, ser3Done, ser3Plot
 
 
 if __name__ == '__main__':
