@@ -186,11 +186,11 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
     else:
         xPad, yPad = 0, 0
 
-    imin1, imax1 = hUtil.zscale(np.arcsinh(imgOri), contrast=0.03,
+    imin1, imax1 = hUtil.zscale(imgOri, contrast=0.03,
                                 samples=500)
-    imin2, imax2 = hUtil.zscale(np.arcsinh(imgMod), contrast=0.02,
+    imin2, imax2 = hUtil.zscale(imgMod, contrast=0.03,
                                 samples=500)
-    imin3, imax3 = hUtil.zscale(np.arcsinh(resShow), contrast=0.35,
+    imin3, imax3 = hUtil.zscale(resShow, contrast=0.40,
                                 samples=500)
 
     compX = np.asarray(compX) - np.float(galOut.box_x0)
@@ -234,7 +234,7 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
     ax2.xaxis.set_major_formatter(NullFormatter())
     ax2.yaxis.set_major_formatter(NullFormatter())
     ax2.imshow(np.arcsinh(imgMod), interpolation="none",
-               vmax=imax2, cmap=cmap, vmin=1E-4, origin='lower')
+               vmax=imax2, cmap=cmap, vmin=imin2, origin='lower')
     """ Contour """
     try:
         tam = np.size(imgMod, axis=0)
@@ -265,7 +265,7 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
     ax3.xaxis.set_major_formatter(NullFormatter())
     ax3.yaxis.set_major_formatter(NullFormatter())
     ax3.imshow(np.arcsinh(resShow), interpolation="none",
-               vmin=imin3, vmax=imax3, cmap=cmap2,
+               vmin=imin3, vmax=imax3, cmap=cmap,
                origin='lower')
     try:
         for ii in range(len(compX)):
