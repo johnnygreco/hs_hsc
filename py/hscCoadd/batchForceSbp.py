@@ -37,6 +37,8 @@ def run(args):
         """ Keep a log """
         if args.sample is not None:
             logPre = prefix + '_' + args.sample
+        else:
+            logPre = prefix
         if args.imgSub:
             logFile = logPre + '_force_imgsub_' + filter.strip() + '.log'
         else:
