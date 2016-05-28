@@ -140,7 +140,7 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
 
 
 def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
-                     prefix='coadd_cutout', idField='id',
+                     prefix='coadd_cutout', sample=None, idField='id',
                      raField='ra', decField='dec', colorFilters='gri',
                      sizeField='cutout_size', zCutoutSize=False,
                      zField=None, verbose=True, noColor=False,
@@ -167,9 +167,11 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
         raise Exception("### Can not find the input catalog: %s" % inCat)
 
     if not onlyColor:
+        if sample is not None:
+            prefix = prefix + '_' + sample
         logFile = prefix + '_match_' + filter.strip() + '.lis'
         if not os.path.isfile(logFile):
-            dum = os.system('touch ' + logFile)
+            os.system('touch ' + logFile)
 
     nObjs = len(id)
     if verbose:
@@ -277,7 +279,7 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
 
 
 def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
-                      prefix='coadd_cutout', idField='id',
+                      prefix='coadd_cutout', sample=None, idField='id',
                       raField='ra', decField='dec', colorFilters='gri',
                       sizeField='cutout_size', zCutoutSize=False, zField=None,
                       verbose=True, noColor=False, onlyColor=False,
@@ -335,9 +337,11 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                 filterUse = filter.strip()
 
                 if not onlyColor:
+                    if sample is not None:
+                        prefix = prefix + '_' + sample
                     logFile = prefix + '_match_' + filterUse + '.lis'
                     if not os.path.isfile(logFile):
-                        dum = os.system('touch ' + logFile)
+                        os.system('touch ' + logFile)
 
                 if makeDir:
                     dirLoc = (str(id[i]).strip() + '/' +
@@ -393,9 +397,11 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                     print "## Working on %s now" % filterUse
 
                     if not onlyColor:
+                        if sample is not None:
+                            prefix = prefix + '_' + sample
                         logFilter = prefix + '_match_' + filterUse + '.lis'
                         if not os.path.isfile(logFilter):
-                            dum = os.system('touch ' + logFilter)
+                            os.system('touch ' + logFilter)
 
                     if makeDir:
                         dirLoc = (str(id[i]).strip() + '/' +
@@ -513,6 +519,8 @@ if __name__ == '__main__':
                         help="Half size of the cutout box", default=200)
     parser.add_argument('-f', '--filter', dest='filt', help="Filter",
                         default='HSC-I')
+    parser.add_argument('--sample', dest='sample', help="Sample name",
+                        default=None)
     parser.add_argument('-p', '--prefix', dest='prefix',
                         help='Prefix of the output file',
                         default='hsc_coadd_cutout')
@@ -572,6 +580,6 @@ if __name__ == '__main__':
                       onlyColor=args.onlyColor, infoField1=args.infoField1,
                       infoField2=args.infoField2, safe=args.safe,
                       verbose=args.verbose, clean=args.clean,
-                      saveSrc=args.saveSrc,
+                      saveSrc=args.saveSrc, sample=args.sample,
                       makeDir=args.makeDir, noName=args.noName,
                       imgOnly=args.imgOnly, allFilters=args.allFilters)
