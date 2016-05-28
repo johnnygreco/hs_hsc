@@ -44,11 +44,11 @@ try:
     cmap2 = plt.get_cmap('inferno')
     cmap2.set_bad('w', 1.)
 except Exception:
-    from palettable.cubehelix import cubehelix
-    cmap = cubehelix.make(start=0.3, rotation=-0.5,
+    from palettable.cubehelix import Cubehelix
+    cmap = Cubehelix.make(start=0.3, rotation=-0.5,
                           reverse=True)
     cmap.set_bad('k', 1.)
-    cmap2 = cubehelix.make(start=0.5, rotation=-1.5,
+    cmap2 = Cubehelix.make(start=0.5, rotation=-1.5,
                            gamma=1.0, sat=1.2,
                            min_light=0., max_light=1.)
     cmap2.set_bad('w', 1.)
