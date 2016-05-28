@@ -57,8 +57,8 @@ def run(args):
                         galaxy data !')
             if not os.path.isfile(os.path.join(galRoot, galImg)):
                 print WAR
-                raise Exception('### Can not find the cutout image of the \
-                        galaxy !')
+                raise Exception("### Can not find %s, %s !" % (galRoot,
+                                                               galImg))
 
             try:
                 if rerun == 'default':
