@@ -33,12 +33,11 @@ def run(args):
         id = (args.id)
         rerun = (args.rerun).strip()
         prefix = (args.prefix).strip()
-        sample = (args.sample).strip()
         filter = (args.filter).strip().upper()
 
         """ New log """
-        if sample is not None:
-            prefix = prefix + '_' + sample
+        if args.sample is not None:
+            prefix = prefix + '_' + args.sample
         logFile = prefix + '_sky_' + filter + '.log'
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
