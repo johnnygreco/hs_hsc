@@ -33,10 +33,13 @@ def run(args):
         id = (args.id)
         rerun = (args.rerun).strip()
         prefix = (args.prefix).strip()
+        sample = (args.sample).strip()
         filter = (args.filter).strip().upper()
 
         """ New log """
-        logFile = args.prefix + '_sky_' + filter.strip() + '.log'
+        if sample is not None:
+            prefix = prefix + '_' + sample
+        logFile = prefix + '_sky_' + filter + '.log'
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
 
@@ -164,6 +167,8 @@ if __name__ == '__main__':
                         help="Filter for Mask", default=None)
     parser.add_argument('-r', '--rerun', dest='rerun',
                         help="Name of the rerun", default='default')
+    parser.add_argument('--sample', dest='sample', help="Sample name",
+                        default=None)
     """ Optional """
     parser.add_argument('--skyclip', dest='skyClip',
                         help='Sigma for pixel clipping',
