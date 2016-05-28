@@ -1291,9 +1291,9 @@ if __name__ == '__main__':
                         default=False)
     parser.add_argument('--useF1', dest='useF1', action="store_true",
                         default=False)
-    parser.add_argument('--show', dest='show', action="store_true",
-                        default=False)
     parser.add_argument('--useF4', dest='useF4', action="store_true",
+                        default=False)
+    parser.add_argument('--show', dest='show', action="store_true",
                         default=False)
     parser.add_argument('--noConstrCen', dest='constrCen',
                         action="store_false", default=True)
