@@ -97,44 +97,45 @@ def singleGalfitRun(galaxy, idCol, rerun, prefix, filterUse, logFile):
         galMsk = None
 
     print '\n' + SEP
-    try:
-        coaddCutoutGalfitSimple(galPrefix, root=galRoot,
-                                rerun=rerun,
-                                pix=args.pix,
-                                zp=args.zp,
-                                verbose=args.verbose,
-                                useBkg=args.useBkg,
-                                usePsf=args.usePsf,
-                                useSig=args.useSig,
-                                model=args.model,
-                                mag=args.mag,
-                                run1=args.run1,
-                                run2=args.run2,
-                                run3=args.run3,
-                                skyGrad=args.skyGrad,
-                                ser2Comp=args.ser2Comp,
-                                ser3Comp=args.ser3Comp,
-                                useF4=args.useF4,
-                                useF1=args.useF1,
-                                checkCenter=args.checkCenter,
-                                constrCen=args.constrCen,
-                                deleteAfter=args.deleteAfter,
-                                maskType=args.maskType,
-                                externalMask=galMsk,
-                                abspath=args.abspath,
-                                imax=args.imax)
-        logging.info('### The Galfit Run is DONE for %s in %s' %
-                     (galPrefix, filterUse))
-        # Keep a log
-        with open(logFile, "a") as logMatch:
-            logStr = "%25s  %8s  DONE \n"
-            try:
-                logMatch.write(logStr % (galPrefix,
-                                         filterUse))
-                fcntl.flock(logMatch, fcntl.LOCK_UN)
-            except IOError:
-                pass
+    #try:
+    coaddCutoutGalfitSimple(galPrefix, root=galRoot,
+                            rerun=rerun,
+                            pix=args.pix,
+                            zp=args.zp,
+                            verbose=args.verbose,
+                            useBkg=args.useBkg,
+                            usePsf=args.usePsf,
+                            useSig=args.useSig,
+                            model=args.model,
+                            mag=args.mag,
+                            run1=args.run1,
+                            run2=args.run2,
+                            run3=args.run3,
+                            skyGrad=args.skyGrad,
+                            ser2Comp=args.ser2Comp,
+                            ser3Comp=args.ser3Comp,
+                            useF4=args.useF4,
+                            useF1=args.useF1,
+                            checkCenter=args.checkCenter,
+                            constrCen=args.constrCen,
+                            deleteAfter=args.deleteAfter,
+                            maskType=args.maskType,
+                            externalMask=galMsk,
+                            abspath=args.abspath,
+                            imax=args.imax)
+    logging.info('### The Galfit Run is DONE for %s in %s' %
+                 (galPrefix, filterUse))
+    # Keep a log
+    with open(logFile, "a") as logMatch:
+        logStr = "%25s  %8s  DONE \n"
+        try:
+            logMatch.write(logStr % (galPrefix,
+                                     filterUse))
+            fcntl.flock(logMatch, fcntl.LOCK_UN)
+        except IOError:
+            pass
         print SEP
+    """
     except Exception, errMsg:
         print str(errMsg)
         warnings.warn('### The Galfit Run is failed for %s in %s' %
@@ -151,7 +152,7 @@ def singleGalfitRun(galaxy, idCol, rerun, prefix, filterUse, logFile):
             except IOError:
                 pass
         print SEP + '\n'
-
+    """
 
 def run(args):
     """
