@@ -976,7 +976,8 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
                             useF4=False, useF1=False, imax=150,
                             checkCenter=False, constrCen=True,
                             deleteAfter=False, maskType='mskfin',
-                            externalMask=None, abspath=False):
+                            externalMask=None, abspath=False,
+                            show=True):
     """
     Run 1-Sersic fitting on HSC cutout image.
 
@@ -1167,7 +1168,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
     if run1:
         model1Done = coaddRunGalfit(inFile, root=modRoot, imax=imax,
                                     zoomSize=int(dimX/2.5),
-                                    deleteAfter=deleteAfter)
+                                    deleteAfter=deleteAfter, show=show)
         if model1Done:
             print "## Model for %s has finished !" % inFile
         else:
@@ -1188,7 +1189,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
         if run2:
             model2Done = coaddRunGalfit(inFile2, root=modRoot, imax=imax,
                                         zoomSize=int(dimX/2.5),
-                                        deleteAfter=deleteAfter)
+                                        deleteAfter=deleteAfter, show=show)
             if model2Done:
                 print "## Model for %s has finished !" % inFile2
             else:
@@ -1209,7 +1210,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
         if run3:
             model3Done = coaddRunGalfit(inFile3, root=modRoot, imax=imax,
                                         zoomSize=int(dimX/2.5),
-                                        deleteAfter=deleteAfter)
+                                        deleteAfter=deleteAfter, show=show)
             if model3Done:
                 print "## Model for %s has finished !" % inFile3
             else:
@@ -1290,6 +1291,8 @@ if __name__ == '__main__':
                         default=False)
     parser.add_argument('--useF1', dest='useF1', action="store_true",
                         default=False)
+    parser.add_argument('--show', dest='show', action="store_true",
+                        default=False)
     parser.add_argument('--useF4', dest='useF4', action="store_true",
                         default=False)
     parser.add_argument('--noConstrCen', dest='constrCen',
@@ -1320,4 +1323,4 @@ if __name__ == '__main__':
                             checkCenter=args.checkCenter,
                             deleteAfter=args.deleteAfter,
                             externalMask=args.externalMask,
-                            abspath=args.abspath)
+                            abspath=args.abspath, show=args.show)
