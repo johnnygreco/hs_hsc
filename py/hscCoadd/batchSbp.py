@@ -39,18 +39,12 @@ def run(args):
         filter = (args.filter).strip().upper()
 
         """ Keep a log """
+        if args.sample is not None:
+            prefix = prefix + '_' + args.sample
         if args.imgSub:
-            logSuffix = '_%s_%s_imgsub_sbp.log' % (filter, rerun)
+            logFile = prefix + '_sbp_imgsub_' + filter.strip() + '.log'
         else:
-            logSuffix = '_%s_%s_img_sbp.log' % (filter, rerun)
-        logFile = (args.incat).replace('.fits', logSuffix)
-        logging.basicConfig(filename=logFile)
-
-        """ New log """
-        if args.imgSub:
-            logFile = args.prefix + '_sbp_imgsub_' + filter.strip() + '.log'
-        else:
-            logFile = args.prefix + '_sbp_img_' + filter.strip() + '.log'
+            logFile = prefix + '_sbp_img_' + filter.strip() + '.log'
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
 
@@ -217,6 +211,8 @@ if __name__ == '__main__':
     parser.add_argument('--updateIntens', dest='updateIntens',
                         action="store_true",
                         default=True)
+    parser.add_argument('--sample', dest='sample', help="Sample name",
+                        default=None)
     """ Optional """
     parser.add_argument("--intMode", dest='intMode',
                         help="Method for integration",
