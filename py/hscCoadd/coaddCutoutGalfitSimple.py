@@ -233,8 +233,12 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
     """ 2. Model Image """
     ax2.xaxis.set_major_formatter(NullFormatter())
     ax2.yaxis.set_major_formatter(NullFormatter())
-    ax2.imshow(np.arcsinh(imgMod), interpolation="none",
-               vmax=imax2, cmap=cmap, vmin=imin2, origin='lower')
+    if imin1 < imax2:
+        ax2.imshow(np.arcsinh(imgMod), interpolation="none",
+                   vmax=imax2, cmap=cmap, vmin=imin1, origin='lower')
+    else:
+        ax2.imshow(np.arcsinh(imgMod), interpolation="none",
+                   vmax=imax2, cmap=cmap, vmin=imin2, origin='lower')
     """ Contour """
     try:
         tam = np.size(imgMod, axis=0)
