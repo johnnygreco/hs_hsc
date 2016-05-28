@@ -338,8 +338,8 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
 
                 if not onlyColor:
                     if sample is not None:
-                        prefix = prefix + '_' + sample
-                    logFile = prefix + '_match_' + filterUse + '.lis'
+                        logPre = prefix + '_' + sample
+                    logFile = logPre + '_match_' + filterUse + '.lis'
                     if not os.path.isfile(logFile):
                         os.system('touch ' + logFile)
 
@@ -398,8 +398,8 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
 
                     if not onlyColor:
                         if sample is not None:
-                            prefix = prefix + '_' + sample
-                        logFilter = prefix + '_match_' + filterUse + '.lis'
+                            logPre = prefix + '_' + sample
+                        logFilter = logPre + '_match_' + filterUse + '.lis'
                         if not os.path.isfile(logFilter):
                             os.system('touch ' + logFilter)
 
