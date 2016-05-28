@@ -168,8 +168,8 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
 
     if not onlyColor:
         if sample is not None:
-            prefix = prefix + '_' + sample
-        logFile = prefix + '_match_' + filter.strip() + '.lis'
+            logPre = prefix + '_' + sample
+        logFile = logPre + '_match_' + filter.strip() + '.lis'
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
 
