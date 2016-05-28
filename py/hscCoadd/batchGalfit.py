@@ -5,6 +5,7 @@
 import os
 import gc
 import glob
+import fcntl
 import logging
 import warnings
 import argparse
@@ -22,6 +23,129 @@ from coaddCutoutGalfitSimple import coaddCutoutGalfitSimple
 COM = '#' * 100
 SEP = '-' * 100
 WAR = '!' * 100
+
+# For multiprocessing
+try:
+    from joblib import Parallel, delayed
+    multiJob = True
+except ImportError:
+    multiJob = False
+
+
+def singleGalfitRun(galaxy, idCol, rerun, prefix, filterUse):
+    """
+    Run galfit for single galaxy.
+
+    Parameters:
+    """
+    print COM
+    galID = str(galaxy[idCol]).strip()
+    galPrefix = prefix + '_' + galID + '_' + filterUse + '_full'
+    galRoot = os.path.join(galID, filterUse)
+    if args.root is not None:
+        galRoot = os.path.join(args.root, galRoot)
+    print "## Deal with %s now ..." % galID
+    print COM
+    if not os.path.isdir(galRoot):
+        logging.warning('### Can not find ' +
+                        'ROOT folder for %s' % galRoot)
+        continue
+
+    fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
+    if len(fitsList) < 2:
+        logging.warning('### MISSING Data in %s' % galRoot)
+        continue
+
+    galImg = galPrefix + '_img.fits'
+    if (not os.path.isfile(os.path.join(galRoot, galImg)) and not
+            os.path.islink(os.path.join(galRoot, galImg))):
+        logging.warning('### Can not find ' +
+                        'CUTOUT IMAGE for %s' % galPrefix)
+        continue
+
+    """
+    Set up a rerun
+    """
+    rerunRoot = os.path.join(galRoot, rerun)
+    if not os.path.isdir(rerunRoot):
+        os.makedirs(rerunRoot)
+    print "## Data Dir  : %s " % galRoot
+    print "## Rerun Dir : %s " % rerunRoot
+
+    """ Link the necessary files to the rerun folder """
+    for fitsFile in fitsList:
+        seg = fitsFile.split('/')
+        link = os.path.join(rerunRoot, seg[-1])
+        if (not os.path.islink(link)) and (not os.path.isfile(link)):
+            os.symlink(fitsFile, link)
+
+    """
+    External mask
+    """
+    if args.maskFilter is not None:
+        """ Filter for mask """
+        mskFilter = (args.maskFilter).strip().upper()
+        """ Type of mask """
+        mskType = (args.maskType).strip().upper()
+        print "###  Use %s filter for mask \n" % mskFilter
+        mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
+        mskRoot = os.path.join(galID, mskFilter, rerun)
+        if args.root is not None:
+            mskRoot = os.path.join(args.root, mskRoot)
+        galMsk = os.path.join(mskRoot, mskPrefix + '_' +
+                              mskType + '.fits')
+        if not os.path.isfile(galMsk):
+            logging.warning('### Can not find the mask : %s' % galMsk)
+            continue
+    else:
+        galMsk = None
+
+    print '\n' + SEP
+    try:
+        coaddCutoutGalfitSimple(galPrefix, root=galRoot,
+                                rerun=rerun,
+                                pix=args.pix,
+                                zp=args.zp,
+                                verbose=args.verbose,
+                                useBkg=args.useBkg,
+                                usePsf=args.usePsf,
+                                useSig=args.useSig,
+                                model=args.model,
+                                mag=args.mag,
+                                run1=args.run1,
+                                run2=args.run2,
+                                run3=args.run3,
+                                skyGrad=args.skyGrad,
+                                ser2Comp=args.ser2Comp,
+                                ser3Comp=args.ser3Comp,
+                                useF4=args.useF4,
+                                useF1=args.useF1,
+                                checkCenter=args.checkCenter,
+                                constrCen=args.constrCen,
+                                deleteAfter=args.deleteAfter,
+                                maskType=args.maskType,
+                                externalMask=galMsk,
+                                abspath=args.abspath,
+                                imax=args.imax)
+        logging.info('### The Galfit Run is DONE for %s in %s' %
+                     (galPrefix, filterUse))
+        print SEP
+    except Exception, errMsg:
+        print str(errMsg)
+        warnings.warn('### The Galfit Run is failed for %s in %s' %
+                      (galPrefix, filterUse))
+        logging.warning('### The Galfit Run is FAILED for %s in %s' %
+                        (galPrefix, filterUse))
+        print SEP + '\n'
+
+    if psutilOk:
+        mem1 = proc.memory_info().rss
+        gc.collect()
+        mem2 = proc.memory_info().rss
+        print "@@@ Collect: %0.2f%%" % (100.0 * (mem2 - mem1) / mem0)
+    else:
+        gc.collect()
+
 
 
 def run(args):
@@ -43,131 +167,26 @@ def run(args):
     if os.path.isfile(args.incat):
         """ Read the input catalog """
         data = fits.open(args.incat)[1].data
-
-        id = (args.id)
-
+        idCol = (args.idCol)
         rerun = (args.rerun).strip()
         prefix = (args.prefix).strip()
-        filter = (args.filter).strip().upper()
+        filterUse = (args.filterUse).strip().upper()
 
         """ Keep a log """
-        logSuffix = '_%s_%s_galfit.log' % (filter, rerun)
-        logFile = (args.incat).replace('.fits', logSuffix)
-        logging.basicConfig(filename=logFile)
+        logSuffix = '_%s_%s_galfit.log' % (filterUse, rerun)
+        logName = (args.incat).replace('.fits', logSuffix)
+        logging.basicConfig(filename=logName)
+
+        """ New log """
+        logFile = args.prefix + '_galfit_' + filterUse.strip() + '.log'
+        if not os.path.isfile(logFile):
+            os.system('touch ' + logFile)
 
         print COM
         print "## Will deal with %d galaxies ! " % len(data)
 
-        for index, galaxy in enumerate(data):
-
-            print COM
-            galID = str(galaxy[id]).strip()
-            galPrefix = prefix + '_' + galID + '_' + filter + '_full'
-            galRoot = os.path.join(galID, filter)
-            if args.root is not None:
-                galRoot = os.path.join(args.root, galRoot)
-            print "## Deal with %s now : %i / %i" % (galID,
-                                                     (index + 1),
-                                                     len(data))
-            print COM
-            if not os.path.isdir(galRoot):
-                logging.warning('### Can not find ' +
-                                'ROOT folder for %s' % galRoot)
-                continue
-            fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
-            if len(fitsList) < 2:
-                logging.warning('### MISSING Data in %s' % galRoot)
-                continue
-
-            galImg = galPrefix + '_img.fits'
-            if (not os.path.isfile(os.path.join(galRoot, galImg)) and not
-                    os.path.islink(os.path.join(galRoot, galImg))):
-                logging.warning('### Can not find ' +
-                                'CUTOUT IMAGE for %s' % galPrefix)
-                continue
-
-            """
-            Set up a rerun
-            """
-            rerunRoot = os.path.join(galRoot, rerun)
-            if not os.path.isdir(rerunRoot):
-                os.makedirs(rerunRoot)
-            print "## Data Dir  : %s " % galRoot
-            print "## Rerun Dir : %s " % rerunRoot
-
-            """ Link the necessary files to the rerun folder """
-            for fitsFile in fitsList:
-                seg = fitsFile.split('/')
-                link = os.path.join(rerunRoot, seg[-1])
-                if (not os.path.islink(link)) and (not os.path.isfile(link)):
-                    os.symlink(fitsFile, link)
-
-            """
-            External mask
-            """
-            if args.maskFilter is not None:
-                """ Filter for mask """
-                mskFilter = (args.maskFilter).strip().upper()
-                """ Type of mask """
-                mskType = (args.maskType).strip().upper()
-                print "###  Use %s filter for mask \n" % mskFilter
-                mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
-                mskRoot = os.path.join(galID, mskFilter, rerun)
-                if args.root is not None:
-                    mskRoot = os.path.join(args.root, mskRoot)
-                galMsk = os.path.join(mskRoot, mskPrefix + '_' +
-                                      mskType + '.fits')
-                if not os.path.isfile(galMsk):
-                    logging.warning('### Can not find the mask : %s' % galMsk)
-                    continue
-            else:
-                galMsk = None
-
-            print '\n' + SEP
-            try:
-                coaddCutoutGalfitSimple(galPrefix, root=galRoot,
-                                        rerun=rerun,
-                                        pix=args.pix,
-                                        zp=args.zp,
-                                        verbose=args.verbose,
-                                        useBkg=args.useBkg,
-                                        usePsf=args.usePsf,
-                                        useSig=args.useSig,
-                                        model=args.model,
-                                        mag=args.mag,
-                                        run1=args.run1,
-                                        run2=args.run2,
-                                        run3=args.run3,
-                                        skyGrad=args.skyGrad,
-                                        ser2Comp=args.ser2Comp,
-                                        ser3Comp=args.ser3Comp,
-                                        useF4=args.useF4,
-                                        useF1=args.useF1,
-                                        checkCenter=args.checkCenter,
-                                        constrCen=args.constrCen,
-                                        deleteAfter=args.deleteAfter,
-                                        maskType=args.maskType,
-                                        externalMask=galMsk,
-                                        abspath=args.abspath,
-                                        imax=args.imax)
-                logging.info('### The Galfit Run is DONE for %s in %s' %
-                             (galPrefix, filter))
-                print SEP
-            except Exception, errMsg:
-                print str(errMsg)
-                warnings.warn('### The Galfit Run is failed for %s in %s' %
-                              (galPrefix, filter))
-                logging.warning('### The Galfit Run is FAILED for %s in %s' %
-                                (galPrefix, filter))
-                print SEP + '\n'
-
-            if psutilOk:
-                mem1 = proc.memory_info().rss
-                gc.collect()
-                mem2 = proc.memory_info().rss
-                print "@@@ Collect: %0.2f%%" % (100.0 * (mem2 - mem1) / mem0)
-            else:
-                gc.collect()
+        for galaxy in enumerate(data):
+            singleGalfitRun(galaxy, idCol, rerun, prefix, filterUse)
 
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
@@ -177,12 +196,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("prefix", help="Prefix of the galaxy image files")
     parser.add_argument("incat", help="The input catalog for cutout")
-    parser.add_argument('-i', '--id', dest='id',
+    parser.add_argument('-i', '--id', dest='idCol',
                         help="Name of the column for galaxy ID",
                         default='index')
     parser.add_argument('--root', dest='root',
                         help="Root of data", default=None)
-    parser.add_argument('-f', '--filter', dest='filter', help="Filter",
+    parser.add_argument('-f', '--filter', dest='filterUse', help="Filter",
                         default='HSC-I')
     parser.add_argument('-mf', '--maskFilter', dest='maskFilter',
                         help="Filter for Mask", default=None)
@@ -192,6 +211,9 @@ if __name__ == '__main__':
                         help="Name of the rerun", default='default')
     parser.add_argument('-v', '--verbose', dest='verbose', action="store_true",
                         default=False)
+    parser.add_argument('-j', '--njobs', type=int,
+                        help='Number of jobs run at the same time',
+                        dest='njobs', default=1)
     """ Optional """
     parser.add_argument('--model', dest='model',
                         help='Suffix of the model',

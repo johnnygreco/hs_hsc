@@ -60,8 +60,8 @@ def galfitAIC(galOut):
     u"""
     Estimate the AIC, BIC, and HQ for a GALFIT model.
 
-    AIC=-2 ln(L) + 2 k  中文名字：赤池信息量 akaike information criterion
-    BIC=-2 ln(L) + ln(n)*k 中文名字：贝叶斯信息量 bayesian information criterion
+    AIC=-2 ln(L) + 2 k : akaike information criterion
+    BIC=-2 ln(L) + ln(n)*k : bayesian information criterion
     HQ=-2 ln(L) + ln(ln(n))*k  hannan-quinn criterion
     """
     chisq = np.float(galOut.chisq)
@@ -352,7 +352,7 @@ def log2Readin(outFile, root=None, verbose=True, abspath=False):
     else:
         warnings.warn('XXX Can not find the log file: %s' % logFile)
 
-    return
+    return iniFile
 
 
 def generateSubcomp(readFile, root=None, galfit=None, separate=True,
