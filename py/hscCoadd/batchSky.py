@@ -38,6 +38,8 @@ def run(args):
         """ New log """
         if args.sample is not None:
             logPre = prefix + '_' + args.sample
+        else:
+            logPre = prefix
         logFile = logPre + '_sky_' + filter + '.log'
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
