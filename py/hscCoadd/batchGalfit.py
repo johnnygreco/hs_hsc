@@ -49,19 +49,16 @@ def singleGalfitRun(galaxy, idCol, rerun, prefix, filterUse, logFile):
     if not os.path.isdir(galRoot):
         logging.warning('### Can not find ' +
                         'ROOT folder for %s' % galRoot)
-        continue
 
     fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
     if len(fitsList) < 2:
         logging.warning('### MISSING Data in %s' % galRoot)
-        continue
 
     galImg = galPrefix + '_img.fits'
     if (not os.path.isfile(os.path.join(galRoot, galImg)) and not
             os.path.islink(os.path.join(galRoot, galImg))):
         logging.warning('### Can not find ' +
                         'CUTOUT IMAGE for %s' % galPrefix)
-        continue
 
     """
     Set up a rerun
@@ -96,7 +93,6 @@ def singleGalfitRun(galaxy, idCol, rerun, prefix, filterUse, logFile):
                               mskType + '.fits')
         if not os.path.isfile(galMsk):
             logging.warning('### Can not find the mask : %s' % galMsk)
-            continue
     else:
         galMsk = None
 
