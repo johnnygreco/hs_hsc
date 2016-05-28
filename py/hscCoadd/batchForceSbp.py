@@ -36,11 +36,11 @@ def run(args):
 
         """ Keep a log """
         if args.sample is not None:
-            prefix = prefix + '_' + args.sample
+            logPre = prefix + '_' + args.sample
         if args.imgSub:
-            logFile = prefix + '_force_imgsub_' + filter.strip() + '.log'
+            logFile = logPre + '_force_imgsub_' + filter.strip() + '.log'
         else:
-            logFile = prefix + '_force_img_' + filter.strip() + '.log'
+            logFile = logPre + '_force_img_' + filter.strip() + '.log'
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
 
