@@ -184,8 +184,8 @@ def run(args):
 
         """ Keep a log """
         if args.sample is not None:
-            prefix = prefix + '_' + args.sample
-        logFile = prefix + '_galfit_' + filterUse.strip() + '.log'
+            logPre = prefix + '_' + args.sample
+        logFile = logPre + '_galfit_' + filterUse.strip() + '.log'
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
 
