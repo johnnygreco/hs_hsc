@@ -277,7 +277,7 @@ def showModels(outFile, root=None, verbose=True, vertical=False, showZoom=True,
         ellRe.set_linewidth(2.0)
 
     """ Save Figure """
-    fig.savefig(outPNG, bbox_inches='tight')
+    fig.savefig(outPNG, dpi=80)
 
     plt.close(fig)
 
