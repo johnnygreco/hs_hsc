@@ -38,11 +38,8 @@ from astropy.io import fits
 
 # Colors and color maps
 from palettable.colorbrewer.qualitative import Set1_9 as compColor
+"""
 try:
-    """
-    Cubehelix color scheme from
-    https://github.com/jradavenport/cubehelixscheme
-    """
     import cubehelix
     cmap = cubehelix.cmap(start=-0.1, rot=-0.8, gamma=1.0,
                           minSat=1.2, maxSat=1.2,
@@ -51,10 +48,11 @@ try:
     cmap2 = cubehelix.cmap(start=-0.2, rot=1., reverse=True)
     cmap2.set_bad('w', 1.)
 except ImportError:
-    cmap = plt.get_cmap('viridis')
-    cmap.set_bad('k', 1.)
-    cmap2 = plt.get_cmap('inferno')
-    cmap2.set_bad('w', 1.)
+"""
+cmap = plt.get_cmap('viridis')
+cmap.set_bad('k', 1.)
+cmap2 = plt.get_cmap('inferno')
+cmap2.set_bad('w', 1.)
 
 # Personal
 import hscUtils as hUtil
@@ -145,10 +143,6 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
     imgMod = arrOut[2].data
     imgRes = arrOut[3].data
     imgX, imgY = imgOri.shape
-    imin1, imax1 = hUtil.zscale(np.arcsinh(imgOri), contrast=0.04,
-                                samples=500)
-    imin2, imax2 = hUtil.zscale(np.arcsinh(imgMod), contrast=0.003,
-                                samples=500)
 
     if maskRes:
         maskFile = os.path.join(root, galOut.input_mask)
@@ -167,8 +161,6 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
     else:
         resShow = imgRes
         mskArr = None
-    imin3, imax3 = hUtil.zscale(np.arcsinh(imgRes), contrast=0.5,
-                                samples=500)
 
     maxR = (np.max(np.asarray(compR)) * zoomLimit)
     if zoomSize is not None:
@@ -194,6 +186,13 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
     else:
         xPad, yPad = 0, 0
 
+    imin1, imax1 = hUtil.zscale(np.arcsinh(imgOri), contrast=0.03,
+                                samples=500)
+    imin2, imax2 = hUtil.zscale(np.arcsinh(imgMod), contrast=0.02,
+                                samples=500)
+    imin3, imax3 = hUtil.zscale(np.arcsinh(resShow), contrast=0.35,
+                                samples=500)
+
     compX = np.asarray(compX) - np.float(galOut.box_x0)
     compY = np.asarray(compY) - np.float(galOut.box_y0)
     compR = np.asarray(compR)
@@ -209,17 +208,20 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
                vmax=imax1, cmap=cmap, vmin=imin1, origin='lower')
 
     if overComp:
-        for ii in range(len(compX)):
-            x0, y0, r0 = compX[ii], compY[ii], compR[ii]
-            q0, pa0 = compQ[ii], compPA[ii]
-            ellRe = Ellipse(xy=(x0, y0), width=(r0*q0*2.0), height=(r0*2.0),
-                            angle=pa0)
-            ax1.add_artist(ellRe)
-            ellRe.set_clip_box(ax1.bbox)
-            ellRe.set_alpha(1.0)
-            ellRe.set_edgecolor(compColor.mpl_colors[ii])
-            ellRe.set_facecolor('none')
-            ellRe.set_linewidth(2.0)
+        try:
+            for ii in range(len(compX)):
+                x0, y0, r0 = compX[ii], compY[ii], compR[ii]
+                q0, pa0 = compQ[ii], compPA[ii]
+                ellRe = Ellipse(xy=(x0, y0), width=(r0*q0*2.0),
+                                height=(r0*2.0), angle=pa0)
+                ax1.add_artist(ellRe)
+                ellRe.set_clip_box(ax1.bbox)
+                ellRe.set_alpha(1.0)
+                ellRe.set_edgecolor(compColor.mpl_colors[ii])
+                ellRe.set_facecolor('none')
+                ellRe.set_linewidth(2.5)
+        except Exception:
+            print "XXX Can not highlight the components"
 
     if showTitle:
         titleStr = ax1.text(0.50, 0.90, os.path.basename(outFile),
@@ -234,14 +236,15 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
     ax2.imshow(np.arcsinh(imgMod), interpolation="none",
                vmax=imax2, cmap=cmap, vmin=1E-4, origin='lower')
     """ Contour """
-    tam = np.size(imgMod, axis=0)
-    contour_x = np.arange(tam)
-    contour_y = np.arange(tam)
     try:
+        tam = np.size(imgMod, axis=0)
+        contour_x = np.arange(tam)
+        contour_y = np.arange(tam)
         ax2.contour(contour_x, contour_y, np.arcsinh(imgMod), colors='c',
-                    linewidths=1.5)
+                    linewidths=2.0)
     except Exception:
         print "XXX Can not generate the Contour !"
+
     """ Show the reduced chisq """
     if showChi2:
         ax2.text(0.06, 0.92, '${\chi}^2/N_{DoF}$ : %s' % galOut.reduced_chisq,
@@ -262,20 +265,22 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
     ax3.xaxis.set_major_formatter(NullFormatter())
     ax3.yaxis.set_major_formatter(NullFormatter())
     ax3.imshow(np.arcsinh(resShow), interpolation="none",
-               vmin=imin3, vmax=imax3, origin='lower')
-    ax3.contour(contour_x, contour_y, np.arcsinh(imgMod), colors='k',
-                linewidths=1.2)
-    for ii in range(len(compX)):
-        x0, y0 = compX[ii], compY[ii]
-        r0, q0, pa0 = compR[ii], compQ[ii], compPA[ii]
-        ellRe = Ellipse(xy=(x0, y0), width=(r0*q0*2.0), height=(r0*2.0),
-                        angle=pa0)
-        ax3.add_artist(ellRe)
-        ellRe.set_clip_box(ax3.bbox)
-        ellRe.set_alpha(1.0)
-        ellRe.set_edgecolor(compColor.mpl_colors[ii])
-        ellRe.set_facecolor('none')
-        ellRe.set_linewidth(2.0)
+               vmin=imin3, vmax=imax3, cmap=cmap,
+               origin='lower')
+    try:
+        for ii in range(len(compX)):
+            x0, y0 = compX[ii], compY[ii]
+            r0, q0, pa0 = compR[ii], compQ[ii], compPA[ii]
+            ellRe = Ellipse(xy=(x0, y0), width=(r0*q0*2.0), height=(r0*2.0),
+                            angle=pa0)
+            ax3.add_artist(ellRe)
+            ellRe.set_clip_box(ax3.bbox)
+            ellRe.set_alpha(1.0)
+            ellRe.set_edgecolor(compColor.mpl_colors[ii])
+            ellRe.set_facecolor('none')
+            ellRe.set_linewidth(2.5)
+    except Exception:
+        print "XXX Can not highlight the components"
 
     """ Save Figure """
     fig.savefig(outPNG, dpi=80)
@@ -547,15 +552,23 @@ def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
 
         """ Visualization of the model """
         if show:
-            showModels(expect, galOut, root=root, verbose=True,
-                       vertical=False, showZoom=showZoom, showTitle=True,
-                       showChi2=True, overComp=True, maskRes=True,
-                       zoomSize=zoomSize)
+            try:
+                showModels(expect, galOut, root=root, verbose=True,
+                           vertical=False, showZoom=showZoom, showTitle=True,
+                           showChi2=True, overComp=True, maskRes=True,
+                           zoomSize=zoomSize)
+                plotOk = True
+            except Exception:
+                plotOk = False
+                print "XXX No plot is made !"
+        else:
+            plotOk = False
+
         """ Delete After """
         if deleteAfter:
             os.remove(expect)
 
-    return done
+    return done, plotOk
 
 
 def imgSameSize(img1, img2):
@@ -711,7 +724,7 @@ def getInput1Sersic(config, readinFile='cutout_1ser.in', skyGrad=True,
         else:
             f.write(' 2) 0.0000      0          #  dsky/dx \n')
             f.write(' 3) 0.0000      0          #  dsky/dy \n')
-        f.write(' Z) 0                      #  output option ' +
+        f.write(' Z) 1                      #  output option ' +
                 '(0 = resid., 1 = Dont subtract) \n')
         f.write('\n')
     f.write('========================================================' +
@@ -828,7 +841,7 @@ def getInput2Sersic(config, readinFile='cutout_2ser.in', constr=False,
         else:
             f.write(' 2) 0.0000      0          #  dsky/dx\n')
             f.write(' 3) 0.0000      0          #  dsky/dy\n')
-        f.write(' Z) 0                      #  output option ' +
+        f.write(' Z) 1                      #  output option ' +
                 '(0 = resid., 1 = Dont subtract) \n')
         f.write('\n')
     f.write('=====================================================' +
@@ -966,7 +979,7 @@ def getInput3Sersic(config, readinFile='cutout_3ser.in', constr=False,
         else:
             f.write(' 2) 0.0000      0          #  dsky/dx\n')
             f.write(' 3) 0.0000      0          #  dsky/dy\n')
-        f.write(' Z) 0                      #  output option ' +
+        f.write(' Z) 1                      #  output option ' +
                 '(0 = resid., 1 = Dont subtract) \n')
         f.write('\n')
     f.write('===================================================' +
