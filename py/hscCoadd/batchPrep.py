@@ -30,13 +30,12 @@ def run(args):
         id = (args.id)
         rerun = (args.rerun).strip()
         prefix = (args.prefix).strip()
-        sample = (args.sample).strip()
         filter = (args.filter).strip().upper()
 
         """ Keep a log """
-        if sample is not None:
-            prefix = prefix + '_' + sample
-        logFile = prefix + '_prep_' + filter + '.log'
+        if args.sample is not None:
+            logPre = prefix + '_' + args.sample
+        logFile = logPre + '_prep_' + filter + '.log'
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
 
