@@ -285,7 +285,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                       verbose=True, noColor=False, onlyColor=False,
                       infoField1=None, infoField2=None, clean=False,
                       min=-0.0, max=0.72, Q=15, safe=False, saveSrc=False,
-                      makeDir=False, noName=False,
+                      makeDir=False, noName=False, nobjs=1,
                       imgOnly=False, allFilters=False):
     """
     Generate HSC coadd cutout images.
@@ -521,6 +521,9 @@ if __name__ == '__main__':
                         default='HSC-I')
     parser.add_argument('--sample', dest='sample', help="Sample name",
                         default=None)
+    parser.add_argument('-j', '--njobs', type=int,
+                        help='Number of jobs run at the same time',
+                        dest='njobs', default=1)
     parser.add_argument('-p', '--prefix', dest='prefix',
                         help='Prefix of the output file',
                         default='hsc_coadd_cutout')
@@ -582,4 +585,5 @@ if __name__ == '__main__':
                       verbose=args.verbose, clean=args.clean,
                       saveSrc=args.saveSrc, sample=args.sample,
                       makeDir=args.makeDir, noName=args.noName,
-                      imgOnly=args.imgOnly, allFilters=args.allFilters)
+                      imgOnly=args.imgOnly, allFilters=args.allFilters,
+                      njobs=args.njobs)

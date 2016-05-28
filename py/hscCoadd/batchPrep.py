@@ -3,6 +3,7 @@
 """Prepare the HSC cutout for photometry."""
 
 import os
+import fcntl
 import logging
 import argparse
 import warnings
@@ -29,11 +30,15 @@ def run(args):
         id = (args.id)
         rerun = (args.rerun).strip()
         prefix = (args.prefix).strip()
+        sample = (args.sample).strip()
         filter = (args.filter).strip().upper()
 
         """ Keep a log """
-        logFile = (args.incat).replace('.fits', '_%s_prep.log' % rerun)
-        logging.basicConfig(filename=logFile)
+        if sample is not None:
+            prefix = prefix + '_' + sample
+        logFile = prefix + '_prep_' + filter + '.log'
+        if not os.path.isfile(logFile):
+            os.system('touch ' + logFile)
 
         print COM
         print "## Will deal with %d galaxies ! " % len(data)
@@ -92,6 +97,15 @@ def run(args):
                                            combBad=True,
                                            combDet=True,
                                            multiMask=args.multiMask)
+                    # Keep a log
+                    with open(logFile, "a") as logMatch:
+                        logStr = "%25s  %10s  DONE \n"
+                        try:
+                            logMatch.write(logStr % (galPrefix,
+                                                     rerun))
+                            fcntl.flock(logMatch, fcntl.LOCK_UN)
+                        except IOError:
+                            pass
                 elif rerun == 'smallR1':
                     ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
                                            rerun='smallR1',
@@ -123,6 +137,15 @@ def run(args):
                                            combBad=True,
                                            combDet=True,
                                            multiMask=False)
+                    # Keep a log
+                    with open(logFile, "a") as logMatch:
+                        logStr = "%25s  %10s  DONE \n"
+                        try:
+                            logMatch.write(logStr % (galPrefix,
+                                                     rerun))
+                            fcntl.flock(logMatch, fcntl.LOCK_UN)
+                        except IOError:
+                            pass
                 elif rerun == 'largeR1':
                     ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
                                            rerun='largeR1',
@@ -154,6 +177,15 @@ def run(args):
                                            combBad=True,
                                            combDet=True,
                                            multiMask=False)
+                    # Keep a log
+                    with open(logFile, "a") as logMatch:
+                        logStr = "%25s  %10s  DONE \n"
+                        try:
+                            logMatch.write(logStr % (galPrefix,
+                                                     rerun))
+                            fcntl.flock(logMatch, fcntl.LOCK_UN)
+                        except IOError:
+                            pass
                 else:
                     ccp.coaddCutoutPrepare(galPrefix, root=galRoot,
                                            rerun=rerun,
@@ -180,6 +212,15 @@ def run(args):
                                            combBad=args.combBad,
                                            combDet=args.combDet,
                                            multiMask=args.multiMask)
+                    # Keep a log
+                    with open(logFile, "a") as logMatch:
+                        logStr = "%25s  %10s  DONE \n"
+                        try:
+                            logMatch.write(logStr % (galPrefix,
+                                                     rerun))
+                            fcntl.flock(logMatch, fcntl.LOCK_UN)
+                        except IOError:
+                            pass
             except Exception, errMsg:
                 print WAR
                 print str(errMsg)
@@ -187,6 +228,16 @@ def run(args):
                               (galPrefix, filter))
                 logging.warning('### The preparation is failed for %s in %s' %
                                 (galPrefix, filter))
+                # Keep a log
+                with open(logFile, "a") as logMatch:
+                    logStr = "%25s  %10s  FAIL \n"
+                    try:
+                        logMatch.write(logStr % (galPrefix,
+                                                 rerun))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
+
             print COM
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
@@ -205,6 +256,8 @@ if __name__ == '__main__':
                         help="Name of the rerun", default='default')
     parser.add_argument('--multiMask', dest='multiMask',
                         action="store_true", default=False)
+    parser.add_argument('--sample', dest='sample', help="Sample name",
+                        default=None)
     """ Optional """
     parser.add_argument('-k', dest='kernel',
                         help='SExtractor detection kernel',
