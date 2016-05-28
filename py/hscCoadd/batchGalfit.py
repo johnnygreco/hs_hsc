@@ -32,7 +32,7 @@ except ImportError:
     multiJob = False
 
 
-def singleGalfitRun(galaxy, idCol, rerun, prefix, filterUse):
+def singleGalfitRun(galaxy, idCol, rerun, prefix, filterUse, logFile):
     """
     Run galfit for single galaxy.
 
@@ -129,6 +129,15 @@ def singleGalfitRun(galaxy, idCol, rerun, prefix, filterUse):
                                 imax=args.imax)
         logging.info('### The Galfit Run is DONE for %s in %s' %
                      (galPrefix, filterUse))
+        # Keep a log
+        with open(logFile, "a") as logMatch:
+            logStr = "%25s  %8s  DONE \n"
+            try:
+                logMatch.write(logStr % (galPrefix,
+                                         filterUse))
+                fcntl.flock(logMatch, fcntl.LOCK_UN)
+            except IOError:
+                pass
         print SEP
     except Exception, errMsg:
         print str(errMsg)
@@ -136,16 +145,16 @@ def singleGalfitRun(galaxy, idCol, rerun, prefix, filterUse):
                       (galPrefix, filterUse))
         logging.warning('### The Galfit Run is FAILED for %s in %s' %
                         (galPrefix, filterUse))
+        # Keep a log
+        with open(logFile, "a") as logMatch:
+            logStr = "%25s  %8s  FAIL \n"
+            try:
+                logMatch.write(logStr % (galPrefix,
+                                         filterUse))
+                fcntl.flock(logMatch, fcntl.LOCK_UN)
+            except IOError:
+                pass
         print SEP + '\n'
-
-    if psutilOk:
-        mem1 = proc.memory_info().rss
-        gc.collect()
-        mem2 = proc.memory_info().rss
-        print "@@@ Collect: %0.2f%%" % (100.0 * (mem2 - mem1) / mem0)
-    else:
-        gc.collect()
-
 
 
 def run(args):
@@ -167,26 +176,48 @@ def run(args):
     if os.path.isfile(args.incat):
         """ Read the input catalog """
         data = fits.open(args.incat)[1].data
+        njobs = args.njobs
         idCol = (args.idCol)
         rerun = (args.rerun).strip()
         prefix = (args.prefix).strip()
         filterUse = (args.filterUse).strip().upper()
 
         """ Keep a log """
-        logSuffix = '_%s_%s_galfit.log' % (filterUse, rerun)
-        logName = (args.incat).replace('.fits', logSuffix)
-        logging.basicConfig(filename=logName)
-
-        """ New log """
-        logFile = args.prefix + '_galfit_' + filterUse.strip() + '.log'
+        if args.sample is not None:
+            prefix = prefix + '_' + args.sample
+        logFile = prefix + '_galfit_' + filterUse.strip() + '.log'
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
 
         print COM
         print "## Will deal with %d galaxies ! " % len(data)
 
-        for galaxy in enumerate(data):
-            singleGalfitRun(galaxy, idCol, rerun, prefix, filterUse)
+        if njobs > 1 and multiJob:
+            Parallel(n_jobs=njobs)(delayed(singleGalfitRun)(
+                                   galaxy, idCol,
+                                   rerun, prefix,
+                                   filterUse,
+                                   logFile) for galaxy in data)
+            if psutilOk:
+                mem1 = proc.memory_info().rss
+                gc.collect()
+                mem2 = proc.memory_info().rss
+                print "@@@ Collect: %0.2f%%" % (100.0 * (mem2 - mem1)
+                                                / mem0)
+            else:
+                gc.collect()
+        else:
+            for galaxy in data:
+                singleGalfitRun(galaxy, idCol, rerun,
+                                prefix, filterUse, logFile)
+                if psutilOk:
+                    mem1 = proc.memory_info().rss
+                    gc.collect()
+                    mem2 = proc.memory_info().rss
+                    print "@@@ Collect: %0.2f%%" % (100.0 * (mem2 - mem1)
+                                                    / mem0)
+                else:
+                    gc.collect()
 
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
@@ -214,6 +245,8 @@ if __name__ == '__main__':
     parser.add_argument('-j', '--njobs', type=int,
                         help='Number of jobs run at the same time',
                         dest='njobs', default=1)
+    parser.add_argument('--sample', dest='sample', help="Sample name",
+                        default=None)
     """ Optional """
     parser.add_argument('--model', dest='model',
                         help='Suffix of the model',
