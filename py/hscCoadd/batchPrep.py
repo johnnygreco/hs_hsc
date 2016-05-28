@@ -57,14 +57,30 @@ def run(args):
             print COM
 
             if not os.path.isdir(galRoot):
-                print WAR
-                print galRoot
-                raise Exception('### Can not find the root folder for the \
-                        galaxy data !')
+                warnings.warn('### Cannot find folder %s' % galRoot)
+                # Keep a log
+                with open(logFile, "a") as logMatch:
+                    logStr = "%25s  %10s  NDIR \n"
+                    try:
+                        logMatch.write(logStr % (galPrefix,
+                                                 rerun))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
+                continue
+
             if not os.path.isfile(os.path.join(galRoot, galImg)):
-                print WAR
-                raise Exception("### Can not find %s, %s !" % (galRoot,
-                                                               galImg))
+                warnings.warn('### Cannot find image %s' % galImg)
+                # Keep a log
+                with open(logFile, "a") as logMatch:
+                    logStr = "%25s  %10s  NIMG \n"
+                    try:
+                        logMatch.write(logStr % (galPrefix,
+                                                 rerun))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
+                continue
 
             try:
                 if rerun == 'default':
@@ -238,7 +254,6 @@ def run(args):
                         fcntl.flock(logMatch, fcntl.LOCK_UN)
                     except IOError:
                         pass
-
             print COM
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
