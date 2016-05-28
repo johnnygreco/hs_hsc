@@ -38,21 +38,20 @@ from astropy.io import fits
 
 # Colors and color maps
 from palettable.colorbrewer.qualitative import Set1_9 as compColor
-"""
 try:
-    import cubehelix
-    cmap = cubehelix.cmap(start=-0.1, rot=-0.8, gamma=1.0,
-                          minSat=1.2, maxSat=1.2,
-                          minLight=0.0, maxLight=1.0, reverse=True)
+    cmap = plt.get_cmap('viridis')
     cmap.set_bad('k', 1.)
-    cmap2 = cubehelix.cmap(start=-0.2, rot=1., reverse=True)
+    cmap2 = plt.get_cmap('inferno')
     cmap2.set_bad('w', 1.)
-except ImportError:
-"""
-cmap = plt.get_cmap('viridis')
-cmap.set_bad('k', 1.)
-cmap2 = plt.get_cmap('inferno')
-cmap2.set_bad('w', 1.)
+except Exception:
+    from palettable.cubehelix import cubehelix
+    cmap = cubehelix.make(start=0.3, rotation=-0.5,
+                          reverse=True)
+    cmap.set_bad('k', 1.)
+    cmap2 = cubehelix.make(start=0.5, rotation=-1.5,
+                           gamma=1.0, sat=1.2,
+                           min_light=0., max_light=1.)
+    cmap2.set_bad('w', 1.)
 
 # Personal
 import hscUtils as hUtil
@@ -265,7 +264,7 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
     ax3.xaxis.set_major_formatter(NullFormatter())
     ax3.yaxis.set_major_formatter(NullFormatter())
     ax3.imshow(np.arcsinh(resShow), interpolation="none",
-               vmin=imin3, vmax=imax3, cmap=cmap,
+               vmin=imin3, vmax=imax3, cmap=cmap2,
                origin='lower')
     try:
         for ii in range(len(compX)):
