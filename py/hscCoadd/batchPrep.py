@@ -35,6 +35,8 @@ def run(args):
         """ Keep a log """
         if args.sample is not None:
             logPre = prefix + '_' + args.sample
+        else:
+            logPre = prefix
         logFile = logPre + '_prep_' + filter + '.log'
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
