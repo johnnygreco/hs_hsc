@@ -1167,7 +1167,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
            olthresh=0.5, harmonics='1 2', outerThreshold=None,
            updateIntens=True, psfSma=6.0, suffix='', useZscale=True,
            hdu=0, saveCsv=False, imgType='_imgsub', useTflux=False,
-           isophote=None):
+           isophote=None, xttools=None):
     """
     Running Ellipse to Extract 1-D profile.
 
@@ -1190,6 +1190,14 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
     if not os.path.isfile(imgOri):
         print WAR
         raise Exception("### Can not find the input image: %s !" % imgOri)
+
+    """
+    Check if x_isophote.e and x_ttools.e exist if necessary
+    """
+    if (not os.path.isfile(isophote)) or (not os.path.isfile(isophote)):
+        raise Exception("Can not find x_isophote.e: %s" % isophote)
+    if (not os.path.isfile(xttools)) or (not os.path.isfile(xttools)):
+        raise Exception("Can not find x_ttools.e: %s" % xttools)
 
     """
     New approach, save the HDU into a temp fits file
@@ -1335,13 +1343,14 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
     outCdf = image.replace('.fits', suffix + '.cdf')
 
     """ Call the STSDAS.ANALYSIS.ISOPHOTE package """
-    if verbose:
-        print '\n' + SEP
-        print "##       Call STSDAS.ANALYSIS.ISOPHOTE() "
-        print SEP
-    iraf.stsdas()
-    iraf.analysis()
-    iraf.isophote()
+    if isophote is None:
+        if verbose:
+            print '\n' + SEP
+            print "##       Call STSDAS.ANALYSIS.ISOPHOTE() "
+            print SEP
+        iraf.stsdas()
+        iraf.analysis()
+        iraf.isophote()
 
     """ Start the Ellipse Run """
     attempts = 0
@@ -1353,8 +1362,9 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
 
         try:
             """ Config the parameters for ellipse """
-            unlearnEllipse()
-            setupEllipse(ellipCfg)
+            if isophote is None:
+                unlearnEllipse()
+                setupEllipse(ellipCfg)
 
             """ Ellipse run """
             # Check and remove outputs from the previous Ellipse run
@@ -1390,10 +1400,22 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     os.remove(outTab)
                 if os.path.isfile(outCdf):
                     os.remove(outCdf)
-                # Tdump the .bin table into a .tab file
-                iraf.unlearn('tdump')
-                iraf.tdump.columns = ''
-                iraf.tdump(outBin, datafil=outTab, cdfile=outCdf)
+                if xttools is None:
+                    # Tdump the .bin table into a .tab file
+                    iraf.unlearn('tdump')
+                    iraf.tdump.columns = ''
+                    iraf.tdump(outBin, datafil=outTab, cdfile=outCdf)
+                else:
+                    """TODO: Place holder"""
+                    tdumpCommand = xttools + ' tdump '
+                    tdumpCommand += ' table=%s ' % outBin.strip()
+                    tdumpCommand += ' datafile=%s ' % outTab.strip()
+                    tdumpCommand += ' cdfile=%s ' % outCdf.strip()
+                    tdumpCommand += ' pfile=STDOUT pwidth=-1 '
+                    tdumpCommand += ' columns="" rows="-" mode="al"'
+                    tdumpOut = os.system(tdumpCommand)
+                    if tdumpOut != 0:
+                        raise Exception("XXX Can not convert the binary tab")
                 # Read in the Ellipse output tab
                 ellipOut = readEllipseOut(outTab, zp=zpPhoto, pix=pix,
                                           exptime=expTime, bkg=bkg,
@@ -1633,6 +1655,9 @@ if __name__ == '__main__':
     parser.add_argument("--isophote", dest='isophote',
                         help="Location of the x_isophote.e file",
                         default=None)
+    parser.add_argument("--xttools", dest='xttools',
+                        help="Location of the x_ttools.e file",
+                        default=None)
 
     args = parser.parse_args()
 
@@ -1674,4 +1699,5 @@ if __name__ == '__main__':
            updateIntens=args.updateIntens,
            hdu=args.hdu,
            saveCsv=args.saveCsv,
-           isophote=args.isophote)
+           isophote=args.isophote,
+           xttools=args.xttools)
