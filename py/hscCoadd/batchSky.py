@@ -28,14 +28,14 @@ def run(args):
     """
     if os.path.isfile(args.incat):
 
-        data = fits.open(args.incat)[1].data
-
+        """ Basic information """
         id = (args.id)
+        data = fits.open(args.incat)[1].data
         rerun = (args.rerun).strip()
         prefix = (args.prefix).strip()
         filter = (args.filter).strip().upper()
 
-        """ New log """
+        """ Keep a log """
         if args.sample is not None:
             logPre = prefix + '_' + args.sample
         else:
@@ -43,63 +43,100 @@ def run(args):
         logFile = logPre + '_sky_' + filter + '.log'
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
-
-        print COM
-        print "## Will deal with %d galaxies ! " % len(data)
-        print COM
+        if args.verbose:
+            print "## Will deal with %d galaxies ! " % len(data)
 
         for galaxy in data:
-
+            """ Galaxy ID and prefix """
             galID = str(galaxy[id]).strip()
-            print SEP
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
 
-            try:
-                """Folder for the data"""
-                galRoot = os.path.join(galID, filter)
-                if not os.path.isdir(galRoot):
-                    print WAR
-                    print('### Can not find the root folder : %s !' % galRoot)
-                    print WAR
+            """Folder for the data"""
+            galRoot = os.path.join(galID, filter)
+            if not os.path.isdir(galRoot):
+                if args.verbose:
+                    print('### Cannot find the folder: %s !' % galRoot)
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logFormat = "%25s  %5s NDIR  %6d  %7.4f  %7.4f" + \
+                                    "  %7.4f  %7.4f  %7.4f  \n"
+                        logMatch.write(logFormat % (galPrefix,
+                                                    filter,
+                                                    np.nan, np.nan,
+                                                    np.nan, np.nan,
+                                                    np.nan, np.nan))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
+                continue
 
-                """Collect the FITS file information"""
-                fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
-                if len(fitsList) <= 3:
-                    print WAR
+            """Collect the FITS file information"""
+            fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
+            if len(fitsList) <= 3:
+                if args.verbose:
                     print("### Missing data under %s" % galRoot)
-                    print WAR
-                """
-                Set up a rerun
-                """
-                galRoot = os.path.join(galRoot, rerun.strip())
-                if not os.path.isdir(galRoot):
-                    os.makedirs(galRoot)
-                """ Link the necessary files to the rerun folder """
-                for fitsFile in fitsList:
-                    seg = fitsFile.split('/')
-                    link = os.path.join(galRoot, seg[-1])
-                    if (not os.path.islink(link)) and (
-                       not os.path.isfile(link)):
-                        os.symlink(fitsFile, link)
-                """
-                External mask
-                """
-                if args.maskFilter is not None:
-                    mskFilter = (args.maskFilter).strip().upper()
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logFormat = "%25s  %5s MISS  %6d  %7.4f  %7.4f" + \
+                                    "  %7.4f  %7.4f  %7.4f  \n"
+                        logMatch.write(logFormat % (galPrefix,
+                                                    filter,
+                                                    np.nan, np.nan,
+                                                    np.nan, np.nan,
+                                                    np.nan, np.nan))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
+                continue
+
+            """
+            Set up a rerun
+            """
+            galRoot = os.path.join(galRoot, rerun.strip())
+            if not os.path.isdir(galRoot):
+                os.makedirs(galRoot)
+
+            """ Link the necessary files to the rerun folder """
+            for fitsFile in fitsList:
+                seg = fitsFile.split('/')
+                link = os.path.join(galRoot, seg[-1])
+                if (not os.path.islink(link)) and (
+                   not os.path.isfile(link)):
+                    os.symlink(fitsFile, link)
+
+            """
+            External mask
+            """
+            if args.maskFilter is not None:
+                mskFilter = (args.maskFilter).strip().upper()
+                if args.verbose:
                     print "###  Use %s filter for mask \n" % mskFilter
-                    mskPrefix = (prefix + '_' + galID + '_' + mskFilter +
-                                 '_full')
-                    mskRoot = os.path.join(galID, mskFilter, rerun)
-                    galMsk = os.path.join(mskRoot, mskPrefix + '_mskall.fits')
-                    if not os.path.isfile(galMsk):
-                        print(WAR)
+                mskPrefix = (prefix + '_' + galID + '_' + mskFilter +
+                             '_full')
+                mskRoot = os.path.join(galID, mskFilter, rerun)
+                galMsk = os.path.join(mskRoot, mskPrefix + '_mskall.fits')
+                if not os.path.isfile(galMsk):
+                    if args.verbose:
                         print('### Can not find the final mask : %s !' %
                               galMsk)
-                        print(WAR)
-                else:
-                    galMsk = None
+                    with open(logFile, "a") as logMatch:
+                        try:
+                            logFormat = "%25s  %5s NMSK  %6d  %7.4f  %7.4f" + \
+                                        "  %7.4f  %7.4f  %7.4f  \n"
+                            logMatch.write(logFormat % (galPrefix,
+                                                        filter,
+                                                        np.nan, np.nan,
+                                                        np.nan, np.nan,
+                                                        np.nan, np.nan))
+                            fcntl.flock(logMatch, fcntl.LOCK_UN)
+                        except IOError:
+                            pass
+                    continue
+            else:
+                galMsk = None
 
-                """Estimate the Sky Background"""
+            """ Start to estimate the sky background """
+            try:
                 skyGlobal = ccs.coaddCutoutSky(galPrefix,
                                                root=galRoot,
                                                pix=args.pix,
@@ -113,9 +150,7 @@ def run(args):
                                                bkgFilter=args.bkgFilter,
                                                saveBkg=args.saveBkg,
                                                nClip=args.nClip)
-
                 numSkyPix, skyMed, skyAvg, skyStd, skySkw, sbExpt = skyGlobal
-
                 with open(logFile, "a") as logMatch:
                     try:
                         logFormat = "%25s  %5s  %3d  %6d  %7.4f  %7.4f" + \
@@ -128,15 +163,14 @@ def run(args):
                         fcntl.flock(logMatch, fcntl.LOCK_UN)
                     except IOError:
                         pass
-
             except Exception, errMsg:
                 print WAR
                 print str(errMsg)
+                print WAR
                 warnings.warn('### The sky estimate is failed ' +
                               'for %s in %s' % (galID, filter))
                 logging.warning('### The sky estimate is failed ' +
                                 'for %s in %s' % (galID, filter))
-
                 with open(logFile, "a") as logMatch:
                     try:
                         logFormat = "%25s  %5s  %3d  %6d  %7.4f  %7.4f" + \
@@ -149,8 +183,6 @@ def run(args):
                         fcntl.flock(logMatch, fcntl.LOCK_UN)
                     except IOError:
                         pass
-
-            print COM
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 
