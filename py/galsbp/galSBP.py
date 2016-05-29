@@ -268,7 +268,127 @@ def easierEllipse(ellipConfig, verbose=True,
     return ellipConfig
 
 
-def setupEllipse(ellipConfig, savePar=False, filePar='ellipse.par'):
+def writeEllipPar(cfg, image, outBin, outPar, inEllip=None):
+    """Write a parameter file for x_isophote.e."""
+    if os.path.isfile(outPar):
+        os.remove(outPar)
+
+    f = open(outPar, 'w')
+    # ----------------------------------------------------------------- #
+    f.write('\n')
+    # ----------------------------------------------------------------- #
+    """Ellipse parameters"""
+    f.write('ellipse.input = "%s" \n' % image.strip())
+    f.write('ellipse.output = "%s" \n' % outBin.strip())
+    f.write('ellipse.dqf = ".c1h" \n')
+    f.write('ellipse.interactive = no \n')
+    f.write('ellipse.device = "red" \n')
+    f.write('ellipse.icommands = "" \n')
+    f.write('ellipse.gcommands = "" \n')
+    f.write('ellipse.masksz = 5 \n')
+    f.write('ellipse.region = no \n')
+    f.write('ellipse.memory = yes \n')
+    f.write('ellipse.verbose = no \n')
+    f.write('ellipse.mode = "al" \n')
+    # Used for force photometry mode
+    if inEllip is None:
+        f.write('ellipse.inellip = ""')
+    else:
+        f.write('ellipse.inellip = "%s"' % outBin.strip())
+    # ----------------------------------------------------------------- #
+    """Sampling parameters"""
+    intMode = cfg['integrmode']
+    intMode = intMode.lower().strip()
+    if intMode == 'median':
+        f.write('samplepar.integrmode = "median" \n')
+    elif intMode == 'mean':
+        f.write('samplepar.integrmode = "mean" \n')
+    elif intMode == 'bi-linear':
+        f.write('samplepar.integrmode = "bi-linear" \n')
+    else:
+        raise Exception(
+            "### Only 'mean', 'median', and 'bi-linear' are available !")
+    f.write('samplepar.usclip = %5.2f \n' % cfg['usclip'])
+    f.write('samplepar.lsclip = %5.2f \n' % cfg['lsclip'])
+    f.write('samplepar.nclip = %2d \n' % cfg['nclip'])
+    f.write('samplepar.fflag = %6.4f \n' % cfg['fflag'])
+    f.write('samplepar.sdevice = "none" \n')
+    f.write('samplepar.tsample = "none" \n')
+    f.write('samplepar.absangle = yes \n')
+    f.write('samplepar.harmonics = "%s" \n' % cfg['harmonics'])
+    f.write('samplepar.mode = "al" \n')
+    # ----------------------------------------------------------------- #
+    """Control parameters"""
+    f.write('controlpar.conver = %5.2f \n' % cfg['conver'])
+    f.write('controlpar.minit = %3d \n' % cfg['minit'])
+    f.write('controlpar.maxit = %3d \n' % cfg['maxit'])
+    if cfg['hcenter']:
+        f.write('controlpar.hcenter = yes \n')
+    else:
+        f.write('controlpar.hcenter = no \n')
+    if cfg['hellip']:
+        f.write('controlpar.hellip = yes \n')
+    else:
+        f.write('controlpar.hellip = no \n')
+    if cfg['hpa']:
+        f.write('controlpar.hpa = yes \n')
+    else:
+        f.write('controlpar.hpa = no \n')
+    f.write('controlpar.wander = INDEF \n')
+    f.write('controlpar.maxgerr = 0.5 \n')
+    f.write('controlpar.olthresh = %4.2f \n' % cfg['olthresh'])
+    f.write('controlpar.soft = yes \n')
+    f.write('controlpar.mode = "al" \n')
+    # ----------------------------------------------------------------- #
+    """Geometry parameters"""
+    if (cfg['x0'] > 0) and (cfg['y0'] > 0):
+        f.write('geompar.x0 = %8.2f \n' % cfg['x0'])
+        f.write('geompar.y0 = %8.2f \n' % cfg['y0'])
+    else:
+        raise "Make sure that the input X0 and Y0 are meaningful !", cfg[
+            'x0'], cfg['y0']
+    if (cfg['ellip0'] >= 0.0) and (cfg['ellip0'] < 1.0):
+        f.write('geompar.ellip0 = %5.2f \n' % cfg['ellip0'])
+    else:
+        raise "Make sure that the input Ellipticity is meaningful !", cfg[
+            'ellip0']
+    if (cfg['pa0'] >= -90.0) and (cfg['pa0'] <= 90.0):
+        f.write('geompar.pa0 = %5.2f \n' % cfg['pa0'])
+    else:
+        raise "Make sure that the input Position Angle is meaningful !", cfg[
+            'pa0']
+    f.write('geompar.sma0 = %8.2f \n' % cfg['sma0'])
+    f.write('geompar.minsma = %8.1f \n' % cfg['minsma'])
+    f.write('geompar.maxsma = %8.1f \n' % cfg['maxsma'])
+    f.write('geompar.step = %5.2f \n' % cfg['step'])
+    if cfg['linear']:
+        f.write('geompar.linear = yes \n')
+    else:
+        f.write('geompar.linear = no \n')
+    if cfg['recenter']:
+        f.write('geompar.recenter = yes \n')
+    else:
+        f.write('geompar.recenter = no \n')
+    f.write('geompar.maxrit = INDEF \n')
+    f.write('geompar.xylearn = yes \n')
+    f.write('geompar.physical = yes \n')
+    f.write('geompar.mode = "al" \n')
+    # ----------------------------------------------------------------- #
+    """Magnitude parameters"""
+    f.write('magpar.mag0 = %6.2f \n' % cfg['mag0'])
+    f.write('magpar.refer = 1. \n')
+    f.write('magpar.zerolevel = 0. \n')
+    f.write('magpar.mode = "al" \n')
+    # ----------------------------------------------------------------- #
+    f.close()
+
+    if os.path.isfile(outPar):
+        return True
+    else:
+        return False
+
+
+def setupEllipse(ellipConfig):
     """
     Setup the configuration for Ellipse.
 
@@ -1341,6 +1461,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
     outBin = image.replace('.fits', suffix + '.bin')
     outTab = image.replace('.fits', suffix + '.tab')
     outCdf = image.replace('.fits', suffix + '.cdf')
+    if isophote is not None:
+        outPar = outBin.replace('.bin', '.par')
 
     """ Call the STSDAS.ANALYSIS.ISOPHOTE package """
     if isophote is None:
@@ -1365,6 +1487,11 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             if isophote is None:
                 unlearnEllipse()
                 setupEllipse(ellipCfg)
+            else:
+                parOk = writeEllipPar(ellipCfg, imageUse, outBin, outPar,
+                                      inEllip=inEllip)
+                if not parOk:
+                    raise Exception("XXX Cannot find %s" % outPar)
 
             """ Ellipse run """
             # Check and remove outputs from the previous Ellipse run
@@ -1388,6 +1515,13 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                                  inellip=inEllip, verbose=verStr)
             else:
                 """TODO: Place holder"""
+                if os.path.isfile(outPar):
+                    ellCommand = isophote + " ellipse "
+                    ellCommand += ' @%s' % outPar.strip()
+
+                    os.system(ellCommand)
+                else:
+                    raise Exception("XXX Can not find par file %s" % outPar)
 
             print SEP
 
@@ -1406,7 +1540,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     iraf.tdump.columns = ''
                     iraf.tdump(outBin, datafil=outTab, cdfile=outCdf)
                 else:
-                    """TODO: Place holder"""
+                    """TODO"""
                     tdumpCommand = xttools + ' tdump '
                     tdumpCommand += ' table=%s ' % outBin.strip()
                     tdumpCommand += ' datafile=%s ' % outTab.strip()
@@ -1416,6 +1550,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     tdumpOut = os.system(tdumpCommand)
                     if tdumpOut != 0:
                         raise Exception("XXX Can not convert the binary tab")
+
                 # Read in the Ellipse output tab
                 ellipOut = readEllipseOut(outTab, zp=zpPhoto, pix=pix,
                                           exptime=expTime, bkg=bkg,
