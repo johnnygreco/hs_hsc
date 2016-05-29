@@ -1561,9 +1561,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                                                    ratio=outRatio)
                 sma = ellipOut['sma']
                 if radOuter is None:
-                    print WAR
                     print "XXX  radOuter is NaN, use 0.75 * max(SMA) instead !"
-                    print WAR
                     radOuter = np.nanmax(sma) * 0.75
                 """
                 Update the Intensity
@@ -1620,7 +1618,6 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     radOuter = np.nanmax(sma) * 0.80
                 ellipOut.add_column(
                     Column(name='rad_outer', data=(sma*0.0 + radOuter)))
-
                 """ Update the total magnitude """
                 indexUse = np.where(ellipOut['sma'] <= (radOuter * outRatio))
                 maxIsoFluxO = np.nanmax(ellipOut['growth_ori'][indexUse])
@@ -1638,14 +1635,20 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 magFluxTotS = -2.5 * np.log10(maxIsoFluxS) + zpPhoto
                 ellipOut.add_column(
                     Column(name='mag_tot_sub', data=(sma*0.0 + magFluxTotS)))
+
                 """ Save a summary figure """
                 if savePng:
                     outPng = image.replace('.fits', suffix + '.png')
-                    ellipsePlotSummary(ellipOut, imgTemp, maxRad=None,
-                                       mask=mskOri, outPng=outPng,
-                                       threshold=outerThreshold,
-                                       useZscale=useZscale, oriName=image,
-                                       imgType=imgType)
+                    try:
+                        ellipsePlotSummary(ellipOut, imgTemp, maxRad=None,
+                                           mask=mskOri, outPng=outPng,
+                                           threshold=outerThreshold,
+                                           useZscale=useZscale,
+                                           oriName=image,
+                                           imgType=imgType)
+                    else:
+                        print "### Can not generate: %s"
+
                 """ Save the results """
                 if saveOut:
                     outPre = image.replace('.fits', suffix)
