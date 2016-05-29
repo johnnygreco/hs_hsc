@@ -245,7 +245,7 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
         contour_x = np.arange(tam)
         contour_y = np.arange(tam)
         ax2.contour(contour_x, contour_y, np.arcsinh(imgMod), colors='c',
-                    linewidths=2.0)
+                    linewidths=1.5)
     except Exception:
         print "XXX Can not generate the Contour !"
 
