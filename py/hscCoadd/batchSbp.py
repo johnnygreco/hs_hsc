@@ -23,7 +23,7 @@ def run(args):
     """
     Run coaddCutoutSbp in batch mode.
 
-    Parameters
+    Parameters
     """
     gc.collect()
 
@@ -50,34 +50,59 @@ def run(args):
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
 
-        print COM
-        print "## Will deal with %d galaxies ! " % len(data)
+        if args.verbose:
+            print "## Will deal with %d galaxies ! " % len(data)
 
-        for index, galaxy in enumerate(data):
-            print COM
+        for galaxy in data:
+            """ ID and prefix """
             galID = str(galaxy[id]).strip()
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
             galRoot = os.path.join(galID, filter)
-            print "## Deal with %s now : %i / %i" % (galID,
-                                                     (index + 1),
-                                                     len(data))
-            print COM
+            if args.verbose:
+                print "## Deal with %s now !" % (galID)
+
+            """ Check the directory of the data """
             if not os.path.isdir(galRoot):
                 logging.warning('### Can not find ' +
                                 'ROOT folder for %s' % galRoot)
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logFormat = "%25s    %s    NODIR \n"
+                        logMatch.write(logFormat % (galPrefix, filter))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
                 continue
+
+            """ Check if there is any missing data """
             fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
             if len(fitsList) < 2:
                 logging.warning('### MISSING Data in %s' % galRoot)
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logFormat = "%25s    %s    MISSING \n"
+                        logMatch.write(logFormat % (galPrefix, filter))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
                 continue
 
+            """ Check the input image """
             galImg = galPrefix + '_img.fits'
             if (not os.path.isfile(os.path.join(galRoot, galImg)) and not
                     os.path.islink(os.path.join(galRoot, galImg))):
                 logging.warning('### Can not find ' +
                                 'CUTOUT IMAGE for %s in %s' %
                                 (galPrefix, filter))
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logFormat = "%25s    %s    NOIMG \n"
+                        logMatch.write(logFormat % (galPrefix, filter))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
                 continue
+
             """
             Set up a rerun
             """
@@ -90,12 +115,14 @@ def run(args):
                 link = os.path.join(galRoot, seg[-1])
                 if (not os.path.islink(link)) and (not os.path.isfile(link)):
                     os.symlink(fitsFile, link)
+
             """
             External mask
             """
             if args.maskFilter is not None:
                 mskFilter = (args.maskFilter).strip().upper()
-                print "###  Use %s filter for mask \n" % mskFilter
+                if args.verbose:
+                    print "###  Use %s filter for mask \n" % mskFilter
                 mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
                 mskRoot = os.path.join(galID, mskFilter, rerun)
                 galMsk = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
@@ -103,16 +130,24 @@ def run(args):
                     logging.warning('### Can not find ' +
                                     'MASK for  %s in %s' %
                                     (galPrefix, filter))
+                    with open(logFile, "a") as logMatch:
+                        try:
+                            logFormat = "%25s    %s    NOMSK \n"
+                            logMatch.write(logFormat % (galPrefix, filter))
+                            fcntl.flock(logMatch, fcntl.LOCK_UN)
+                        except IOError:
+                            pass
                     continue
             else:
                 galMsk = None
 
+            """ Suffix """
             if suffix == '':
                 ellipSuffix = rerun
             else:
                 ellipSuffix = rerun + '_' + suffix
 
-            print '\n' + SEP
+            """ Start a Ellipse run """
             try:
                 cSbp.coaddCutoutSbp(galPrefix, root=galRoot,
                                     verbose=args.verbose,
@@ -147,11 +182,10 @@ def run(args):
                                     plMask=args.plmask,
                                     noMask=args.nomask,
                                     imgSub=args.imgSub,
-                                    isophote=args.isophote)
-
+                                    isophote=args.isophote,
+                                    xttools=args.xttools)
                 logging.info('### The 1-D SBP is DONE for %s in %s' %
                              (galPrefix, filter))
-                print SEP + '\n'
                 with open(logFile, "a") as logMatch:
                     try:
                         logFormat = "%25s    %s    DONE \n"
@@ -159,15 +193,15 @@ def run(args):
                         fcntl.flock(logMatch, fcntl.LOCK_UN)
                     except IOError:
                         pass
-
             except Exception, errMsg:
+                print WAR
                 print str(errMsg)
+                print WAR
                 warnings.warn('### The 1-D SBP is failed for %s in %s' %
                               (galPrefix, filter))
                 logging.warning('### The 1-D SBP is FAILED for %s in %s' %
                                 (galPrefix, filter))
                 logging.warning('###     Error :%s' % errMsg)
-                print SEP + '\n'
                 with open(logFile, "a") as logMatch:
                     try:
                         logFormat = "%25s    %s    FAIL \n"
@@ -214,6 +248,15 @@ if __name__ == '__main__':
                         action="store_true",
                         default=True)
     parser.add_argument('--sample', dest='sample', help="Sample name",
+                        default=None)
+    parser.add_argument('-j', '--njobs', type=int,
+                        help='Number of jobs run at the same time',
+                        dest='njobs', default=1)
+    parser.add_argument("--isophote", dest='isophote',
+                        help="Location of the x_isophote.e file",
+                        default=None)
+    parser.add_argument("--xttools", dest='xttools',
+                        help="Location of the x_ttools.e file",
                         default=None)
     """ Optional """
     parser.add_argument("--intMode", dest='intMode',
@@ -271,16 +314,13 @@ if __name__ == '__main__':
                         help='Increase the boundary of SBP by this ratio',
                         type=float, default=1.2)
     parser.add_argument('--verbose', dest='verbose', action="store_true",
-                        default=True)
+                        default=False)
     parser.add_argument('--psf', dest='psf', action="store_true",
                         help='Ellipse run on PSF', default=True)
     parser.add_argument('--plot', dest='plot', action="store_true",
                         help='Generate summary plot', default=True)
     parser.add_argument('--bkgCor', dest='bkgCor', action="store_true",
                         help='Background correction', default=True)
-    parser.add_argument("--isophote", dest='isophote',
-                        help="Location of the x_isophote.e file",
-                        default=None)
 
     args = parser.parse_args()
 
