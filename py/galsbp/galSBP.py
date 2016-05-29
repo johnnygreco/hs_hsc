@@ -292,9 +292,9 @@ def writeEllipPar(cfg, image, outBin, outPar, inEllip=None):
     f.write('ellipse.mode = "al" \n')
     # Used for force photometry mode
     if inEllip is None:
-        f.write('ellipse.inellip = ""')
+        f.write('ellipse.inellip = "" \n')
     else:
-        f.write('ellipse.inellip = "%s"' % outBin.strip())
+        f.write('ellipse.inellip = "%s" \n' % outBin.strip())
     # ----------------------------------------------------------------- #
     """Sampling parameters"""
     intMode = cfg['integrmode'][0]
@@ -315,7 +315,7 @@ def writeEllipPar(cfg, image, outBin, outPar, inEllip=None):
     f.write('samplepar.sdevice = "none" \n')
     f.write('samplepar.tsample = "none" \n')
     f.write('samplepar.absangle = yes \n')
-    f.write('samplepar.harmonics = "%s" \n' % cfg['harmonics'])
+    f.write('samplepar.harmonics = "%s" \n' % cfg['harmonics'][0])
     f.write('samplepar.mode = "al" \n')
     # ----------------------------------------------------------------- #
     """Control parameters"""
