@@ -297,9 +297,8 @@ def writeEllipPar(cfg, image, outBin, outPar, inEllip=None):
         f.write('ellipse.inellip = "%s"' % outBin.strip())
     # ----------------------------------------------------------------- #
     """Sampling parameters"""
-    intMode = cfg['integrmode']
-    print intMode
-    intMode = intMode.strip()
+    intMode = cfg['integrmode'][0]
+    intMode = intMode.lower().strip()
     if intMode == 'median':
         f.write('samplepar.integrmode = "median" \n')
     elif intMode == 'mean':
