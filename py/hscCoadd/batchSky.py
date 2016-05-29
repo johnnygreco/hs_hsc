@@ -58,7 +58,7 @@ def run(args):
                     print('### Cannot find the folder: %s !' % galRoot)
                 with open(logFile, "a") as logMatch:
                     try:
-                        logFormat = "%25s  %5s NDIR  %6d  %7.4f  %7.4f" + \
+                        logFormat = "%25s  %5s NDIR  %6.1f  %7.4f  %7.4f" + \
                                     "  %7.4f  %7.4f  %7.4f  \n"
                         logMatch.write(logFormat % (galPrefix,
                                                     filter,
@@ -77,7 +77,7 @@ def run(args):
                     print("### Missing data under %s" % galRoot)
                 with open(logFile, "a") as logMatch:
                     try:
-                        logFormat = "%25s  %5s MISS  %6d  %7.4f  %7.4f" + \
+                        logFormat = "%25s  %5s MISS  %6.1f  %7.4f  %7.4f" + \
                                     "  %7.4f  %7.4f  %7.4f  \n"
                         logMatch.write(logFormat % (galPrefix,
                                                     filter,
@@ -121,7 +121,7 @@ def run(args):
                               galMsk)
                     with open(logFile, "a") as logMatch:
                         try:
-                            logFormat = "%25s  %5s NMSK  %6d  %7.4f  %7.4f" + \
+                            logFormat = "%25s  %5s NMSK  %6.1f  %7.4f  %7.4f" + \
                                         "  %7.4f  %7.4f  %7.4f  \n"
                             logMatch.write(logFormat % (galPrefix,
                                                         filter,
