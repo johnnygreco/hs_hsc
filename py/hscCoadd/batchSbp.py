@@ -268,7 +268,7 @@ if __name__ == '__main__':
     parser.add_argument('--pix', dest='pix', help='Pixel Scale',
                         type=float, default=0.168)
     parser.add_argument('--step', dest='step', help='Step size',
-                        type=float, default=0.20)
+                        type=float, default=0.15)
     parser.add_argument('--zp', dest='zp', help='Photometric zeropoint',
                         type=float, default=27.0)
     parser.add_argument('--redshift', dest='redshift',
