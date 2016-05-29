@@ -9,6 +9,7 @@ import gc
 import copy
 import string
 import random
+import warnings
 import argparse
 import subprocess
 import numpy as np
@@ -119,9 +120,7 @@ def maskFits2Pl(inputImage, inputMask, replace=False):
     Parameters:
     """
     if not os.path.isfile(inputMask):
-        print WAR
         raise Exception("Can not find the FITS mask: %s" % inputMask)
-    # Name of the .pl mskOri for IRAF
     """
     Why the hell the .pl mask is not working under
     """
@@ -132,29 +131,26 @@ def maskFits2Pl(inputImage, inputMask, replace=False):
     if os.path.isfile(outputMask):
         os.remove(outputMask)
     # Convert the fits format mask into pl format.
-    print SEP
     iraf.unlearn('imcopy')
     iraf.imcopy(input=inputMask, output=outputMask, verbose=True)
 
     return outputMask
 
 
-def imageMaskNaN(inputImage, inputMask):
+def imageMaskNaN(inputImage, inputMask, verbose=False):
     """
     Assigning NaN to mask region.
 
     Under Pyraf, it seems that .pl file is not working.  This is a work around.
     """
     newImage = inputImage.replace('.fits', '_nan.fits')
-    print SEP
-    print " ## %s ---> %s " % (inputImage, newImage)
-
+    if verbose:
+        print " ## %s ---> %s " % (inputImage, newImage)
     if os.path.islink(inputImage):
         imgOri = os.readlink(inputImage)
     else:
         imgOri = inputImage
     if not os.path.isfile(imgOri):
-        print WAR
         raise Exception("Can not find the FITS image: %s" % imgOri)
     else:
         imgArr = fits.open(imgOri)[0].data
@@ -165,13 +161,11 @@ def imageMaskNaN(inputImage, inputMask):
     else:
         mskOri = inputMask
     if not os.path.isfile(mskOri):
-        print WAR
         raise Exception("Can not find the FITS mask: %s" % mskOri)
     else:
         mskArr = fits.open(mskOri)[0].data
 
     imgArr[mskArr > 0] = np.nan
-
     newHdu = fits.PrimaryHDU(imgArr, header=imgHead)
     hduList = fits.HDUList([newHdu])
     hduList.writeto(newImage, clobber=True)
@@ -185,7 +179,7 @@ def imageMaskNaN(inputImage, inputMask):
 def defaultEllipse(x0, y0, maxsma, ellip0=0.05, pa0=0.0, sma0=6.0, minsma=0.0,
                    linear=False, step=0.08, recenter=True, conver=0.05,
                    hcenter=True, hellip=True, hpa=True, minit=10, maxit=250,
-                   olthresh=1.00, mag0=27.0, integrmode='median', usclip=3.0,
+                   olthresh=0.75, mag0=27.0, integrmode='median', usclip=2.5,
                    lsclip=3.0, nclip=2, fflag=0.5, harmonics="none"):
     """
     The default settings for Ellipse.
@@ -245,25 +239,30 @@ def unlearnEllipse():
     iraf.unlearn('ellipse')
 
 
-def easierEllipse(ellipConfig, verbose=True,
+def easierEllipse(ellipConfig, degree=3, verbose=True,
                   dRad=0.90, dStep=0.008, dFlag=0.03):
     """Make the Ellipse run easier."""
+    print SEP
     if verbose:
-        print SEP
         print "###  Maxsma %6.1f --> %6.1f" % (ellipConfig['maxsma'],
                                                ellipConfig['maxsma'] *
                                                dRad)
-        print "###  Step   %6.2f --> %6.2f" % (ellipConfig['step'],
-                                               ellipConfig['step'] +
-                                               dStep)
-        print "###  Flag   %6.2f --> %6.2f" % (ellipConfig['fflag'],
-                                               ellipConfig['fflag'] +
-                                               dFlag)
-        print SEP
-
     ellipConfig['maxsma'] *= dRad
-    ellipConfig['step'] += dStep
-    ellipConfig['fflag'] += dFlag
+
+    if degree > 3:
+        if verbose:
+            print "###  Step   %6.2f --> %6.2f" % (ellipConfig['step'],
+                                                   ellipConfig['step'] +
+                                                   dStep)
+        ellipConfig['step'] += dStep
+
+    if degree > 4:
+        if verbose:
+            print "###  Flag   %6.2f --> %6.2f" % (ellipConfig['fflag'],
+                                                   ellipConfig['fflag'] +
+                                                   dFlag)
+        ellipConfig['fflag'] += dFlag
+    print SEP
 
     return ellipConfig
 
@@ -395,7 +394,6 @@ def setupEllipse(ellipConfig):
     Parameters:
     """
     cfg = ellipConfig[0]
-
     # Define parameters for the ellipse run
     # 1. Initial guess of the central X, Y
     if (cfg['x0'] > 0) and (cfg['y0'] > 0):
@@ -404,7 +402,6 @@ def setupEllipse(ellipConfig):
     else:
         raise "Make sure that the input X0 and Y0 are meaningful !", cfg[
             'x0'], cfg['y0']
-
     # 2. Initial guess of the ellipticity and PA of the first ISOPHOTE
     if (cfg['ellip0'] >= 0.0) and (cfg['ellip0'] < 1.0):
         iraf.ellipse.ellip0 = cfg['ellip0'] if cfg['ellip0'] >= 0.05 else 0.05
@@ -416,7 +413,6 @@ def setupEllipse(ellipConfig):
     else:
         raise "Make sure that the input Position Angle is meaningful !", cfg[
             'pa0']
-
     # 3. Initial radius for ellipse fitting
     iraf.ellipse.sma0 = cfg['sma0']
     # 4. The minimum and maximum radius for the ellipse fitting
@@ -491,7 +487,6 @@ def ellipRemoveIndef(outTabName, replace='NaN'):
         if os.path.isfile(outTabName.replace('.tab', '_back.tab')):
             os.remove(outTabName.replace('.tab', '_back.tab'))
     else:
-        print WAR
         raise Exception('Can not find the input catalog!')
 
     return outTabName
@@ -513,7 +508,6 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     ellipseOut.rename_column('col2',  'intens')
     ellipseOut.rename_column('col3',  'int_err')
     ellipseOut.rename_column('col4',  'pix_var')
-
     ellipseOut.rename_column('col5',  'rms')
     ellipseOut.rename_column('col6',  'ell')
     ellipseOut.rename_column('col7',  'ell_err')
@@ -551,7 +545,6 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     ellipseOut.rename_column('col39', 'a_big')
     ellipseOut.rename_column('col40', 'sarea')
     if harmonics != "none":
-        # TODO: Read as many harmonics as necessary
         ellipseOut.rename_column('col41', 'a1')
         ellipseOut.rename_column('col42', 'a1_err')
         ellipseOut.rename_column('col43', 'b1')
@@ -606,11 +599,9 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
     cogOri, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut,
                                                     useTflux=useTflux)
     ellipseOut.add_column(Column(name='growth_ori', data=cogOri))
-
     cogSub, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut,
                                                     bkgCor=True)
     ellipseOut.add_column(Column(name='growth_sub', data=cogSub))
-
     # Get the average X0, Y0, Q, and PA
     if galR is None:
         galR = np.max(ellipseOut['sma']) * rFactor
@@ -802,13 +793,15 @@ def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
     except Exception, errMsg:
         print WAR
         print str(errMsg)
+        print WAR
         return None
 
 
 def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
                        outPng='ellipse_summary.png', zp=27.0, threshold=None,
                        showZoom=False, useZscale=True, pngSize=16,
-                       outRatio=1.2, oriName=None, imgType='_imgsub'):
+                       verbose=False, outRatio=1.2, oriName=None,
+                       imgType='_imgsub'):
     """
     Make a summary plot of the ellipse run.
 
@@ -859,15 +852,17 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     radOuter = ellipseGetOuterBoundary(ellipOut,
                                        ratio=outRatio,
                                        threshold=threshold)
-    if not np.isfinite(radOuter):
-        print WAR
-        print " XX  radOuter is NaN, use 0.80 * max(SMA) instead !"
-        print WAR
+    if (not np.isfinite(radOuter)) or (radOuter is None):
+        if verbose:
+            print WAR
+            print " XX  radOuter is NaN, use 0.80 * max(SMA) instead !"
+            print WAR
         radOuter = np.nanmax(sma) * 0.80
 
     indexUse = np.where(ellipOut['sma'] <= (radOuter * 1.2))
-    print SEP
-    print "###     OutRadius : ", radOuter
+    if verbose:
+        print SEP
+        print "###     OutRadius : ", radOuter
 
     """ Get growth curve """
     curveOri = ellipOut['growth_ori']
@@ -879,21 +874,21 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     maxIsoFluxO = np.nanmax(ellipOut['growth_ori'][indexUse])
     magFluxOri100 = -2.5 * np.log10(maxIsoFluxO) + zp
-    print "###     MagTot OLD : ", magFluxOri100
-
+    if verbose:
+        print "###     MagTot OLD : ", magFluxOri100
     maxIsoFluxS = np.nanmax(ellipOut['growth_sub'][indexUse])
     magFluxSub100 = -2.5 * np.log10(maxIsoFluxS) + zp
-    print "###     MagTot SUB : ", magFluxSub100
-
+    if verbose:
+        print "###     MagTot SUB : ", magFluxSub100
     maxIsoFluxC = np.nanmax(ellipOut['growth_cor'][indexUse])
     magFlux50 = -2.5 * np.log10(maxIsoFluxC * 0.50) + zp
     magFlux100 = -2.5 * np.log10(maxIsoFluxC) + zp
-    print "###     MagTot NEW : ", magFlux100
-
+    if verbose:
+        print "###     MagTot NEW : ", magFlux100
     indMaxFlux = np.nanargmax(ellipOut['growth_cor'][indexUse])
     maxIsoSbp = ellipOut['sbp_sub'][indMaxFlux]
-    print "###     MaxIsoSbp : ", maxIsoSbp
-    print SEP
+    if verbose:
+        print "###     MaxIsoSbp : ", maxIsoSbp
 
     """ Type of Radius """
     if radMode is 'rsma':
@@ -977,8 +972,8 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax2.locator_params(axis='y', tight=True, nbins=4)
 
     ax2.set_ylabel('$e$', fontsize=30)
-
-    print "###     AvgEll", (1.0 - ellipOut['avg_q'][0])
+    if verbose:
+        print "###     AvgEll", (1.0 - ellipOut['avg_q'][0])
     ax2.axhline((1.0 - ellipOut['avg_q'][0]),
                 color='k', linestyle='--', linewidth=2)
 
@@ -1013,8 +1008,8 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
         avgPA -= 180.0
     elif (avgPA - medPA <= -85.0) and (avgPA >= -92.0):
         avgPA += 180.0
-
-    print "###     AvgPA", avgPA
+    if verbose:
+        print "###     AvgPA", avgPA
     ax3.axhline(avgPA, color='k', linestyle='--', linewidth=3.0)
 
     ax3.fill_between(rad[indexUse],
@@ -1045,9 +1040,9 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax4.locator_params(axis='y', tight=True, nbins=4)
 
     ax4.set_ylabel('X0 or Y0 (pixel)', fontsize=23)
-
-    print "###     AvgX0", ellipOut['avg_x0'][0]
-    print "###     AvgY0", ellipOut['avg_y0'][0]
+    if verbose:
+        print "###     AvgX0", ellipOut['avg_x0'][0]
+        print "###     AvgY0", ellipOut['avg_y0'][0]
     ax4.axhline(ellipOut['avg_x0'][0], linestyle='--',
                 color='r', alpha=0.6, linewidth=3.0)
     ax4.fill_between(rad[indexUse],
@@ -1179,7 +1174,6 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax7.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
 
     """ ax8 IsoPlot """
-
     imgFile = os.path.basename(image)
     if oriName is not None:
         imgTitle = oriName.replace('.fits', '')
@@ -1207,7 +1201,6 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
         zoomReg = imgMsk
         xPad = 0
         yPad = 0
-
     # Show the image
     ax8.imshow(np.arcsinh(zoomReg), interpolation="none",
                vmin=imin, vmax=imax, cmap=cmap, origin='lower')
@@ -1225,7 +1218,6 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     """ Save Figure """
     fig.savefig(outPng, dpi=80)
     plt.close(fig)
-    print SEP
 
     return
 
@@ -1244,34 +1236,20 @@ def saveEllipOut(ellipOut, prefix, ellipCfg=None, verbose=True,
     """ Save a Pickle file """
     if pkl:
         hUtil.saveToPickle(ellipOut, outPkl)
-        if os.path.isfile(outPkl):
-            if verbose:
-                print SEP
-                print "###  Save Ellipse output to .pkl file: %s" % outPkl
-        else:
-            print WAR
+        if not os.path.isfile(outPkl):
             raise Exception("### Something is wrong with the .pkl file")
 
     """ Save a .CSV file """
     if csv:
         ascii.write(ellipOut, outCsv, format='csv')
-        if os.path.isfile(outCsv):
-            if verbose:
-                print "###  Save Ellipse output to .csv file: %s" % outCsv
-        else:
-            print WAR
+        if not os.path.isfile(outCsv):
             raise Exception("### Something is wrong with the .csv file")
 
     """ Save the current configuration to a .pkl file """
     if cfg:
         if ellipCfg is not None:
             hUtil.saveToPickle(ellipCfg, outCfg)
-            if os.path.isfile(outCfg):
-                if verbose:
-                    print "###  Save configuration to .cfg file: %s" % outCfg
-                    print SEP
-            else:
-                print WAR
+            if not os.path.isfile(outCfg):
                 raise Exception("### Something is wrong with the .pkl file")
 
 
@@ -1308,7 +1286,6 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
     else:
         imgOri = image
     if not os.path.isfile(imgOri):
-        print WAR
         raise Exception("### Can not find the input image: %s !" % imgOri)
 
     """
@@ -1324,9 +1301,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
     """
     imgTemp = 'temp_' + randomStr() + '.fits'
     data = (fits.open(imgOri))[hdu].data
-    # head = (fits.open(imgOri))[hdu].header
     imgHdu = fits.PrimaryHDU(data)
-    # imgHdu.header = head
     imgHduList = fits.HDUList([imgHdu])
     imgHduList.writeto(imgTemp, clobber=True)
 
@@ -1336,9 +1311,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             mskOri = os.readlink(mask)
         else:
             mskOri = mask
-
         if not os.path.isfile(mskOri):
-            print WAR
             try:
                 os.remove(imgTemp)
             except Exception:
@@ -1348,14 +1321,12 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             plFile = maskFits2Pl(imgTemp, mskOri)
             plFile2 = maskFits2Pl(imgTemp, mskOri, replace=True)
             if not os.path.isfile(plFile):
-                print WAR
                 try:
                     os.remove(imgTemp)
                 except Exception:
                     pass
                 raise Exception("### Can not find the mask: %s !" % plFile)
             if not os.path.isfile(plFile2):
-                print WAR
                 try:
                     os.remove(imgTemp)
                 except Exception:
@@ -1363,9 +1334,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 raise Exception("### Can not find the mask: %s !" % plFile2)
             imageUse = imgTemp
         else:
-            imageNew = imageMaskNaN(imgTemp, mskOri)
+            imageNew = imageMaskNaN(imgTemp, mskOri, verbose=verbose)
             if not os.path.isfile(imageNew):
-                print WAR
                 try:
                     os.remove(imgTemp)
                 except Exception:
@@ -1411,7 +1381,6 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
     elif stage == 4:
         hcenter, hellip, hpa = True, True, True
         if (inEllip is None) or (not os.path.isfile(inEllip)):
-            print WAR
             try:
                 os.remove(imgTemp)
             except Exception:
@@ -1480,8 +1449,6 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
         if verbose:
             print '\n' + SEP
             print "##       Start the Ellipse Run: Attempt ", (attempts + 1)
-            print SEP
-
         try:
             """ Config the parameters for ellipse """
             if isophote is None:
@@ -1502,10 +1469,11 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
             if os.path.exists(outCdf):
                 os.remove(outCdf)
             # Start the Ellipse fitting
-            print SEP
-            print "###      Origin Image  : %s" % imgOri
-            print "###      Input Image   : %s" % imageUse
-            print "###      Output Binary : %s" % outBin
+            if verbose:
+                print SEP
+                print "###      Origin Image  : %s" % imgOri
+                print "###      Input Image   : %s" % imageUse
+                print "###      Output Binary : %s" % outBin
             if isophote is None:
                 if stage != 4:
                     iraf.ellipse(input=imageUse, output=outBin, verbose=verStr)
@@ -1514,15 +1482,12 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     iraf.ellipse(input=imageUse, output=outBin,
                                  inellip=inEllip, verbose=verStr)
             else:
-                """TODO: Place holder"""
                 if os.path.isfile(outPar):
                     ellCommand = isophote + " ellipse "
                     ellCommand += ' @%s' % outPar.strip()
-
                     os.system(ellCommand)
                 else:
                     raise Exception("XXX Can not find par file %s" % outPar)
-
             print SEP
 
             # Check if the Ellipse run is finished
@@ -1535,12 +1500,10 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 if os.path.isfile(outCdf):
                     os.remove(outCdf)
                 if xttools is None:
-                    # Tdump the .bin table into a .tab file
                     iraf.unlearn('tdump')
                     iraf.tdump.columns = ''
                     iraf.tdump(outBin, datafil=outTab, cdfile=outCdf)
                 else:
-                    """TODO"""
                     tdumpCommand = xttools + ' tdump '
                     tdumpCommand += ' table=%s ' % outBin.strip()
                     tdumpCommand += ' datafile=%s ' % outTab.strip()
@@ -1550,7 +1513,6 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     tdumpOut = os.system(tdumpCommand)
                     if tdumpOut != 0:
                         raise Exception("XXX Can not convert the binary tab")
-
                 # Read in the Ellipse output tab
                 ellipOut = readEllipseOut(outTab, zp=zpPhoto, pix=pix,
                                           exptime=expTime, bkg=bkg,
@@ -1592,12 +1554,12 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 else:
                     avgOut = 0.0
                     avgBkg = 0.0
-                print SEP
-                print "###     Input background value   : ", bkg
-                print "###     1-D SBP background value : ", avgOut
-                print "###     Current outer background : ", avgBkg
-                print SEP
-
+                if verbose:
+                    print SEP
+                    print "###     Input background value   : ", bkg
+                    print "###     1-D SBP background value : ", avgOut
+                    print "###     Current outer background : ", avgBkg
+                    print SEP
                 """ Do not correct this ? """
                 ellipOut.add_column(Column(name='avg_bkg',
                                     data=(sma * 0.0 + avgBkg)))
@@ -1614,7 +1576,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 """ Update the outer radius """
                 radOuter = ellipseGetOuterBoundary(ellipOut, ratio=outRatio)
                 if not np.isfinite(radOuter):
-                    print " XXX radOuter is NaN, use 0.80 * max(SMA) instead !"
+                    if verbose:
+                        print " XXX radOuter is NaN, use 0.80*max(SMA) !"
                     radOuter = np.nanmax(sma) * 0.80
                 ellipOut.add_column(
                     Column(name='rad_outer', data=(sma*0.0 + radOuter)))
@@ -1644,7 +1607,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                                            mask=mskOri, outPng=outPng,
                                            threshold=outerThreshold,
                                            useZscale=useZscale,
-                                           oriName=image,
+                                           oriName=image, verbose=verbose,
                                            imgType=imgType)
                     except Exception:
                         warnings.warn("XXX Can not generate: %s")
@@ -1656,25 +1619,25 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                                  verbose=verbose, csv=saveCsv)
                 gc.collect()
                 break
-
         except Exception as error:
             print WAR
             print "###  ELLIPSE RUN FAILED IN ATTEMPT: %2d" % attempts
             print "###  Error Information : ", error
-            print "###  !!! Make the Ellipse Run A Little Bit Easier !"
+            if verbose:
+                print "###  !!! Make the Ellipse Run A Little Bit Easier !"
             print WAR
+            ellipCfg = easierEllipse(ellipCfg, degree=attempts)
             attempts += 1
-            ellipCfg = easierEllipse(ellipCfg)
-
         gc.collect()
-
     if not os.path.isfile(outBin):
         ellipOut = None
         print WAR
         print "###  ELLIPSE RUN FAILED AFTER %3d ATTEMPTS!!!" % maxTry
         print WAR
 
-    # Remove the temp files
+    """
+    Remove the temp files
+    """
     try:
         os.remove(imgTemp)
     except Exception:
@@ -1682,6 +1645,17 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
     try:
         os.remove(plFile)
         os.remove(plFile2)
+    except Exception:
+        pass
+    """
+    Remove some outputs to save space
+    """
+    try:
+        os.remove(outCdf)
+    except Exception:
+        pass
+    try:
+        os.remove(outTab + '_back')
     except Exception:
         pass
 
