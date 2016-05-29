@@ -18,22 +18,6 @@ from astropy.io import fits
 # AstroML
 from astroML.plotting import hist
 
-# Cubehelix color scheme from https://github.com/jradavenport/cubehelixscheme
-import cubehelix
-# For high-contrast image
-cmap1 = cubehelix.cmap(start=0.5, rot=-0.8, gamma=1.0,
-                       minSat=1.2, maxSat=1.2,
-                       minLight=0.0, maxLight=1.0)
-cmap1.set_bad('k', 1.)
-# For Mask
-cmap2 = cubehelix.cmap(start=2.0, rot=-1.0, gamma=2.5,
-                       minSat=1.2, maxSat=1.2,
-                       minLight=0.0, maxLight=1.0, reverse=True)
-# For Sigma
-cmap3 = cubehelix.cmap(start=0.5, rot=-0.8, gamma=1.2,
-                       minSat=1.2, maxSat=1.2,
-                       minLight=0.0, maxLight=1.0)
-
 # Matplotlib related
 import matplotlib as mpl
 mpl.use('Agg')
