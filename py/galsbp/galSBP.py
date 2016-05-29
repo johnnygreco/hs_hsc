@@ -1646,8 +1646,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                                            useZscale=useZscale,
                                            oriName=image,
                                            imgType=imgType)
-                    else:
-                        print "### Can not generate: %s"
+                    except Exception:
+                        warnings.warn("XXX Can not generate: %s")
 
                 """ Save the results """
                 if saveOut:
