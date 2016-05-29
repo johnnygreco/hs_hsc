@@ -521,7 +521,7 @@ if __name__ == '__main__':
                         help='Increase the boundary of SBP by this ratio',
                         type=float, default=1.2)
     parser.add_argument('--verbose', dest='verbose', action="store_true",
-                        default=True)
+                        default=False)
     parser.add_argument('--psf', dest='psf', action="store_true",
                         help='Ellipse run on PSF', default=True)
     parser.add_argument('--plot', dest='plot', action="store_true",
