@@ -60,11 +60,9 @@ def readSbpInput(prefix, root=None, exMask=None, imgSub=True):
         imgFile = prefix + '_imgsub.fits'
     else:
         imgFile = prefix + '_img.fits'
-
     """ Root DIR """
     if root is not None:
         imgFile = os.path.join(root, imgFile)
-
     """ External mask"""
     if exMask is None:
         if root is not None:
@@ -72,7 +70,6 @@ def readSbpInput(prefix, root=None, exMask=None, imgSub=True):
             mskFile = os.path.join(root, mskFile)
     else:
         mskFile = exMask
-
     """ Input Image """
     if imgSub and (not os.path.isfile(imgFile)):
         # Fall back to original image
@@ -89,17 +86,10 @@ def readSbpInput(prefix, root=None, exMask=None, imgSub=True):
         mskOri = os.readlink(mskFile)
     else:
         mskOri = mskFile
-
     if not os.path.isfile(imgOri):
-        print WAR
-        raise Exception("### Can not find the input \
-                cutout image : %s !" % imgOri)
-
+        raise Exception("### Cannot find the input image : %s !" % imgOri)
     if not os.path.isfile(mskOri):
-        print WAR
-        raise Exception("### Can not find the input \
-                mask image : %s !" % mskOri)
-
+        raise Exception("### Can not find the input mask : %s !" % mskOri)
     # Image
     imgHdu = fits.open(imgOri)
     imgArr = imgHdu[0].data
@@ -211,7 +201,6 @@ def ellipCompare(ellipStack, outPng='ellipse_compare.png',
     """ Save Figure """
     fig.savefig(outPng, dpi=80)
     plt.close(fig)
-    print SEP
 
     return
 
@@ -219,7 +208,7 @@ def ellipCompare(ellipStack, outPng='ellipse_compare.png',
 def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                  maxRad=None, mask=None, radMode='rsma',
                  outPng='ellipse_summary.png', zp=27.0, threshold=None,
-                 psfOut=None, useKpc=None, pix=0.168,
+                 psfOut=None, useKpc=None, pix=0.168, verbose=False,
                  showZoom=True, exptime=1.0, bkg=0.0, outRatio=1.2,
                  pngSize=16, imgType='_imgsub'):
     """
@@ -269,14 +258,15 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                                               threshold=threshold,
                                               polyOrder=12)
     if not np.isfinite(radOuter):
-        print "XXX radOuter is NaN, use 0.80 * max(SMA) instead !"
+        if verbose:
+            print "XXX radOuter is NaN, use 0.80 * max(SMA) instead !"
         radOuter = np.nanmax(sma) * 0.80
     else:
-        print "###  OutRadius", radOuter
+        if verbose:
+            print "###  OutRadius", radOuter
     indexUse1 = np.where(ellipOut1['sma'] <= (radOuter*1.2))
     indexUse2 = np.where(ellipOut2['sma'] <= (radOuter*1.2))
     indexUse3 = np.where(ellipOut3['sma'] <= (radOuter*1.2))
-
     curveOri = ellipOut3['growth_ori']
     curveSub = ellipOut3['growth_sub']
     curveCor = ellipOut3['growth_cor']
@@ -286,20 +276,23 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
 
     maxIsoFluxOri = np.nanmax(curveOri[indexUse3])
     magFluxOri100 = -2.5 * np.log10(maxIsoFluxOri) + zp
-    print "###     MagTot ORI : ", magFluxOri100
+    if verbose:
+        print "###     MagTot ORI : ", magFluxOri100
     ax1.text(0.55, 0.85, 'mag$_{tot,ori}=%5.2f$' % magFluxOri100, fontsize=24,
              transform=ax1.transAxes)
 
     maxIsoFluxSub = np.nanmax(curveSub[indexUse3])
     magFluxSub100 = -2.5 * np.log10(maxIsoFluxSub) + zp
-    print "###     MagTot SUB : ", magFluxSub100
+    if verbose:
+        print "###     MagTot SUB : ", magFluxSub100
     ax1.text(0.55, 0.78, 'mag$_{tot,sub}=%5.2f$' % magFluxSub100, fontsize=24,
              transform=ax1.transAxes)
 
     maxIsoFluxCor = np.nanmax(curveCor[indexUse3])
     magFlux50 = -2.5 * np.log10(maxIsoFluxCor * 0.50) + zp
     magFlux100 = -2.5 * np.log10(maxIsoFluxCor) + zp
-    print "###     MagTot COR : ", magFlux100
+    if verbose:
+        print "###     MagTot COR : ", magFlux100
     ax1.text(0.55, 0.71, 'mag$_{tot,cor}=%5.2f$' % magFlux100, fontsize=24,
              transform=ax1.transAxes)
 
@@ -409,8 +402,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     sbp_upp = ellipOut3['sbp_upp']
 
     maxIsoSbp = np.nanmax(sbp_sub)
-    print "###     MaxIsoSbp : ", maxIsoSbp
-
+    if verbose:
+        print "###     MaxIsoSbp : ", maxIsoSbp
     ax1.fill_between(rad3[indexUse3], sbp_upp[indexUse3], sbp_low[indexUse3],
                      facecolor='r', alpha=0.2)
     ax1.plot(rad3[indexUse3], sbp_ori[indexUse3], '--', color='k',
@@ -451,8 +444,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax2.locator_params(axis='y', tight=True, nbins=4)
 
     ax2.set_ylabel('$e$', fontsize=30)
-
-    print "###     AvgEll", (1.0 - ellipOut2['avg_q'][0])
+    if verbose:
+        print "###     AvgEll", (1.0 - ellipOut2['avg_q'][0])
     ax2.axhline((1.0 - ellipOut2['avg_q'][0]), color='k', linestyle='--',
                 linewidth=3.0)
     ax2.fill_between(rad2[indexUse2],
@@ -470,7 +463,6 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     minEll = np.nanmin(ellipOut2['ell'][indexUse2]) - ellBuffer
     maxEll = np.nanmax(ellipOut2['ell'][indexUse2]) + ellBuffer
     ax2.set_ylim(minEll, maxEll)
-
     """ ax3 PA """
     ax3.minorticks_on()
     ax3.tick_params(axis='both', which='major', labelsize=20, pad=8)
@@ -486,8 +478,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
         avgPA -= 180.0
     elif (avgPA-medPA <= -85.0) and (avgPA >= -92.0):
         avgPA += 180.0
-
-    print "###     AvgPA", avgPA
+    if verbose:
+        print "###     AvgPA", avgPA
     ax3.axhline(avgPA, color='k', linestyle='--', linewidth=3.0)
 
     ax3.fill_between(rad2[indexUse2],
@@ -517,9 +509,9 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax4.locator_params(axis='y', tight=True, nbins=4)
 
     ax4.set_ylabel('X0 or Y0 (pixel)', fontsize=23)
-
-    print "###     AvgX0", ellipOut1['avg_x0'][0]
-    print "###     AvgY0", ellipOut1['avg_y0'][0]
+    if verbose:
+        print "###     AvgX0", ellipOut1['avg_x0'][0]
+        print "###     AvgY0", ellipOut1['avg_y0'][0]
     ax4.axhline(ellipOut1['avg_x0'][0], linestyle='--', color='r', alpha=0.6,
                 linewidth=3.0)
     ax4.fill_between(rad1[indexUse1],
@@ -707,7 +699,6 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     """ Save Figure """
     fig.savefig(outPng, dpi=80)
     plt.close(fig)
-    print SEP
 
     return
 
@@ -764,7 +755,6 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         imgType = '_imgsub'
     else:
         imgType = '_img'
-
     """
     Delete image and mask array
     """
@@ -877,6 +867,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
             psfOut, psfBin = psfRes
         else:
             psfOut = None
+
         """ Ellipse run for the galaxy """
         if inEllip is None:
             iniSma = (galR50 * 2.0)
@@ -1033,7 +1024,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                  maxRad=maxR, mask=mskOri, radMode='rsma',
                                  outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
                                  showZoom=showZoom, exptime=exptime, bkg=bkg,
-                                 outRatio=outRatio, imgType=imgType)
+                                 outRatio=outRatio, imgType=imgType,
+                                 verbose=verbose)
                 except Exception:
                     print "XXX Can not make summary plot: %s" % sumPng
 
@@ -1051,7 +1043,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                     suffixSmall = 'multi1'
                     if verbose:
                         print SEP
-                        print "##   Force Ellipse Run wit Small Mask "
+                        print "##   Force Ellipse Run with Small Mask "
                         print "##   Mask : %s" % mskSmall
                         print "##   Input binary : %s" % inputSmall
                     smallOut = galSBP.galSBP(imgFile, mask=mskSmall,
@@ -1213,6 +1205,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                   'compare.png')
                 ellipCompare(ellStack, outPng=comparePng, zp=27.0,
                              ellipLabel=ellLabel)
+            else:
+                smallEll, largeEll = None, None
+                ellMulti3, ellMulti4, ellMulti5 = None, None, None
         else:
             """ # Run Ellipse in Forced Photometry Mode """
             if verbose:
@@ -1378,4 +1373,5 @@ if __name__ == '__main__':
                    noMask=args.noMask,
                    multiEllipse=args.multiEllipse,
                    imgSub=args.imgSub,
-                   isophote=args.isophote)
+                   isophote=args.isophote,
+                   xttools=args.xttools)
