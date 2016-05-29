@@ -46,30 +46,45 @@ def run(args):
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
 
-        print COM
-        print "## Will deal with %d galaxies ! " % len(data)
+        if args.verbose:
+            print "## Will deal with %d galaxies ! " % len(data)
 
-        for index, galaxy in enumerate(data):
-
-            print SEP
+        for galaxy in data:
+            """ ID and prefix """
             galID = str(galaxy[id]).strip()
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
             galRoot = os.path.join(galID, filter)
-            print "## Will Deal with %s now : %i / %i" % (galID,
-                                                          (index + 1),
-                                                          len(data))
+            if args.verbose:
+                print "## Deal with %s now !" % (galID)
+
+            """ Check the directory of the data """
             if not os.path.isdir(galRoot):
                 logging.warning('### Can not find ' +
                                 'ROOT folder for %s' % galRoot)
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logFormat = "%25s    %s    NODIR \n"
+                        logMatch.write(logFormat % (galPrefix, filter))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
                 continue
-            fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
 
+            """ Check the input image """
             galImg = galPrefix + '_img.fits'
             if (not os.path.isfile(os.path.join(galRoot, galImg)) and not
                     os.path.islink(os.path.join(galRoot, galImg))):
                 logging.warning('### Can not find ' +
                                 'CUTOUT IMAGE for %s' % galPrefix)
+                with open(logFile, "a") as logMatch:
+                    try:
+                        logFormat = "%25s    %s    NOIMG \n"
+                        logMatch.write(logFormat % (galPrefix, filter))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
                 continue
+
             """
             Set up a rerun
             """
@@ -77,23 +92,33 @@ def run(args):
             if not os.path.isdir(galRoot):
                 os.makedirs(galRoot)
             """ Link the necessary files to the rerun folder """
+            fitsList = glob.glob(os.path.join(galRoot, '*.fits'))
             for fitsFile in fitsList:
                 seg = fitsFile.split('/')
                 link = os.path.join(galRoot, seg[-1])
                 if (not os.path.islink(link)) and (not os.path.isfile(link)):
                     os.symlink(fitsFile, link)
+
             """
             External mask
             """
             if args.maskFilter is not None:
                 mskFilter = (args.maskFilter).strip().upper()
-                print "###  Use %s filter for mask \n" % mskFilter
+                if args.verbose:
+                    print "###  Use %s filter for mask \n" % mskFilter
                 mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
                 mskRoot = os.path.join(galID, mskFilter, rerun)
                 galMsk = os.path.join(mskRoot, mskPrefix + '_mskfin.fits')
                 if not os.path.isfile(galMsk):
                     logging.warning('### Can not find ' +
                                     'MASK for  %s ' % str(id))
+                    with open(logFile, "a") as logMatch:
+                        try:
+                            logFormat = "%25s    %s    NOMSK \n"
+                            logMatch.write(logFormat % (galPrefix, filter))
+                            fcntl.flock(logMatch, fcntl.LOCK_UN)
+                        except IOError:
+                            pass
                     continue
             else:
                 galMsk = None
@@ -113,22 +138,23 @@ def run(args):
                 imgType = 'imgsub'
             else:
                 imgType = 'img'
+
             galRefRoot = os.path.join(galID, refFilter, refRerun)
             galRefPrefix = (prefix + '_' + galID + '_' + refFilter +
                             '_full_' + imgType + '_ellip_' + refRerun + '_')
+
             """ The reference model """
             inEllipPrefix = os.path.join(galRefRoot, galRefPrefix)
-            """  """
             refModel = (args.refModel).strip()
             inEllipBin = inEllipPrefix + refModel + '.bin'
-            print SEP
-            print "###   INPUT ELLIP BIN : %s" % inEllipBin
-            print SEP
+            if args.verbose:
+                print SEP
+                print "###   INPUT ELLIP BIN : %s" % inEllipBin
+                print SEP
             if not os.path.isfile(inEllipBin):
                 logging.warning('### Can not find ' +
                                 'INPUT BINARY for : %s' % galPrefix)
                 logging.warning('###     File Name : %s' % inEllipBin)
-
                 with open(logFile, "a") as logMatch:
                     try:
                         logFormat = "%25s  %20s  %s  NELL \n"
@@ -138,8 +164,8 @@ def run(args):
                         fcntl.flock(logMatch, fcntl.LOCK_UN)
                     except IOError:
                         pass
-
                 continue
+
             """
             Suffix of the output file
             """
@@ -151,7 +177,7 @@ def run(args):
             else:
                 ellipSuffix = rerun
 
-            print '\n' + SEP
+            """ Start a Ellipse run """
             try:
                 cSbp.coaddCutoutSbp(galPrefix, root=galRoot,
                                     verbose=args.verbose,
@@ -184,12 +210,10 @@ def run(args):
                                     suffix=ellipSuffix,
                                     plMask=args.plmask,
                                     imgSub=args.imgSub,
-                                    isophote=args.isophote)
-
+                                    isophote=args.isophote,
+                                    xttools=args.xttools)
                 logging.info('### The 1-D SBP is DONE for %s in %s' %
                              (galPrefix, filter))
-
-                print SEP + '\n'
                 with open(logFile, "a") as logMatch:
                     try:
                         logFormat = "%25s  %20s  %s  DONE \n"
@@ -205,12 +229,14 @@ def run(args):
                 if (galMsk is not None) and args.multiMask:
                     mskSmall = galMsk.replace('mskfin', 'msksmall')
                     mskLarge = galMsk.replace('mskfin', 'msklarge')
-                    print SEP
-                    print "##  MultiMask Mode "
-                    print "##     Input Ellipse : %s" % inEllipBin
+                    if args.verbose:
+                        print SEP
+                        print "##  MultiMask Mode "
+                        print "##     Input Ellipse : %s" % inEllipBin
                     """ Small Mask """
                     if os.path.isfile(mskSmall):
-                        print "##     Input MaskSmall : %s" % mskSmall
+                        if verbose:
+                            print "##     Input MaskSmall : %s" % mskSmall
                         suffixSmall = ellipSuffix + '_msksmall'
                         try:
                             cSbp.coaddCutoutSbp(galPrefix, root=galRoot,
@@ -244,12 +270,10 @@ def run(args):
                                                 suffix=suffixSmall,
                                                 plMask=args.plmask,
                                                 imgSub=args.imgSub,
-                                                isophote=args.isophote)
-
+                                                isophote=args.isophote,
+                                                xttools=args.xttools)
                             logging.info('### SMALLMASK is DONE for %s' %
                                          galPrefix)
-
-                            print SEP + '\n'
                             with open(logFile, "a") as logMatch:
                                 try:
                                     logFormat = "%25s  %20s  %s  DONE \n"
@@ -262,13 +286,13 @@ def run(args):
 
                             gc.collect()
                         except Exception, errMsg:
+                            print WAR
                             print str(errMsg)
+                            print WAR
                             logging.warning('### SMALLMASK FAILED: %s in %s' %
                                             (galPrefix, filter))
                             logging.warning('###    Err: %s - %s' %
                                             (galPrefix, errMsg))
-
-                            print SEP + '\n'
                             with open(logFile, "a") as logMatch:
                                 try:
                                     logFormat = "%25s  %20s  %s  FAIL \n"
@@ -278,15 +302,12 @@ def run(args):
                                     fcntl.flock(logMatch, fcntl.LOCK_UN)
                                 except IOError:
                                     pass
-
                             gc.collect()
                     else:
-                        print "##    Can not find %s" % mskSmall
                         logging.warning('### SMALLMASK is FAILED for %s' %
                                         galPrefix)
                         logging.warning('###    Err: %s - Can not find %s' %
                                         (galPrefix, mskSmall))
-                        print SEP + '\n'
                         with open(logFile, "a") as logMatch:
                             try:
                                 logFormat = "%25s  %20s  %s  NMSK \n"
@@ -299,7 +320,8 @@ def run(args):
 
                     """ Large Mask """
                     if os.path.isfile(mskLarge):
-                        print "##     Input MaskLarge : %s" % mskLarge
+                        if args.verbose:
+                            print "##     Input MaskLarge : %s" % mskLarge
                         suffixLarge = ellipSuffix + '_msklarge'
                         try:
                             cSbp.coaddCutoutSbp(galPrefix, root=galRoot,
@@ -333,12 +355,10 @@ def run(args):
                                                 suffix=suffixLarge,
                                                 plMask=args.plmask,
                                                 imgSub=args.imgSub,
-                                                isophote=args.isophote)
-
+                                                isophote=args.isophote,
+                                                xttools=args.xttools)
                             logging.info('### LARGEMASK is DONE for %s in %s' %
                                          (galPrefix, filter))
-
-                            print SEP + '\n'
                             with open(logFile, "a") as logMatch:
                                 try:
                                     logFormat = "%25s  %20s  %s  DONE \n"
@@ -348,16 +368,15 @@ def run(args):
                                     fcntl.flock(logMatch, fcntl.LOCK_UN)
                                 except IOError:
                                     pass
-
                             gc.collect()
                         except Exception, errMsg:
+                            print WAR
                             print str(errMsg)
+                            print WAR
                             logging.warning('### LARGEMASK FAILED: %s in %s' %
                                             (galPrefix, filter))
                             logging.warning('###    Err: %s - %s' %
                                             (galPrefix, errMsg))
-
-                            print SEP + '\n'
                             with open(logFile, "a") as logMatch:
                                 try:
                                     logFormat = "%25s  %20s  %s  FAIL \n"
@@ -367,16 +386,12 @@ def run(args):
                                     fcntl.flock(logMatch, fcntl.LOCK_UN)
                                 except IOError:
                                     pass
-
                             gc.collect()
                     else:
-                        print "##    Can not find %s" % mskLarge
                         logging.warning('### LARGEMASK is FAILED for %s' %
                                         galPrefix)
                         logging.warning('###    Err: %s - Can not find %s' %
                                         (galPrefix, mskLarge))
-
-                        print SEP + '\n'
                         with open(logFile, "a") as logMatch:
                             try:
                                 logFormat = "%25s  %20s  %s  NMSK \n"
@@ -386,16 +401,15 @@ def run(args):
                                 fcntl.flock(logMatch, fcntl.LOCK_UN)
                             except IOError:
                                 pass
-
             except Exception, errMsg:
+                print WAR
                 print str(errMsg)
+                print WAR
                 warnings.warn('### The 1-D SBP is failed for %s in %s' %
                               (galPrefix, filter))
                 logging.warning('### The 1-D SBP is FAILED for %s in %s' %
                                 (galPrefix, filter))
                 logging.warning('###    Err: %s - %s' % (galPrefix, errMsg))
-
-                print SEP + '\n'
                 with open(logFile, "a") as logMatch:
                     try:
                         logFormat = "%25s  %20s  %s  FAIL \n"
@@ -407,8 +421,6 @@ def run(args):
                         pass
 
                 gc.collect()
-
-            print SEP + '\n'
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 
@@ -442,6 +454,19 @@ if __name__ == '__main__':
                         help="Suffix of the output file",
                         default='')
     parser.add_argument('--sample', dest='sample', help="Sample name",
+                        default=None)
+    parser.add_argument('-j', '--njobs', type=int,
+                        help='Number of jobs run at the same time',
+                        dest='njobs', default=1)
+    parser.add_argument('--plmask', dest='plmask', action="store_true",
+                        default=True)
+    parser.add_argument('--imgSub', dest='imgSub', action="store_true",
+                        default=False)
+    parser.add_argument("--isophote", dest='isophote',
+                        help="Location of the x_isophote.e file",
+                        default=None)
+    parser.add_argument("--xttools", dest='xttools',
+                        help="Location of the x_ttools.e file",
                         default=None)
     """ Optional """
     parser.add_argument("--intMode", dest='intMode',
@@ -509,13 +534,6 @@ if __name__ == '__main__':
     parser.add_argument('--updateIntens', dest='updateIntens',
                         action="store_true",
                         default=True)
-    parser.add_argument('--plmask', dest='plmask', action="store_true",
-                        default=True)
-    parser.add_argument('--imgSub', dest='imgSub', action="store_true",
-                        default=False)
-    parser.add_argument("--isophote", dest='isophote',
-                        help="Location of the x_isophote.e file",
-                        default=None)
 
     args = parser.parse_args()
 
