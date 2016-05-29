@@ -25,8 +25,8 @@ def run(args):
     """
     if os.path.isfile(args.incat):
 
+        """ Basic information """
         data = fits.open(args.incat)[1].data
-
         id = (args.id)
         rerun = (args.rerun).strip()
         prefix = (args.prefix).strip()
@@ -41,24 +41,20 @@ def run(args):
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
 
-        print COM
-        print "## Will deal with %d galaxies ! " % len(data)
-        print COM
+        if args.verbose:
+            print "## Will deal with %d galaxies ! " % len(data)
 
-        for index, galaxy in enumerate(data):
-
+        for galaxy in data:
+            """ Galaxy ID and prefix """
             galID = str(galaxy[id]).strip()
             galPrefix = prefix + '_' + galID + '_' + filter + '_full'
-            galRoot = os.path.join(galID, filter)
-            galImg = galPrefix + '_img.fits'
-            print "## Will Deal with %s now : %i / %i" % (galID,
-                                                          (index + 1),
-                                                          len(data))
-            print COM
+            if args.verbose:
+                print "## Will Deal with %s now ! " % galID
 
+            """Folder for the data"""
+            galRoot = os.path.join(galID, filter)
             if not os.path.isdir(galRoot):
                 warnings.warn('### Cannot find folder %s' % galRoot)
-                # Keep a log
                 with open(logFile, "a") as logMatch:
                     logStr = "%25s  %10s  NDIR \n"
                     try:
@@ -69,9 +65,10 @@ def run(args):
                         pass
                 continue
 
+            """Image"""
+            galImg = galPrefix + '_img.fits'
             if not os.path.isfile(os.path.join(galRoot, galImg)):
                 warnings.warn('### Cannot find image %s' % galImg)
-                # Keep a log
                 with open(logFile, "a") as logMatch:
                     logStr = "%25s  %10s  NIMG \n"
                     try:
@@ -114,7 +111,6 @@ def run(args):
                                            combBad=True,
                                            combDet=True,
                                            multiMask=args.multiMask)
-                    # Keep a log
                     with open(logFile, "a") as logMatch:
                         logStr = "%25s  %10s  DONE \n"
                         try:
@@ -154,7 +150,6 @@ def run(args):
                                            combBad=True,
                                            combDet=True,
                                            multiMask=False)
-                    # Keep a log
                     with open(logFile, "a") as logMatch:
                         logStr = "%25s  %10s  DONE \n"
                         try:
@@ -194,7 +189,6 @@ def run(args):
                                            combBad=True,
                                            combDet=True,
                                            multiMask=False)
-                    # Keep a log
                     with open(logFile, "a") as logMatch:
                         logStr = "%25s  %10s  DONE \n"
                         try:
@@ -229,7 +223,6 @@ def run(args):
                                            combBad=args.combBad,
                                            combDet=args.combDet,
                                            multiMask=args.multiMask)
-                    # Keep a log
                     with open(logFile, "a") as logMatch:
                         logStr = "%25s  %10s  DONE \n"
                         try:
@@ -241,11 +234,11 @@ def run(args):
             except Exception, errMsg:
                 print WAR
                 print str(errMsg)
+                print WAR
                 warnings.warn('### The preparation is failed for %s in %s' %
                               (galPrefix, filter))
                 logging.warning('### The preparation is failed for %s in %s' %
                                 (galPrefix, filter))
-                # Keep a log
                 with open(logFile, "a") as logMatch:
                     logStr = "%25s  %10s  FAIL \n"
                     try:
@@ -254,7 +247,6 @@ def run(args):
                         fcntl.flock(logMatch, fcntl.LOCK_UN)
                     except IOError:
                         pass
-            print COM
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 
