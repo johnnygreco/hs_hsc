@@ -720,7 +720,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                    olthresh=0.5, intMode='mean', lowClip=3.0, uppClip=3.0,
                    nClip=2, fracBad=0.5, minIt=20, maxIt=150, outRatio=1.2,
                    exMask=None, suffix='', plMask=False, noMask=False,
-                   multiEllipse=False, imgSub=False, isophote=None):
+                   multiEllipse=False, imgSub=False,
+                   isophote=None, xttools=None):
     """
     Generate 1-D SBP Plot.
 
@@ -732,7 +733,23 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         print "##       Input Image: ", prefix
         print "##       Root Directory: ", root
     gc.collect()
-    print SEP
+
+    """ Check the x_isophote.e and x_ttools.e """
+    if isophote is not None:
+        if os.path.isfile(isophote):
+            print "# Will use x_isophote.e: %s" % isophote
+        else:
+            raise Exception("# Can not find x_isophote.e: %s" % isophote)
+        """ Have to use x_isophote.e and x_ttools.e at the same time """
+        if xttools is None:
+            raise Exception("# Have to use x_ttools.e at the same time")
+        else:
+            if os.path.isfile(xttools):
+                print "# Will use x_ttools.e: %s" % xttools
+            else:
+                raise Exception("# Can not find x_ttools.e: %s" % xttools)
+    else:
+        print "# Will use PyRAF for everything !"
 
     """ 0. Organize Input Data """
     # Read in the input image, mask, psf, and their headers
@@ -750,7 +767,6 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
 
     """
     Delete image and mask array
-    TODO Test
     """
     del imgArr
     del mskArr
@@ -782,15 +798,12 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     """ 0b. Background """
     if bkgCor:
         try:
-            print SEP
             print "###   CORREECT FOR SKY BACKGROUND "
             skyMed, skyAvg, skyStd = readInputSky(prefix, root=root)
             """ Try median instead """
             bkg = skyMed
         except Exception:
-            print WAR
             print "XXX   CAN NOT FIND THE BACKGROUND DATA !"
-            print WAR
             bkg = 0.00
     else:
         bkg = 0.00
@@ -832,9 +845,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     else:
         """ Ellipse run for the PSF """
         if psf:
-            print SEP
-            print "\n##   Ellipse Run on PSF "
-            print SEP
+            if verbose:
+                print SEP
+                print "\n##   Ellipse Run on PSF "
             psfFile = prefix + '_psf.fits'
             if root is not None:
                 psfFile = os.path.join(root, psfFile)
@@ -844,7 +857,6 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 psfOri = psfFile
 
             if not os.path.isfile(psfOri):
-                print WAR
                 raise Exception("### Can not find the \
                                 PSF image: %s !" % psfFile)
             psfRes = galSBP.galSBP(psfFile, iniSma=5.0,
@@ -860,7 +872,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                    bkg=0.0,
                                    updateIntens=False,
                                    imgType=imgType,
-                                   isophote=isophote)
+                                   isophote=isophote,
+                                   xttools=xttools)
             psfOut, psfBin = psfRes
         else:
             psfOut = None
@@ -868,10 +881,11 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
         if inEllip is None:
             iniSma = (galR50 * 2.0)
             """#        Start with Stage 1 """
-            print SEP
-            print "##       Ellipse Run on Image %s- Stage 1 " % imgFile
-            print SEP
-            galSBP.unlearnEllipse()
+            if verbose:
+                print SEP
+                print "##       Ellipse Run on Image %s- Stage 1 " % imgFile
+            if isophote is None:
+                galSBP.unlearnEllipse()
             ellRes1 = galSBP.galSBP(imgFile,
                                     mask=mskFile,
                                     galX=galX,
@@ -899,13 +913,12 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     plMask=plMask,
                                     suffix=suffix,
                                     imgType=imgType,
-                                    isophote=isophote)
+                                    isophote=isophote,
+                                    xttools=xttools)
             ellOut1, ellBin1 = ellRes1
 
             if ellOut1 is None:
-                print WAR
                 raise Exception("!!!!! ELLIPSE RUN FAILED AT STAGE 1 !!!!")
-                print WAR
             if (galX0 is None) or (galY0 is None):
                 galX0 = ellOut1['avg_x0'][0]
                 galY0 = ellOut1['avg_y0'][0]
@@ -918,9 +931,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                     raise Exception("The Center is Off !")
 
             """ # Start with Stage 2 """
-            print SEP
-            print "##       Ellipse Run on Image %s- Stage 2 " % imgFile
-            print SEP
+            if verbose:
+                print SEP
+                print "##       Ellipse Run on Image %s- Stage 2 " % imgFile
             ellRes2 = galSBP.galSBP(imgFile, mask=mskFile,
                                     galX=galX0,
                                     galY=galY0,
@@ -947,13 +960,12 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     plMask=plMask,
                                     suffix=suffix,
                                     imgType=imgType,
-                                    isophote=isophote)
+                                    isophote=isophote,
+                                    xttools=xttools)
             ellOut2, ellBin2 = ellRes2
 
             if ellOut2 is None:
-                print WAR
                 raise Exception("!!!!! ELLIPSE RUN FAILED AT STAGE 2 !!!!")
-                print WAR
 
             if (galQ0 is None) or (galPA0 is None):
                 if (ellOut2['avg_q'][0] <= 0.95):
@@ -964,9 +976,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                          upper=90.0, b=True)
 
             """ # Start with Stage 3 """
-            print SEP
-            print "##       Ellipse Run on Image %s- Stage 3 " % imgFile
-            print SEP
+            if verbose:
+                print SEP
+                print "##       Ellipse Run on Image %s- Stage 3 " % imgFile
             ellRes3 = galSBP.galSBP(imgFile, mask=mskFile,
                                     galX=galX0,
                                     galY=galY0,
@@ -991,13 +1003,12 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     plMask=plMask,
                                     suffix=suffix,
                                     imgType=imgType,
-                                    isophote=isophote)
+                                    isophote=isophote,
+                                    xttools=xttools)
             ellOut3, ellBin3 = ellRes3
 
             if ellOut3 is None:
-                print WAR
                 raise Exception("!!!!! ELLIPSE RUN FAILED AT STAGE 3 !!!!")
-                print WAR
             else:
                 """
                 Should update the maxR
@@ -1005,9 +1016,9 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 maxR = np.nanmax(ellOut3['sma'])
 
             if plot:
-                print SEP
-                print "##       Ellipse Summary Plot "
-                print SEP
+                if verbose:
+                    print SEP
+                    print "##       Ellipse Summary Plot "
                 if suffix[-1] != '_':
                     suffix = suffix + '_'
                 if imgSub:
@@ -1016,12 +1027,15 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 else:
                     temp = '_img_ellip_'
                     sumPng = root + prefix + temp + suffix + 'sum.png'
-                ellipSummary(ellOut1, ellOut2, ellOut3, imgOri,
-                             psfOut=psfOut,
-                             maxRad=maxR, mask=mskOri, radMode='rsma',
-                             outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
-                             showZoom=showZoom, exptime=exptime, bkg=bkg,
-                             outRatio=outRatio, imgType=imgType)
+                try:
+                    ellipSummary(ellOut1, ellOut2, ellOut3, imgOri,
+                                 psfOut=psfOut,
+                                 maxRad=maxR, mask=mskOri, radMode='rsma',
+                                 outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
+                                 showZoom=showZoom, exptime=exptime, bkg=bkg,
+                                 outRatio=outRatio, imgType=imgType)
+                except Exception:
+                    print "XXX Can not make summary plot: %s" % sumPng
 
             if multiEllipse:
                 """
@@ -1035,11 +1049,11 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                     mskSmall = mskFile.replace('mskfin', 'msksmall')
                     inputSmall = ellBin3
                     suffixSmall = 'multi1'
-                    print SEP
-                    print "##   Force Ellipse Run wit Small Mask "
-                    print "##   Mask : %s" % mskSmall
-                    print "##   Input binary : %s" % inputSmall
-                    print SEP
+                    if verbose:
+                        print SEP
+                        print "##   Force Ellipse Run wit Small Mask "
+                        print "##   Mask : %s" % mskSmall
+                        print "##   Input binary : %s" % inputSmall
                     smallOut = galSBP.galSBP(imgFile, mask=mskSmall,
                                              ellipStep=step,
                                              stage=4,
@@ -1051,7 +1065,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                              inEllip=inputSmall,
                                              suffix=suffixSmall,
                                              imgType=imgType,
-                                             isophote=isophote)
+                                             isophote=isophote,
+                                             xttools=xttools)
                     smallEll, smallBin = smallOut
                 else:
                     smallEll = None
@@ -1061,11 +1076,11 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                     mskLarge = mskFile.replace('mskfin', 'msklarge')
                     inputLarge = ellBin3
                     suffixLarge = 'multi2'
-                    print SEP
-                    print "##   Force Ellipse Run wit Large Mask "
-                    print "##   Mask : %s" % mskLarge
-                    print "##   Input binary : %s" % inputLarge
-                    print SEP
+                    if verbose:
+                        print SEP
+                        print "##   Force Ellipse Run wit Large Mask "
+                        print "##   Mask : %s" % mskLarge
+                        print "##   Input binary : %s" % inputLarge
                     largeOut = galSBP.galSBP(imgFile, mask=mskLarge,
                                              ellipStep=step,
                                              stage=4,
@@ -1077,16 +1092,17 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                              inEllip=inputLarge,
                                              suffix=suffixLarge,
                                              imgType=imgType,
-                                             isophote=isophote)
+                                             isophote=isophote,
+                                             xttools=xttools)
                     largeEll, largeBin = largeOut
                 else:
                     largeEll = None
 
                 """ 3. Strick clipping """
                 suffixMulti3 = 'multi3'
-                print SEP
-                print "##   Ellipse Run wit Strick Pixel Clipping "
-                print SEP
+                if verbose:
+                    print SEP
+                    print "##   Ellipse Run wit Strick Pixel Clipping "
                 resMulti3 = galSBP.galSBP(imgFile, mask=mskFile,
                                           galX=galX0,
                                           galY=galY0,
@@ -1111,14 +1127,15 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                           plMask=plMask,
                                           suffix=suffixMulti3,
                                           imgType=imgType,
-                                          isophote=isophote)
+                                          isophote=isophote,
+                                          xttools=xttools)
                 ellMulti3, binMulti3 = resMulti3
 
                 """ 4. Larger step size """
                 suffixMulti4 = 'multi4'
-                print SEP
-                print "##   Ellipse Run wit Strick Pixel Clipping "
-                print SEP
+                if verbose:
+                    print SEP
+                    print "##   Ellipse Run wit Strick Pixel Clipping "
                 resMulti4 = galSBP.galSBP(imgFile, mask=mskFile,
                                           galX=galX0,
                                           galY=galY0,
@@ -1143,14 +1160,15 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                           plMask=plMask,
                                           suffix=suffixMulti4,
                                           imgType=imgType,
-                                          isophote=isophote)
+                                          isophote=isophote,
+                                          xttools=xttools)
                 ellMulti4, binMulti4 = resMulti4
 
                 """ 5. Use Mean instead of Median """
                 suffixMulti5 = 'multi5'
-                print SEP
-                print "##   Ellipse Run with Median integration mode "
-                print SEP
+                if verbose:
+                    print SEP
+                    print "##   Ellipse Run with Median integration mode "
                 resMulti5 = galSBP.galSBP(imgFile, mask=mskFile,
                                           galX=galX0,
                                           galY=galY0,
@@ -1175,7 +1193,8 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                           plMask=plMask,
                                           suffix=suffixMulti5,
                                           imgType=imgType,
-                                          isophote=isophote)
+                                          isophote=isophote,
+                                          xttools=xttools)
                 ellMulti5, binMulti5 = resMulti5
 
                 """ """
@@ -1196,10 +1215,10 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                              ellipLabel=ellLabel)
         else:
             """ # Run Ellipse in Forced Photometry Mode """
-            print SEP
-            print "##       Ellipse Run on " + \
-                  "Image %s - Forced Photometry " % imgFile
-            print SEP
+            if verbose:
+                print SEP
+                print "##       Ellipse Run on " + \
+                      "Image %s - Forced Photometry " % imgFile
             ellOut4 = galSBP.galSBP(imgFile, mask=mskFile,
                                     galX=galX,
                                     galY=galY,
@@ -1214,11 +1233,10 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                                     plMask=plMask,
                                     suffix=suffix,
                                     imgType=imgType,
-                                    isophote=isophote)
+                                    isophote=isophote,
+                                    xttools=xttools)
             if ellOut4 is None:
-                print WAR
                 raise Exception("!!!!! FORCED ELLIPSE RUN FAILED !!!!")
-                print WAR
 
             gc.collect()
 
@@ -1320,6 +1338,9 @@ if __name__ == '__main__':
                         default=False)
     parser.add_argument("--isophote", dest='isophote',
                         help="Location of the x_isophote.e file",
+                        default=None)
+    parser.add_argument("--xttools", dest='xttools',
+                        help="Location of the x_ttools.e file",
                         default=None)
 
     args = parser.parse_args()
