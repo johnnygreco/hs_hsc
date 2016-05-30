@@ -815,9 +815,9 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     reg4 = [0.08, 0.70, 0.45, 0.15]
     reg5 = [0.08, 0.85, 0.45, 0.14]
     """ Right side: Curve of growth & IsoMap """
-    reg6 = [0.59, 0.07, 0.39, 0.29]
-    reg7 = [0.59, 0.36, 0.39, 0.15]
-    reg8 = [0.59, 0.55, 0.39, 0.39]
+    reg6 = [0.60, 0.07, 0.38, 0.29]
+    reg7 = [0.60, 0.36, 0.38, 0.15]
+    reg8 = [0.60, 0.55, 0.38, 0.39]
 
     fig = plt.figure(figsize=(pngSize, pngSize))
     """ Left """
@@ -947,17 +947,13 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax1.set_ylabel('${\mu}\ (\mathrm{mag}/\mathrm{arcsec}^2)$',
                    fontsize=28)
 
-    sbp_sub = ellipOut['sbp_sub']
     sbp_ori = ellipOut['sbp_ori']
     sbp_cor = ellipOut['sbp_cor']
-    sbp_low = ellipOut['sbp_low']
-    sbp_upp = ellipOut['sbp_upp']
+    sbp_err = ellipOut['sbp_err']
 
     ax1.fill_between(rad[indexUse],
-                     (sbp_cor[indexUse] + sbp_upp[indexUse] -
-                      sbp_sub[indexUse]),
-                     (sbp_cor[indexUse] - sbp_ori[indexUse] +
-                      sbp_low[indexUse]),
+                     (sbp_cor[indexUse] - sbp_err[indexUse]),
+                     (sbp_cor[indexUse] + sbp_err[indexUse]),
                      facecolor='r', alpha=0.3)
     ax1.plot(rad[indexUse], sbp_ori[indexUse],
              '--', color='k', linewidth=3.0)
@@ -969,11 +965,17 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
              '-', color='r', linewidth=3.0)
     sbpBuffer = 0.75
     minSbp = np.nanmin(ellipOut['sbp_low'][indexUse]) - sbpBuffer
+    maxSbp = np.nanmax(ellipOut['sbp_upp'][indexUse]) + sbpBuffer
+    """
     maxSbp = maxIsoSbp + sbpBuffer
+    """
     maxSbp = maxSbp if maxSbp >= 29.0 else 28.9
     maxSbp = maxSbp if maxSbp <= 32.0 else 31.9
     ax1.set_xlim(minRad, radOut)
     ax1.set_ylim(maxSbp, minSbp)
+    ax1.text(0.55, 0.74,
+             '$\mathrm{mag}_{\mathrm{tot,cor}}=%5.2f$' % magFlux100,
+             fontsize=24, transform=ax1.transAxes)
 
     """ ax2 Ellipticity """
     ax2.minorticks_on()
@@ -1121,7 +1123,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     """ ax6 Growth Curve """
     ax6.minorticks_on()
-    ax6.tick_params(axis='both', which='major', labelsize=20, pad=8)
+    ax6.tick_params(axis='both', which='major', labelsize=16, pad=8)
     ax6.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax6.yaxis.set_major_locator(MaxNLocator(prune='upper'))
 
@@ -1144,8 +1146,8 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax6.plot(rad, growthCurveCor, '-', color='r', linewidth=4.0,
              label='$\mathrm{CoG}_{\mathrm{cor}}$')
     ax6.axvline(radOut, linestyle='-', color='g', alpha=0.6, linewidth=5.0)
-    ax6.legend(loc=[0.68, 0.08], shadow=True, fancybox=True,
-               fontsize=21)
+    ax6.legend(loc=[0.58, 0.07], shadow=True, fancybox=True,
+               fontsize=19)
     minCurve = (magFlux100 - 0.9)
     maxCurve = (magFlux100 + 2.9)
     radInner = rad[growthCurveOri <= maxCurve][0]
@@ -1161,7 +1163,6 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax7.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax7.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax7.locator_params(axis='y', tight=True, nbins=4)
-
     """
     ax7.axvline(imgR50,  linestyle='-', color='k', alpha=0.4,
                 linewidth=2.5)
@@ -1170,26 +1171,25 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     bkgVal = ellipOut['intens_bkg'][0]
     ax7.axhline(bkgVal, linestyle='--', color='c', linewidth=2.5, alpha=0.6)
 
-    ax7.fill_between(rad, ellipOut['intens_sub'] + ellipOut['int_err'],
-                     ellipOut['intens_sub'] - ellipOut['int_err'],
+    ax7.fill_between(rad, ellipOut['intens_cor'] + ellipOut['int_err'],
+                     ellipOut['intens_cor'] - ellipOut['int_err'],
                      facecolor='r', alpha=0.2)
     ax7.plot(rad, ellipOut['intens'], '--', color='g', linewidth=3.0)
-    ax7.plot(rad, ellipOut['intens_sub'], '-', color='r', linewidth=3.5)
-    ax7.plot(rad, ellipOut['intens_cor'], '.-', color='b', linewidth=3.0)
+    ax7.plot(rad, ellipOut['intens_sub'], '-.', color='b', linewidth=3.0)
+    ax7.plot(rad, ellipOut['intens_cor'], '-', color='r', linewidth=3.5)
 
     """ TODO: Could be problematic """
-    indexOut = np.where(ellipOut['intens'] <= (
-        0.002 * np.nanmax(ellipOut['intens'])))
-    ax7.xaxis.set_major_formatter(NullFormatter())
-    ax7.set_xlim(minRad, maxRad)
+    indexOut = np.where(ellipOut['intens'] <= (0.003 *
+                        np.nanmax(ellipOut['intens'])))
     minOut = np.nanmin(ellipOut['intens'][indexOut] -
                        ellipOut['int_err'][indexOut])
     maxOut = np.nanmax(ellipOut['intens'][indexOut] +
                        ellipOut['int_err'][indexOut])
-    sepOut = (maxOut - minOut) / 10.0
+    sepOut = (maxOut - minOut) / 4.0
     minY = (minOut - sepOut) if (minOut - sepOut) >= 0.0 else (-1.0 * sepOut)
+    ax7.xaxis.set_major_formatter(NullFormatter())
     ax7.set_xlim((radInner - 0.02), (maxRad + 0.2))
-    ax7.set_ylim(minY, maxOut)
+    ax7.set_ylim((minY - sepOut), maxOut)
     ax7.axvline(radOut, linestyle='-', color='g', alpha=0.6, linewidth=5.0)
 
     """ ax8 IsoPlot """
@@ -1229,7 +1229,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     # Overlay the ellipses on the image
     for ii, e in enumerate(ellipIso):
-        if (ii <= 56) and (ii % 7 == 0):
+        if (ii <= 71) and (ii % 11 == 0):
             ax8.add_artist(e)
             e.set_clip_box(ax8.bbox)
             e.set_alpha(0.8)

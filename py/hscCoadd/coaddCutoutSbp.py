@@ -225,9 +225,9 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     reg4 = [0.08, 0.70, 0.45, 0.15]
     reg5 = [0.08, 0.85, 0.45, 0.14]
     """ Right side: Curve of growth & IsoMap """
-    reg6 = [0.59, 0.07, 0.39, 0.29]
-    reg7 = [0.59, 0.36, 0.39, 0.15]
-    reg8 = [0.59, 0.55, 0.39, 0.39]
+    reg6 = [0.60, 0.07, 0.38, 0.29]
+    reg7 = [0.60, 0.36, 0.38, 0.15]
+    reg8 = [0.60, 0.55, 0.38, 0.39]
 
     fig = plt.figure(figsize=(pngSize, pngSize))
     """ Left """
@@ -288,16 +288,18 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     magFluxSub100 = -2.5 * np.log10(maxIsoFluxSub) + zp
     if verbose:
         print "###     MagTot SUB : ", magFluxSub100
+    """
     ax1.text(0.55, 0.78,
              '$\mathrm{mag}_{\mathrm{tot,sub}}=%5.2f$' % magFluxSub100,
              fontsize=24, transform=ax1.transAxes)
+    """
 
     maxIsoFluxCor = np.nanmax(curveCor[indexUse3])
     magFlux50 = -2.5 * np.log10(maxIsoFluxCor * 0.50) + zp
     magFlux100 = -2.5 * np.log10(maxIsoFluxCor) + zp
     if verbose:
         print "###     MagTot COR : ", magFlux100
-    ax1.text(0.55, 0.71,
+    ax1.text(0.55, 0.74,
              '$\mathrm{mag}_{\mathrm{tot,cor}}=%5.2f$' % magFlux100,
              fontsize=24, transform=ax1.transAxes)
 
@@ -426,7 +428,10 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
              linewidth=4.0)
     sbpBuffer = 0.75
     minSbp = np.nanmin(ellipOut3['sbp_low'][indexUse3]) - sbpBuffer
+    maxSbp = np.nanmax(ellipOut3['sbp_upp'][indexUse3]) + sbpBuffer
+    """
     maxSbp = maxIsoSbp + sbpBuffer
+    """
     maxSbp = maxSbp if maxSbp >= 29.0 else 28.9
     maxSbp = maxSbp if maxSbp <= 32.0 else 31.9
     if psfOut is not None:
@@ -586,7 +591,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
 
     """ ax6 Growth Curve """
     ax6.minorticks_on()
-    ax6.tick_params(axis='both', which='major', labelsize=22, pad=8)
+    ax6.tick_params(axis='both', which='major', labelsize=16, pad=8)
     ax6.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax6.yaxis.set_major_locator(MaxNLocator(prune='upper'))
 
@@ -608,8 +613,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     """
     ax6.plot(rad3, growthCurveCor, '-', color='r', linewidth=4.0,
              label='$\mathrm{CoG}_{cor}$')
-    ax6.legend(loc=[0.68, 0.08], shadow=True, fancybox=True,
-               fontsize=21)
+    ax6.legend(loc=[0.65, 0.07], shadow=True, fancybox=True,
+               fontsize=20)
     minCurve = (magFlux100 - 0.9)
     maxCurve = (magFlux100 + 2.9)
     radInner = rad3[growthCurveOri <= maxCurve][0]
@@ -622,7 +627,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
 
     """ ax7 Intensity Curve """
     ax7.minorticks_on()
-    ax7.tick_params(axis='both', which='major', labelsize=18, pad=10)
+    ax7.tick_params(axis='both', which='major', labelsize=16, pad=10)
     ax7.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax7.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax7.locator_params(axis='y', tight=True, nbins=4)
@@ -643,13 +648,12 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
 
     indexOut = np.where(ellipOut3['intens'] <= (0.003 *
                         np.nanmax(ellipOut3['intens'])))
-
-    ax7.xaxis.set_major_formatter(NullFormatter())
     minOut = np.nanmin(ellipOut3['intens'][indexOut] -
                        ellipOut3['int_err'][indexOut])
     maxOut = np.nanmax(ellipOut3['intens'][indexOut] +
                        ellipOut3['int_err'][indexOut])
     sepOut = ((maxOut - minOut) / 4.0)
+    ax7.xaxis.set_major_formatter(NullFormatter())
     ax7.set_xlim((radInner - 0.02), (maxRad + 0.2))
     ax7.set_ylim(minOut - sepOut, maxOut)
 
@@ -685,10 +689,10 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ellipIso = galSBP.convIso2Ell(ellipOut3, xpad=xPad, ypad=yPad)
     # Overlay the ellipses on the image
     for ii, e in enumerate(ellipIso):
-        if (ii <= 56) and (ii % 9 == 0):
+        if (ii <= 77) and (ii % 11 == 0):
             ax8.add_artist(e)
             e.set_clip_box(ax8.bbox)
-            e.set_alpha(0.8)
+            e.set_alpha(0.4)
             e.set_edgecolor('r')
             e.set_facecolor('none')
             e.set_linewidth(1.0)
@@ -710,7 +714,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ellOuter.set_alpha(0.9)
     ellOuter.set_edgecolor('g')
     ellOuter.set_facecolor('none')
-    ellOuter.set_linewidth(5.0)
+    ellOuter.set_linewidth(6.0)
 
     """ Save Figure """
     fig.savefig(outPng, dpi=dpi)
