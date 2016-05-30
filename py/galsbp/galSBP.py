@@ -1173,7 +1173,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax7.fill_between(rad,
                      (rad * 0.0 - 1.0 * np.nanmedian(ellipOut['int_err'])),
                      (rad * 0.0 + 1.0 * np.nanmedian(ellipOut['int_err'])),
-                     facecolor='k', edgecolor='none', alpha=0.3)
+                     facecolor='k', edgecolor='none', alpha=0.15)
 
     ax7.fill_between(rad, ellipOut['intens_cor'] - ellipOut['int_err'],
                      ellipOut['intens_cor'] + ellipOut['int_err'],

@@ -633,10 +633,10 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax7.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax7.locator_params(axis='y', tight=True, nbins=4)
     ax7.axhline(0.0, linestyle='-', color='k', linewidth=2.5, alpha=0.8)
-    ax7.fill_between(rad,
-                     (rad * 0.0 - 1.0 * np.nanmedian(ellipOut3['int_err'])),
-                     (rad * 0.0 + 1.0 * np.nanmedian(ellipOut3['int_err'])),
-                     facecolor='k', edgecolor='none', alpha=0.3)
+    ax7.fill_between(rad3,
+                     (rad3 * 0.0 - 1.0 * np.nanmedian(ellipOut3['int_err'])),
+                     (rad3 * 0.0 + 1.0 * np.nanmedian(ellipOut3['int_err'])),
+                     facecolor='k', edgecolor='none', alpha=0.15)
 
     ax7.fill_between(rad3,
                      (ellipOut3['intens_cor'] - ellipOut3['int_err']),
