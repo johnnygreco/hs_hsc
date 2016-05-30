@@ -717,7 +717,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
 
 
 def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
-                   zp=27.0, step=0.12, pix=0.168, exptime=1.0, bkgCor=True,
+                   zp=27.0, step=0.12, pix=0.168, exptime=1.0, bkgCor=False,
                    plot=True, galX0=None, galY0=None, galQ0=None, galPA0=None,
                    maxTry=4, galRe=None, redshift=None, psfRecenter=True,
                    showZoom=True, checkCenter=True, updateIntens=True,

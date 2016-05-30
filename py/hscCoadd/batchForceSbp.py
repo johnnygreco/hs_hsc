@@ -527,7 +527,7 @@ if __name__ == '__main__':
     parser.add_argument('--plot', dest='plot', action="store_true",
                         help='Generate summary plot', default=True)
     parser.add_argument('--bkgCor', dest='bkgCor', action="store_true",
-                        help='Background correction', default=True)
+                        help='Background correction', default=False)
     parser.add_argument('--noCheckCenter', dest='noCheckCenter',
                         action="store_false",
                         help='Check if the center is off', default=True)

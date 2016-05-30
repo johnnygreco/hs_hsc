@@ -597,6 +597,7 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
                                  data=(ellipseOut['sma'] * pix) ** 0.25))
     # Curve of Growth
     cogOri, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut,
+                                                    bkgCor=False,
                                                     useTflux=useTflux)
     ellipseOut.add_column(Column(name='growth_ori', data=cogOri))
     cogSub, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut,
