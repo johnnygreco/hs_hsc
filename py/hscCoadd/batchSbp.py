@@ -209,9 +209,7 @@ def run(args):
                         fcntl.flock(logMatch, fcntl.LOCK_UN)
                     except IOError:
                         pass
-
             gc.collect()
-
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 
