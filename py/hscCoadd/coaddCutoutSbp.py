@@ -246,7 +246,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     imgX, imgY = img.shape
     imgMsk = copy.deepcopy(img)
     try:
-        imin, imax = hUtil.zscale(imgMsk, contrast=0.6, samples=500)
+        imin, imax = hUtil.zscale(imgMsk, contrast=0.05, samples=500)
     except Exception:
         imin = np.percentile(np.ravel(imgMsk), 0.05)
         imax = np.percentile(np.ravel(imgMsk), 0.95)
@@ -689,15 +689,15 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ellipIso = galSBP.convIso2Ell(ellipOut3, xpad=xPad, ypad=yPad)
     # Overlay the ellipses on the image
     for ii, e in enumerate(ellipIso):
-        if len(ellipIso) >= 45:
-            if (ii >= 10) and (ii <= 45) and (ii % 9 == 0):
+        if len(ellipIso) >= 20:
+            if (ii >= 5) and (ii <= 20) and (ii % 4 == 0):
                 ax8.add_artist(e)
                 e.set_clip_box(ax8.bbox)
                 e.set_alpha(0.4)
                 e.set_edgecolor('r')
                 e.set_facecolor('none')
                 e.set_linewidth(1.0)
-            elif (ii > 45):
+            elif (ii > 20):
                 ax8.add_artist(e)
                 e.set_clip_box(ax8.bbox)
                 e.set_alpha(0.9)
@@ -705,7 +705,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                 e.set_facecolor('none')
                 e.set_linewidth(2.0)
         else:
-            if (ii >= 9):
+            if (ii >= 5):
                 ax8.add_artist(e)
                 e.set_clip_box(ax8.bbox)
                 e.set_alpha(0.8)

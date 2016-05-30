@@ -44,9 +44,8 @@ try:
     cmap = plt.get_cmap('viridis')
     cmap.set_bad('k', 1.)
 except Exception:
-    from palettable.cubehelix import Cubehelix
-    cmap = Cubehelix.make(start=0.3, rotation=-0.5,
-                          reverse=True).mpl_colormap
+    from palettable.cubehelix import perceptual_rainbow_16
+    cmap = perceptual_rainbow_16.mpl_colormap
     cmap.set_bad('k', 1.)
 
 # Personal
@@ -837,7 +836,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     imgMsk = copy.deepcopy(img)
     if useZscale:
         try:
-            imin, imax = hUtil.zscale(imgMsk, contrast=0.6, samples=500)
+            imin, imax = hUtil.zscale(imgMsk, contrast=0.05, samples=500)
         except Exception:
             imin, imax = np.nanmin(imgMsk), np.nanmax(imgMsk)
     else:
@@ -1229,15 +1228,15 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     # Overlay the ellipses on the image
     for ii, e in enumerate(ellipIso):
-        if len(ellipIso) >= 45:
-            if (ii >= 10) and (ii <= 45) and (ii % 9 == 0):
+        if len(ellipIso) >= 20:
+            if (ii >= 5) and (ii <= 20) and (ii % 4 == 0):
                 ax8.add_artist(e)
                 e.set_clip_box(ax8.bbox)
                 e.set_alpha(0.5)
                 e.set_edgecolor('r')
                 e.set_facecolor('none')
                 e.set_linewidth(1.0)
-            elif (ii > 45):
+            elif (ii > 20):
                 ax8.add_artist(e)
                 e.set_clip_box(ax8.bbox)
                 e.set_alpha(0.8)
@@ -1245,7 +1244,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
                 e.set_facecolor('none')
                 e.set_linewidth(2.0)
         else:
-            if (ii >= 9):
+            if (ii >= 5):
                 ax8.add_artist(e)
                 e.set_clip_box(ax8.bbox)
                 e.set_alpha(0.8)
