@@ -617,7 +617,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     minCurve = (magFlux100 - 0.9)
     maxCurve = (magFlux100 + 2.9)
     curveUse = growthCurveOri[np.isfinite(growthCurveOri)]
-    radTemp = rad[np.isfinite(growthCurveOri)]
+    radTemp = rad3[np.isfinite(growthCurveOri)]
     radInner = radTemp[curveUse <= maxCurve][0]
     """
     maxCurve = (np.nanmax(growthCurveOri[np.isfinite(growthCurveOri)])
@@ -1052,16 +1052,16 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 else:
                     temp = '_img_ellip_'
                     sumPng = root + prefix + temp + suffix + 'sum.png'
-                #try:
-                ellipSummary(ellOut1, ellOut2, ellOut3, imgOri,
-                             psfOut=psfOut,
-                             maxRad=maxR, mask=mskOri, radMode='rsma',
-                             outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
-                             showZoom=showZoom, exptime=exptime, bkg=bkg,
-                             outRatio=outRatio, imgType=imgType,
-                             verbose=verbose)
-                #except Exception:
-                #    print "XXX Can not make summary plot: %s" % sumPng
+                try:
+                    ellipSummary(ellOut1, ellOut2, ellOut3, imgOri,
+                                 psfOut=psfOut,
+                                 maxRad=maxR, mask=mskOri, radMode='rsma',
+                                 outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
+                                 showZoom=showZoom, exptime=exptime, bkg=bkg,
+                                 outRatio=outRatio, imgType=imgType,
+                                 verbose=verbose)
+                except Exception:
+                    print "XXX Can not make summary plot: %s" % sumPng
 
             if multiEllipse:
                 """
