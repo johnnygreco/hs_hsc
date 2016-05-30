@@ -14,16 +14,6 @@ import numpy as np
 # Astropy
 from astropy.io import fits
 
-# For high-contrast image
-try:
-    cmap = plt.get_cmap('viridis')
-    cmap.set_bad('k', 1.)
-except Exception:
-    from palettable.cubehelix import Cubehelix
-    cmap = Cubehelix.make(start=0.3, rotation=-0.5,
-                          reverse=True).mpl_colormap
-    cmap.set_bad('k', 1.)
-
 # Matplotlib related
 import matplotlib as mpl
 mpl.use('Agg')
@@ -41,6 +31,16 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 from matplotlib.ticker import NullFormatter
 from matplotlib.ticker import MaxNLocator
+
+# For high-contrast image
+try:
+    cmap = plt.get_cmap('viridis')
+    cmap.set_bad('k', 1.)
+except Exception:
+    from palettable.cubehelix import Cubehelix
+    cmap = Cubehelix.make(start=0.3, rotation=-0.5,
+                          reverse=True).mpl_colormap
+    cmap.set_bad('k', 1.)
 
 # Personal
 import hscUtils as hUtil
@@ -212,7 +212,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                  outPng='ellipse_summary.png', zp=27.0, threshold=None,
                  psfOut=None, useKpc=None, pix=0.168, verbose=False,
                  showZoom=True, exptime=1.0, bkg=0.0, outRatio=1.2,
-                 pngSize=16, imgType='_imgsub', dpi=80):
+                 pngSize=16, imgType='_imgsub', dpi=120):
     """
     Make a summary plot for the ellipse run.
 
@@ -618,8 +618,10 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax6.legend(loc=[0.38, 0.10], shadow=True, fancybox=True,
                fontsize=21)
     ax6.set_xlim(minRad, maxRad)
-    ax6.set_ylim((np.nanmax(growthCurveOri) - 1.2),
-                 (magFlux100 - 0.9))
+    minCurve = (magFlux100 - 0.9)
+    maxCurve = (np.nanmax(growthCurveOri) - 1.2)
+    print(minCurve, maxCurve)
+    ax6.set_ylim(maxCurve, minCurve)
 
     """ ax7 Intensity Curve """
     ax7.minorticks_on()
@@ -685,13 +687,21 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     # Get the Shapes
     ellipIso = galSBP.convIso2Ell(ellipOut3, xpad=xPad, ypad=yPad)
     # Overlay the ellipses on the image
-    for e in ellipIso:
-        ax8.add_artist(e)
-        e.set_clip_box(ax8.bbox)
-        e.set_alpha(0.8)
-        e.set_edgecolor('r')
-        e.set_facecolor('none')
-        e.set_linewidth(1.8)
+    for ii, e in enumerate(ellipIso):
+        if (ii <= 30) and (ii % 3 == 0):
+            ax8.add_artist(e)
+            e.set_clip_box(ax8.bbox)
+            e.set_alpha(0.8)
+            e.set_edgecolor('r')
+            e.set_facecolor('none')
+            e.set_linewidth(1.0)
+        else:
+            ax8.add_artist(e)
+            e.set_clip_box(ax8.bbox)
+            e.set_alpha(0.9)
+            e.set_edgecolor('r')
+            e.set_facecolor('none')
+            e.set_linewidth(2.0)
 
     ellOuter = Ellipse(xy=(ellipOut3['avg_x0'][0],
                        ellipOut3['avg_y0'][0]),
@@ -701,9 +711,9 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax8.add_artist(ellOuter)
     ellOuter.set_clip_box(ax8.bbox)
     ellOuter.set_alpha(0.9)
-    ellOuter.set_edgecolor('b')
+    ellOuter.set_edgecolor('g')
     ellOuter.set_facecolor('none')
-    ellOuter.set_linewidth(3.5)
+    ellOuter.set_linewidth(5.0)
 
     """ Save Figure """
     fig.savefig(outPng, dpi=dpi)
