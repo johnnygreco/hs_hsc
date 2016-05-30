@@ -261,9 +261,9 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     else:
         if verbose:
             print "###  OutRadius", radOuter
-    indexUse1 = np.where(ellipOut1['sma'] <= (radOuter*1.4))
-    indexUse2 = np.where(ellipOut2['sma'] <= (radOuter*1.4))
-    indexUse3 = np.where(ellipOut3['sma'] <= (radOuter*1.4))
+    indexUse1 = np.where(ellipOut1['sma'] <= (radOuter*1.2))
+    indexUse2 = np.where(ellipOut2['sma'] <= (radOuter*1.2))
+    indexUse3 = np.where(ellipOut3['sma'] <= (radOuter*1.2))
     curveOri = ellipOut3['growth_ori']
     curveSub = ellipOut3['growth_sub']
     curveCor = ellipOut3['growth_cor']
