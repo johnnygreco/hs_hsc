@@ -219,7 +219,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     Parameters:
     """
     """ Left side: SBP """
-    reg1 = [0.08, 0.07, 0.45, 0.32]
+    reg1 = [0.08, 0.07, 0.45, 0.33]
     reg2 = [0.08, 0.40, 0.45, 0.15]
     reg3 = [0.08, 0.55, 0.45, 0.15]
     reg4 = [0.08, 0.70, 0.45, 0.15]
@@ -322,7 +322,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
             imgR50 = (imgX * pix * useKpc / 2.0) ** 0.25
             radOut = (radOuter * pix * useKpc * 1.2) ** 0.25
         if maxRad is None:
-            maxSma = np.nanmax(ellipOut3['sma'])
+            maxSma = np.nanmax(ellipOut3['rsma'])
             maxRad = np.nanmax(rad3)
         else:
             maxSma = maxRad
@@ -397,7 +397,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax1.invert_yaxis()
     ax1.tick_params(axis='both', which='major', labelsize=22, pad=8)
 
-    ax1.set_xlabel(radStr, fontsize=23)
+    ax1.set_xlabel(radStr, fontsize=30)
     ax1.set_ylabel('${\mu}\ (\mathrm{mag}/\mathrm{arcsec}^2)$',
                    fontsize=28)
 
@@ -410,22 +410,25 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     maxIsoSbp = np.nanmax(sbp_sub)
     if verbose:
         print "###     MaxIsoSbp : ", maxIsoSbp
-    ax1.fill_between(rad3[indexUse3], sbp_upp[indexUse3], sbp_low[indexUse3],
+    ax1.fill_between(rad3[indexUse3],
+                     (sbp_cor[indexUse3] + sbp_upp[indexUse3] -
+                      sbp_sub[indexUse3]),
+                     (sbp_cor[indexUse3] - sbp_ori[indexUse3] +
+                      sbp_low[indexUse3]),
                      facecolor='r', alpha=0.2)
     ax1.plot(rad3[indexUse3], sbp_ori[indexUse3], '--', color='k',
              linewidth=3.5)
+    """
     ax1.plot(rad3[indexUse3], sbp_sub[indexUse3], '-.', color='b',
              linewidth=3.0)
+    """
     ax1.plot(rad3[indexUse3], sbp_cor[indexUse3], '--', color='r',
              linewidth=4.0)
-
-    ax1.set_xlim(minRad, radOut)
     sbpBuffer = 0.75
     minSbp = np.nanmin(ellipOut3['sbp_low'][indexUse3]) - sbpBuffer
     maxSbp = maxIsoSbp + 1.1
     maxSbp = maxSbp if maxSbp <= 29.0 else 28.9
     maxSbp = maxSbp if maxSbp >= 32.0 else 31.9
-
     if psfOut is not None:
         if radMode is 'rsma':
             psfRad = psfOut['rsma_asec']
@@ -439,7 +442,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
         psfSbp = psfOut['sbp'] - (np.nanmin(psfOut['sbp']) -
                                   np.nanmin(ellipOut3['sbp']))
         ax1.plot(psfRad, psfSbp, '-', color='k', linewidth=3.0, alpha=0.7)
-
+    ax1.set_xlim(minRad, radOut)
     ax1.set_ylim(maxSbp, minSbp)
 
     """ ax2 Ellipticity """
@@ -448,10 +451,9 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax2.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax2.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax2.locator_params(axis='y', tight=True, nbins=4)
-
     ax2.set_ylabel('$e$', fontsize=34)
     if verbose:
-        print "###     AvgEll", (1.0 - ellipOut2['avg_q'][0])
+        print "###     AvgEll : ", (1.0 - ellipOut2['avg_q'][0])
     ax2.axhline((1.0 - ellipOut2['avg_q'][0]), color='k', linestyle='--',
                 linewidth=3.0)
     ax2.fill_between(rad2[indexUse2],
@@ -462,13 +464,13 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                      facecolor='r', alpha=0.2)
     ax2.plot(rad2[indexUse2], ellipOut2['ell'][indexUse2], '-', color='r',
              linewidth=3.0)
-
     ax2.xaxis.set_major_formatter(NullFormatter())
     ax2.set_xlim(minRad, radOut)
     ellBuffer = 0.06
     minEll = np.nanmin(ellipOut2['ell'][indexUse2]) - ellBuffer
     maxEll = np.nanmax(ellipOut2['ell'][indexUse2]) + ellBuffer
     ax2.set_ylim(minEll, maxEll)
+
     """ ax3 PA """
     ax3.minorticks_on()
     ax3.tick_params(axis='both', which='major', labelsize=20, pad=8)
@@ -476,7 +478,6 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax3.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax3.locator_params(axis='y', tight=True, nbins=4)
     ax3.set_ylabel('$\mathrm{PA}\ (\mathrm{deg})$',  fontsize=23)
-
     medPA = np.nanmedian(ellipOut2['pa_norm'][indexUse2])
     avgPA = ellipOut2['avg_pa'][0]
     if (avgPA-medPA >= 85.0) and (avgPA <= 92.0):
@@ -484,9 +485,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     elif (avgPA-medPA <= -85.0) and (avgPA >= -92.0):
         avgPA += 180.0
     if verbose:
-        print "###     AvgPA", avgPA
+        print "###     AvgPA : ", avgPA
     ax3.axhline(avgPA, color='k', linestyle='--', linewidth=3.0)
-
     ax3.fill_between(rad2[indexUse2],
                      (ellipOut2['pa_norm'][indexUse2] +
                       ellipOut2['pa_err'][indexUse2]),
@@ -495,10 +495,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                      facecolor='r', alpha=0.2)
     ax3.plot(rad2[indexUse2], ellipOut2['pa_norm'][indexUse2], '-', color='r',
              linewidth=3.0)
-
     ax3.xaxis.set_major_formatter(NullFormatter())
     ax3.set_xlim(minRad, radOut)
-
     paBuffer = 10.0
     minPA = np.nanmin(ellipOut2['pa_norm'][indexUse2])-paBuffer
     maxPA = np.nanmax(ellipOut2['pa_norm'][indexUse2])+paBuffer
@@ -512,12 +510,11 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax4.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax4.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax4.locator_params(axis='y', tight=True, nbins=4)
-
     ax4.set_ylabel('$\mathrm{X}_{0}\ \mathrm{or}\ $' +
                    '$\mathrm{Y}_{0}\ (\mathrm{pix})$', fontsize=23)
     if verbose:
-        print "###     AvgX0", ellipOut1['avg_x0'][0]
-        print "###     AvgY0", ellipOut1['avg_y0'][0]
+        print "###     AvgX0 : ", ellipOut1['avg_x0'][0]
+        print "###     AvgY0 : ", ellipOut1['avg_y0'][0]
     ax4.axhline(ellipOut1['avg_x0'][0], linestyle='--', color='r', alpha=0.6,
                 linewidth=3.0)
     ax4.fill_between(rad1[indexUse1],
@@ -528,7 +525,6 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                      facecolor='r', alpha=0.20)
     ax4.plot(rad1[indexUse1], ellipOut1['x0'][indexUse1], '-', color='r',
              linewidth=3.0, label='X0')
-
     ax4.axhline(ellipOut1['avg_y0'][0], linestyle='-.', color='b', alpha=0.6,
                 linewidth=3.0)
     ax4.fill_between(rad1[indexUse1],
@@ -539,7 +535,6 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                      facecolor='b', alpha=0.25)
     ax4.plot(rad1[indexUse1], ellipOut1['y0'][indexUse1], '-', color='b',
              linewidth=3.0, label='Y0')
-
     ax4.xaxis.set_major_formatter(NullFormatter())
     ax4.set_xlim(minRad, radOut)
     xBuffer = 3.0
@@ -557,9 +552,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax5.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax5.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax5.locator_params(axis='y', tight=True, nbins=4)
-
     ax5.set_ylabel('$a_4\ \mathrm{or}\ b_4$',  fontsize=22)
-
     ax5.axhline(0.0, linestyle='-', color='k', alpha=0.4)
     ax5.fill_between(rad2[indexUse2],
                      (ellipOut2['a4'][indexUse2] +
@@ -597,29 +590,29 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax6.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax6.yaxis.set_major_locator(MaxNLocator(prune='upper'))
 
-    ax6.set_xlabel(radStr, fontsize=23)
+    ax6.set_xlabel(radStr, fontsize=30)
     ax6.set_ylabel('$\mathrm{Curve\ of\ Growth}\ (\mathrm{mag})$',
                    fontsize=20)
-
     ax6.axhline(magFlux100, linestyle='-', color='k',
                 alpha=0.6, linewidth=3.0, label='$\mathrm{mag}_{100}$')
     ax6.axhline(magFlux50,  linestyle='--', color='k',
                 alpha=0.6, linewidth=3.0, label='$\mathrm{mag}_{50}$')
-
     #ax6.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
     ax6.axvline(radOut, linestyle='-', color='g', alpha=0.6, linewidth=4.0)
-
-    ax6.plot(rad3, growthCurveOri, '--', color='g', linewidth=3.5,
+    ax6.plot(rad3, growthCurveOri, '--', color='k', linewidth=3.5,
              label='$\mathrm{CoG}_{ori}$')
+    """
     ax6.plot(rad3, growthCurveSub, '-.', color='b', linewidth=3.5,
              label='$\mathrm{CoG}_{sub}$')
+    """
     ax6.plot(rad3, growthCurveCor, '-', color='r', linewidth=4.0,
              label='$\mathrm{CoG}_{cor}$')
     ax6.legend(loc=[0.38, 0.10], shadow=True, fancybox=True,
                fontsize=21)
     ax6.set_xlim(minRad, maxRad)
     minCurve = (magFlux100 - 0.9)
-    maxCurve = (np.nanmax(growthCurveOri) - 1.2)
+    maxCurve = (np.nanmax(growthCurveOri[np.isfinite(growthCurveOri)])
+                - 1.2)
     print(minCurve, maxCurve)
     ax6.set_ylim(maxCurve, minCurve)
 
@@ -631,17 +624,18 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax7.locator_params(axis='y', tight=True, nbins=4)
 
     ax7.axhline(0.0, linestyle='-', color='k', alpha=0.6, linewidth=3.0)
-    ax7.axhline(bkg, linestyle='-.', color='c', alpha=0.6, linewidth=2.5)
+    ax7.axhline(bkg, linestyle='--', color='c', alpha=0.6, linewidth=2.5)
 
     ax7.fill_between(rad3,
-                     (ellipOut3['intens_sub'] + ellipOut3['int_err']),
-                     (ellipOut3['intens_sub'] - ellipOut3['int_err']),
+                     (ellipOut3['intens_cor'] + ellipOut3['int_err']),
+                     (ellipOut3['intens_cor'] - ellipOut3['int_err']),
                      facecolor='r', alpha=0.3)
-    ax7.plot(rad3, ellipOut3['intens'], '--', color='g', linewidth=2.5)
+    ax7.plot(rad3, ellipOut3['intens'], '--', color='k', linewidth=2.5)
+    """
     ax7.plot(rad3, ellipOut3['intens_sub'], '-', color='r', linewidth=3.5)
-    ax7.plot(rad3, ellipOut3['intens_cor'], '-.', color='b', linewidth=3.0)
-
-    #ax7.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
+    ax7.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
+    """
+    ax7.plot(rad3, ellipOut3['intens_cor'], '-', color='r', linewidth=3.0)
     ax7.axvline(radOut, linestyle='-', color='g', alpha=0.6, linewidth=4.0)
 
     indexOut = np.where(ellipOut3['intens'] <= (0.002 *
@@ -688,7 +682,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ellipIso = galSBP.convIso2Ell(ellipOut3, xpad=xPad, ypad=yPad)
     # Overlay the ellipses on the image
     for ii, e in enumerate(ellipIso):
-        if (ii <= 30) and (ii % 3 == 0):
+        if (ii <= 36) and (ii % 5 == 0):
             ax8.add_artist(e)
             e.set_clip_box(ax8.bbox)
             e.set_alpha(0.8)
@@ -1335,7 +1329,7 @@ if __name__ == '__main__':
     parser.add_argument('--plot', dest='plot', action="store_true",
                         help='Generate summary plot', default=True)
     parser.add_argument('--bkgCor', dest='bkgCor', action="store_true",
-                        help='Background correction', default=True)
+                        help='Background correction', default=False)
     parser.add_argument('--noCheckCenter', dest='noCheckCenter',
                         action="store_false",
                         help='Check if the center is off', default=True)
