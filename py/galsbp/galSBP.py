@@ -41,13 +41,13 @@ from pyraf import iraf
 
 # Color table
 try:
-    import cubehelix  # Cubehelix color scheme
-    cmap = cubehelix.cmap(start=0.5, rot=-1.0,
-                          minSat=1.2, maxSat=1.2,
-                          minLight=0., maxLight=1., gamma=0.5)
-except ImportError:
-    cmap = 'spectral'
-cmap.set_bad('k', 1.)
+    cmap = plt.get_cmap('viridis')
+    cmap.set_bad('k', 1.)
+except Exception:
+    from palettable.cubehelix import Cubehelix
+    cmap = Cubehelix.make(start=0.3, rotation=-0.5,
+                          reverse=True).mpl_colormap
+    cmap.set_bad('k', 1.)
 
 # Personal
 import hscUtils as hUtil
@@ -801,21 +801,21 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
                        outPng='ellipse_summary.png', zp=27.0, threshold=None,
                        showZoom=False, useZscale=True, pngSize=16,
                        verbose=False, outRatio=1.2, oriName=None,
-                       imgType='_imgsub'):
+                       imgType='_imgsub', dpi=80):
     """
     Make a summary plot of the ellipse run.
 
     Parameters:
     """
     """ Left side: SBP """
-    reg1 = [0.075, 0.05, 0.452, 0.35]
-    reg2 = [0.075, 0.40, 0.452, 0.15]
-    reg3 = [0.075, 0.55, 0.452, 0.15]
-    reg4 = [0.075, 0.70, 0.452, 0.15]
-    reg5 = [0.075, 0.85, 0.452, 0.14]
+    reg1 = [0.08, 0.07, 0.45, 0.32]
+    reg2 = [0.08, 0.40, 0.45, 0.15]
+    reg3 = [0.08, 0.55, 0.45, 0.15]
+    reg4 = [0.08, 0.70, 0.45, 0.15]
+    reg5 = [0.08, 0.85, 0.45, 0.14]
     """ Right side: Curve of growth & IsoMap """
-    reg6 = [0.59, 0.05, 0.39, 0.30]
-    reg7 = [0.59, 0.35, 0.39, 0.16]
+    reg6 = [0.59, 0.07, 0.39, 0.29]
+    reg7 = [0.59, 0.36, 0.39, 0.15]
     reg8 = [0.59, 0.55, 0.39, 0.39]
 
     fig = plt.figure(figsize=(pngSize, pngSize))
@@ -893,7 +893,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     """ Type of Radius """
     if radMode is 'rsma':
         rad = ellipOut['rsma']
-        radStr = 'RSMA (pixel$^{1/4}$)'
+        radStr = '$R^{1/4}\ (\mathrm{pix}^{1/4})$'
         minRad = 0.41 if 0.41 >= np.nanmin(
             ellipOut['rsma']) else np.nanmin(ellipOut['rsma'])
         imgR50 = (imgX / 2.0) ** 0.25
@@ -907,7 +907,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
             maxRad = maxRad ** 0.25
     elif radMode is 'sma':
         rad = ellipOut['sma']
-        radStr = 'SMA (pixel)'
+        radStr = '$R\ (\mathrm{pix})$'
         minRad = 0.05 if 0.05 >= np.nanmin(
             ellipOut['sma']) else np.nanmin(ellipOut['sma'])
         imgR50 = (imgX / 2.0)
@@ -920,7 +920,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     elif radMode is 'log':
         rad = ellipOut['sma']
         rad = np.log10(rad)
-        radStr = 'log (SMA/pixel)'
+        radStr = '$\log\ (R/\mathrm{pixel})$'
         minRad = 0.01 if 0.01 >= np.log10(
             np.nanmin(ellipOut['sma'])) else np.log10(
             np.nanmin(ellipOut['sma']))
@@ -943,8 +943,8 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax1.tick_params(axis='both', which='major', labelsize=22, pad=8)
 
     ax1.set_xlabel(radStr, fontsize=23)
-    ax1.set_ylabel('${\mu}$ (mag/arcsec$^2$)', fontsize=28)
-
+    ax1.set_ylabel('${\mu}\ (\mathrm{mag}/\mathrm{arcsec}^2)$',
+                   fontsize=28)
     ax1.fill_between(rad[indexUse], ellipOut['sbp_upp'][indexUse],
                      ellipOut['sbp_low'][indexUse], facecolor='k', alpha=0.3)
 
@@ -956,11 +956,11 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
              indexUse], '-.', color='b', linewidth=3.0)
 
     ax1.set_xlim(minRad, radOut)
-    sbpBuffer = 0.5
+    sbpBuffer = 0.75
     minSbp = np.nanmin(ellipOut['sbp_low'][indexUse]) - sbpBuffer
     maxSbp = maxIsoSbp + 1.1
-    maxSbp = maxSbp if maxSbp >= 29.0 else 28.9
-    maxSbp = maxSbp if maxSbp <= 32.0 else 31.9
+    maxSbp = maxSbp if maxSbp <= 29.0 else 28.9
+    maxSbp = maxSbp if maxSbp >= 32.0 else 31.9
 
     ax1.set_ylim(maxSbp, minSbp)
 
@@ -1000,7 +1000,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax3.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax3.locator_params(axis='y', tight=True, nbins=4)
 
-    ax3.set_ylabel('PA (degree)',  fontsize=23)
+    ax3.set_ylabel('$\mathrm{PA}\ (\mathrm{deg})$',  fontsize=23)
 
     medPA = np.nanmedian(ellipOut['pa_norm'][indexUse])
     avgPA = ellipOut['avg_pa'][0]
@@ -1039,7 +1039,8 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax4.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax4.locator_params(axis='y', tight=True, nbins=4)
 
-    ax4.set_ylabel('X0 or Y0 (pixel)', fontsize=23)
+    ax4.set_ylabel('$\mathrm{X}_{0}\ \mathrm{or}\ $' +
+                   '$\mathrm{Y}_{0}\ (\mathrm{pix})$', fontsize=23)
     if verbose:
         print "###     AvgX0", ellipOut['avg_x0'][0]
         print "###     AvgY0", ellipOut['avg_y0'][0]
@@ -1079,7 +1080,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax5.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax5.locator_params(axis='y', tight=True, nbins=4)
 
-    ax5.set_ylabel('A4 or B4',  fontsize=23)
+    ax5.set_ylabel('$a_4\ \mathrm{or}\ b_4$',  fontsize=23)
 
     ax5.axhline(0.0, linestyle='-', color='k', alpha=0.3)
     ax5.fill_between(rad[indexUse],
@@ -1115,23 +1116,24 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax6.yaxis.set_major_locator(MaxNLocator(prune='upper'))
 
     ax6.set_xlabel(radStr, fontsize=23)
-    ax6.set_ylabel('Curve of Growth (mag)', fontsize=16)
+    ax6.set_ylabel('$\mathrm{Curve\ of\ Growth}\ (\mathrm{mag})$',
+                   fontsize=20)
 
-    ax1.text(0.6, 0.85, 'mag$_{tot}=%5.2f$' % magFlux100, fontsize=24,
-             transform=ax1.transAxes)
+    ax1.text(0.6, 0.85, '$\mathrm{mag}_{\mathrm{tot}}=%5.2f$' % magFlux100,
+             fontsize=24, transform=ax1.transAxes)
 
     ax6.axhline(magFlux100, linestyle='-', color='k', alpha=0.5, linewidth=2,
-                label='mag$_{100}$')
+                label='$\mathrm{mag}_{100}$')
     ax6.axhline(magFlux50,  linestyle='--', color='k', alpha=0.5, linewidth=2,
-                label='mag$_{50}$')
+                label='$\mathrm{mag}_{50}$')
     ax6.axvline(imgR50,  linestyle='-', color='g', alpha=0.4, linewidth=2.5)
 
     ax6.plot(rad, growthCurveOri, '--', color='g', linewidth=3.5,
-             label='curve$_{old}$')
+             label='$\mathrm{CoG}_{\mathrm{old}}$')
     ax6.plot(rad, growthCurveSub, '-.', color='b', linewidth=3.5,
-             label='curve$_{sub}$')
+             label='$\mathrm{CoG}_{\mathrm{sub}}$')
     ax6.plot(rad, growthCurveCor, '-', color='r', linewidth=4.0,
-             label='curve$_{cor}$')
+             label='$\mathrm{CoG}_{\mathrm{cor}}$')
     ax6.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
 
     ax6.legend(loc=[0.35, 0.40], fontsize=21)
@@ -1139,7 +1141,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     """ ax7 Intensity Curve """
     ax7.minorticks_on()
-    ax7.tick_params(axis='both', which='major', labelsize=22, pad=10)
+    ax7.tick_params(axis='both', which='major', labelsize=16, pad=10)
     ax7.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax7.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax7.locator_params(axis='y', tight=True, nbins=4)
@@ -1170,14 +1172,14 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     sepOut = (maxOut - minOut) / 10.0
     minY = (minOut - sepOut) if (minOut - sepOut) >= 0.0 else (-1.0 * sepOut)
     ax7.set_ylim(minY, maxOut)
-
     ax7.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
 
     """ ax8 IsoPlot """
-    imgFile = os.path.basename(image)
     if oriName is not None:
-        imgTitle = oriName.replace('.fits', '')
+        oriFile = os.path.basename(oriName)
+        imgTitle = oriFile.replace('.fits', '')
     else:
+        imgFile = os.path.basename(image)
         imgTitle = imgFile.replace('.fits', '')
     if imgType is not None:
         imgTitle = imgTitle.replace(imgType, '')
@@ -1211,12 +1213,12 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     for e in ellipIso:
         ax8.add_artist(e)
         e.set_clip_box(ax8.bbox)
-        e.set_alpha(0.9)
+        e.set_alpha(0.8)
         e.set_edgecolor('r')
         e.set_facecolor('none')
         e.set_linewidth(1.5)
     """ Save Figure """
-    fig.savefig(outPng, dpi=80)
+    fig.savefig(outPng, dpi=dpi)
     plt.close(fig)
 
     return
