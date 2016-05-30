@@ -761,26 +761,26 @@ def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
                             median=False, threshold=None):
     """Get the outer boundary of the output 1-D profile."""
     try:
-        meanErr = np.nanmean(ellipseOut['int_err'])
+        medianErr = np.nanmedian(ellipseOut['int_err'])
         if threshold is not None:
             thre = threshold
         else:
-            thre = meanErr
-        negRad = ellipseOut['rsma'][np.where(ellipseOut['intens_cor'] <= thre)]
+            thre = medianErr
+        negRad = ellipseOut['rsma'][np.where(ellipseOut['intens'] <= thre)]
         if (negRad is np.nan) or (len(negRad) < 3):
             try:
-                uppIntens = np.nanmax(ellipseOut['intens_cor']) * 0.01
-                indexUse = np.where(ellipseOut['intens_cor'] <= uppIntens)
+                uppIntens = np.nanmax(ellipseOut['intens']) * 0.01
+                indexUse = np.where(ellipseOut['intens'] <= uppIntens)
             except Exception:
-                uppIntens = np.nanmax(ellipseOut['intens_cor']) * 0.03
-                indexUse = np.where(ellipseOut['intens_cor'] <= uppIntens)
+                uppIntens = np.nanmax(ellipseOut['intens']) * 0.03
+                indexUse = np.where(ellipseOut['intens'] <= uppIntens)
             radUse = ellipseOut['rsma'][indexUse]
             # Try fit a polynomial first
             try:
                 intensFit = hUtil.polyFit(ellipseOut['rsma'][indexUse],
-                                          ellipseOut['intens_cor'][indexUse],
+                                          ellipseOut['intens'][indexUse],
                                           order=polyOrder)
-                negRad = radUse[np.where(intensFit <= meanErr)]
+                negRad = radUse[np.where(intensFit <= medianErr)]
             except Exception:
                 negRad = radUse[-5:-1] if len(radUse) >= 5 else radUse
                 print "!!! DANGEROUS : Outer boundary is not safe !!!"
@@ -1170,8 +1170,8 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     bkgVal = ellipOut['intens_bkg'][0]
     ax7.axhline(bkgVal, linestyle='--', color='c', linewidth=2.5, alpha=0.6)
     ax7.fill_between(rad,
-                     (rad * 0.0 - 1.0 * np.nanmean(ellipOut['int_err'])),
-                     (rad * 0.0 + 1.0 * np.nanmean(ellipOut['int_err'])),
+                     (rad * 0.0 - 1.0 * np.nanmedian(ellipOut['int_err'])),
+                     (rad * 0.0 + 1.0 * np.nanmedian(ellipOut['int_err'])),
                      facecolor='k', edgecolor='none', alpha=0.3)
 
     ax7.fill_between(rad, ellipOut['intens_cor'] + ellipOut['int_err'],
