@@ -689,20 +689,29 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ellipIso = galSBP.convIso2Ell(ellipOut3, xpad=xPad, ypad=yPad)
     # Overlay the ellipses on the image
     for ii, e in enumerate(ellipIso):
-        if (ii <= 35) and (ii % 5 == 0):
-            ax8.add_artist(e)
-            e.set_clip_box(ax8.bbox)
-            e.set_alpha(0.4)
-            e.set_edgecolor('r')
-            e.set_facecolor('none')
-            e.set_linewidth(1.0)
-        elif (ii > 35):
-            ax8.add_artist(e)
-            e.set_clip_box(ax8.bbox)
-            e.set_alpha(0.9)
-            e.set_edgecolor('r')
-            e.set_facecolor('none')
-            e.set_linewidth(2.0)
+        if len(ellipIso) >= 45:
+            if (ii >= 10) and (ii <= 45) and (ii % 9 == 0):
+                ax8.add_artist(e)
+                e.set_clip_box(ax8.bbox)
+                e.set_alpha(0.4)
+                e.set_edgecolor('r')
+                e.set_facecolor('none')
+                e.set_linewidth(1.0)
+            elif (ii > 45):
+                ax8.add_artist(e)
+                e.set_clip_box(ax8.bbox)
+                e.set_alpha(0.9)
+                e.set_edgecolor('r')
+                e.set_facecolor('none')
+                e.set_linewidth(2.0)
+        else:
+            if (ii >= 9):
+                ax8.add_artist(e)
+                e.set_clip_box(ax8.bbox)
+                e.set_alpha(0.8)
+                e.set_edgecolor('r')
+                e.set_facecolor('none')
+                e.set_linewidth(2.0)
 
     ellOuter = Ellipse(xy=(ellipOut3['avg_x0'][0],
                        ellipOut3['avg_y0'][0]),
