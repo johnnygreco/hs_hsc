@@ -603,7 +603,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
              label='$\mathrm{CoG}_{\mathrm{ori}}$')
     """
     ax6.plot(rad3, growthCurveSub, '-.', color='b', linewidth=3.5,
-             label='$\mathrm{CoG}_{\mathrm{sub}}$')
+             label='$\mathrm{CoG}_{\mathrm{sub}$')
     ax6.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
     """
     ax6.plot(rad3, growthCurveCor, '-', color='r', linewidth=4.0,
@@ -787,7 +787,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     if not imgSameSize(imgArr, mskArr):
         raise Exception("### The Image and Mask need to have EXACTLY \
                 same dimensions!")
-    ifzoomReg
+    if imgSub
         imgType = '_imgsub'
     else:
         imgType = '_img'
