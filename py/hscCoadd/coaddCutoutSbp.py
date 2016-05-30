@@ -685,7 +685,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
         yPad = 0
 
     try:
-        imin, imax = hUtil.zscale(showZoom, contrast=0.20, samples=500)
+        imin, imax = hUtil.zscale(zoomReg, contrast=0.20, samples=500)
     except Exception:
         imin = np.percentile(np.ravel(showZoom), 0.01)
         imax = np.percentile(np.ravel(showZoom), 0.95)
