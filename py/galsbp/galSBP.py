@@ -808,7 +808,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     Parameters:
     """
     """ Left side: SBP """
-    reg1 = [0.08, 0.07, 0.45, 0.32]
+    reg1 = [0.08, 0.07, 0.45, 0.33]
     reg2 = [0.08, 0.40, 0.45, 0.15]
     reg3 = [0.08, 0.55, 0.45, 0.15]
     reg4 = [0.08, 0.70, 0.45, 0.15]
@@ -942,18 +942,30 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax1.invert_yaxis()
     ax1.tick_params(axis='both', which='major', labelsize=22, pad=8)
 
-    ax1.set_xlabel(radStr, fontsize=23)
+    ax1.set_xlabel(radStr, fontsize=28)
     ax1.set_ylabel('${\mu}\ (\mathrm{mag}/\mathrm{arcsec}^2)$',
                    fontsize=28)
-    ax1.fill_between(rad[indexUse], ellipOut['sbp_upp'][indexUse],
-                     ellipOut['sbp_low'][indexUse], facecolor='k', alpha=0.3)
 
-    ax1.plot(rad[indexUse], ellipOut['sbp_ori'][
-             indexUse], '--', color='k', linewidth=3.0)
-    ax1.plot(rad[indexUse], ellipOut['sbp_sub'][
-             indexUse], '-', color='b', linewidth=3.5)
-    ax1.plot(rad[indexUse], ellipOut['sbp_cor'][
-             indexUse], '-.', color='r', linewidth=3.0)
+    sbp_sub = ellipOut['sbp_sub']
+    sbp_ori = ellipOut['sbp_ori']
+    sbp_cor = ellipOut['sbp_cor']
+    sbp_low = ellipOut['sbp_low']
+    sbp_upp = ellipOut['sbp_upp']
+
+    ax1.fill_between(rad[indexUse],
+                     (sbp_cor[indexUse] + sbp_upp[indexUse] -
+                      sbp_sub[indexUse]),
+                     (sbp_cor[indexUse] - sbp_ori[indexUse] +
+                      sbp_low[indexUse]),
+                     facecolor='r', alpha=0.3)
+    ax1.plot(rad[indexUse], sbp_ori[indexUse],
+             '--', color='k', linewidth=3.0)
+    """
+    ax1.plot(rad[indexUse], sbp_sub[indexUse], '-',
+             color='b', linewidth=3.5)
+    """
+    ax1.plot(rad[indexUse], sbp_cor[indexUse],
+             '-.', color='r', linewidth=3.0)
 
     ax1.set_xlim(minRad, radOut)
     sbpBuffer = 0.75
@@ -1115,7 +1127,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax6.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax6.yaxis.set_major_locator(MaxNLocator(prune='upper'))
 
-    ax6.set_xlabel(radStr, fontsize=23)
+    ax6.set_xlabel(radStr, fontsize=30)
     ax6.set_ylabel('$\mathrm{Curve\ of\ Growth}\ (\mathrm{mag})$',
                    fontsize=20)
 
@@ -1213,13 +1225,22 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ellipIso = convIso2Ell(ellipOut, xpad=xPad, ypad=yPad)
 
     # Overlay the ellipses on the image
-    for e in ellipIso:
-        ax8.add_artist(e)
-        e.set_clip_box(ax8.bbox)
-        e.set_alpha(0.8)
-        e.set_edgecolor('r')
-        e.set_facecolor('none')
-        e.set_linewidth(1.5)
+    for ii, e in enumerate(ellipIso):
+        if (ii <= 36) and (ii % 5 == 0):
+            ax8.add_artist(e)
+            e.set_clip_box(ax8.bbox)
+            e.set_alpha(0.8)
+            e.set_edgecolor('r')
+            e.set_facecolor('none')
+            e.set_linewidth(1.0)
+        else:
+            ax8.add_artist(e)
+            e.set_clip_box(ax8.bbox)
+            e.set_alpha(0.9)
+            e.set_edgecolor('r')
+            e.set_facecolor('none')
+            e.set_linewidth(2.0)
+
     """ Save Figure """
     fig.savefig(outPng, dpi=dpi)
     plt.close(fig)
