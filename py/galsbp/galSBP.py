@@ -772,7 +772,6 @@ def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
                 uppIntens = np.nanmax(ellipseOut['intens_cor']) * 0.01
                 indexUse = np.where(ellipseOut['intens_cor'] <= uppIntens)
             except Exception:
-                print "!!! DANGEROUS : Outer boundary is not safe !!!"
                 uppIntens = np.nanmax(ellipseOut['intens_cor']) * 0.03
                 indexUse = np.where(ellipseOut['intens_cor'] <= uppIntens)
             radUse = ellipseOut['rsma'][indexUse]
@@ -784,6 +783,7 @@ def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
                 negRad = radUse[np.where(intensFit <= meanErr)]
             except Exception:
                 negRad = radUse[-5:-1] if len(radUse) >= 5 else radUse
+                print "!!! DANGEROUS : Outer boundary is not safe !!!"
         if median:
             outRsma = np.nanmedian(negRad)
         else:
@@ -971,7 +971,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     maxSbp = maxSbp if maxSbp <= 32.0 else 31.9
     ax1.set_xlim(minRad, radOut)
     ax1.set_ylim(maxSbp, minSbp)
-    ax1.text(0.55, 0.80,
+    ax1.text(0.52, 0.82,
              '$\mathrm{mag}_{\mathrm{tot,cor}}=%5.2f$' % magFlux100,
              fontsize=30, transform=ax1.transAxes)
 
@@ -1148,7 +1148,9 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
                fontsize=18)
     minCurve = (magFlux100 - 0.9)
     maxCurve = (magFlux100 + 2.9)
-    radInner = rad[growthCurveOri <= maxCurve][0]
+    curveUse = growthCurveOri[np.isfinite(growthCurveOri)]
+    radTemp = rad[np.isfinite(growthCurveOri)]
+    radInner = radTemp[curveUse <= maxCurve][0]
     """
     ax6.set_xlim(minRad, maxRad)
     """

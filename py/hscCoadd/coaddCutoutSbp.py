@@ -617,7 +617,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     minCurve = (magFlux100 - 0.9)
     maxCurve = (magFlux100 + 2.9)
     curveUse = growthCurveOri[np.isfinite(growthCurveOri)]
-    radInner = rad3[curveUse <= maxCurve][0]
+    radTemp = rad[np.isfinite(growthCurveOri)]
+    radInner = radTemp[curveUse <= maxCurve][0]
     """
     maxCurve = (np.nanmax(growthCurveOri[np.isfinite(growthCurveOri)])
                 - 1.2)
@@ -632,8 +633,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax7.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax7.locator_params(axis='y', tight=True, nbins=4)
     ax7.fill_between(rad,
-                     (rad * 0.0 - 1.0 * np.nanmean(ellipOut3['int_err'])),
-                     (rad * 0.0 + 1.0 * np.nanmean(ellipOut3['int_err'])),
+                     (rad * 0.0 - 1.0 * np.nanmedian(ellipOut3['int_err'])),
+                     (rad * 0.0 + 1.0 * np.nanmedian(ellipOut3['int_err'])),
                      facecolor='k', edgecolor='none', alpha=0.3)
 
     ax7.fill_between(rad3,
