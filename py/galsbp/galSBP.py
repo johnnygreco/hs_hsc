@@ -943,7 +943,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax1.invert_yaxis()
     ax1.tick_params(axis='both', which='major', labelsize=22, pad=8)
 
-    ax1.set_xlabel(radStr, fontsize=28)
+    ax1.set_xlabel(radStr, fontsize=30)
     ax1.set_ylabel('${\mu}\ (\mathrm{mag}/\mathrm{arcsec}^2)$',
                    fontsize=28)
 
@@ -966,15 +966,13 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
              color='b', linewidth=3.5)
     """
     ax1.plot(rad[indexUse], sbp_cor[indexUse],
-             '-.', color='r', linewidth=3.0)
-
-    ax1.set_xlim(minRad, radOut)
+             '-', color='r', linewidth=3.0)
     sbpBuffer = 0.75
     minSbp = np.nanmin(ellipOut['sbp_low'][indexUse]) - sbpBuffer
-    maxSbp = maxIsoSbp + 1.1
-    maxSbp = maxSbp if maxSbp <= 29.0 else 28.9
-    maxSbp = maxSbp if maxSbp >= 32.0 else 31.9
-
+    maxSbp = maxIsoSbp + sbpBuffer
+    maxSbp = maxSbp if maxSbp >= 29.0 else 28.9
+    maxSbp = maxSbp if maxSbp <= 32.0 else 31.9
+    ax1.set_xlim(minRad, radOut)
     ax1.set_ylim(maxSbp, minSbp)
 
     """ ax2 Ellipticity """
@@ -1094,7 +1092,6 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax5.locator_params(axis='y', tight=True, nbins=4)
 
     ax5.set_ylabel('$a_4\ \mathrm{or}\ b_4$',  fontsize=23)
-
     ax5.axhline(0.0, linestyle='-', color='k', alpha=0.3)
     ax5.fill_between(rad[indexUse],
                      ellipOut['a4'][indexUse] + ellipOut['a4_err'][indexUse],
@@ -1124,16 +1121,13 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     """ ax6 Growth Curve """
     ax6.minorticks_on()
-    ax6.tick_params(axis='both', which='major', labelsize=22, pad=8)
+    ax6.tick_params(axis='both', which='major', labelsize=20, pad=8)
     ax6.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax6.yaxis.set_major_locator(MaxNLocator(prune='upper'))
 
     ax6.set_xlabel(radStr, fontsize=30)
     ax6.set_ylabel('$\mathrm{Curve\ of\ Growth}\ (\mathrm{mag})$',
                    fontsize=20)
-
-    ax1.text(0.6, 0.85, '$\mathrm{mag}_{\mathrm{tot}}=%5.2f$' % magFlux100,
-             fontsize=24, transform=ax1.transAxes)
 
     ax6.axhline(magFlux100, linestyle='-', color='k', alpha=0.5, linewidth=2,
                 label='$\mathrm{mag}_{100}$')
@@ -1150,9 +1144,16 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax6.plot(rad, growthCurveCor, '-', color='r', linewidth=4.0,
              label='$\mathrm{CoG}_{\mathrm{cor}}$')
     ax6.axvline(radOut, linestyle='-', color='g', alpha=0.6, linewidth=5.0)
-
-    ax6.legend(loc=[0.35, 0.40], fontsize=21)
+    ax6.legend(loc=[0.68, 0.08], shadow=True, fancybox=True,
+               fontsize=21)
+    minCurve = (magFlux100 - 0.9)
+    maxCurve = (magFlux100 + 2.9)
+    radInner = rad[growthCurveOri <= maxCurve][0]
+    """
     ax6.set_xlim(minRad, maxRad)
+    """
+    ax6.set_xlim((radInner - 0.02), (maxRad + 0.2))
+    ax6.set_ylim(maxCurve, minCurve)
 
     """ ax7 Intensity Curve """
     ax7.minorticks_on()
@@ -1187,8 +1188,9 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
                        ellipOut['int_err'][indexOut])
     sepOut = (maxOut - minOut) / 10.0
     minY = (minOut - sepOut) if (minOut - sepOut) >= 0.0 else (-1.0 * sepOut)
+    ax7.set_xlim((radInner - 0.02), (maxRad + 0.2))
     ax7.set_ylim(minY, maxOut)
-    ax6.axvline(radOut, linestyle='-', color='g', alpha=0.6, linewidth=5.0)
+    ax7.axvline(radOut, linestyle='-', color='g', alpha=0.6, linewidth=5.0)
 
     """ ax8 IsoPlot """
     if oriName is not None:
@@ -1227,7 +1229,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     # Overlay the ellipses on the image
     for ii, e in enumerate(ellipIso):
-        if (ii <= 36) and (ii % 5 == 0):
+        if (ii <= 56) and (ii % 7 == 0):
             ax8.add_artist(e)
             e.set_clip_box(ax8.bbox)
             e.set_alpha(0.8)
@@ -1560,7 +1562,6 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     indexBkg = np.where(ellipOut['sma'] > radOuter * 1.2)
                     if indexBkg[0].shape[0] > 0:
                         try:
-                            """ Don't subtract the background twice """
                             intens1 = ellipOut['intens'][indexBkg]
                             clipArr, clipL, clipU = sigmaclip(intens1,
                                                               2.0, 2.0)

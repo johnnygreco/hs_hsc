@@ -422,13 +422,13 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax1.plot(rad3[indexUse3], sbp_sub[indexUse3], '-.', color='b',
              linewidth=3.0)
     """
-    ax1.plot(rad3[indexUse3], sbp_cor[indexUse3], '--', color='r',
+    ax1.plot(rad3[indexUse3], sbp_cor[indexUse3], '-', color='r',
              linewidth=4.0)
     sbpBuffer = 0.75
     minSbp = np.nanmin(ellipOut3['sbp_low'][indexUse3]) - sbpBuffer
-    maxSbp = maxIsoSbp + 1.1
-    maxSbp = maxSbp if maxSbp <= 29.0 else 28.9
-    maxSbp = maxSbp if maxSbp >= 32.0 else 31.9
+    maxSbp = maxIsoSbp + sbpBuffer
+    maxSbp = maxSbp if maxSbp >= 29.0 else 28.9
+    maxSbp = maxSbp if maxSbp <= 32.0 else 31.9
     if psfOut is not None:
         if radMode is 'rsma':
             psfRad = psfOut['rsma_asec']
@@ -597,34 +597,36 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                 alpha=0.6, linewidth=3.0, label='$\mathrm{mag}_{100}$')
     ax6.axhline(magFlux50,  linestyle='--', color='k',
                 alpha=0.6, linewidth=3.0, label='$\mathrm{mag}_{50}$')
-    #ax6.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
     ax6.axvline(radOut, linestyle='-', color='g', alpha=0.6, linewidth=4.0)
+
     ax6.plot(rad3, growthCurveOri, '--', color='k', linewidth=3.5,
              label='$\mathrm{CoG}_{ori}$')
     """
     ax6.plot(rad3, growthCurveSub, '-.', color='b', linewidth=3.5,
              label='$\mathrm{CoG}_{sub}$')
+    ax6.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
     """
     ax6.plot(rad3, growthCurveCor, '-', color='r', linewidth=4.0,
              label='$\mathrm{CoG}_{cor}$')
-    ax6.legend(loc=[0.38, 0.10], shadow=True, fancybox=True,
+    ax6.legend(loc=[0.68, 0.08], shadow=True, fancybox=True,
                fontsize=21)
-    ax6.set_xlim(minRad, maxRad)
     minCurve = (magFlux100 - 0.9)
+    maxCurve = (magFlux100 + 2.9)
+    radInner = rad3[growthCurveOri <= maxCurve][0]
+    """
     maxCurve = (np.nanmax(growthCurveOri[np.isfinite(growthCurveOri)])
                 - 1.2)
-    print(minCurve, maxCurve)
+    """
+    ax6.set_xlim((radInner - 0.02), (maxRad + 0.2))
     ax6.set_ylim(maxCurve, minCurve)
 
     """ ax7 Intensity Curve """
     ax7.minorticks_on()
-    ax7.tick_params(axis='both', which='major', labelsize=22, pad=10)
+    ax7.tick_params(axis='both', which='major', labelsize=18, pad=10)
     ax7.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax7.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax7.locator_params(axis='y', tight=True, nbins=4)
-
     ax7.axhline(0.0, linestyle='-', color='k', alpha=0.6, linewidth=3.0)
-    ax7.axhline(bkg, linestyle='--', color='c', alpha=0.6, linewidth=2.5)
 
     ax7.fill_between(rad3,
                      (ellipOut3['intens_cor'] + ellipOut3['int_err']),
@@ -634,20 +636,21 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     """
     ax7.plot(rad3, ellipOut3['intens_sub'], '-', color='r', linewidth=3.5)
     ax7.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
+    ax7.axhline(bkg, linestyle='--', color='c', alpha=0.6, linewidth=2.5)
     """
     ax7.plot(rad3, ellipOut3['intens_cor'], '-', color='r', linewidth=3.0)
     ax7.axvline(radOut, linestyle='-', color='g', alpha=0.6, linewidth=4.0)
 
-    indexOut = np.where(ellipOut3['intens'] <= (0.002 *
+    indexOut = np.where(ellipOut3['intens'] <= (0.003 *
                         np.nanmax(ellipOut3['intens'])))
 
     ax7.xaxis.set_major_formatter(NullFormatter())
-    ax7.set_xlim(minRad, maxRad)
     minOut = np.nanmin(ellipOut3['intens'][indexOut] -
                        ellipOut3['int_err'][indexOut])
     maxOut = np.nanmax(ellipOut3['intens'][indexOut] +
                        ellipOut3['int_err'][indexOut])
-    sepOut = ((maxOut - minOut) / 8.5)
+    sepOut = ((maxOut - minOut) / 4.0)
+    ax7.set_xlim((radInner - 0.02), (maxRad + 0.2))
     ax7.set_ylim(minOut - sepOut, maxOut)
 
     """ ax8 IsoPlot """
@@ -682,7 +685,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ellipIso = galSBP.convIso2Ell(ellipOut3, xpad=xPad, ypad=yPad)
     # Overlay the ellipses on the image
     for ii, e in enumerate(ellipIso):
-        if (ii <= 36) and (ii % 5 == 0):
+        if (ii <= 56) and (ii % 9 == 0):
             ax8.add_artist(e)
             e.set_clip_box(ax8.bbox)
             e.set_alpha(0.8)
