@@ -493,7 +493,7 @@ def ellipRemoveIndef(outTabName, replace='NaN'):
 
 def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
                    harmonics='none', galR=None, minSma=2.0, dPA=75.0,
-                   rFactor=0.2, fRatio1=0.35, fRatio2=0.75, useTflux=False):
+                   rFactor=0.2, fRatio1=0.20, fRatio2=0.60, useTflux=False):
     """
     Read the Ellipse output into a structure.
 
@@ -766,20 +766,20 @@ def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
             thre = threshold
         else:
             thre = meanErr
-        negRad = ellipseOut['rsma'][np.where(ellipseOut['intens'] <= thre)]
+        negRad = ellipseOut['rsma'][np.where(ellipseOut['intens_cor'] <= thre)]
         if (negRad is np.nan) or (len(negRad) < 3):
             try:
-                uppIntens = np.nanmax(ellipseOut['intens']) * 0.01
-                indexUse = np.where(ellipseOut['intens'] <= uppIntens)
+                uppIntens = np.nanmax(ellipseOut['intens_cor']) * 0.01
+                indexUse = np.where(ellipseOut['intens_cor'] <= uppIntens)
             except Exception:
                 print "!!! DANGEROUS : Outer boundary is not safe !!!"
-                uppIntens = np.nanmax(ellipseOut['intens']) * 0.03
-                indexUse = np.where(ellipseOut['intens'] <= uppIntens)
+                uppIntens = np.nanmax(ellipseOut['intens_cor']) * 0.03
+                indexUse = np.where(ellipseOut['intens_cor'] <= uppIntens)
             radUse = ellipseOut['rsma'][indexUse]
             # Try fit a polynomial first
             try:
                 intensFit = hUtil.polyFit(ellipseOut['rsma'][indexUse],
-                                          ellipseOut['intens'][indexUse],
+                                          ellipseOut['intens_cor'][indexUse],
                                           order=polyOrder)
                 negRad = radUse[np.where(intensFit <= meanErr)]
             except Exception:
@@ -835,7 +835,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     imgMsk = copy.deepcopy(img)
     if useZscale:
         try:
-            imin, imax = hUtil.zscale(imgMsk, contrast=0.35, samples=500)
+            imin, imax = hUtil.zscale(imgMsk, contrast=0.25, samples=500)
         except Exception:
             imin, imax = np.nanmin(imgMsk), np.nanmax(imgMsk)
     else:
@@ -1165,9 +1165,12 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax7.axvline(imgR50,  linestyle='-', color='k', alpha=0.4,
                 linewidth=2.5)
     """
-    ax7.axhline(0.0, linestyle='-', color='k', alpha=0.5, linewidth=2.5)
     bkgVal = ellipOut['intens_bkg'][0]
     ax7.axhline(bkgVal, linestyle='--', color='c', linewidth=2.5, alpha=0.6)
+    ax7.fill_between(rad,
+                     (rad * 0.0 - 1.0 * np.nanmean(ellipOut['int_err'])),
+                     (rad * 0.0 + 1.0 * np.nanmean(ellipOut['int_err'])),
+                     facecolor='k', edgecolor='none', alpha=0.3)
 
     ax7.fill_between(rad, ellipOut['intens_cor'] + ellipOut['int_err'],
                      ellipOut['intens_cor'] - ellipOut['int_err'],

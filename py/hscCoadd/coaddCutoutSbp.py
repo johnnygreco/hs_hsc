@@ -37,9 +37,8 @@ try:
     cmap = plt.get_cmap('viridis')
     cmap.set_bad('k', 1.)
 except Exception:
-    from palettable.cubehelix import Cubehelix
-    cmap = Cubehelix.make(start=0.3, rotation=-0.5,
-                          reverse=True).mpl_colormap
+    from palettable.cubehelix import perceptual_rainbow_16
+    cmap = perceptual_rainbow_16.mpl_colormap
     cmap.set_bad('k', 1.)
 
 # Personal
@@ -246,7 +245,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     imgX, imgY = img.shape
     imgMsk = copy.deepcopy(img)
     try:
-        imin, imax = hUtil.zscale(imgMsk, contrast=0.35, samples=500)
+        imin, imax = hUtil.zscale(imgMsk, contrast=0.25, samples=500)
     except Exception:
         imin = np.percentile(np.ravel(imgMsk), 0.05)
         imax = np.percentile(np.ravel(imgMsk), 0.95)
@@ -632,7 +631,10 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax7.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax7.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax7.locator_params(axis='y', tight=True, nbins=4)
-    ax7.axhline(0.0, linestyle='-', color='k', alpha=0.6, linewidth=3.0)
+    ax7.fill_between(rad,
+                     (rad * 0.0 - 1.0 * np.nanmean(ellipOut3['int_err'])),
+                     (rad * 0.0 + 1.0 * np.nanmean(ellipOut3['int_err'])),
+                     facecolor='k', edgecolor='none', alpha=0.3)
 
     ax7.fill_between(rad3,
                      (ellipOut3['intens_cor'] + ellipOut3['int_err']),
