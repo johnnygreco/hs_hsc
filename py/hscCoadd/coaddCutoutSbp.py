@@ -14,13 +14,15 @@ import numpy as np
 # Astropy
 from astropy.io import fits
 
-# Cubehelix color scheme from https://github.com/jradavenport/cubehelix
-import cubehelix
 # For high-contrast image
-cmap = cubehelix.cmap(start=0.5, rot=-0.8, gamma=1.0,
-                      minSat=1.2, maxSat=1.2,
-                      minLight=0.0, maxLight=1.0)
-cmap.set_bad('k', 1.)
+try:
+    cmap = plt.get_cmap('viridis')
+    cmap.set_bad('k', 1.)
+except Exception:
+    from palettable.cubehelix import Cubehelix
+    cmap = Cubehelix.make(start=0.3, rotation=-0.5,
+                          reverse=True).mpl_colormap
+    cmap.set_bad('k', 1.)
 
 # Matplotlib related
 import matplotlib as mpl
@@ -210,21 +212,21 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                  outPng='ellipse_summary.png', zp=27.0, threshold=None,
                  psfOut=None, useKpc=None, pix=0.168, verbose=False,
                  showZoom=True, exptime=1.0, bkg=0.0, outRatio=1.2,
-                 pngSize=16, imgType='_imgsub'):
+                 pngSize=16, imgType='_imgsub', dpi=80):
     """
     Make a summary plot for the ellipse run.
 
     Parameters:
     """
     """ Left side: SBP """
-    reg1 = [0.075, 0.05, 0.452, 0.35]
-    reg2 = [0.075, 0.40, 0.452, 0.15]
-    reg3 = [0.075, 0.55, 0.452, 0.15]
-    reg4 = [0.075, 0.70, 0.452, 0.15]
-    reg5 = [0.075, 0.85, 0.452, 0.14]
+    reg1 = [0.08, 0.07, 0.45, 0.32]
+    reg2 = [0.08, 0.40, 0.45, 0.15]
+    reg3 = [0.08, 0.55, 0.45, 0.15]
+    reg4 = [0.08, 0.70, 0.45, 0.15]
+    reg5 = [0.08, 0.85, 0.45, 0.14]
     """ Right side: Curve of growth & IsoMap """
-    reg6 = [0.59, 0.05, 0.39, 0.30]
-    reg7 = [0.59, 0.35, 0.39, 0.16]
+    reg6 = [0.59, 0.07, 0.39, 0.29]
+    reg7 = [0.59, 0.36, 0.39, 0.15]
     reg8 = [0.59, 0.55, 0.39, 0.39]
 
     fig = plt.figure(figsize=(pngSize, pngSize))
@@ -278,33 +280,36 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     magFluxOri100 = -2.5 * np.log10(maxIsoFluxOri) + zp
     if verbose:
         print "###     MagTot ORI : ", magFluxOri100
-    ax1.text(0.55, 0.85, 'mag$_{tot,ori}=%5.2f$' % magFluxOri100, fontsize=24,
-             transform=ax1.transAxes)
+    ax1.text(0.55, 0.85,
+             '$\mathrm{mag}_{\mathrm{tot,ori}}=%5.2f$' % magFluxOri100,
+             fontsize=24, transform=ax1.transAxes)
 
     maxIsoFluxSub = np.nanmax(curveSub[indexUse3])
     magFluxSub100 = -2.5 * np.log10(maxIsoFluxSub) + zp
     if verbose:
         print "###     MagTot SUB : ", magFluxSub100
-    ax1.text(0.55, 0.78, 'mag$_{tot,sub}=%5.2f$' % magFluxSub100, fontsize=24,
-             transform=ax1.transAxes)
+    ax1.text(0.55, 0.78,
+             '$\mathrm{mag}_{\mathrm{tot,sub}}=%5.2f$' % magFluxSub100,
+             fontsize=24, transform=ax1.transAxes)
 
     maxIsoFluxCor = np.nanmax(curveCor[indexUse3])
     magFlux50 = -2.5 * np.log10(maxIsoFluxCor * 0.50) + zp
     magFlux100 = -2.5 * np.log10(maxIsoFluxCor) + zp
     if verbose:
         print "###     MagTot COR : ", magFlux100
-    ax1.text(0.55, 0.71, 'mag$_{tot,cor}=%5.2f$' % magFlux100, fontsize=24,
-             transform=ax1.transAxes)
+    ax1.text(0.55, 0.71,
+             '$\mathrm{mag}_{\mathrm{tot,cor}}=%5.2f$' % magFlux100,
+             fontsize=24, transform=ax1.transAxes)
 
     """ Type of Radius """
     if radMode is 'rsma':
         if useKpc is None:
-            radStr = 'RSMA (arcsec$^{1/4}$)'
+            radStr = '$R^{1/4}\ (\mathrm{arcsec}^{1/4})$'
             rad1 = ellipOut1['rsma_asec']
             rad2 = ellipOut2['rsma_asec']
             rad3 = ellipOut3['rsma_asec']
         else:
-            radStr = 'RSMA (kpc$^{1/4}$)'
+            radStr = '$R^{1/4}\ (\mathrm{kpc}^{1/4})$'
             rad1 = (ellipOut1['sma_asec']*useKpc)**0.25
             rad2 = (ellipOut2['sma_asec']*useKpc)**0.25
             rad3 = (ellipOut3['sma_asec']*useKpc)**0.25
@@ -327,12 +332,12 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                 maxRad = (maxRad * pix * useKpc) ** 0.25
     elif radMode is 'sma':
         if useKpc is None:
-            radStr = 'SMA (arcsec)'
+            radStr = '$R\ (\mathrm{arcsec})$'
             rad1 = ellipOut1['sma_asec']
             rad2 = ellipOut2['sma_asec']
             rad3 = ellipOut3['sma_asec']
         else:
-            radStr = 'SMA (kpc)'
+            radStr = '$R\ (\mathrm{kpc})$'
             rad1 = ellipOut1['sma_asec'] * useKpc
             rad2 = ellipOut2['sma_asec'] * useKpc
             rad3 = ellipOut3['sma_asec'] * useKpc
@@ -358,12 +363,12 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
         sma2 = ellipOut2['sma_asec']
         sma3 = ellipOut3['sma_asec']
         if useKpc is None:
-            radStr = 'log (SMA/arcsec)'
+            radStr = '$\log\ (R/\mathrm{arcsec})$'
             rad1 = np.log10(sma1)
             rad2 = np.log10(sma2)
             rad3 = np.log10(sma3)
         else:
-            radStr = 'log (SMA/kpc)'
+            radStr = '$\log\ (R/\mathrm{kpc})$'
             rad1 = np.log10(sma1 * useKpc)
             rad2 = np.log10(sma2 * useKpc)
             rad3 = np.log10(sma3 * useKpc)
@@ -393,7 +398,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax1.tick_params(axis='both', which='major', labelsize=22, pad=8)
 
     ax1.set_xlabel(radStr, fontsize=23)
-    ax1.set_ylabel('${\mu}$ (mag/arcsec$^2$)', fontsize=28)
+    ax1.set_ylabel('${\mu}\ (\mathrm{mag}/\mathrm{arcsec}^2)$',
+                   fontsize=28)
 
     sbp_sub = ellipOut3['sbp_sub']
     sbp_ori = ellipOut3['sbp_ori']
@@ -414,11 +420,11 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
              linewidth=3.0)
 
     ax1.set_xlim(minRad, radOut)
-    sbpBuffer = 0.5
+    sbpBuffer = 0.75
     minSbp = np.nanmin(ellipOut3['sbp_low'][indexUse3]) - sbpBuffer
     maxSbp = maxIsoSbp + 1.1
-    maxSbp = maxSbp if maxSbp >= 29.0 else 28.9
-    maxSbp = maxSbp if maxSbp <= 32.0 else 31.9
+    maxSbp = maxSbp if maxSbp <= 29.0 else 28.9
+    maxSbp = maxSbp if maxSbp >= 32.0 else 31.9
 
     if psfOut is not None:
         if radMode is 'rsma':
@@ -443,7 +449,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax2.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax2.locator_params(axis='y', tight=True, nbins=4)
 
-    ax2.set_ylabel('$e$', fontsize=30)
+    ax2.set_ylabel('$e$', fontsize=34)
     if verbose:
         print "###     AvgEll", (1.0 - ellipOut2['avg_q'][0])
     ax2.axhline((1.0 - ellipOut2['avg_q'][0]), color='k', linestyle='--',
@@ -469,8 +475,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax3.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax3.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax3.locator_params(axis='y', tight=True, nbins=4)
-
-    ax3.set_ylabel('PA (degree)',  fontsize=23)
+    ax3.set_ylabel('$\mathrm{PA}\ (\mathrm{deg})$',  fontsize=23)
 
     medPA = np.nanmedian(ellipOut2['pa_norm'][indexUse2])
     avgPA = ellipOut2['avg_pa'][0]
@@ -508,7 +513,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax4.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax4.locator_params(axis='y', tight=True, nbins=4)
 
-    ax4.set_ylabel('X0 or Y0 (pixel)', fontsize=23)
+    ax4.set_ylabel('$\mathrm{X}_{0}\ \mathrm{or}\ $' +
+                   '$\mathrm{Y}_{0}\ (\mathrm{pix})$', fontsize=23)
     if verbose:
         print "###     AvgX0", ellipOut1['avg_x0'][0]
         print "###     AvgY0", ellipOut1['avg_y0'][0]
@@ -552,7 +558,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax5.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax5.locator_params(axis='y', tight=True, nbins=4)
 
-    ax5.set_ylabel('A4 or B4',  fontsize=23)
+    ax5.set_ylabel('$a_4\ \mathrm{or}\ b_4$',  fontsize=22)
 
     ax5.axhline(0.0, linestyle='-', color='k', alpha=0.4)
     ax5.fill_between(rad2[indexUse2],
@@ -592,25 +598,28 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax6.yaxis.set_major_locator(MaxNLocator(prune='upper'))
 
     ax6.set_xlabel(radStr, fontsize=23)
-    ax6.set_ylabel('Curve of Growth (mag)', fontsize=17)
+    ax6.set_ylabel('$\mathrm{Curve\ of\ Growth}\ (\mathrm{mag})$',
+                   fontsize=20)
 
     ax6.axhline(magFlux100, linestyle='-', color='k',
-                alpha=0.6, linewidth=3.0, label='mag$_{100}$')
+                alpha=0.6, linewidth=3.0, label='$\mathrm{mag}_{100}$')
     ax6.axhline(magFlux50,  linestyle='--', color='k',
-                alpha=0.6, linewidth=3.0, label='mag$_{50}$')
+                alpha=0.6, linewidth=3.0, label='$\mathrm{mag}_{50}$')
 
-    ax6.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
-    ax6.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
+    #ax6.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
+    ax6.axvline(radOut, linestyle='-', color='g', alpha=0.6, linewidth=4.0)
 
     ax6.plot(rad3, growthCurveOri, '--', color='g', linewidth=3.5,
-             label='curve$_{ori}$')
+             label='$\mathrm{CoG}_{ori}$')
     ax6.plot(rad3, growthCurveSub, '-.', color='b', linewidth=3.5,
-             label='curve$_{sub}$')
+             label='$\mathrm{CoG}_{sub}$')
     ax6.plot(rad3, growthCurveCor, '-', color='r', linewidth=4.0,
-             label='curve$_{cor}$')
-    ax6.legend(loc=[0.38, 0.48], fontsize=21)
-
+             label='$\mathrm{CoG}_{cor}$')
+    ax6.legend(loc=[0.38, 0.10], shadow=True, fancybox=True,
+               fontsize=21)
     ax6.set_xlim(minRad, maxRad)
+    ax6.set_ylim((np.nanmax(growthCurveOri) - 1.2),
+                 (magFlux100 - 0.9))
 
     """ ax7 Intensity Curve """
     ax7.minorticks_on()
@@ -630,8 +639,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax7.plot(rad3, ellipOut3['intens_sub'], '-', color='r', linewidth=3.5)
     ax7.plot(rad3, ellipOut3['intens_cor'], '-.', color='b', linewidth=3.0)
 
-    ax7.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
-    ax7.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
+    #ax7.axvline(imgR50, linestyle='-', color='g', alpha=0.4, linewidth=3.0)
+    ax7.axvline(radOut, linestyle='-', color='g', alpha=0.6, linewidth=4.0)
 
     indexOut = np.where(ellipOut3['intens'] <= (0.002 *
                         np.nanmax(ellipOut3['intens'])))
@@ -642,7 +651,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                        ellipOut3['int_err'][indexOut])
     maxOut = np.nanmax(ellipOut3['intens'][indexOut] +
                        ellipOut3['int_err'][indexOut])
-    sepOut = (maxOut - minOut) / 10.0
+    sepOut = ((maxOut - minOut) / 8.5)
     ax7.set_ylim(minOut - sepOut, maxOut)
 
     """ ax8 IsoPlot """
@@ -679,7 +688,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     for e in ellipIso:
         ax8.add_artist(e)
         e.set_clip_box(ax8.bbox)
-        e.set_alpha(0.85)
+        e.set_alpha(0.8)
         e.set_edgecolor('r')
         e.set_facecolor('none')
         e.set_linewidth(1.8)
@@ -697,7 +706,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ellOuter.set_linewidth(3.5)
 
     """ Save Figure """
-    fig.savefig(outPng, dpi=80)
+    fig.savefig(outPng, dpi=dpi)
     plt.close(fig)
 
     return
