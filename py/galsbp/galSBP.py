@@ -859,7 +859,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
             print WAR
         radOuter = np.nanmax(sma) * 0.80
 
-    indexUse = np.where(ellipOut['sma'] <= (radOuter * 1.4))
+    indexUse = np.where(ellipOut['sma'] <= (radOuter * 1.3))
     if verbose:
         print SEP
         print "###     OutRadius : ", radOuter
@@ -1573,16 +1573,16 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 Note that this avgBkg is different with the input bkg value
                 """
                 if updateIntens:
-                    indexBkg = np.where(ellipOut['sma'] > radOuter * 1.2)
+                    indexBkg = np.where(ellipOut['sma'] > radOuter)
                     if indexBkg[0].shape[0] > 0:
                         try:
                             intens1 = ellipOut['intens'][indexBkg]
                             clipArr, clipL, clipU = sigmaclip(intens1,
-                                                              2.0, 2.0)
+                                                              2.5, 2.0)
                             avgOut = np.nanmedian(clipArr)
                             intens2 = ellipOut['intens_sub'][indexBkg]
                             clipArr, clipL, clipU = sigmaclip(intens2,
-                                                              2.0, 2.0)
+                                                              2.5, 2.0)
                             avgBkg = np.nanmedian(clipArr)
                             if not np.isfinite(avgBkg):
                                 avgBkg = 0.0
@@ -1619,7 +1619,7 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                 radOuter = ellipseGetOuterBoundary(ellipOut, ratio=outRatio)
                 if not np.isfinite(radOuter):
                     if verbose:
-                        print " XXX radOuter is NaN, use 0.80*max(SMA) !"
+                        print " XXX radOuter is NaN, use 0.80 * max(SMA) !"
                     radOuter = np.nanmax(sma) * 0.80
                 ellipOut.add_column(
                     Column(name='rad_outer', data=(sma*0.0 + radOuter)))

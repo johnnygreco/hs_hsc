@@ -533,7 +533,7 @@ if __name__ == '__main__':
                         help='Check if the center is off', default=True)
     parser.add_argument('--updateIntens', dest='updateIntens',
                         action="store_true",
-                        default=False)
+                        default=True)
 
     args = parser.parse_args()
 
