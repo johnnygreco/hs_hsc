@@ -951,9 +951,9 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax1.plot(rad[indexUse], ellipOut['sbp_ori'][
              indexUse], '--', color='k', linewidth=3.0)
     ax1.plot(rad[indexUse], ellipOut['sbp_sub'][
-             indexUse], '-', color='r', linewidth=3.5)
+             indexUse], '-', color='b', linewidth=3.5)
     ax1.plot(rad[indexUse], ellipOut['sbp_cor'][
-             indexUse], '-.', color='b', linewidth=3.0)
+             indexUse], '-.', color='r', linewidth=3.0)
 
     ax1.set_xlim(minRad, radOut)
     sbpBuffer = 0.75
@@ -1126,7 +1126,9 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
                 label='$\mathrm{mag}_{100}$')
     ax6.axhline(magFlux50,  linestyle='--', color='k', alpha=0.5, linewidth=2,
                 label='$\mathrm{mag}_{50}$')
+    """
     ax6.axvline(imgR50,  linestyle='-', color='g', alpha=0.4, linewidth=2.5)
+    """
 
     ax6.plot(rad, growthCurveOri, '--', color='g', linewidth=3.5,
              label='$\mathrm{CoG}_{\mathrm{old}}$')
@@ -1134,7 +1136,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
              label='$\mathrm{CoG}_{\mathrm{sub}}$')
     ax6.plot(rad, growthCurveCor, '-', color='r', linewidth=4.0,
              label='$\mathrm{CoG}_{\mathrm{cor}}$')
-    ax6.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
+    ax6.axvline(radOut, linestyle='-', color='g', alpha=0.6, linewidth=5.0)
 
     ax6.legend(loc=[0.35, 0.40], fontsize=21)
     ax6.set_xlim(minRad, maxRad)
@@ -1146,9 +1148,10 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax7.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax7.locator_params(axis='y', tight=True, nbins=4)
 
+    """
     ax7.axvline(imgR50,  linestyle='-', color='k', alpha=0.4,
                 linewidth=2.5)
-
+    """
     ax7.axhline(0.0, linestyle='-', color='k', alpha=0.5, linewidth=2.5)
     bkgVal = ellipOut['intens_bkg'][0]
     ax7.axhline(bkgVal, linestyle='--', color='c', linewidth=2.5, alpha=0.6)
@@ -1172,7 +1175,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     sepOut = (maxOut - minOut) / 10.0
     minY = (minOut - sepOut) if (minOut - sepOut) >= 0.0 else (-1.0 * sepOut)
     ax7.set_ylim(minY, maxOut)
-    ax7.axvline(radOut, linestyle='--', color='b', alpha=0.8, linewidth=3.0)
+    ax6.axvline(radOut, linestyle='-', color='g', alpha=0.6, linewidth=5.0)
 
     """ ax8 IsoPlot """
     if oriName is not None:

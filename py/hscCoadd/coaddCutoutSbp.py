@@ -414,10 +414,10 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                      facecolor='r', alpha=0.2)
     ax1.plot(rad3[indexUse3], sbp_ori[indexUse3], '--', color='k',
              linewidth=3.5)
-    ax1.plot(rad3[indexUse3], sbp_sub[indexUse3], '-', color='r',
-             linewidth=4.0)
-    ax1.plot(rad3[indexUse3], sbp_cor[indexUse3], '-.', color='b',
+    ax1.plot(rad3[indexUse3], sbp_sub[indexUse3], '-.', color='b',
              linewidth=3.0)
+    ax1.plot(rad3[indexUse3], sbp_cor[indexUse3], '--', color='r',
+             linewidth=4.0)
 
     ax1.set_xlim(minRad, radOut)
     sbpBuffer = 0.75
