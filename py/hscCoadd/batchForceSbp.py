@@ -235,7 +235,7 @@ def run(args):
                         print "##     Input Ellipse : %s" % inEllipBin
                     """ Small Mask """
                     if os.path.isfile(mskSmall):
-                        if verbose:
+                        if args.verbose:
                             print "##     Input MaskSmall : %s" % mskSmall
                         suffixSmall = ellipSuffix + '_msksmall'
                         try:
