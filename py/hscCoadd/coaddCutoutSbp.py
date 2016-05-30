@@ -246,7 +246,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     imgX, imgY = img.shape
     imgMsk = copy.deepcopy(img)
     try:
-        imin, imax = hUtil.zscale(imgMsk, contrast=0.05, samples=500)
+        imin, imax = hUtil.zscale(imgMsk, contrast=0.35, samples=500)
     except Exception:
         imin = np.percentile(np.ravel(imgMsk), 0.05)
         imax = np.percentile(np.ravel(imgMsk), 0.95)
@@ -266,9 +266,9 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     else:
         if verbose:
             print "###  OutRadius", radOuter
-    indexUse1 = np.where(ellipOut1['sma'] <= (radOuter*1.2))
-    indexUse2 = np.where(ellipOut2['sma'] <= (radOuter*1.2))
-    indexUse3 = np.where(ellipOut3['sma'] <= (radOuter*1.2))
+    indexUse1 = np.where(ellipOut1['sma'] <= (radOuter*1.4))
+    indexUse2 = np.where(ellipOut2['sma'] <= (radOuter*1.4))
+    indexUse3 = np.where(ellipOut3['sma'] <= (radOuter*1.4))
     curveOri = ellipOut3['growth_ori']
     curveSub = ellipOut3['growth_sub']
     curveCor = ellipOut3['growth_cor']
@@ -617,7 +617,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                fontsize=20)
     minCurve = (magFlux100 - 0.9)
     maxCurve = (magFlux100 + 2.9)
-    radInner = rad3[growthCurveOri <= maxCurve][0]
+    curveUse = growthCurveOri[np.isfinite(growthCurveOri)]
+    radInner = rad3[curveUse <= maxCurve][0]
     """
     maxCurve = (np.nanmax(growthCurveOri[np.isfinite(growthCurveOri)])
                 - 1.2)
@@ -689,15 +690,15 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ellipIso = galSBP.convIso2Ell(ellipOut3, xpad=xPad, ypad=yPad)
     # Overlay the ellipses on the image
     for ii, e in enumerate(ellipIso):
-        if len(ellipIso) >= 20:
-            if (ii >= 5) and (ii <= 20) and (ii % 4 == 0):
+        if len(ellipIso) >= 30:
+            if (ii >= 6) and (ii <= 30) and (ii % 5 == 0):
                 ax8.add_artist(e)
                 e.set_clip_box(ax8.bbox)
                 e.set_alpha(0.4)
                 e.set_edgecolor('r')
                 e.set_facecolor('none')
                 e.set_linewidth(1.0)
-            elif (ii > 20):
+            elif (ii > 30):
                 ax8.add_artist(e)
                 e.set_clip_box(ax8.bbox)
                 e.set_alpha(0.9)
@@ -705,7 +706,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
                 e.set_facecolor('none')
                 e.set_linewidth(2.0)
         else:
-            if (ii >= 5):
+            if (ii >= 6):
                 ax8.add_artist(e)
                 e.set_clip_box(ax8.bbox)
                 e.set_alpha(0.8)

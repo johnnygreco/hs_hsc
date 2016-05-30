@@ -835,7 +835,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     imgMsk = copy.deepcopy(img)
     if useZscale:
         try:
-            imin, imax = hUtil.zscale(imgMsk, contrast=0.05, samples=500)
+            imin, imax = hUtil.zscale(imgMsk, contrast=0.35, samples=500)
         except Exception:
             imin, imax = np.nanmin(imgMsk), np.nanmax(imgMsk)
     else:
@@ -858,7 +858,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
             print WAR
         radOuter = np.nanmax(sma) * 0.80
 
-    indexUse = np.where(ellipOut['sma'] <= (radOuter * 1.2))
+    indexUse = np.where(ellipOut['sma'] <= (radOuter * 1.4))
     if verbose:
         print SEP
         print "###     OutRadius : ", radOuter
@@ -1227,15 +1227,15 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     # Overlay the ellipses on the image
     for ii, e in enumerate(ellipIso):
-        if len(ellipIso) >= 20:
-            if (ii >= 5) and (ii <= 20) and (ii % 4 == 0):
+        if len(ellipIso) >= 30:
+            if (ii >= 6) and (ii <= 30) and (ii % 5 == 0):
                 ax8.add_artist(e)
                 e.set_clip_box(ax8.bbox)
-                e.set_alpha(0.5)
+                e.set_alpha(0.4)
                 e.set_edgecolor('r')
                 e.set_facecolor('none')
                 e.set_linewidth(1.0)
-            elif (ii > 20):
+            elif (ii > 30):
                 ax8.add_artist(e)
                 e.set_clip_box(ax8.bbox)
                 e.set_alpha(0.8)
@@ -1243,7 +1243,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
                 e.set_facecolor('none')
                 e.set_linewidth(2.0)
         else:
-            if (ii >= 5):
+            if (ii >= 6):
                 ax8.add_artist(e)
                 e.set_clip_box(ax8.bbox)
                 e.set_alpha(0.8)
@@ -1559,8 +1559,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                                                    ratio=outRatio)
                 sma = ellipOut['sma']
                 if radOuter is None:
-                    print "XXX  radOuter is NaN, use 0.75 * max(SMA) instead !"
-                    radOuter = np.nanmax(sma) * 0.75
+                    print "XXX  radOuter is NaN, use 0.8 * max(SMA) instead !"
+                    radOuter = np.nanmax(sma) * 0.8
                 """
                 Update the Intensity
                 Note that this avgBkg is different with the input bkg value
