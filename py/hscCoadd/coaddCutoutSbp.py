@@ -787,7 +787,7 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
     if not imgSameSize(imgArr, mskArr):
         raise Exception("### The Image and Mask need to have EXACTLY \
                 same dimensions!")
-    if imgSub
+    if imgSub:
         imgType = '_imgsub'
     else:
         imgType = '_img'
