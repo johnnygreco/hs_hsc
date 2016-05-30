@@ -244,11 +244,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     img = fits.open(image)[0].data
     imgX, imgY = img.shape
     imgMsk = copy.deepcopy(img)
-    try:
-        imin, imax = hUtil.zscale(imgMsk, contrast=0.25, samples=500)
-    except Exception:
-        imin = np.percentile(np.ravel(imgMsk), 0.05)
-        imax = np.percentile(np.ravel(imgMsk), 0.95)
+
     if mask is not None:
         msk = fits.open(mask)[0].data
         imgMsk[msk > 0] = np.nan
@@ -687,6 +683,12 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
         zoomReg = imgMsk
         xPad = 0
         yPad = 0
+
+    try:
+        imin, imax = hUtil.zscale(showZoom, contrast=0.20, samples=500)
+    except Exception:
+        imin = np.percentile(np.ravel(showZoom), 0.01)
+        imax = np.percentile(np.ravel(showZoom), 0.95)
     # Show the image
     ax8.imshow(np.arcsinh(zoomReg), interpolation="none",
                vmin=imin, vmax=imax, cmap=cmap, origin='lower')

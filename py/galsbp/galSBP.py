@@ -599,6 +599,7 @@ def readEllipseOut(outTabName, pix=1.0, zp=27.0, exptime=1.0, bkg=0.0,
                                                     bkgCor=False,
                                                     useTflux=useTflux)
     ellipseOut.add_column(Column(name='growth_ori', data=cogOri))
+
     cogSub, maxSma, maxFlux = ellipseGetGrowthCurve(ellipseOut,
                                                     bkgCor=True)
     ellipseOut.add_column(Column(name='growth_sub', data=cogSub))
@@ -761,7 +762,7 @@ def ellipseGetOuterBoundary(ellipseOut, ratio=1.2, margin=0.2, polyOrder=12,
                             median=False, threshold=None):
     """Get the outer boundary of the output 1-D profile."""
     try:
-        medianErr = np.nanmedian(ellipseOut['int_err'])
+        medianErr = np.nanmean(ellipseOut['int_err'])
         if threshold is not None:
             thre = threshold
         else:
