@@ -973,9 +973,9 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     maxSbp = maxSbp if maxSbp <= 32.0 else 31.9
     ax1.set_xlim(minRad, radOut)
     ax1.set_ylim(maxSbp, minSbp)
-    ax1.text(0.55, 0.74,
+    ax1.text(0.55, 0.80,
              '$\mathrm{mag}_{\mathrm{tot,cor}}=%5.2f$' % magFlux100,
-             fontsize=24, transform=ax1.transAxes)
+             fontsize=30, transform=ax1.transAxes)
 
     """ ax2 Ellipticity """
     ax2.minorticks_on()
@@ -1139,15 +1139,15 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax6.axvline(imgR50,  linestyle='-', color='g', alpha=0.4, linewidth=2.5)
     """
 
-    ax6.plot(rad, growthCurveOri, '--', color='g', linewidth=3.5,
+    ax6.plot(rad, growthCurveOri, '--', color='k', linewidth=3.5,
              label='$\mathrm{CoG}_{\mathrm{old}}$')
     ax6.plot(rad, growthCurveSub, '-.', color='b', linewidth=3.5,
              label='$\mathrm{CoG}_{\mathrm{sub}}$')
     ax6.plot(rad, growthCurveCor, '-', color='r', linewidth=4.0,
              label='$\mathrm{CoG}_{\mathrm{cor}}$')
     ax6.axvline(radOut, linestyle='-', color='g', alpha=0.6, linewidth=5.0)
-    ax6.legend(loc=[0.58, 0.07], shadow=True, fancybox=True,
-               fontsize=19)
+    ax6.legend(loc=[0.55, 0.06], shadow=True, fancybox=True,
+               fontsize=18)
     minCurve = (magFlux100 - 0.9)
     maxCurve = (magFlux100 + 2.9)
     radInner = rad[growthCurveOri <= maxCurve][0]
@@ -1174,7 +1174,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     ax7.fill_between(rad, ellipOut['intens_cor'] + ellipOut['int_err'],
                      ellipOut['intens_cor'] - ellipOut['int_err'],
                      facecolor='r', alpha=0.2)
-    ax7.plot(rad, ellipOut['intens'], '--', color='g', linewidth=3.0)
+    ax7.plot(rad, ellipOut['intens'], '--', color='k', linewidth=3.0)
     ax7.plot(rad, ellipOut['intens_sub'], '-.', color='b', linewidth=3.0)
     ax7.plot(rad, ellipOut['intens_cor'], '-', color='r', linewidth=3.5)
 
@@ -1229,14 +1229,14 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
 
     # Overlay the ellipses on the image
     for ii, e in enumerate(ellipIso):
-        if (ii <= 71) and (ii % 11 == 0):
+        if (ii <= 35) and (ii % 5 == 0):
             ax8.add_artist(e)
             e.set_clip_box(ax8.bbox)
             e.set_alpha(0.8)
             e.set_edgecolor('r')
             e.set_facecolor('none')
             e.set_linewidth(1.0)
-        else:
+        elif (ii > 35):
             ax8.add_artist(e)
             e.set_clip_box(ax8.bbox)
             e.set_alpha(0.9)

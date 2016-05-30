@@ -282,7 +282,7 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
         print "###     MagTot ORI : ", magFluxOri100
     ax1.text(0.55, 0.85,
              '$\mathrm{mag}_{\mathrm{tot,ori}}=%5.2f$' % magFluxOri100,
-             fontsize=24, transform=ax1.transAxes)
+             fontsize=30, transform=ax1.transAxes)
 
     maxIsoFluxSub = np.nanmax(curveSub[indexUse3])
     magFluxSub100 = -2.5 * np.log10(maxIsoFluxSub) + zp
@@ -299,9 +299,9 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     magFlux100 = -2.5 * np.log10(maxIsoFluxCor) + zp
     if verbose:
         print "###     MagTot COR : ", magFlux100
-    ax1.text(0.55, 0.74,
+    ax1.text(0.55, 0.72,
              '$\mathrm{mag}_{\mathrm{tot,cor}}=%5.2f$' % magFlux100,
-             fontsize=24, transform=ax1.transAxes)
+             fontsize=30, transform=ax1.transAxes)
 
     """ Type of Radius """
     if radMode is 'rsma':
@@ -689,14 +689,14 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ellipIso = galSBP.convIso2Ell(ellipOut3, xpad=xPad, ypad=yPad)
     # Overlay the ellipses on the image
     for ii, e in enumerate(ellipIso):
-        if (ii <= 77) and (ii % 11 == 0):
+        if (ii <= 35) and (ii % 5 == 0):
             ax8.add_artist(e)
             e.set_clip_box(ax8.bbox)
             e.set_alpha(0.4)
             e.set_edgecolor('r')
             e.set_facecolor('none')
             e.set_linewidth(1.0)
-        else:
+        elif (ii > 35):
             ax8.add_artist(e)
             e.set_clip_box(ax8.bbox)
             e.set_alpha(0.9)
