@@ -421,14 +421,12 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     """
     ax1.plot(rad3[indexUse3], sbp_cor[indexUse3], '-', color='r',
              linewidth=4.0)
-    sbpBuffer = 0.75
-    minSbp = np.nanmin(ellipOut3['sbp_low'][indexUse3]) - sbpBuffer
-    maxSbp = np.nanmax(ellipOut3['sbp_upp'][indexUse3]) + sbpBuffer
-    """
-    maxSbp = maxIsoSbp + sbpBuffer
-    """
+    sbpBuffer1 = 0.75
+    sbpBuffer2 = 0.50
+    minSbp = np.nanmin(ellipOut3['sbp_low'][indexUse3]) - sbpBuffer1
+    maxSbp = np.nanmax(ellipOut3['sbp_upp'][indexUse3]) + sbpBuffer2
     maxSbp = maxSbp if maxSbp >= 29.0 else 28.9
-    maxSbp = maxSbp if maxSbp <= 32.0 else 31.9
+    maxSbp = maxSbp if maxSbp <= 30.9 else 30.89
     if psfOut is not None:
         if radMode is 'rsma':
             psfRad = psfOut['rsma_asec']
