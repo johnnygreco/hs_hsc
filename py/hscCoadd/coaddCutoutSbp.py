@@ -632,14 +632,15 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     ax7.yaxis.set_major_locator(MaxNLocator(prune='lower'))
     ax7.yaxis.set_major_locator(MaxNLocator(prune='upper'))
     ax7.locator_params(axis='y', tight=True, nbins=4)
+    ax7.axhline(0.0, linestyle='-', color='k', linewidth=2.5, alpha=0.8)
     ax7.fill_between(rad,
                      (rad * 0.0 - 1.0 * np.nanmedian(ellipOut3['int_err'])),
                      (rad * 0.0 + 1.0 * np.nanmedian(ellipOut3['int_err'])),
                      facecolor='k', edgecolor='none', alpha=0.3)
 
     ax7.fill_between(rad3,
-                     (ellipOut3['intens_cor'] + ellipOut3['int_err']),
                      (ellipOut3['intens_cor'] - ellipOut3['int_err']),
+                     (ellipOut3['intens_cor'] + ellipOut3['int_err']),
                      facecolor='r', alpha=0.3)
     ax7.plot(rad3, ellipOut3['intens'], '--', color='k', linewidth=2.5)
     """
@@ -1051,16 +1052,16 @@ def coaddCutoutSbp(prefix, root=None, verbose=True, psf=True, inEllip=None,
                 else:
                     temp = '_img_ellip_'
                     sumPng = root + prefix + temp + suffix + 'sum.png'
-                try:
-                    ellipSummary(ellOut1, ellOut2, ellOut3, imgOri,
-                                 psfOut=psfOut,
-                                 maxRad=maxR, mask=mskOri, radMode='rsma',
-                                 outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
-                                 showZoom=showZoom, exptime=exptime, bkg=bkg,
-                                 outRatio=outRatio, imgType=imgType,
-                                 verbose=verbose)
-                except Exception:
-                    print "XXX Can not make summary plot: %s" % sumPng
+                #try:
+                ellipSummary(ellOut1, ellOut2, ellOut3, imgOri,
+                             psfOut=psfOut,
+                             maxRad=maxR, mask=mskOri, radMode='rsma',
+                             outPng=sumPng, zp=zp, useKpc=useKpc, pix=pix,
+                             showZoom=showZoom, exptime=exptime, bkg=bkg,
+                             outRatio=outRatio, imgType=imgType,
+                             verbose=verbose)
+                #except Exception:
+                #    print "XXX Can not make summary plot: %s" % sumPng
 
             if multiEllipse:
                 """

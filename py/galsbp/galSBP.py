@@ -971,7 +971,7 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
     maxSbp = maxSbp if maxSbp <= 32.0 else 31.9
     ax1.set_xlim(minRad, radOut)
     ax1.set_ylim(maxSbp, minSbp)
-    ax1.text(0.52, 0.82,
+    ax1.text(0.49, 0.86,
              '$\mathrm{mag}_{\mathrm{tot,cor}}=%5.2f$' % magFlux100,
              fontsize=30, transform=ax1.transAxes)
 
@@ -1168,14 +1168,15 @@ def ellipsePlotSummary(ellipOut, image, maxRad=None, mask=None, radMode='rsma',
                 linewidth=2.5)
     """
     bkgVal = ellipOut['intens_bkg'][0]
+    ax7.axhline(0.0, linestyle='-', color='k', linewidth=2.5, alpha=0.8)
     ax7.axhline(bkgVal, linestyle='--', color='c', linewidth=2.5, alpha=0.6)
     ax7.fill_between(rad,
                      (rad * 0.0 - 1.0 * np.nanmedian(ellipOut['int_err'])),
                      (rad * 0.0 + 1.0 * np.nanmedian(ellipOut['int_err'])),
                      facecolor='k', edgecolor='none', alpha=0.3)
 
-    ax7.fill_between(rad, ellipOut['intens_cor'] + ellipOut['int_err'],
-                     ellipOut['intens_cor'] - ellipOut['int_err'],
+    ax7.fill_between(rad, ellipOut['intens_cor'] - ellipOut['int_err'],
+                     ellipOut['intens_cor'] + ellipOut['int_err'],
                      facecolor='r', alpha=0.2)
     ax7.plot(rad, ellipOut['intens'], '--', color='k', linewidth=3.0)
     ax7.plot(rad, ellipOut['intens_sub'], '-.', color='b', linewidth=3.0)
