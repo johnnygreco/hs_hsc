@@ -188,8 +188,12 @@ def run(args):
                              (galPrefix, filter))
                 with open(logFile, "a") as logMatch:
                     try:
+                        if suffix == '':
+                            logPrefix = galPrefix
+                        else:
+                            logPrefix = galPrefix + '_' + suffix
                         logFormat = "%25s    %s    DONE \n"
-                        logMatch.write(logFormat % (galPrefix, filter))
+                        logMatch.write(logFormat % (logPrefix, filter))
                         fcntl.flock(logMatch, fcntl.LOCK_UN)
                     except IOError:
                         pass
