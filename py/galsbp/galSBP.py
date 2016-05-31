@@ -56,7 +56,7 @@ SEP = '-' * 100
 WAR = '!' * 100
 
 
-def randomStr(size=4, chars=string.ascii_uppercase + string.digits):
+def randomStr(size=5, chars=string.ascii_uppercase + string.digits):
     """
     Random string generator.
 
@@ -1342,11 +1342,14 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
     """
     New approach, save the HDU into a temp fits file
     """
-    imgTemp = 'temp_' + randomStr() + '.fits'
     data = (fits.open(imgOri))[hdu].data
     imgHdu = fits.PrimaryHDU(data)
     imgHduList = fits.HDUList([imgHdu])
-    imgHduList.writeto(imgTemp, clobber=True)
+    while True:
+        imgTemp = 'temp_' + randomStr() + '.fits'
+        if not os.path.isfile(imgTemp):
+            imgHduList.writeto(imgTemp)
+            break
 
     """ Conver the .fits mask to .pl file if necessary """
     if mask is not None:

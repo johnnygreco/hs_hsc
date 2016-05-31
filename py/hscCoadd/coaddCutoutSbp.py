@@ -268,7 +268,9 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
     curveSub = ellipOut3['growth_sub']
     curveCor = ellipOut3['growth_cor']
     growthCurveOri = -2.5 * np.log10(curveOri) + zp
+    """
     growthCurveSub = -2.5 * np.log10(curveSub) + zp
+    """
     growthCurveCor = -2.5 * np.log10(curveCor) + zp
 
     maxIsoFluxOri = np.nanmax(curveOri[indexUse3])
@@ -313,10 +315,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
 
         minRad = 0.41 if 0.41 >= np.nanmin(rad3) else np.nanmin(rad3)
         if useKpc is None:
-            imgR50 = (imgX * pix / 2.0) ** 0.25
             radOut = (radOuter * pix * 1.2) ** 0.25
         else:
-            imgR50 = (imgX * pix * useKpc / 2.0) ** 0.25
             radOut = (radOuter * pix * useKpc * 1.2) ** 0.25
         if maxRad is None:
             maxSma = np.nanmax(ellipOut3['rsma'])
@@ -341,10 +341,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
 
         minRad = 0.05 if 0.05 >= np.nanmin(rad3) else np.nanmin(rad3)
         if useKpc is None:
-            imgR50 = (imgX * pix / 2.0)
             radOut = radOuter * pix * 1.2
         else:
-            imgR50 = (imgX * pix * useKpc / 2.0)
             radOut = radOuter * pix * useKpc * 1.2
         if maxRad is None:
             maxSma = np.nanmax(ellipOut3['sma'])
@@ -372,10 +370,8 @@ def ellipSummary(ellipOut1, ellipOut2, ellipOut3, image,
 
         minRad = -1.2 if -1.2 >= np.nanmin(rad3) else np.nanmin(rad3)
         if useKpc is None:
-            imgR50 = np.log10(imgX * pix / 2.0)
             radOut = np.log10(radOuter * pix * 1.2)
         else:
-            imgR50 = np.log10(imgX * pix * useKpc / 2.0)
             radOut = np.log10(radOuter * pix * useKpc * 1.2)
         if maxRad is None:
             maxSma = np.nanmax(ellipOut3['sma'])
