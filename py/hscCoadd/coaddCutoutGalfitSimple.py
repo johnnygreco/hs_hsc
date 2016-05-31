@@ -1095,7 +1095,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
     if model is None:
         suffix = ''
     else:
-        suffix = '_' + suffix
+        suffix = '_' + model
     if inFile is None:
         inFile = prefix + '_1ser' + suffix + '.in'
         if root is not None:
