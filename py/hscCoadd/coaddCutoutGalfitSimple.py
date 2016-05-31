@@ -586,10 +586,14 @@ def imgSameSize(img1, img2):
 
 
 def readSbpInput(prefix, root=None, rerun='default',
-                 maskType='mskfin', extMsk=None):
+                 maskType='mskfin', extMsk=None, imgSub=False):
     """Parse input data."""
     # Get the names of necessary input images
-    imgFile = prefix + '_img.fits'
+    if imgSub:
+        imgFile = prefix + '_imgsub.fits'
+    else:
+        imgFile = prefix + '_img.fits'
+
     if extMsk is not None:
         mskFile = extMsk
     else:
@@ -1004,7 +1008,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
                             checkCenter=False, constrCen=True,
                             deleteAfter=False, maskType='mskfin',
                             externalMask=None, abspath=False,
-                            show=True):
+                            show=True, imgSub=False):
     """
     Run 1-Sersic fitting on HSC cutout image.
 
@@ -1019,10 +1023,10 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
     """ Allow using external mask """
     if externalMask is not None:
         galInput = readSbpInput(prefix, root=root, rerun=rerun,
-                                extMsk=externalMask)
+                                extMsk=externalMask, imgSub=imgSub)
     else:
         galInput = readSbpInput(prefix, root=root, rerun=rerun,
-                                maskType=maskType)
+                                maskType=maskType, imgSub=imgSub)
     imgFile, imgArr, imgHead, mskFile, mskArr, mskHead = galInput
     """ Absolute path of the image and mask """
     if abspath:
@@ -1352,6 +1356,8 @@ if __name__ == '__main__':
                         action="store_true", default=False)
     parser.add_argument('--abspath', dest='abspath',
                         action="store_true", default=False)
+    parser.add_argument('--imgSub', dest='imgSub',
+                        action="store_true", default=False)
 
     args = parser.parse_args()
 
@@ -1372,4 +1378,5 @@ if __name__ == '__main__':
                             checkCenter=args.checkCenter,
                             deleteAfter=args.deleteAfter,
                             externalMask=args.externalMask,
-                            abspath=args.abspath, show=args.show)
+                            abspath=args.abspath, show=args.show,
+                            imgSub=args.imgSub)

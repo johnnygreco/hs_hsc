@@ -124,7 +124,8 @@ def singleGalfitRun(galaxy, idCol, rerun, prefix, filterUse, logFile):
                                          externalMask=galMsk,
                                          abspath=args.abspath,
                                          imax=args.imax,
-                                         show=args.show)
+                                         show=args.show,
+                                         imgSub=args.imgSub)
         logging.info('### The Galfit Run is DONE for %s in %s' %
                      (galPrefix, filterUse))
         ser1Done, ser1Plot, ser2Done, ser2Plot, ser3Done, ser3Plot = result
@@ -298,6 +299,8 @@ if __name__ == '__main__':
     parser.add_argument('--abspath', dest='abspath',
                         action="store_true", default=False)
     parser.add_argument('--show', dest='show', action="store_true",
+                        default=False)
+    parser.add_argument('--imgSub', dest='imgSub', action="store_true",
                         default=False)
 
     args = parser.parse_args()
