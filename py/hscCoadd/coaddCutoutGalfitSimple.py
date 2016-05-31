@@ -1097,7 +1097,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
     else:
         suffix = '_' + model
     if inFile is None:
-        inFile = prefix + '_1ser' + suffix + '.in'
+        inFile = prefix + suffix + '_1ser.in'
         if root is not None:
             inFile = os.path.join(root, rerun, inFile)
         else:
@@ -1105,7 +1105,7 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
 
     """ 0e. Output File """
     if outFile is None:
-        outModel = prefix + '_1ser' + suffix + '.fits'
+        outModel = prefix + suffix + '_1ser.fits'
         if root is not None:
             outFile = os.path.join(root, rerun, outModel)
         else:
