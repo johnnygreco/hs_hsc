@@ -193,7 +193,12 @@ def run(args):
             logPre = prefix + '_' + args.sample
         else:
             logPre = prefix
-        logFile = logPre + '_galfit_' + filterUse.strip() + '.log'
+
+        if args.imgSub:
+            logFile = logPre + '_galfit_sub_' + filterUse.strip() + '.log'
+        else:
+            logFile = logPre + '_galfit_' + filterUse.strip() + '.log'
+
         if not os.path.isfile(logFile):
             os.system('touch ' + logFile)
 
