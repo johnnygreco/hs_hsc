@@ -600,10 +600,10 @@ def readSbpInput(prefix, root=None, rerun='default',
         mskFile = prefix + '_' + maskType + '.fits'
 
     if root is not None:
-        imgFile = os.path.join(root, imgFile)
+        imgFile = os.path.join(root, rerun, imgFile)
         mskFile = os.path.join(root, rerun, mskFile)
     else:
-        imgFile = imgFile
+        imgFile = os.path.join(rerun, imgFile)
         mskFile = os.path.join(rerun, mskFile)
 
     if (not os.path.isfile(imgFile)) and (not os.path.islink(imgFile)):
