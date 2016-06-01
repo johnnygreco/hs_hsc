@@ -82,6 +82,7 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
     # Try to get the ID, Ra, Dec
     try:
         id = cat.field(idField)
+        nObjs = len(id)
     except KeyError:
         raise Exception('Can not find the ID field')
 
@@ -139,7 +140,6 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
             size = cat.field(sizeField)
         except KeyError:
             # warnings.warn("### No field name for cutout size is provided !")
-            nObjs = len(id)
             size = numpy.empty(nObjs)
             size.fill(sizeDefault)
 
