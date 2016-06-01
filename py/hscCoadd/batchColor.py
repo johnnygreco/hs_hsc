@@ -33,7 +33,9 @@ def run(args):
                               infoField1=args.infoField1,
                               infoField2=args.infoField2,
                               clean=args.clean,
-                              noName=args.noName)
+                              noName=args.noName,
+                              njobs=args.njobs,
+                              sample=args.sample)
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
 
@@ -55,7 +57,7 @@ if __name__ == '__main__':
                         default='cutout_size')
     parser.add_argument('-info1', '--infoField1', dest='infoField1',
                         help="Column name for first extra information",
-                        default='lamda_redm')
+                        default='lamda_redmem')
     parser.add_argument('-info2', '--infoField2', dest='infoField2',
                         help="Column name for second extra information",
                         default='p_cen_1_redm')
@@ -92,6 +94,12 @@ if __name__ == '__main__':
     parser.add_argument('-z', '--redshift', dest='zField',
                         help="Column name for z",
                         default='z_use')
+    parser.add_argument('-j', '--njobs', type=int,
+                        help='Number of jobs run at the same time',
+                        dest='njobs', default=1)
+    parser.add_argument('--sample', dest='sample', help="Sample name",
+                        default=None)
+
     args = parser.parse_args()
 
     run(args)

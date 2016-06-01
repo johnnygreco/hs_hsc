@@ -36,6 +36,7 @@ def run(args):
                               raField=args.raField,
                               decField=args.decField,
                               clean=args.clean,
+                              njobs=args.njobs,
                               sample=args.sample)
     else:
         raise Exception("### Can not find the input catalog: %s" % args.incat)
@@ -89,8 +90,12 @@ if __name__ == '__main__':
                         help="Column name for DEC", default='dec_hsc')
     parser.add_argument('-z', '--redshift', dest='zField',
                         help="Column name for z", default='z_use')
+    parser.add_argument('-j', '--njobs', type=int,
+                        help='Number of jobs run at the same time',
+                        dest='njobs', default=1)
     parser.add_argument('--sample', dest='sample', help="Sample name",
                         default=None)
+
     args = parser.parse_args()
 
     run(args)

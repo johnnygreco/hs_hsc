@@ -19,6 +19,13 @@ SEP = '-' * 100
 WAR = '!' * 100
 HSC_FILTERS = ['HSC-G', 'HSC-R', 'HSC-I', 'HSC-Z', 'HSC-Y']
 
+# For multiprocessing
+try:
+    from joblib import Parallel, delayed
+    multiJob = True
+except ImportError:
+    multiJob = False
+
 
 def decideCutoutSize(z, safe=False):
     """
@@ -280,6 +287,224 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
                                          min=min, max=max, Q=Q)
 
 
+def singleCut(butler, root, index, id, ra, dec, size,
+              z, extr1, extr2,
+              filter='HSC-I', prefix='coadd_cutout',
+              sample=None, idField='index',
+              raField='ra_hsc', decField='dec_hsc', colorFilters='gri',
+              sizeField='cutout_size', zCutoutSize=False, zField=None,
+              verbose=True, noColor=False, onlyColor=False,
+              infoField1=None, infoField2=None, clean=False,
+              min=-0.0, max=0.72, Q=15, safe=False, saveSrc=False,
+              makeDir=False, noName=False,
+              imgOnly=False, allFilters=False):
+    """Make cutout for single object."""
+    if verbose:
+        print "### %d -- ID: %s ; " % ((index + 1),
+                                       str(id[index])) + \
+              "RA: %10.5f DEC %10.5f ; Size: %d" % (ra[index],
+                                                    dec[index],
+                                                    size[index])
+    # New prefix
+    newPrefix = prefix + '_' + str(id[index]).strip()
+    # Cutout Image
+    if not onlyColor:
+        if verbose:
+            print "### Make the Cutout Fits Files!  "
+        if not allFilters:
+            filterUse = filter.strip()
+
+            if not onlyColor:
+                if sample is not None:
+                    logPre = prefix + '_' + sample
+                else:
+                    logPre = prefix
+                logFile = logPre + '_match_' + filterUse + '.lis'
+                if not os.path.isfile(logFile):
+                    os.system('touch ' + logFile)
+
+            if makeDir:
+                dirLoc = (str(id[index]).strip() + '/' +
+                          str(filterUse).strip() + '/')
+                if not os.path.exists(dirLoc):
+                    os.makedirs(dirLoc)
+                filterPre = dirLoc + newPrefix
+            else:
+                filterPre = newPrefix
+
+            if saveSrc:
+                tempOut = cdCutout.coaddImageCutFull(root,
+                                                     ra[index],
+                                                     dec[index],
+                                                     size[index],
+                                                     savePsf=True,
+                                                     saveSrc=True,
+                                                     visual=True,
+                                                     filt=filterUse,
+                                                     prefix=filterPre,
+                                                     butler=butler,
+                                                     imgOnly=imgOnly)
+                found, full, npatch = tempOut
+            else:
+                tempOut = cdCutout.coaddImageCutFull(root,
+                                                     ra[index],
+                                                     dec[index],
+                                                     size[index],
+                                                     savePsf=True,
+                                                     saveSrc=False,
+                                                     visual=True,
+                                                     filt=filterUse,
+                                                     prefix=filterPre,
+                                                     butler=butler,
+                                                     imgOnly=imgOnly)
+                found, full, npatch = tempOut
+            if found:
+                matchStatus = 'Found'
+                if full:
+                    full = 'Full'
+                else:
+                    full = 'Part'
+            else:
+                matchStatus = 'NoData'
+                full = 'None'
+
+            with open(logFile, "a") as logMatch:
+                logStr = "%5d   %s   %6s   %4s   %3d \n"
+                try:
+                    logMatch.write(logStr % (id[index],
+                                             filterUse,
+                                             matchStatus,
+                                             full, npatch))
+                    fcntl.flock(logMatch, fcntl.LOCK_UN)
+                except IOError:
+                    pass
+        else:
+            for filterUse in HSC_FILTERS:
+                print "## Working on %s now" % filterUse
+
+                if not onlyColor:
+                    if sample is not None:
+                        logPre = prefix + '_' + sample
+                    else:
+                        logPre = prefix
+                    logFilter = logPre + '_match_' + filterUse + '.lis'
+                    if not os.path.isfile(logFilter):
+                        os.system('touch ' + logFilter)
+
+                if makeDir:
+                    dirLoc = (str(id[index]).strip() + '/' +
+                              str(filterUse).strip() + '/')
+                    if not os.path.exists(dirLoc):
+                        os.makedirs(dirLoc)
+                    filterPre = dirLoc + newPrefix
+                else:
+                    filterPre = newPrefix
+
+                if saveSrc:
+                    tempOut = cdCutout.coaddImageCutFull(root,
+                                                         ra[index],
+                                                         dec[index],
+                                                         size[index],
+                                                         savePsf=True,
+                                                         saveSrc=True,
+                                                         visual=True,
+                                                         filt=filterUse,
+                                                         prefix=filterPre,
+                                                         butler=butler,
+                                                         imgOnly=imgOnly)
+                    found, full, npatch = tempOut
+                else:
+                    tempOut = cdCutout.coaddImageCutFull(root,
+                                                         ra[index],
+                                                         dec[index],
+                                                         size[index],
+                                                         savePsf=True,
+                                                         saveSrc=False,
+                                                         visual=True,
+                                                         filt=filterUse,
+                                                         prefix=filterPre,
+                                                         butler=butler,
+                                                         imgOnly=imgOnly)
+                    found, full, npatch = tempOut
+                if found:
+                    matchStatus = 'Found'
+                    if full:
+                        full = 'Full'
+                    else:
+                        full = 'Part'
+                else:
+                    matchStatus = 'NoData'
+                    full = 'None'
+
+                with open(logFilter, "a") as logMatch:
+                    logStr = "%5d   %s   %6s   %4s   %3d \n"
+                    try:
+                        logMatch.write(logStr % (id[index],
+                                                 filterUse,
+                                                 matchStatus,
+                                                 full, npatch))
+                        fcntl.flock(logMatch, fcntl.LOCK_UN)
+                    except IOError:
+                        pass
+
+    # Color Image
+    # Whether put redshift on the image
+    if (zField is not None) and (z is not None):
+        info1 = "z=%5.3f" % z[index]
+    else:
+        info1 = None
+    # Extra information
+    if (infoField1 is not None) and (extr1 is not None):
+        info2 = str(extr1[index]).strip()
+    else:
+        info2 = None
+    if (infoField2 is not None) and (extr2 is not None):
+        info3 = str(extr2[index]).strip()
+    else:
+        info3 = None
+
+    if onlyColor:
+        if noName:
+            name = None
+        else:
+            name = str(id[index])
+        if verbose:
+            print "### Generate Color Image !"
+        if clean:
+            cdColor.coaddColourImageFull(root,
+                                         ra[index], dec[index],
+                                         size[index],
+                                         filt=colorFilters,
+                                         prefix=newPrefix, name=None,
+                                         info1=None, info2=None,
+                                         info3=None,
+                                         min=min, max=max, Q=Q,
+                                         butler=butler)
+        else:
+            cdColor.coaddColourImageFull(root,
+                                         ra[index], dec[index],
+                                         size[index],
+                                         filt=colorFilters,
+                                         prefix=newPrefix, name=name,
+                                         info1=info1, info2=info2,
+                                         info3=info3,
+                                         min=min, max=max, Q=Q,
+                                         butler=butler)
+    elif (matchStatus is 'Found' and not noColor):
+        if noName:
+            name = None
+        else:
+            name = str(id[index])
+        if verbose:
+            print "### Generate Color Image !"
+        cdColor.coaddColourImageFull(root, ra[index],
+                                     dec[index], size[index],
+                                     filt=colorFilters,
+                                     prefix=newPrefix, name=name,
+                                     info1=info1, info2=info2, info3=info3,
+                                     min=min, max=max, Q=Q, butler=butler)
+
+
 def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                       prefix='coadd_cutout', sample=None, idField='id',
                       raField='ra', decField='dec', colorFilters='gri',
@@ -287,7 +512,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                       verbose=True, noColor=False, onlyColor=False,
                       infoField1=None, infoField2=None, clean=False,
                       min=-0.0, max=0.72, Q=15, safe=False, saveSrc=False,
-                      makeDir=False, noName=False, nobjs=1,
+                      makeDir=False, noName=False, njobs=1,
                       imgOnly=False, allFilters=False):
     """
     Generate HSC coadd cutout images.
@@ -325,195 +550,42 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
         print "### Will try to get cutout image for %d objects" % nObjs
         print SEP
 
-    for i in range(nObjs):
-        if verbose:
-            print "### %d -- ID: %s ; " % (i+1, str(id[i])) + \
-                  "RA: %10.5f DEC %10.5f ; Size: %d" % (ra[i], dec[i], size[i])
-        # New prefix
-        newPrefix = prefix + '_' + str(id[i]).strip()
-        # Cutout Image
-        if not onlyColor:
-            if verbose:
-                print "### Make the Cutout Fits Files!  "
-            if not allFilters:
-                filterUse = filter.strip()
-
-                if not onlyColor:
-                    if sample is not None:
-                        logPre = prefix + '_' + sample
-                    else:
-                        logPre = prefix
-                    logFile = logPre + '_match_' + filterUse + '.lis'
-                    if not os.path.isfile(logFile):
-                        os.system('touch ' + logFile)
-
-                if makeDir:
-                    dirLoc = (str(id[i]).strip() + '/' +
-                              str(filterUse).strip() + '/')
-                    if not os.path.exists(dirLoc):
-                        os.makedirs(dirLoc)
-                    filterPre = dirLoc + newPrefix
-                else:
-                    filterPre = newPrefix
-
-                if saveSrc:
-                    tempOut = cdCutout.coaddImageCutFull(root, ra[i], dec[i],
-                                                         size[i], savePsf=True,
-                                                         saveSrc=True,
-                                                         visual=True,
-                                                         filt=filterUse,
-                                                         prefix=filterPre,
-                                                         butler=butler,
-                                                         imgOnly=imgOnly)
-                    found, full, npatch = tempOut
-                else:
-                    tempOut = cdCutout.coaddImageCutFull(root, ra[i], dec[i],
-                                                         size[i], savePsf=True,
-                                                         saveSrc=False,
-                                                         visual=True,
-                                                         filt=filterUse,
-                                                         prefix=filterPre,
-                                                         butler=butler,
-                                                         imgOnly=imgOnly)
-                    found, full, npatch = tempOut
-                if found:
-                    matchStatus = 'Found'
-                    if full:
-                        full = 'Full'
-                    else:
-                        full = 'Part'
-                else:
-                    matchStatus = 'NoData'
-                    full = 'None'
-
-                with open(logFile, "a") as logMatch:
-                    logStr = "%5d   %s   %6s   %4s   %3d \n"
-                    try:
-                        logMatch.write(logStr % (id[i],
-                                                 filterUse,
-                                                 matchStatus,
-                                                 full, npatch))
-                        fcntl.flock(logMatch, fcntl.LOCK_UN)
-                    except IOError:
-                        pass
-            else:
-                for filterUse in HSC_FILTERS:
-                    print "## Working on %s now" % filterUse
-
-                    if not onlyColor:
-                        if sample is not None:
-                            logPre = prefix + '_' + sample
-                        else:
-                            logPre = prefix
-                        logFilter = logPre + '_match_' + filterUse + '.lis'
-                        if not os.path.isfile(logFilter):
-                            os.system('touch ' + logFilter)
-
-                    if makeDir:
-                        dirLoc = (str(id[i]).strip() + '/' +
-                                  str(filterUse).strip() + '/')
-                        if not os.path.exists(dirLoc):
-                            os.makedirs(dirLoc)
-                        filterPre = dirLoc + newPrefix
-                    else:
-                        filterPre = newPrefix
-
-                    if saveSrc:
-                        tempOut = cdCutout.coaddImageCutFull(root,
-                                                             ra[i], dec[i],
-                                                             size[i],
-                                                             savePsf=True,
-                                                             saveSrc=True,
-                                                             visual=True,
-                                                             filt=filterUse,
-                                                             prefix=filterPre,
-                                                             butler=butler,
-                                                             imgOnly=imgOnly)
-                        found, full, npatch = tempOut
-                    else:
-                        tempOut = cdCutout.coaddImageCutFull(root,
-                                                             ra[i], dec[i],
-                                                             size[i],
-                                                             savePsf=True,
-                                                             saveSrc=False,
-                                                             visual=True,
-                                                             filt=filterUse,
-                                                             prefix=filterPre,
-                                                             butler=butler,
-                                                             imgOnly=imgOnly)
-                        found, full, npatch = tempOut
-                    if found:
-                        matchStatus = 'Found'
-                        if full:
-                            full = 'Full'
-                        else:
-                            full = 'Part'
-                    else:
-                        matchStatus = 'NoData'
-                        full = 'None'
-
-                    with open(logFilter, "a") as logMatch:
-                        logStr = "%5d   %s   %6s   %4s   %3d \n"
-                        try:
-                            logMatch.write(logStr % (id[i],
-                                                     filterUse,
-                                                     matchStatus,
-                                                     full, npatch))
-                            fcntl.flock(logMatch, fcntl.LOCK_UN)
-                        except IOError:
-                            pass
-
-        # Color Image
-        # Whether put redshift on the image
-        if (zField is not None) and (z is not None):
-            info1 = "z=%5.3f" % z[i]
-        else:
-            info1 = None
-        # Extra information
-        if (infoField1 is not None) and (extr1 is not None):
-            info2 = str(extr1[i]).strip()
-        else:
-            info2 = None
-        if (infoField2 is not None) and (extr2 is not None):
-            info3 = str(extr2[i]).strip()
-        else:
-            info3 = None
-
-        if onlyColor:
-            if noName:
-                name = None
-            else:
-                name = str(id[i])
-            if verbose:
-                print "### Generate Color Image !"
-            if clean:
-                cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
-                                             filt=colorFilters,
-                                             prefix=newPrefix, name=None,
-                                             info1=None, info2=None,
-                                             info3=None,
-                                             min=min, max=max, Q=Q,
-                                             butler=butler)
-            else:
-                cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
-                                             filt=colorFilters,
-                                             prefix=newPrefix, name=name,
-                                             info1=info1, info2=info2,
-                                             info3=info3,
-                                             min=min, max=max, Q=Q,
-                                             butler=butler)
-        elif (matchStatus is 'Found' and not noColor):
-            if noName:
-                name = None
-            else:
-                name = str(id[i])
-            if verbose:
-                print "### Generate Color Image !"
-            cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
-                                         filt=colorFilters,
-                                         prefix=newPrefix, name=name,
-                                         info1=info1, info2=info2, info3=info3,
-                                         min=min, max=max, Q=Q, butler=butler)
+    if njobs > 1 and multiJob:
+        """Start parallel run."""
+        Parallel(n_jobs=njobs)(delayed(singleCut)(
+                               butler, root, index, id, ra, dec, size,
+                               z, extr1, extr2,
+                               size=size, filter=filter, prefix=prefix,
+                               sample=sample, idField=idField,
+                               raField=raField, decField=decField,
+                               colorFilters=colorFilters,
+                               sizeField=sizeField,
+                               zCutoutSize=zCutoutSize, zField=zField,
+                               verbose=verbose, noColor=noColor,
+                               onlyColor=onlyColor,
+                               infoField1=infoField1, infoField2=infoField2,
+                               clean=clean, min=min, max=min, Q=Q,
+                               safe=safe, saveSrc=saveSrc,
+                               makeDir=makeDir, noName=noName,
+                               allFilters=allFilters,
+                               imgOnly=imgOnly) for index in range(nObjs))
+    else:
+        for index in range(nObjs):
+            singleCut(butler, root, index, id, ra, dec, size,
+                      z, extr1, extr2,
+                      size=size, filter=filter, prefix=prefix,
+                      sample=sample, idField=idField,
+                      raField=raField, decField=decField,
+                      colorFilters=colorFilters,
+                      sizeField=sizeField,
+                      zCutoutSize=zCutoutSize, zField=zField,
+                      verbose=verbose, noColor=noColor,
+                      onlyColor=onlyColor,
+                      infoField1=infoField1, infoField2=infoField2,
+                      clean=clean, min=min, max=min, Q=Q,
+                      safe=safe, saveSrc=saveSrc,
+                      makeDir=makeDir, noName=noName,
+                      imgOnly=imgOnly, allFilters=allFilters)
 
 
 if __name__ == '__main__':
@@ -530,6 +602,7 @@ if __name__ == '__main__':
     parser.add_argument('-j', '--njobs', type=int,
                         help='Number of jobs run at the same time',
                         dest='njobs', default=1)
+
     parser.add_argument('-p', '--prefix', dest='prefix',
                         help='Prefix of the output file',
                         default='hsc_coadd_cutout')
