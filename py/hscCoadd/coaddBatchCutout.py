@@ -287,8 +287,7 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
                                          min=min, max=max, Q=Q)
 
 
-def singleCut(index, butler, root, id, ra, dec, size,
-              z, extr1, extr2,
+def singleCut(index, butler, root, useful,
               filter='HSC-I', prefix='coadd_cutout',
               sample=None, idField='index',
               raField='ra_hsc', decField='dec_hsc', colorFilters='gri',
@@ -299,6 +298,7 @@ def singleCut(index, butler, root, id, ra, dec, size,
               makeDir=False, noName=False,
               imgOnly=False, allFilters=False):
     """Make cutout for single object."""
+    id, ra, dec, size, z, extr1, extr2 = useful
     if verbose:
         print "### %d -- ID: %s ; " % ((index + 1),
                                        str(id[index])) + \
@@ -535,12 +535,11 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
             print COM
             print "              PARSE THE INPUT CATALOG                 "
             print COM
-        tempOut = parseInputCatalog(inCat, sizeDefault=size, idField=idField,
-                                    raField=raField, decField=decField,
-                                    zField=zField, zCutoutSize=zCutoutSize,
-                                    infoField1=infoField1,
-                                    infoField2=infoField2, safe=safe)
-        id, ra, dec, size, z, extr1, extr2 = tempOut
+        useful = parseInputCatalog(inCat, sizeDefault=size, idField=idField,
+                                   raField=raField, decField=decField,
+                                   zField=zField, zCutoutSize=zCutoutSize,
+                                   infoField1=infoField1,
+                                   infoField2=infoField2, safe=safe)
     else:
         raise Exception("### Can not find the input catalog: %s" % inCat)
 
@@ -554,8 +553,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
     if njobs > 1 and multiJob:
         """Start parallel run."""
         Parallel(n_jobs=njobs)(delayed(singleCut)(
-                               index, butler, root, id, ra, dec, size,
-                               z, extr1, extr2,
+                               index, butler, root, useful,
                                filter=filter, prefix=prefix,
                                sample=sample, idField=idField,
                                raField=raField, decField=decField,
@@ -572,8 +570,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                                imgOnly=imgOnly) for index in indexObj)
     else:
         for index in indexObj:
-            singleCut(index, butler, root, id, ra, dec, size,
-                      z, extr1, extr2,
+            singleCut(index, butler, root, useful,
                       filter=filter, prefix=prefix,
                       sample=sample, idField=idField,
                       raField=raField, decField=decField,
