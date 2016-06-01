@@ -287,17 +287,17 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
                                          min=min, max=max, Q=Q)
 
 
-def singleCut(butler, root, index, id, ra, dec, size,
+def singleCut(index, butler, root, id, ra, dec, size,
               z, extr1, extr2,
-              filter, prefix,
-              sample, idField,
-              raField, decField, colorFilters,
-              sizeField, zCutoutSize, zField,
-              verbose, noColor, onlyColor,
-              infoField1, infoField2, clean,
-              min, max, Q, safe, saveSrc,
-              makeDir, noName,
-              allFilters, imgOnly):
+              filter='HSC-I', prefix='coadd_cutout',
+              sample=None, idField='index',
+              raField='ra_hsc', decField='dec_hsc', colorFilters='gri',
+              sizeField='cutout_size', zCutoutSize=False, zField=None,
+              verbose=True, noColor=False, onlyColor=False,
+              infoField1=None, infoField2=None, clean=False,
+              min=-0.0, max=0.72, Q=15, safe=False, saveSrc=False,
+              makeDir=False, noName=False,
+              imgOnly=False, allFilters=False):
     """Make cutout for single object."""
     if verbose:
         print "### %d -- ID: %s ; " % ((index + 1),
@@ -554,25 +554,25 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
     if njobs > 1 and multiJob:
         """Start parallel run."""
         Parallel(n_jobs=njobs)(delayed(singleCut)(
-                               butler, root, index, id, ra, dec, size,
+                               index, butler, root, id, ra, dec, size,
                                z, extr1, extr2,
-                               filter, prefix,
-                               sample, idField,
-                               raField, decField,
-                               colorFilters,
-                               sizeField,
-                               zCutoutSize, zField,
-                               verbose, noColor,
-                               onlyColor,
-                               infoField1, infoField2,
-                               clean, min, max, Q,
-                               safe, saveSrc,
-                               makeDir, noName,
-                               allFilters,
-                               imgOnly) for index in indexObj)
+                               filter=filter, prefix=prefix,
+                               sample=sample, idField=idField,
+                               raField=raField, decField=decField,
+                               colorFilters=colorFilters,
+                               sizeField=sizeField,
+                               zCutoutSize=zCutoutSize, zField=zField,
+                               verbose=verbose, noColor=noColor,
+                               onlyColor=onlyColor,
+                               infoField1=infoField1, infoField2=infoField2,
+                               clean=clean, min=min, max=max, Q=Q,
+                               safe=safe, saveSrc=saveSrc,
+                               makeDir=makeDir, noName=noName,
+                               allFilters=allFilters,
+                               imgOnly=imgOnly) for index in indexObj)
     else:
         for index in indexObj:
-            singleCut(butler, root, index, id, ra, dec, size,
+            singleCut(index, butler, root, id, ra, dec, size,
                       z, extr1, extr2,
                       filter=filter, prefix=prefix,
                       sample=sample, idField=idField,
