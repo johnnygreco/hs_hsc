@@ -11,8 +11,8 @@ from astropy.io import fits
 # HSC Pipeline
 import lsst.daf.persistence as dafPersist
 
-import coaddImageCutout as cdCutout
-import coaddColourImage as cdColor
+from coaddImageCutout import coaddImageCutFull, coaddImageCutout
+from coaddColourImage import coaddColourImageFull, coaddColourImage
 
 COM = '#' * 100
 SEP = '-' * 100
@@ -199,9 +199,9 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
 
         # Cutout Image
         if not onlyColor:
-            tempOut = cdCutout.coaddImageCutout(root, ra[i], dec[i], size[i],
-                                                saveMsk=True, filt=filter,
-                                                prefix=newPrefix)
+            tempOut = coaddImageCutout(root, ra[i], dec[i], size[i],
+                                       saveMsk=True, filt=filter,
+                                       prefix=newPrefix)
             coaddFound, noData, partialCut = tempOut
             if coaddFound:
                 if not noData:
@@ -246,45 +246,45 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
                 name = str(id[i])
             if stitch:
                 if not clean:
-                    cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
-                                                 filt=colorFilters,
-                                                 scaleBar=10,
-                                                 prefix=newPrefix, name=name,
-                                                 info1=info1, info2=info2,
-                                                 info3=info3, min=min, max=max,
-                                                 Q=Q)
-                else:
-                    cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
-                                                 filt=colorFilters,
-                                                 scaleBar=10,
-                                                 prefix=newPrefix, name=None,
-                                                 info1=None, info2=None,
-                                                 info3=None, min=min, max=max,
-                                                 Q=Q)
-            else:
-                cdColor.coaddColourImage(root, ra[i], dec[i], size[i],
+                    coaddColourImageFull(root, ra[i], dec[i], size[i],
                                          filt=colorFilters,
+                                         scaleBar=10,
                                          prefix=newPrefix, name=name,
-                                         info1=info1, info2=info2, info3=info3,
-                                         min=min, max=max, Q=Q)
+                                         info1=info1, info2=info2,
+                                         info3=info3, min=min, max=max,
+                                         Q=Q)
+                else:
+                    coaddColourImageFull(root, ra[i], dec[i], size[i],
+                                         filt=colorFilters,
+                                         scaleBar=10,
+                                         prefix=newPrefix, name=None,
+                                         info1=None, info2=None,
+                                         info3=None, min=min, max=max,
+                                         Q=Q)
+            else:
+                coaddColourImage(root, ra[i], dec[i], size[i],
+                                 filt=colorFilters,
+                                 prefix=newPrefix, name=name,
+                                 info1=info1, info2=info2, info3=info3,
+                                 min=min, max=max, Q=Q)
         elif (matchStatus is 'Full') or (matchStatus is 'Part'):
             if noName:
                 name = None
             else:
                 name = str(id[i])
             if stitch:
-                cdColor.coaddColourImageFull(root, ra[i], dec[i], size[i],
-                                             filt=colorFilters,
-                                             prefix=newPrefix, name=name,
-                                             info1=info1, info2=info2,
-                                             info3=info3, min=min, max=max,
-                                             Q=Q)
+                coaddColourImageFull(root, ra[i], dec[i], size[i],
+                                     filt=colorFilters,
+                                     prefix=newPrefix, name=name,
+                                     info1=info1, info2=info2,
+                                     info3=info3, min=min, max=max,
+                                     Q=Q)
             else:
-                cdColor.coaddColourImage(root, ra[i], dec[i], size[i],
-                                         filt=colorFilters,
-                                         prefix=newPrefix, name=name,
-                                         info1=info1, info2=info2, info3=info3,
-                                         min=min, max=max, Q=Q)
+                coaddColourImage(root, ra[i], dec[i], size[i],
+                                 filt=colorFilters,
+                                 prefix=newPrefix, name=name,
+                                 info1=info1, info2=info2, info3=info3,
+                                 min=min, max=max, Q=Q)
 
 
 def singleCut(index, butler, root, useful,
@@ -333,30 +333,30 @@ def singleCut(index, butler, root, useful,
                 filterPre = newPrefix
 
             if saveSrc:
-                tempOut = cdCutout.coaddImageCutFull(root,
-                                                     ra[index],
-                                                     dec[index],
-                                                     size[index],
-                                                     savePsf=True,
-                                                     saveSrc=True,
-                                                     visual=True,
-                                                     filt=filterUse,
-                                                     prefix=filterPre,
-                                                     butler=butler,
-                                                     imgOnly=imgOnly)
+                tempOut = coaddImageCutFull(root,
+                                            ra[index],
+                                            dec[index],
+                                            size[index],
+                                            savePsf=True,
+                                            saveSrc=True,
+                                            visual=True,
+                                            filt=filterUse,
+                                            prefix=filterPre,
+                                            butler=butler,
+                                            imgOnly=imgOnly)
                 found, full, npatch = tempOut
             else:
-                tempOut = cdCutout.coaddImageCutFull(root,
-                                                     ra[index],
-                                                     dec[index],
-                                                     size[index],
-                                                     savePsf=True,
-                                                     saveSrc=False,
-                                                     visual=True,
-                                                     filt=filterUse,
-                                                     prefix=filterPre,
-                                                     butler=butler,
-                                                     imgOnly=imgOnly)
+                tempOut = coaddImageCutFull(root,
+                                            ra[index],
+                                            dec[index],
+                                            size[index],
+                                            savePsf=True,
+                                            saveSrc=False,
+                                            visual=True,
+                                            filt=filterUse,
+                                            prefix=filterPre,
+                                            butler=butler,
+                                            imgOnly=imgOnly)
                 found, full, npatch = tempOut
             if found:
                 matchStatus = 'Found'
@@ -401,30 +401,30 @@ def singleCut(index, butler, root, useful,
                     filterPre = newPrefix
 
                 if saveSrc:
-                    tempOut = cdCutout.coaddImageCutFull(root,
-                                                         ra[index],
-                                                         dec[index],
-                                                         size[index],
-                                                         savePsf=True,
-                                                         saveSrc=True,
-                                                         visual=True,
-                                                         filt=filterUse,
-                                                         prefix=filterPre,
-                                                         butler=butler,
-                                                         imgOnly=imgOnly)
+                    tempOut = coaddImageCutFull(root,
+                                                ra[index],
+                                                dec[index],
+                                                size[index],
+                                                savePsf=True,
+                                                saveSrc=True,
+                                                visual=True,
+                                                filt=filterUse,
+                                                prefix=filterPre,
+                                                butler=butler,
+                                                imgOnly=imgOnly)
                     found, full, npatch = tempOut
                 else:
-                    tempOut = cdCutout.coaddImageCutFull(root,
-                                                         ra[index],
-                                                         dec[index],
-                                                         size[index],
-                                                         savePsf=True,
-                                                         saveSrc=False,
-                                                         visual=True,
-                                                         filt=filterUse,
-                                                         prefix=filterPre,
-                                                         butler=butler,
-                                                         imgOnly=imgOnly)
+                    tempOut = coaddImageCutFull(root,
+                                                ra[index],
+                                                dec[index],
+                                                size[index],
+                                                savePsf=True,
+                                                saveSrc=False,
+                                                visual=True,
+                                                filt=filterUse,
+                                                prefix=filterPre,
+                                                butler=butler,
+                                                imgOnly=imgOnly)
                     found, full, npatch = tempOut
                 if found:
                     matchStatus = 'Found'
@@ -471,25 +471,25 @@ def singleCut(index, butler, root, useful,
         if verbose:
             print "### Generate Color Image !"
         if clean:
-            cdColor.coaddColourImageFull(root,
-                                         ra[index], dec[index],
-                                         size[index],
-                                         filt=colorFilters,
-                                         prefix=newPrefix, name=None,
-                                         info1=None, info2=None,
-                                         info3=None,
-                                         min=min, max=max, Q=Q,
-                                         butler=butler)
+            coaddColourImageFull(root,
+                                 ra[index], dec[index],
+                                 size[index],
+                                 filt=colorFilters,
+                                 prefix=newPrefix, name=None,
+                                 info1=None, info2=None,
+                                 info3=None,
+                                 min=min, max=max, Q=Q,
+                                 butler=butler)
         else:
-            cdColor.coaddColourImageFull(root,
-                                         ra[index], dec[index],
-                                         size[index],
-                                         filt=colorFilters,
-                                         prefix=newPrefix, name=name,
-                                         info1=info1, info2=info2,
-                                         info3=info3,
-                                         min=min, max=max, Q=Q,
-                                         butler=butler)
+            coaddColourImageFull(root,
+                                 ra[index], dec[index],
+                                 size[index],
+                                 filt=colorFilters,
+                                 prefix=newPrefix, name=name,
+                                 info1=info1, info2=info2,
+                                 info3=info3,
+                                 min=min, max=max, Q=Q,
+                                 butler=butler)
     elif (matchStatus is 'Found' and not noColor):
         if noName:
             name = None
@@ -497,12 +497,12 @@ def singleCut(index, butler, root, useful,
             name = str(id[index])
         if verbose:
             print "### Generate Color Image !"
-        cdColor.coaddColourImageFull(root, ra[index],
-                                     dec[index], size[index],
-                                     filt=colorFilters,
-                                     prefix=newPrefix, name=name,
-                                     info1=info1, info2=info2, info3=info3,
-                                     min=min, max=max, Q=Q, butler=butler)
+        coaddColourImageFull(root, ra[index],
+                             dec[index], size[index],
+                             filt=colorFilters,
+                             prefix=newPrefix, name=name,
+                             info1=info1, info2=info2, info3=info3,
+                             min=min, max=max, Q=Q, butler=butler)
 
 
 def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
