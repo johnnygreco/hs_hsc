@@ -287,18 +287,29 @@ def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
                                  min=min, max=max, Q=Q)
 
 
-def singleCut(index, butler, root, useful,
-              filter='HSC-I', prefix='coadd_cutout',
-              sample=None, idField='index',
-              raField='ra_hsc', decField='dec_hsc', colorFilters='gri',
-              sizeField='cutout_size', zCutoutSize=False, zField=None,
-              verbose=True, noColor=False, onlyColor=False,
-              infoField1=None, infoField2=None, clean=False,
-              min=-0.0, max=0.72, Q=15, safe=False, saveSrc=False,
-              makeDir=False, noName=False,
-              imgOnly=False, allFilters=False):
+def singleCut(index, butler, root, useful, config):
     """Make cutout for single object."""
     id, ra, dec, size, z, extr1, extr2 = useful
+    filter = config['filter']
+    prefix = config['prefix']
+    sample = config['sample']
+    colorFilters = config['colorFilters']
+    zField = config['zField']
+    verbose = config['verbose']
+    noColor = config['noColor']
+    onlyColor = config['onlyColor']
+    infoField1 = config['infoField1']
+    infoField2 = config['infoField2']
+    clean = config['clean']
+    min = config['min']
+    max = config['max']
+    Q = config['Q']
+    saveSrc = config['saveSrc']
+    makeDir = config['makeDir']
+    noName = config['noName']
+    imgOnly = config['imgOnly']
+    allFilters = config['allFilters']
+
     if verbose:
         print "### %d -- ID: %s ; " % ((index + 1),
                                        str(id[index])) + \
@@ -553,40 +564,35 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
         print SEP
     indexObj = numpy.asarray(range(nObjs))
 
+    config = {'filter': filter,
+              'prefix': prefix,
+              'sample': sample,
+              'colorFilter': colorFilters,
+              'zField': zField,
+              'verbose': verbose,
+              'noColor': noColor,
+              'onlyColor': onlyColor,
+              'infoField1': infoField1,
+              'infoField2': infoField2,
+              'clean': clean,
+              'min': min,
+              'max': max,
+              'Q': Q,
+              'saveSrc': saveSrc,
+              'makeDir': makeDir,
+              'noName': noName,
+              'imgOnly': imgOnly,
+              'allFilters': allFilters
+              }
+
     if njobs > 1 and multiJob:
         """Start parallel run."""
         Parallel(n_jobs=njobs)(delayed(singleCut)(
                                index, butler, root, useful,
-                               filter=filter, prefix=prefix,
-                               sample=sample, idField=idField,
-                               raField=raField, decField=decField,
-                               colorFilters=colorFilters,
-                               sizeField=sizeField,
-                               zCutoutSize=zCutoutSize, zField=zField,
-                               verbose=verbose, noColor=noColor,
-                               onlyColor=onlyColor,
-                               infoField1=infoField1, infoField2=infoField2,
-                               clean=clean, min=min, max=max, Q=Q,
-                               safe=safe, saveSrc=saveSrc,
-                               makeDir=makeDir, noName=noName,
-                               allFilters=allFilters,
-                               imgOnly=imgOnly) for index in indexObj)
+                               config) for index in indexObj)
     else:
         for index in indexObj:
-            singleCut(index, butler, root, useful,
-                      filter=filter, prefix=prefix,
-                      sample=sample, idField=idField,
-                      raField=raField, decField=decField,
-                      colorFilters=colorFilters,
-                      sizeField=sizeField,
-                      zCutoutSize=zCutoutSize, zField=zField,
-                      verbose=verbose, noColor=noColor,
-                      onlyColor=onlyColor,
-                      infoField1=infoField1, infoField2=infoField2,
-                      clean=clean, min=min, max=max, Q=Q,
-                      safe=safe, saveSrc=saveSrc,
-                      makeDir=makeDir, noName=noName,
-                      imgOnly=imgOnly, allFilters=allFilters)
+            singleCut(index, butler, root, useful, config)
 
 
 if __name__ == '__main__':
