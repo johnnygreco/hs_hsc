@@ -143,7 +143,7 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
             size = numpy.empty(nObjs)
             size.fill(sizeDefault)
 
-    return id, ra, dec, size, redshift, info2, info3
+    return (id, ra, dec, size, redshift, info2, info3), nObjs
 
 
 def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
@@ -535,15 +535,18 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
             print COM
             print "              PARSE THE INPUT CATALOG                 "
             print COM
-        useful = parseInputCatalog(inCat, sizeDefault=size, idField=idField,
-                                   raField=raField, decField=decField,
-                                   zField=zField, zCutoutSize=zCutoutSize,
-                                   infoField1=infoField1,
-                                   infoField2=infoField2, safe=safe)
+        useful, nObjs = parseInputCatalog(inCat, sizeDefault=size,
+                                          idField=idField,
+                                          raField=raField,
+                                          decField=decField,
+                                          zField=zField,
+                                          zCutoutSize=zCutoutSize,
+                                          infoField1=infoField1,
+                                          infoField2=infoField2,
+                                          safe=safe)
     else:
         raise Exception("### Can not find the input catalog: %s" % inCat)
 
-    nObjs = len(id)
     if verbose:
         print SEP
         print "### Will try to get cutout image for %d objects" % nObjs
