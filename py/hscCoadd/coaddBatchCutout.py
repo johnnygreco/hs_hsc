@@ -549,13 +549,14 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
         print SEP
         print "### Will try to get cutout image for %d objects" % nObjs
         print SEP
+    indexObj = numpy.asarray(range(nObjs))
 
     if njobs > 1 and multiJob:
         """Start parallel run."""
         Parallel(n_jobs=njobs)(delayed(singleCut)(
                                butler, root, index, id, ra, dec, size,
                                z, extr1, extr2,
-                               size=size, filter=filter, prefix=prefix,
+                               filter=filter, prefix=prefix,
                                sample=sample, idField=idField,
                                raField=raField, decField=decField,
                                colorFilters=colorFilters,
@@ -568,12 +569,12 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                                safe=safe, saveSrc=saveSrc,
                                makeDir=makeDir, noName=noName,
                                allFilters=allFilters,
-                               imgOnly=imgOnly) for index in range(nObjs))
+                               imgOnly=imgOnly) for index in indexObj)
     else:
-        for index in range(nObjs):
+        for index in indexObj:
             singleCut(butler, root, index, id, ra, dec, size,
                       z, extr1, extr2,
-                      size=size, filter=filter, prefix=prefix,
+                      filter=filter, prefix=prefix,
                       sample=sample, idField=idField,
                       raField=raField, decField=decField,
                       colorFilters=colorFilters,
