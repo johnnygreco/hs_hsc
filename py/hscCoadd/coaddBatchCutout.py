@@ -380,9 +380,9 @@ def singleCut(index, butler, root, useful, config):
                 full = 'None'
 
             with open(logFile, "a") as logMatch:
-                logStr = "%5d   %s   %6s   %4s   %3d \n"
+                logStr = "%10s   %s   %6s   %4s   %3d \n"
                 try:
-                    logMatch.write(logStr % (id[index],
+                    logMatch.write(logStr % (str(id[index]),
                                              filterUse,
                                              matchStatus,
                                              full, npatch))
