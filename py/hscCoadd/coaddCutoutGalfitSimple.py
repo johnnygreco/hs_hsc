@@ -598,13 +598,15 @@ def readSbpInput(prefix, root=None, rerun='default',
         mskFile = extMsk
     else:
         mskFile = prefix + '_' + maskType + '.fits'
+        if root is not None:
+            mskFile = os.path.join(root, rerun, mskFile)
+        else:
+            mskFile = os.path.join(rerun, mskFile)
 
     if root is not None:
         imgFile = os.path.join(root, rerun, imgFile)
-        mskFile = os.path.join(root, rerun, mskFile)
     else:
         imgFile = os.path.join(rerun, imgFile)
-        mskFile = os.path.join(rerun, mskFile)
 
     if (not os.path.isfile(imgFile)) and (not os.path.islink(imgFile)):
         raise Exception("### Can not find the input cutout image : %s !" %
