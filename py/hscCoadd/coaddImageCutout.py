@@ -634,9 +634,9 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
     raDecList = map(lambda x: afwCoord.IcrsCoord(x), points)
 
     # Expected size and center position
-    dimExpect = np.floor(2 * size + 1)
-    cenExpect = np.floor(dimExpect/2.0, dimExpect/2.0)
-    sizeExpect = np.floor(dimExpect ** 2)
+    dimExpect = int(2 * size + 1)
+    cenExpect = int(dimExpect/2.0, dimExpect/2.0)
+    sizeExpect = int(dimExpect ** 2)
     # Get the half size of the image in degree
     sizeDegree = size * 0.168 / 3600.0
 
