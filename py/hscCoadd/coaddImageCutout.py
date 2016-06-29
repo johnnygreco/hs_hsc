@@ -635,7 +635,7 @@ def coaddImageCutFull(root, ra, dec, size, saveSrc=True, savePsf=True,
 
     # Expected size and center position
     dimExpect = int(2 * size + 1)
-    cenExpect = int(dimExpect/2.0, dimExpect/2.0)
+    cenExpect = (dimExpect/2.0, dimExpect/2.0)
     sizeExpect = int(dimExpect ** 2)
     # Get the half size of the image in degree
     sizeDegree = size * 0.168 / 3600.0
