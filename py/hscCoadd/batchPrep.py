@@ -266,6 +266,8 @@ if __name__ == '__main__':
                         action="store_true", default=False)
     parser.add_argument('--sample', dest='sample', help="Sample name",
                         default=None)
+    parser.add_argument('--verbose', dest='verbose', help="Verbose",
+                        default=True, action="store_true")
     """ Optional """
     parser.add_argument('-k', dest='kernel',
                         help='SExtractor detection kernel',
