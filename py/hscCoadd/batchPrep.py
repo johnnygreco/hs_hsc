@@ -339,9 +339,9 @@ if __name__ == '__main__':
     parser.add_argument('--useSigArr', dest='useSigArr', action="store_true",
                         default=False)
     parser.add_argument('--combBad', dest='combBad', action="store_true",
-                        default=True)
+                        default=False)
     parser.add_argument('--combDet', dest='combDet', action="store_true",
-                        default=True)
+                        default=False)
     args = parser.parse_args()
 
     run(args)
