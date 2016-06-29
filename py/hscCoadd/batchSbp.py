@@ -27,12 +27,6 @@ def run(args):
     """
     gc.collect()
 
-    """ Increase stack size limit """
-    try:
-        os.system('ulimit -s unlimited')
-    except Exception:
-        pass
-
     if os.path.isfile(args.incat):
         data = fits.open(args.incat)[1].data
         id = (args.id)
