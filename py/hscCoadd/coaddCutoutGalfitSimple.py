@@ -87,7 +87,9 @@ def galfitAIC(galOut):
 
 def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
                showZoom=True, zoomLimit=6.0, showTitle=True, showChi2=True,
-               zoomSize=None, overComp=True, maskRes=True):
+               zoomSize=None, overComp=True, maskRes=True,
+               scale1=0.03, sample1=500,
+               scale2=0.40, sample2=500):
     """
     Three columns view of the Galfit models.
 
@@ -151,8 +153,6 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
             imgMsk = mskArr[np.int(galOut.box_x0)-1:np.int(galOut.box_x1),
                             np.int(galOut.box_y0)-1:np.int(galOut.box_y1)]
             resShow = copy.deepcopy(imgRes)
-            print resShow.shape
-            print imgMsk.shape
             resShow[imgMsk > 0] = np.nan
         else:
             print "XXX Can not find the mask file : %s" % maskFile
@@ -186,12 +186,12 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
     else:
         xPad, yPad = 0, 0
 
-    imin1, imax1 = hUtil.zscale(imgOri, contrast=0.03,
-                                samples=500)
-    imin2, imax2 = hUtil.zscale(imgMod, contrast=0.03,
-                                samples=500)
-    imin3, imax3 = hUtil.zscale(resShow, contrast=0.40,
-                                samples=500)
+    imin1, imax1 = hUtil.zscale(imgOri, contrast=scale1,
+                                samples=sample1)
+    imin2, imax2 = hUtil.zscale(imgMod, contrast=scale1,
+                                samples=sample1)
+    imin3, imax3 = hUtil.zscale(resShow, contrast=scale2,
+                                samples=sample2)
 
     compX = np.asarray(compX) - np.float(galOut.box_x0)
     compY = np.asarray(compY) - np.float(galOut.box_y0)
@@ -467,7 +467,8 @@ def getCenConstrFile(comps, location=None, name=None):
 def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
                    keepLog=True, show=True, expect=None, showZoom=False,
                    zoomSize=None, removePsf=True, verbose=False,
-                   abspath=False, deleteAfter=False, savePkl=True):
+                   abspath=False, deleteAfter=False, savePkl=True,
+                   scale1=0.03, scale2=0.40):
     """Run GALFIT."""
     """ Find GALFIT """
     if galfit is None:
@@ -560,7 +561,8 @@ def coaddRunGalfit(readFile, root=None, imax=150, galfit=None, updateRead=True,
                 showModels(expect, galOut, root=root, verbose=True,
                            vertical=False, showZoom=showZoom, showTitle=True,
                            showChi2=True, overComp=True, maskRes=True,
-                           zoomSize=zoomSize)
+                           zoomSize=zoomSize,
+                           scale1=scale1, scale2=scale2)
                 plotOk = True
             except Exception:
                 plotOk = False
@@ -1010,7 +1012,8 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
                             checkCenter=False, constrCen=True,
                             deleteAfter=False, maskType='mskfin',
                             externalMask=None, abspath=False,
-                            show=True, imgSub=False):
+                            show=True, imgSub=False,
+                            scale1=0.03, scale2=0.40):
     """
     Run 1-Sersic fitting on HSC cutout image.
 
@@ -1201,7 +1204,9 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
     if run1:
         done1, plot1 = coaddRunGalfit(inFile, root=modRoot, imax=imax,
                                       zoomSize=int(dimX/2.5),
-                                      deleteAfter=deleteAfter, show=show)
+                                      deleteAfter=deleteAfter,
+                                      show=show,
+                                      scale1=scale1, scale2=scale2)
         if done1:
             ser1Done = 'DONE'
         else:
@@ -1228,7 +1233,8 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
         if run2:
             done2, plot2 = coaddRunGalfit(inFile2, root=modRoot, imax=imax,
                                           zoomSize=int(dimX/2.5),
-                                          deleteAfter=deleteAfter, show=show)
+                                          deleteAfter=deleteAfter, show=show,
+                                          scale1=scale1, scale2=scale2)
             if done2:
                 ser2Done = 'DONE'
             else:
@@ -1257,7 +1263,8 @@ def coaddCutoutGalfitSimple(prefix, root=None, rerun='default',
         if run3:
             done3, plot3 = coaddRunGalfit(inFile3, root=modRoot, imax=imax,
                                           zoomSize=int(dimX/2.5),
-                                          deleteAfter=deleteAfter, show=show)
+                                          deleteAfter=deleteAfter, show=show,
+                                          scale1=scale1, scale2=scale2)
             if done3:
                 ser3Done = 'DONE'
             else:
@@ -1360,6 +1367,10 @@ if __name__ == '__main__':
                         action="store_true", default=False)
     parser.add_argument('--imgSub', dest='imgSub',
                         action="store_true", default=False)
+    parser.add_argument('--scale1', dest='scale1', help='Scale for image',
+                        type=float, default=0.03)
+    parser.add_argument('--scale2', dest='scale2', help='Scale for residual',
+                        type=float, default=0.40)
 
     args = parser.parse_args()
 
@@ -1381,4 +1392,5 @@ if __name__ == '__main__':
                             deleteAfter=args.deleteAfter,
                             externalMask=args.externalMask,
                             abspath=args.abspath, show=args.show,
-                            imgSub=args.imgSub)
+                            imgSub=args.imgSub,
+                            scale1=args.scale1, scale2=args.scale2)
