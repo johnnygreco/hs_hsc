@@ -83,7 +83,7 @@ def singleGalfitRun(galaxy, idCol, rerun, prefix, filterUse, logFile):
         """ Filter for mask """
         mskFilter = (args.maskFilter).strip().upper()
         """ Type of mask """
-        mskType = (args.maskType).strip().upper()
+        mskType = (args.maskType).strip()
         print "###  Use %s filter for mask \n" % mskFilter
         mskPrefix = prefix + '_' + galID + '_' + mskFilter + '_full'
         mskRoot = os.path.join(galID, mskFilter, rerun)
