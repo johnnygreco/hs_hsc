@@ -188,7 +188,7 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
 
     imin1, imax1 = hUtil.zscale(imgOri, contrast=scale1,
                                 samples=sample1)
-    imin2, imax2 = hUtil.zscale(imgMod, contrast=scale1,
+    imin2, imax2 = hUtil.zscale(imgMod, contrast=(scale1 + 0.02),
                                 samples=sample1)
     imin3, imax3 = hUtil.zscale(resShow, contrast=scale2,
                                 samples=sample2)
