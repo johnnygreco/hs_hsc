@@ -15,26 +15,16 @@ from distutils import spawn
 
 # Matplotlib related
 import matplotlib as mpl
-mpl.use('Agg')
-mpl.rcParams['figure.figsize'] = 12, 10
-mpl.rcParams['xtick.major.size'] = 8.0
-mpl.rcParams['xtick.major.width'] = 1.5
-mpl.rcParams['xtick.minor.size'] = 4.0
-mpl.rcParams['xtick.minor.width'] = 1.5
-mpl.rcParams['ytick.major.size'] = 8.0
-mpl.rcParams['ytick.major.width'] = 1.5
-mpl.rcParams['ytick.minor.size'] = 4.0
-mpl.rcParams['ytick.minor.width'] = 1.5
-mpl.rc('axes', linewidth=2)
-
 import matplotlib.pyplot as plt
-plt.ioff()
-
 from matplotlib.ticker import NullFormatter
 from matplotlib.patches import Ellipse
 
 # Astropy
 from astropy.io import fits
+
+# Personal
+import hscUtils as hUtil
+import galfitParser as gPar
 
 # Colors and color maps
 from palettable.colorbrewer.qualitative import Set1_9 as compColor
@@ -54,9 +44,19 @@ except Exception:
                            max_light=1.).mpl_colormap
     cmap2.set_bad('w', 1.)
 
-# Personal
-import hscUtils as hUtil
-import galfitParser as gPar
+mpl.use('Agg')
+mpl.rcParams['figure.figsize'] = 12, 10
+mpl.rcParams['xtick.major.size'] = 8.0
+mpl.rcParams['xtick.major.width'] = 1.5
+mpl.rcParams['xtick.minor.size'] = 4.0
+mpl.rcParams['xtick.minor.width'] = 1.5
+mpl.rcParams['ytick.major.size'] = 8.0
+mpl.rcParams['ytick.major.width'] = 1.5
+mpl.rcParams['ytick.minor.size'] = 4.0
+mpl.rcParams['ytick.minor.width'] = 1.5
+mpl.rc('axes', linewidth=2)
+plt.ioff()
+
 
 COM = '#' * 100
 SEP = '-' * 100
