@@ -93,7 +93,7 @@ if __name__ == '__main__':
                         default='dec_hsc')
     parser.add_argument('-z', '--redshift', dest='zField',
                         help="Column name for z",
-                        default='z_use')
+                        default=None)
     parser.add_argument('-j', '--njobs', type=int,
                         help='Number of jobs run at the same time',
                         dest='njobs', default=1)
