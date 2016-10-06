@@ -67,7 +67,7 @@ def decideCutoutSize(z, safe=False):
 
 
 def parseInputCatalog(list, sizeDefault=300, idField='id',
-                      raField='ra', decField='dec', sizeField='cutout_size',
+                      raField='ra', decField='dec', sizeField='size',
                       zField=None, zCutoutSize=False, infoField1=None,
                       infoField2=None, safe=False):
     """
@@ -136,10 +136,13 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
         size = map(lambda x: decideCutoutSize(x, safe=safe), redshift)
         size = numpy.asarray(size)
     else:
-        try:
-            size = cat.field(sizeField)
-        except KeyError:
-            # warnings.warn("### No field name for cutout size is provided !")
+        if sizeField is not None:
+            try:
+                size = cat.field(sizeField)
+            except KeyError:
+                size = numpy.empty(nObjs)
+                size.fill(sizeDefault)
+        else:
             size = numpy.empty(nObjs)
             size.fill(sizeDefault)
 
@@ -149,7 +152,7 @@ def parseInputCatalog(list, sizeDefault=300, idField='id',
 def coaddBatchCutout(root, inCat, size=100, filter='HSC-I',
                      prefix='coadd_cutout', sample=None, idField='id',
                      raField='ra', decField='dec', colorFilters='gri',
-                     sizeField='cutout_size', zCutoutSize=False,
+                     sizeField='size', zCutoutSize=False,
                      zField=None, verbose=True, noColor=False,
                      onlyColor=False, infoField1=None, infoField2=None,
                      clean=False, min=-0.0, max=0.72, Q=15, stitch=False,
@@ -295,6 +298,7 @@ def singleCut(index, butler, root, useful, config):
     sample = config['sample']
     colorFilters = config['colorFilters']
     zField = config['zField']
+    sizeField = config['sizeField']
     verbose = config['verbose']
     noColor = config['noColor']
     onlyColor = config['onlyColor']
@@ -519,7 +523,7 @@ def singleCut(index, butler, root, useful, config):
 def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                       prefix='coadd_cutout', sample=None, idField='id',
                       raField='ra', decField='dec', colorFilters='gri',
-                      sizeField='cutout_size', zCutoutSize=False, zField=None,
+                      sizeField='size', zCutoutSize=False, zField=None,
                       verbose=True, noColor=False, onlyColor=False,
                       infoField1=None, infoField2=None, clean=False,
                       min=-0.0, max=0.72, Q=15, safe=False, saveSrc=False,
@@ -551,6 +555,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
                                           raField=raField,
                                           decField=decField,
                                           zField=zField,
+                                          sizeField=sizeField,
                                           zCutoutSize=zCutoutSize,
                                           infoField1=infoField1,
                                           infoField2=infoField2,
@@ -569,6 +574,7 @@ def coaddBatchCutFull(root, inCat, size=100, filter='HSC-I',
               'sample': sample,
               'colorFilters': colorFilters,
               'zField': zField,
+              'sizeField': sizeField,
               'verbose': verbose,
               'noColor': noColor,
               'onlyColor': onlyColor,
@@ -629,7 +635,7 @@ if __name__ == '__main__':
                         default='riz')
     parser.add_argument('-sf', '--size-field', dest='sizeField',
                         help="Column name for cutout size",
-                        default='cutout_size')
+                        default=None)
     parser.add_argument('-info1', '--infoField1', dest='infoField1',
                         help="Column name for first extra information",
                         default=None)
