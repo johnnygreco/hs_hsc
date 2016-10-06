@@ -26,6 +26,7 @@ def run(args):
                               prefix=args.prefix,
                               zCutoutSize=zCut,
                               zField=args.zField,
+                              sizeField=args.sizeField,
                               onlyColor=True,
                               colorFilters=args.colorFilters,
                               raField=args.raField,
