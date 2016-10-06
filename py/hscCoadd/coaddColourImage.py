@@ -254,7 +254,7 @@ def coaddColourImage(root, ra, dec, size, filt='gri',
             imgRgb = rgbEmpty
         # Add a scale bar
         if scaleBar is not None:
-            sLength = (scaleBar * 1.0) / 0.170 / (dimExpect * 1.0)
+            sLength = ((scaleBar * 1.0) / 0.168) / (dimExpect * 1.0)
             sString = "%d\"" % int(scaleBar)
         else:
             sLength = None
@@ -532,14 +532,16 @@ def coaddColourImageFull(root, ra, dec, size, filt='gri',
                 rgbEmpty[newY[ind]:(newY[ind] + boxY[ind]),
                          newX[ind]:(newX[ind] + boxX[ind]),
                          k] = rgbUse[:, :, k]
+
         imgRgb = rgbEmpty
         # Add a scale bar
         if scaleBar is not None:
-            sLength = (scaleBar * 1.0) / 0.170 / (dimExpect * 1.0)
+            sLength = ((scaleBar * 1.0) / 0.168) / (dimExpect * 1.0)
             sString = "%d\"" % int(scaleBar)
         else:
             sLength = None
             sString = None
+
         # Better way to show the image
         saveRgbPng(outRgb, imgRgb, name=name,
                    info1=info1, info2=info2, info3=info3,
