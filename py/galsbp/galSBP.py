@@ -241,8 +241,8 @@ def unlearnEllipse():
 def easierEllipse(ellipConfig, degree=3, verbose=True,
                   dRad=0.90, dStep=0.008, dFlag=0.03):
     """Make the Ellipse run easier."""
-    print SEP
     if verbose:
+        print SEP
         print "###  Maxsma %6.1f --> %6.1f" % (ellipConfig['maxsma'],
                                                ellipConfig['maxsma'] *
                                                dRad)
@@ -261,7 +261,9 @@ def easierEllipse(ellipConfig, degree=3, verbose=True,
                                                    ellipConfig['fflag'] +
                                                    dFlag)
         ellipConfig['fflag'] += dFlag
-    print SEP
+
+    if verbose:
+        print SEP
 
     return ellipConfig
 
@@ -1534,7 +1536,8 @@ def galSBP(image, mask=None, galX=None, galY=None, inEllip=None,
                     os.system(ellCommand)
                 else:
                     raise Exception("XXX Can not find par file %s" % outPar)
-            print SEP
+            if verbose:
+                print SEP
 
             # Check if the Ellipse run is finished
             if not os.path.isfile(outBin):
