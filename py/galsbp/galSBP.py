@@ -345,18 +345,18 @@ def writeEllipPar(cfg, image, outBin, outPar, inEllip=None):
         f.write('geompar.x0 = %8.2f \n' % cfg['x0'])
         f.write('geompar.y0 = %8.2f \n' % cfg['y0'])
     else:
-        raise "Make sure that the input X0 and Y0 are meaningful !", cfg[
-            'x0'], cfg['y0']
+        raise Exception("Make sure that the input X0 and Y0 are meaningful !",
+                        cfg['x0'], cfg['y0'])
     if (cfg['ellip0'] >= 0.0) and (cfg['ellip0'] < 1.0):
         f.write('geompar.ellip0 = %5.2f \n' % cfg['ellip0'])
     else:
-        raise "Make sure that the input Ellipticity is meaningful !", cfg[
-            'ellip0']
+        raise Exception("Make sure that the input Ellipticity is meaningful !",
+                        cfg['ellip0'])
     if (cfg['pa0'] >= -90.0) and (cfg['pa0'] <= 90.0):
         f.write('geompar.pa0 = %5.2f \n' % cfg['pa0'])
     else:
-        raise "Make sure that the input Position Angle is meaningful !", cfg[
-            'pa0']
+        raise Exception("Make sure that the input Position Angle is meaningful !",
+                        cfg['pa0'])
     f.write('geompar.sma0 = %8.2f \n' % cfg['sma0'])
     f.write('geompar.minsma = %8.1f \n' % cfg['minsma'])
     f.write('geompar.maxsma = %8.1f \n' % cfg['maxsma'])
@@ -401,19 +401,19 @@ def setupEllipse(ellipConfig):
         iraf.ellipse.x0 = cfg['x0']
         iraf.ellipse.y0 = cfg['y0']
     else:
-        raise "Make sure that the input X0 and Y0 are meaningful !", cfg[
-            'x0'], cfg['y0']
+        raise Exception("Make sure that the input X0 and Y0 are meaningful !",
+                        cfg['x0'], cfg['y0'])
     # 2. Initial guess of the ellipticity and PA of the first ISOPHOTE
     if (cfg['ellip0'] >= 0.0) and (cfg['ellip0'] < 1.0):
         iraf.ellipse.ellip0 = cfg['ellip0'] if cfg['ellip0'] >= 0.05 else 0.05
     else:
-        raise "Make sure that the input Ellipticity is meaningful !", cfg[
-            'ellip0']
+        raise Exception("Make sure that the input Ellipticity is meaningful !",
+                        cfg['ellip0'])
     if (cfg['pa0'] >= -90.0) and (cfg['pa0'] <= 90.0):
         iraf.ellipse.pa0 = cfg['pa0']
     else:
-        raise "Make sure that the input Position Angle is meaningful !", cfg[
-            'pa0']
+        raise Exception("Make sure that the input Position Angle is meaningful !",
+                        cfg['pa0'])
     # 3. Initial radius for ellipse fitting
     iraf.ellipse.sma0 = cfg['sma0']
     # 4. The minimum and maximum radius for the ellipse fitting
