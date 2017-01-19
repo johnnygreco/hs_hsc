@@ -87,7 +87,7 @@ def galfitAIC(galOut):
 
 def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
                showZoom=True, zoomLimit=6.0, showTitle=True, showChi2=True,
-               zoomSize=None, overComp=True, maskRes=True,
+               zoomSize=None, overComp=True, maskRes=True, returnPlot=False,
                scale1=0.03, sample1=500,
                scale2=0.40, sample2=500):
     """
@@ -295,7 +295,10 @@ def showModels(outFile, galOut, root=None, verbose=True, vertical=False,
     del imgOri, imgMod, imgRes, resShow
     del mskArr
 
-    return maxR
+    if returnPlot:
+        return fig
+    else:
+        return maxR
 
 
 def removePSF(readin, root=None, verbose=True, abspath=False, run=False):
