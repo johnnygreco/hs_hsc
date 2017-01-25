@@ -146,6 +146,6 @@ class GalfitResults(object):
 
         for i in range(1, self.num_components + 1):
             setattr(self, "component_" + str(i),
-                    GalfitComponent(galfitheader, i))
+                    GalfitComponent(galfitheader, i, verbose=False))
 
         hdulist.close()
