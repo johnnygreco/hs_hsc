@@ -16,7 +16,7 @@ from astropy.io import fits
 class GalfitComponent(object):
     """Stores results from one component of the fit."""
 
-    def __init__(self, galfitheader, component_number):
+    def __init__(self, galfitheader, component_number, verbose=True):
         """
         Read GALFIT results from output file.
 
@@ -43,26 +43,32 @@ class GalfitComponent(object):
             we know that val is a string formatted as 'result +/- uncertainty'
             """
             if "{" in val and "}" in val:
-                print " ## One parameter is constrained !"
+                if verbose:
+                    print " ## One parameter is constrained !"
                 val = val.replace('{', '')
                 val = val.replace('}', '')
                 val = val.split()
-                print " ## Param - Value : ", param, val
+                if verbose:
+                    print " ## Param - Value : ", param, val
                 setattr(self, paramsplit[1].lower(), float(val[0]))
                 setattr(self, paramsplit[1].lower() + '_err', np.nan)
             elif "[" in val and "]" in val:
-                print " ## One parameter is fixed !"
+                if verbose:
+                    print " ## One parameter is fixed !"
                 val = val.replace('[', '')
                 val = val.replace(']', '')
                 val = val.split()
-                print " ## Param - Value : ", param, val
+                if verbose:
+                    print " ## Param - Value : ", param, val
                 setattr(self, paramsplit[1].lower(), float(val[0]))
                 setattr(self, paramsplit[1].lower() + '_err', np.nan)
             elif "*" in val:
-                print " ## One parameter is problematic !"
+                if verbose:
+                    print " ## One parameter is problematic !"
                 val = val.replace('*', '')
                 val = val.split()
-                print " ## Param - Value : ", param, val
+                if verbose:
+                    print " ## Param - Value : ", param, val
                 setattr(self, paramsplit[1].lower(), float(val[0]))
                 setattr(self, paramsplit[1].lower() + '_err', -1.0)
                 setattr(self, 'good', True)
@@ -80,7 +86,7 @@ class GalfitResults(object):
     Currently only does one component
     """
 
-    def __init__(self, galfit_fits_file, hduLength=4):
+    def __init__(self, galfit_fits_file, hduLength=4, verbose=True):
         """
         Init method for GalfitResults.
 
