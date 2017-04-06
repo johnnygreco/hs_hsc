@@ -8,9 +8,21 @@ import numpy as np
 __all__ = ['Leauthaud12']
 
 
+class Behroozi10():
+    """
+    Class for stellar mass halo mass relation from Behroozi+10
+    """
+    def __init__(self, redshift=0.3):
+        """Initiallize the model."""
+
+    def toMhalo(self, Ms):
+        """Estimate halo mass via stellar mass."""
+        return None
+
+
 class Leauthaud12():
     """
-    Class for stellar mass halo mass relation from Leauthaud 2012.
+    Class for stellar mass halo mass relation from Leauthaud+2012.
     """
 
     def __init__(self, redshift=0.3, sigmod=1):
@@ -62,6 +74,7 @@ class Leauthaud12():
                               'betaSat': 0.740, 'betaSatErr': 0.059}
 
             else:
+                # TODO: Parameters for sigmod=2
                 raise KeyError("Wrong SIG_MOD choice!!")
 
         elif (redshift > 0.74) and (redshift <= 1.00):
@@ -80,6 +93,7 @@ class Leauthaud12():
                               'betaSat': 0.863, 'betaSatErr': 0.053}
 
             else:
+                # TODO: Parameters for sigmod=2
                 raise KeyError("Wrong SIG_MOD choice!!")
 
         else:
@@ -98,3 +112,33 @@ class Leauthaud12():
         logMh = param['logM1'] + termB + (termC / termD) - 0.50
 
         return logMh
+
+    def getMhalo(self, Ms, m0=10.92, m1=12.52, beta=0.457, delta=0.566,
+                 gamma=1.530):
+        """Estimate halo mass via stellar mass using specific parameters."""
+        mRatio = Ms / (10.0 ** m0)
+
+        termB = np.log10(mRatio) * beta
+        termC = mRatio ** delta
+        termD = mRatio ** (gamma * -1.0) + 1.0
+
+        logMh = m1 + termB + (termC / termD) - 0.50
+
+        return logMh
+
+    def bootstrapMhalo(self, Ms, n=1000):
+        """Bootsrtap the uncertainties of the SMHM parameters."""
+        param = self.param
+
+        m0 = np.random.normal(param['logMs0'], param['logMs0Err'], n)
+        m1 = np.random.normal(param['logM1'], param['logM1Err'], n)
+        bb = np.random.normal(param['beta'], param['betaErr'], n)
+        dd = np.random.normal(param['delta'], param['deltaErr'], n)
+        gg = np.random.normal(param['gamma'], param['gamma'], n)
+
+        mhArr = np.asarray([self.getMhalo(Ms, m0=m0[ii], m1=m1[ii],
+                                          beta=bb[ii], delta=dd[ii],
+                                          gamma=gg[ii])
+                            for ii in range(n)])
+
+        return mhArr
