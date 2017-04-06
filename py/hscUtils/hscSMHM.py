@@ -99,6 +99,14 @@ class Leauthaud12():
         else:
             raise KeyError("Wrong Redshift choice!!")
 
+
+    def toMstar(self, Mh):
+        """Estimate stellar mass via halo mass."""
+        # TODO: Place holder
+
+        return None
+
+
     def toMhalo(self, Ms):
         """Estimate halo mass via stellar mass."""
         param = self.param
@@ -134,7 +142,7 @@ class Leauthaud12():
         m1 = np.random.normal(param['logM1'], param['logM1Err'], n)
         bb = np.random.normal(param['beta'], param['betaErr'], n)
         dd = np.random.normal(param['delta'], param['deltaErr'], n)
-        gg = np.random.normal(param['gamma'], param['gamma'], n)
+        gg = np.random.normal(param['gamma'], param['gammaErr'], n)
 
         mhArr = np.asarray([self.getMhalo(Ms, m0=m0[ii], m1=m1[ii],
                                           beta=bb[ii], delta=dd[ii],
