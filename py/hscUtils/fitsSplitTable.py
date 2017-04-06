@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""Split a fits table into a number of chunks."""
 
 from __future__ import division, print_function
 

@@ -1055,8 +1055,13 @@ def confidence_interval(A, axis=None, alpha=.05, metric=np.mean,
 def songPlotSetup(ax, border=4.5,
                   xlabel=30, ylabel=30,
                   majorTickL=12, minorTickL=8,
-                  majorTickW=4.5, minorTickW=4.0):
+                  majorTickW=4.5, minorTickW=4.0,
+                  xtickFormat='$\mathbf{%g}$',
+                  ytickFormat='$\mathbf{%g}$'):
     """Setup the format of the figure."""
+    from matplotlib.ticker import FormatStrFormatter
+    xtickFormat = FormatStrFormatter(xtickFormat)
+    ytickFormat = FormatStrFormatter(ytickFormat)
     # Axes setup
     #  Minor Ticks on
     ax.minorticks_on()
@@ -1075,6 +1080,12 @@ def songPlotSetup(ax, border=4.5,
                    which='major')
     ax.tick_params('both', length=minorTickL, width=minorTickW,
                    which='minor')
+
+    ax.xaxis.set_major_formatter(xtickFormat)
+    ax.yaxis.set_major_formatter(ytickFormat)
+
+    ax.xaxis.set_tick_params(labelsize=xlabel)
+    ax.yaxis.set_tick_params(labelsize=ylabel)
 
     return ax
 
